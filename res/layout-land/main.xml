@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LinearLayout android:id="@+id/LinearLayout01"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="horizontal" android:layout_height="fill_parent"
+	android:layout_width="fill_parent">
+	<ImageView android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:src="@drawable/geohashing_logo"
+		android:layout_gravity="center_vertical" android:id="@+id/GeohashLogo"></ImageView>
+	<LinearLayout android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:id="@+id/WideColumn2"
+		android:orientation="vertical" android:layout_gravity="center_vertical">
+
+		<LinearLayout android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/DateRow">
+			<TextView android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:text="@string/date_label"
+				android:layout_gravity="center_vertical" android:id="@+id/DateLabel"></TextView>
+			<DatePicker android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:id="@+id/Date"
+				android:saveEnabled="true"></DatePicker>
+		</LinearLayout>
+
+		<LinearLayout android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:orientation="horizontal"
+			android:id="@+id/GraticuleRow" android:layout_gravity="center_horizontal">
+			<TextView android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:id="@+id/GraticuleLabel"
+				android:text="@string/graticule_label" android:layout_gravity="center_vertical"></TextView>
+			<EditText android:layout_height="wrap_content" android:id="@+id/Latitude"
+				android:layout_gravity="center_vertical" android:maxLength="4"
+				android:singleLine="true" android:numeric="signed"
+				android:saveEnabled="true" android:maxWidth="@dimen/input_graticule_width"
+				android:hint="@string/hint_lat" android:selectAllOnFocus="true"
+				android:layout_width="@dimen/input_graticule_width"></EditText>
+			<EditText android:layout_height="wrap_content" android:id="@+id/Longitude"
+				android:layout_gravity="center_vertical" android:maxLength="4"
+				android:singleLine="true" android:numeric="signed"
+				android:saveEnabled="true" android:maxWidth="@dimen/input_graticule_width"
+				android:hint="@string/hint_lon" android:selectAllOnFocus="true"
+				android:layout_width="@dimen/input_graticule_width"></EditText>
+
+			<ImageButton android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:src="@drawable/refresh"
+				android:id="@+id/RefreshButton" android:scaleType="centerInside"></ImageButton>
+			<ImageButton android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:src="@drawable/map"
+				android:id="@+id/MapButton" android:scaleType="centerInside"></ImageButton>
+		</LinearLayout>
+
+		<Button android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:text="@string/go_label"
+			android:layout_gravity="center_horizontal" android:id="@+id/GoButton"
+			android:width="@dimen/button_go_width"></Button>
+
+	</LinearLayout>
+</LinearLayout>

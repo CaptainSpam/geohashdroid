@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+	<color name="infobox_background">#99000000</color>
+	<color name="infobox_text">#FFFFFF</color>
+<color name="graticule_fill">#35FF3333</color>
+<color name="graticule_stroke">#FFFF3333</color>
+</resources>

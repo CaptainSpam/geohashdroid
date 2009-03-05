@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+
+<dimen name="button_go_width">100px</dimen>
+<dimen name="button_go_height">40px</dimen>
+<dimen name="infobox_width">160px</dimen>
+<dimen name="infobox_height">100px</dimen>
+<dimen name="infobox_padding">5px</dimen>
+
+<dimen name="input_graticule_width">60px</dimen>
+</resources>
