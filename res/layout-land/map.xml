@@ -6,7 +6,7 @@
 	<view android:id="@+id/Map" class="com.google.android.maps.MapView"
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
 		android:enabled="true" android:clickable="true"
-		android:apiKey="@string/api_map_key"></view>
+		android:apiKey="@string/api_map_key" android:focusable="true"></view>
 	<view android:id="@+id/InfoBox" class="net.exclaimindustries.geohashdroid.MainMapInfoBoxView"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:layout_alignTop="@id/Map" android:layout_alignRight="@id/Map"

@@ -5,12 +5,12 @@
 
 	<view android:id="@+id/Map" class="com.google.android.maps.MapView"
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
-		android:enabled="true" android:clickable="true"
-		android:apiKey="@string/api_map_key"></view>
+		android:enabled="true" android:apiKey="@string/api_map_key" android:clickable="true"
+		android:focusable="true"></view>
 	<Button android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_alignTop="@id/Map"
 		android:layout_alignLeft="@id/Map" android:id="@+id/ConfirmButton"
-		android:text="@string/gratmap_go_label"></Button>
+		android:text="@string/gratmap_go_label" android:focusable="false"></Button>
 	<view android:id="@+id/InfoBox"
 		class="net.exclaimindustries.geohashdroid.GraticuleMapInfoBoxView"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -22,5 +22,5 @@
 	<LinearLayout android:id="@+id/ZoomLayout"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
-		android:layout_centerHorizontal="true"></LinearLayout>
+		android:layout_centerHorizontal="true" android:focusable="false"></LinearLayout>
 </RelativeLayout>
