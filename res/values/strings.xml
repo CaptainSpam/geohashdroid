@@ -4,7 +4,7 @@
 <string name="app_name">Geohash Droid</string>
 <string name="app_description">A simple Geohashing app</string>
 
-<string name="api_map_key">0OjKj1BgDUI26fvc3fLCGZZO_7o1uPgSVbTIWEA</string>
+<!-- api_map_key should be defined elsewhere and not uploaded to SVN -->
 
 <string name="graticule_label">Graticule:</string>
 <string name="date_label">Date:</string>
@@ -72,8 +72,8 @@
 
 <string name="about_by">By Nicholas Killewald</string>
 <string name="about_based_on">Based on the Geohashing algorithm by Randall Munroe</string>
-<string name="about_version">version 0.5.9 (beta)</string>
-<string name="about_date">March 4, 2009</string>
+<string name="about_version">SVN version</string>
+<string name="about_date">(BUILD_DATE)</string>
 
 <string name="url_geohash">http://xkcd.com</string>
 <string name="url_project">http://code.google.com/p/geohashdroid</string>
