@@ -48,6 +48,10 @@ public class GraticuleMap extends MapActivity implements GraticuleChangedListene
 	static final String GRATICULE = "Graticule";
 	
 	private Graticule mGraticule = null;
+	
+	// Updating this must be handled here due to the fact that the view needs
+	// to be updated BEFORE the overlay does its job.
+	private GraticuleOutlineOverlay mOutOver = null;
 
 	@Override
 	protected boolean isRouteDisplayed() {
@@ -60,7 +64,7 @@ public class GraticuleMap extends MapActivity implements GraticuleChangedListene
 		
 		setContentView(R.layout.gratmap);
 		
-		MapView mapView = (MapView)findViewById(R.id.Map);
+		GraticuleMapView mapView = (GraticuleMapView)findViewById(R.id.Map);
 		
 		// Zoom buttons!  Go!
 		LinearLayout zoomLayout = (LinearLayout)findViewById(R.id.ZoomLayout);
@@ -111,12 +115,16 @@ public class GraticuleMap extends MapActivity implements GraticuleChangedListene
 		
 		updateBox(mGraticule, null);
 		
-		// The overlay!  Go!
+		// The overlays!  Go!
 		// We'll construct the overlay using this itelf as what receives
 		// graticule tap updates.
-		GraticuleHighlightOverlay overlay = new GraticuleHighlightOverlay(mGraticule, this);
+		GraticuleOutlineOverlay outOverlay = new GraticuleOutlineOverlay(mGraticule);
+		mapView.getOverlays().add(outOverlay);
+		mapView.setOutlineOverlay(outOverlay);
 		
-		mapView.getOverlays().add(overlay);
+		GraticuleHighlightOverlay hiOverlay = new GraticuleHighlightOverlay(mGraticule, this);
+		
+		mapView.getOverlays().add(hiOverlay);
 		
 		// The button!  Go!
 		updateButton(mGraticule);

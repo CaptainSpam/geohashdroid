@@ -3,7 +3,7 @@
 	android:layout_width="wrap_content" android:layout_height="wrap_content"
 	xmlns:android="http://schemas.android.com/apk/res/android">
 
-	<view android:id="@+id/Map" class="com.google.android.maps.MapView"
+	<view android:id="@+id/Map" class="net.exclaimindustries.geohashdroid.GraticuleMapView"
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
 		android:enabled="true" android:apiKey="@string/api_map_key" android:clickable="true"
 		android:focusable="true"></view>

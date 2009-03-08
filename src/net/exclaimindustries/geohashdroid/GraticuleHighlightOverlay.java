@@ -33,6 +33,7 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 	 * user taps something.
 	 * 
 	 * @param g Graticule to draw (or null to not draw anything yet)
+	 * @param gcl listener to pay attention to taps when new graticules are selected
 	 */
 	public GraticuleHighlightOverlay(Graticule g, GraticuleChangedListener gcl) {
 		mGraticule = g;

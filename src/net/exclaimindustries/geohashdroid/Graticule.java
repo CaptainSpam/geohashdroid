@@ -292,5 +292,27 @@ public class Graticule implements Serializable {
 		
 		return new GeoPoint(lat, lon);
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object o) {
+		// First, this better be a Graticule.
+		if(!(o instanceof Graticule)) return false;
+		
+		Graticule g = (Graticule)o;
+		
+		// If everything matches up, these are identical.  Two int checks and
+		// two boolean checks are probably a lot faster than two String checks,
+		// right?
+		if(g.getLatitude() != getLatitude()
+				|| g.getLongitude() != getLongitude()
+				|| g.isSouth() != isSouth()
+				|| g.isWest() != isWest())
+			return false;
+		else
+			return true;
+	}
 	
 }
