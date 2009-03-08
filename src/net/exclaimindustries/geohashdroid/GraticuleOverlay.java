@@ -8,128 +8,144 @@
 package net.exclaimindustries.geohashdroid;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.Paint.Join;
 
 import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 
 /**
- * This is the overlay that draws the current graticule on the map and handles
- * map taps to select a new Graticule.
+ * Any GraticuleOverlay is expected to be able to draw itself when given only
+ * a Graticule object.  It also comes with a couple handy methods for the most
+ * common graticule-drawing extravaganzas, drawing an outline and drawing the
+ * filled-in area, if given a Paint object with which to draw.
  * 
  * @author Nicholas Killewald
+ *
  */
-public class GraticuleOverlay extends Overlay {
-	private Graticule mGraticule;
-	private GraticuleChangedListener mListener;
-	private boolean mHandleTaps = true;
+public abstract class GraticuleOverlay extends Overlay {
+	/**
+	 * Implement this to draw whatever needs to be drawn for this overlay.
+	 * 
+	 * @param c Canvas on which to draw
+	 * @param pr Projection to use to get coordinates
+	 * @param g the Graticule to draw
+	 */
+	protected abstract void drawGraticule(Canvas c, Projection pr, Graticule g);
 	
 	/**
-	 * Constructs a new GraticuleOverlay with the given Graticule selected.
-	 * Note that if the Graticule is null, this won't draw anything until the
-	 * user taps something.
-	 * 
-	 * @param g Graticule to draw (or null to not draw anything yet)
+	 * <code>RectCoords</code> just stashes the coordinates of the rectangle
+	 * on which a graticule will be drawn, since we can't get the raw values
+	 * from an Android Rect object.
+	 *  
+	 * @author Nicholas Killewald
 	 */
-	public GraticuleOverlay(Graticule g, GraticuleChangedListener gcl) {
-		mGraticule = g;
-		mListener = gcl;
-	}
-
-	@Override
-	public void draw(Canvas canvas, MapView mapView, boolean shadow) {
-		super.draw(canvas, mapView, shadow);
-		
-		// We don't do shadows.
-		if(shadow) return;
-		
-		// This should be simple; just draw a rectangle and a border around
-		// the current Graticule, if it's defined.  If not, we don't draw
-		// anything at all.
-		if(mGraticule == null) return;
-		
-		Projection p = mapView.getProjection();
-		
-		// First, the rectangle.  The following aren't the coordinates of the
-		// rectangle, they're the offsets of the GeoPoint.
+	protected class RectCoords {
 		int top;
 		int bottom;
 		int left;
 		int right;
 		
-		if(mGraticule.isSouth()) {
-			top = (-1 * mGraticule.getLatitude()) * 1000000;
-			bottom = (-1 * (mGraticule.getLatitude() + 1)) * 1000000;
-		} else {
-			top = (mGraticule.getLatitude() + 1) * 1000000;
-			bottom = mGraticule.getLatitude() * 1000000;
-		}
-		
-		if(mGraticule.isWest()) {
-			left = (-1 * mGraticule.getLongitude()) * 1000000;
-			right = (-1 * (mGraticule.getLongitude() + 1)) * 1000000;
-		} else {
-			left = (mGraticule.getLongitude() + 1) * 1000000;
-			right = mGraticule.getLongitude() * 1000000;
-		}
-		
-		Point topleft = p.toPixels(new GeoPoint(top, left), null);
-		Point bottomright = p.toPixels(new GeoPoint(bottom, right), null);
-		
-		Paint paint = new Paint();
-		paint.setColor(Color.parseColor("#10FF3333"));
-		
-		canvas.drawRect(new Rect(topleft.x, topleft.y, bottomright.x, bottomright.y), paint);
-		
-		// Now for the lines...
-		paint.setColor(Color.parseColor("#FFFF3333"));
-		paint.setStrokeWidth(2);
-		paint.setStrokeJoin(Join.ROUND);
-		
-		canvas.drawLine(topleft.x, topleft.y, bottomright.x, topleft.y, paint);
-		canvas.drawLine(bottomright.x, topleft.y, bottomright.x, bottomright.y, paint);
-		canvas.drawLine(bottomright.x, bottomright.y, topleft.x, bottomright.y, paint);
-		canvas.drawLine(topleft.x, bottomright.y, topleft.x, topleft.y, paint);
-	}
-
-	@Override
-	public boolean onTap(GeoPoint p, MapView mapView) {
-		// All we need to know is where the user tapped.  Then we update the
-		// Graticule and let the listener know.
-		if(mHandleTaps) {
-			mGraticule = new Graticule(p);
-			mListener.graticuleUpdated(mGraticule);
-			mapView.invalidate();
-			return true;
-		} else {
-			return false;
+		/**
+		 * Build us up a RectCoords!
+		 * 
+		 * @param left Left!
+		 * @param top Top!
+		 * @param right Right! 
+		 * @param bottom Bottom!
+		 */
+		public RectCoords(int left, int top, int right, int bottom) {
+			this.top = top;
+			this.bottom = bottom;
+			this.left = left;
+			this.right = right;
 		}
 	}
 	
 	/**
-	 * Manually set the Graticule after construction.  Note that the MapView
-	 * will need to be invalidated afterward.
+	 * Forms a RectCoords object from the given Graticule.
 	 * 
-	 * @param g new Graticule to set
+	 * @param g
+	 * @return
 	 */
-	public void setGraticule(Graticule g) {
-		mGraticule = g;
-		mListener.graticuleUpdated(mGraticule);
+	protected RectCoords getRectFromGraticule(Graticule g) {
+		int top;
+		int bottom;
+		int left;
+		int right;
+		
+		if(g.isSouth()) {
+			top = (-1 * g.getLatitude()) * 1000000;
+			bottom = (-1 * (g.getLatitude() + 1)) * 1000000;
+		} else {
+			top = (g.getLatitude() + 1) * 1000000;
+			bottom = g.getLatitude() * 1000000;
+		}
+		
+		if(g.isWest()) {
+			left = (-1 * g.getLongitude()) * 1000000;
+			right = (-1 * (g.getLongitude() + 1)) * 1000000;
+		} else {
+			left = (g.getLongitude() + 1) * 1000000;
+			right = g.getLongitude() * 1000000;
+		}
+		
+		return new RectCoords(left, top, right, bottom);
 	}
 	
 	/**
-	 * Whether or not this overlay should handle taps.  That is, if it should
-	 * select the graticule or just display it.
+	 * Convenience method to draw the outline of the given graticule on the
+	 * canvas.  Override it if you really really want to.
 	 * 
-	 * @param flag true to select, false to not
+	 * @param c Canvas on which to draw
+	 * @param pr Projection to use to get the proper coordinates
+	 * @param g Graticule to draw
+	 * @param p Paint to use to draw
 	 */
-	public void setTapHandling(boolean flag) {
-		mHandleTaps = flag;
+	protected void drawGraticuleOutline(Canvas c, Projection pr, Graticule g, Paint p) {
+		if(g == null) {
+			return;
+		}
+		
+		// First, the rectangle.  The following aren't the coordinates of the
+		// rectangle, they're the offsets of the GeoPoint.
+		RectCoords rc = getRectFromGraticule(g);
+		
+		// Now, get two points out of the deal.
+		Point topleft = pr.toPixels(new GeoPoint(rc.top, rc.left), null);
+		Point bottomright = pr.toPixels(new GeoPoint(rc.bottom, rc.right), null);
+		
+		// Last, draw the line with the Paint supplied.
+		c.drawLine(topleft.x, topleft.y, bottomright.x, topleft.y, p);
+		c.drawLine(bottomright.x, topleft.y, bottomright.x, bottomright.y, p);
+		c.drawLine(bottomright.x, bottomright.y, topleft.x, bottomright.y, p);
+		c.drawLine(topleft.x, bottomright.y, topleft.x, topleft.y, p);
+	}
+	
+	/**
+	 * Convenience method to draw the fill of the given graticule on the
+	 * canvas.  Override it if you really really want to.
+	 * 
+	 * @param c Canvas on which to draw
+	 * @param pr Projection to use to get the proper coordinates
+	 * @param g Graticule to draw
+	 * @param p Paint to use to draw
+	 */
+	protected void drawGraticuleFill(Canvas c, Projection pr, Graticule g, Paint p) {
+		if(g == null) {
+			return;
+		}
+		
+		// Again, first, the rectangle.
+		RectCoords rc = getRectFromGraticule(g);
+		
+		// And again, two points.
+		Point topleft = pr.toPixels(new GeoPoint(rc.top, rc.left), null);
+		Point bottomright = pr.toPixels(new GeoPoint(rc.bottom, rc.right), null);
+		
+		// And finally, draw it out.
+		c.drawRect(new Rect(topleft.x, topleft.y, bottomright.x, bottomright.y), p);
 	}
 }

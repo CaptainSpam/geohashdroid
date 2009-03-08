@@ -114,7 +114,7 @@ public class GraticuleMap extends MapActivity implements GraticuleChangedListene
 		// The overlay!  Go!
 		// We'll construct the overlay using this itelf as what receives
 		// graticule tap updates.
-		GraticuleOverlay overlay = new GraticuleOverlay(mGraticule, this);
+		GraticuleHighlightOverlay overlay = new GraticuleHighlightOverlay(mGraticule, this);
 		
 		mapView.getOverlays().add(overlay);
 		
