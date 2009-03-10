@@ -48,10 +48,6 @@ public class GraticuleMap extends MapActivity implements GraticuleChangedListene
 	static final String GRATICULE = "Graticule";
 	
 	private Graticule mGraticule = null;
-	
-	// Updating this must be handled here due to the fact that the view needs
-	// to be updated BEFORE the overlay does its job.
-	private GraticuleOutlineOverlay mOutOver = null;
 
 	@Override
 	protected boolean isRouteDisplayed() {
