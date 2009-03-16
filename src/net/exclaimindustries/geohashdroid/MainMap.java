@@ -243,8 +243,8 @@ public class MainMap extends MapActivity {
 	}
 
 	@Override
-	protected void onStart() {
-		super.onStart();
+	protected void onResume() {
+		super.onResume();
 		
 		// Determine if the InfoBox should be displayed.  I sure hope it's
 		// expected that preferences can't be changed without stopping/starting
