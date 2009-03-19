@@ -9,6 +9,7 @@ package net.exclaimindustries.geohashdroid;
 
 import android.content.Context;
 import android.location.Location;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
@@ -83,6 +84,23 @@ public class AutoZoomingLocationOverlay extends MyLocationOverlay {
 		// will be reset there.
 		if(provider.equals(android.location.LocationManager.GPS_PROVIDER))
 			mHaveGPSFix = false;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.google.android.maps.MyLocationOverlay#onStatusChanged(java.lang.String, int, android.os.Bundle)
+	 */
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		super.onStatusChanged(provider, status, extras);
+		
+		// If GPS goes all unavailable, we no longer have a GPS fix.  It's that
+		// simple.
+		if(provider.equals(android.location.LocationManager.GPS_PROVIDER) && status != android.location.LocationProvider.AVAILABLE) {
+			mHaveGPSFix = false;
+		}
+		
+		// However, we DON'T do the inverse.  We don't need to.  mHaveGPSFix is
+		// reset once the fix comes in, after it's available again.
 	}
 
 	@Override
