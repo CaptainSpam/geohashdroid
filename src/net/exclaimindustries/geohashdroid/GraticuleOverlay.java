@@ -68,7 +68,7 @@ public abstract class GraticuleOverlay extends Overlay {
 	 * Forms a RectCoords object from the given Graticule.
 	 * 
 	 * @param g
-	 * @return
+	 * @return a RectCoords from the graticule.
 	 */
 	protected RectCoords getRectFromGraticule(Graticule g) {
 		int top;

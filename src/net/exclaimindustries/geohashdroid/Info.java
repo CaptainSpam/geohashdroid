@@ -43,7 +43,8 @@ public class Info implements Serializable {
 	/**
 	 * Creates an Info object with the given data.  That's it.
 	 * 
-	 * @param finalDestination the destination
+	 * @param latitude the destination's latitude, as a double
+	 * @param longitude the destination's longitude, as a double
 	 * @param graticule the graticule
 	 * @param date the date
 	 */
