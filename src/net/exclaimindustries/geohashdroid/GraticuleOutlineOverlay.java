@@ -7,8 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Join;
 import android.view.MotionEvent;
@@ -18,11 +18,15 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.Projection;
 
 /**
- * The GraticuleOutlineOverlay 
- * @author captainspam
- *
+ * The <code>GraticuleOutlineOverlay</code> draws an outline of the currently-
+ * highlighted graticule in the event of trackball scrolling.  That is, it
+ * outlines what will be selected if the user presses the trackball button at
+ * that moment.
+ *  
+ * @author Nicholas Killewald
  */
 public class GraticuleOutlineOverlay extends GraticuleOverlay {
+	private Context mContext;
 	private Graticule mGraticule;
 	private boolean mHandleTrackball = true;
 	
@@ -31,9 +35,11 @@ public class GraticuleOutlineOverlay extends GraticuleOverlay {
 	 * outlined.  Note that if the Graticule is null, this won't draw
 	 * anything until the user trackballs to something.
 	 * 
+	 * @param c Context from whence this came (needed for resource information)
 	 * @param g Graticule to draw (or null to not draw anything yet)
 	 */
-	public GraticuleOutlineOverlay(Graticule g) {
+	public GraticuleOutlineOverlay(Context c, Graticule g) {
+		mContext = c;
 		mGraticule = g;
 	}
 	
@@ -116,7 +122,7 @@ public class GraticuleOutlineOverlay extends GraticuleOverlay {
 		Paint paint = new Paint();
 		
 		// Only the outline this time.
-		paint.setColor(Color.parseColor("#DD222222"));
+		paint.setColor(mContext.getResources().getColor(R.color.graticule_outline));
 		paint.setStrokeWidth(2);
 		paint.setStrokeJoin(Join.ROUND);
 		drawGraticuleOutline(c,pr,g,paint);

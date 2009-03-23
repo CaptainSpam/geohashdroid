@@ -7,8 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Join;
 
@@ -25,6 +25,7 @@ import com.google.android.maps.Projection;
 public class GraticuleHighlightOverlay extends GraticuleOverlay {
 	private Graticule mGraticule;
 	private GraticuleChangedListener mListener;
+	private Context mContext;
 	private boolean mHandleTaps = true;
 	
 	/**
@@ -32,10 +33,12 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 	 * Note that if the Graticule is null, this won't draw anything until the
 	 * user taps something.
 	 * 
+	 * @param c Context from whence this came (needed for resource information)
 	 * @param g Graticule to draw (or null to not draw anything yet)
 	 * @param gcl listener to pay attention to taps when new graticules are selected
 	 */
-	public GraticuleHighlightOverlay(Graticule g, GraticuleChangedListener gcl) {
+	public GraticuleHighlightOverlay(Context c, Graticule g, GraticuleChangedListener gcl) {
+		mContext = c;
 		mGraticule = g;
 		mListener = gcl;
 	}
@@ -91,11 +94,11 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 	protected void drawGraticule(Canvas c, Projection pr, Graticule g) {
 		// Fill it in first...
 		Paint paint = new Paint();
-		paint.setColor(Color.parseColor("#10FF3333"));
+		paint.setColor(mContext.getResources().getColor(R.color.graticule_fill));
 		drawGraticuleFill(c,pr,g,paint);
 		
 		// Then, outline it.
-		paint.setColor(Color.parseColor("#FFFF3333"));
+		paint.setColor(mContext.getResources().getColor(R.color.graticule_stroke));
 		paint.setStrokeWidth(2);
 		paint.setStrokeJoin(Join.ROUND);
 		drawGraticuleOutline(c,pr,g,paint);
