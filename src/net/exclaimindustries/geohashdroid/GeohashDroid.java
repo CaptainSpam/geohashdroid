@@ -81,6 +81,14 @@ public class GeohashDroid extends Activity {
 	
 	private static final int REQUEST_PICK_GRATICULE = 0;
 	
+	/**
+	 * Action for picking a graticule.  In Geohash Droid, this means to go to
+	 * GraticuleMap.  Though, so long as it returns a net.exclaimindustries.geohashdroid.Graticule
+	 * object, I'd assume anything could take its place if someone else writes
+	 * a better graticule picker.
+	 */
+	public static final String PICK_GRATICULE = "net.exclaimindustries.geohashdroid.PICK_GRATICULE";
+	
 	private EditText mLatitude;
 	private EditText mLongitude;
 	private Button mGoButton;
@@ -691,7 +699,8 @@ public class GeohashDroid extends Activity {
 
 			@Override
 			public void onClick(View v) {
-    			Intent i = new Intent(GeohashDroid.this, GraticuleMap.class);
+    			//Intent i = new Intent(GeohashDroid.this, GraticuleMap.class);
+				Intent i = new Intent(net.exclaimindustries.geohashdroid.GeohashDroid.PICK_GRATICULE);
     			
     			Graticule g = null;
     			
