@@ -3,9 +3,7 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	android:orientation="horizontal" android:layout_height="fill_parent"
 	android:layout_width="fill_parent">
-	<ImageView android:layout_width="wrap_content"
-		android:layout_height="wrap_content" android:src="@drawable/geohashing_logo"
-		android:layout_gravity="center_vertical" android:id="@+id/GeohashLogo"></ImageView>
+	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_gravity="center_vertical" android:id="@+id/WideColumn1"><ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/geohashing_logo" android:id="@+id/GeohashLogo" android:layout_gravity="center_horizontal"></ImageView><Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/WhatButton" android:text="@string/what_label" android:layout_gravity="center_horizontal"></Button></LinearLayout>
 	<LinearLayout android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:id="@+id/WideColumn2"
 		android:orientation="vertical" android:layout_gravity="center_vertical">
@@ -53,4 +51,6 @@
 			android:width="@dimen/button_go_width"></Button>
 
 	</LinearLayout>
+
+
 </LinearLayout>

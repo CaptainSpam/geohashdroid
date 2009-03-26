@@ -24,6 +24,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -735,6 +736,18 @@ public class GeohashDroid extends Activity {
         
         // Disable the Go button if a field is empty...
         resetGoButton();
+        
+        // And the "What's Geohashing?" button...
+        Button whatButton = (Button)findViewById(R.id.WhatButton);
+        
+        whatButton.setOnClickListener(new OnClickListener() {
+        	public void onClick(View view) {
+        		Intent i = new Intent();
+        		i.setAction(Intent.ACTION_VIEW);
+        		i.setData(Uri.parse("http://wiki.xkcd.com/geohashing/How_it_works"));
+        		startActivity(i);
+        	}
+        });
         
         // Give us something to do on text changes...
         TextWatcher tw = new TextWatcher() {

@@ -6,7 +6,7 @@
 		android:layout_height="wrap_content" android:clickable="false"
 		android:src="@drawable/geohashing_logo" android:id="@+id/GeohashLogo"
 		android:layout_gravity="center_horizontal">
-	</ImageView>
+	</ImageView><Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/WhatButton" android:text="@string/what_label" android:layout_gravity="center_horizontal"></Button>
 	<LinearLayout android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:id="@+id/DateRow"
 		android:layout_gravity="center_horizontal">
@@ -49,4 +49,5 @@
 		android:layout_height="wrap_content" android:text="@string/go_label"
 		android:layout_gravity="center_horizontal" android:id="@+id/GoButton"
 		android:width="@dimen/button_go_width"></Button>
+
 </LinearLayout>

@@ -8,6 +8,7 @@
 
 <string name="graticule_label">Graticule:</string>
 <string name="date_label">Date:</string>
+<string name="what_label">What\'s Geohashing?</string>
 
 <string name="search_label">Attempting to determine your graticule...</string>
 
