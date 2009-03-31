@@ -8,4 +8,5 @@
 <dimen name="infobox_padding">5px</dimen>
 
 <dimen name="input_graticule_width">60px</dimen>
+<dimen name="infobox_jumbo_fontsize">22dp</dimen>
 </resources>

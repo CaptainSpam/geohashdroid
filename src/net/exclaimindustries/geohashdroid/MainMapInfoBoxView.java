@@ -24,26 +24,32 @@ import android.widget.TextView;
  *
  */
 public class MainMapInfoBoxView extends TextView {
-	private Info lastInfo = null;
-	private Location lastLoc = null;
+	/** The last known Info bundle. */
+	protected Info lastInfo = null;
+	/** The last known location. */
+	protected Location lastLoc = null;
 	
-	// Handy!
-	private static final double METERS_PER_FEET = 3.2808399;
-	private static final int FEET_PER_MILE = 5280;
+	// Handy stuff!
+	/** The number of meters per feet. */
+	protected static final double METERS_PER_FEET = 3.2808399;
+	/** The number of feet per mile. */
+	protected static final int FEET_PER_MILE = 5280;
+	
+	/** The decimal format for the coordinates. */
+	protected DecimalFormat mLatLonFormat = new DecimalFormat("###.000");
+	/** The decimal format for distances. */
+	protected DecimalFormat mDistFormat = new DecimalFormat("###.###");
 
 	public MainMapInfoBoxView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
-		// TODO Auto-generated constructor stub
 	}
 
 	public MainMapInfoBoxView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		// TODO Auto-generated constructor stub
 	}
 
 	public MainMapInfoBoxView(Context context) {
 		super(context);
-		// TODO Auto-generated constructor stub
 	}
 
 	/* (non-Javadoc)
@@ -51,7 +57,6 @@ public class MainMapInfoBoxView extends TextView {
 	 */
 	@Override
 	public void setVisibility(int visibility) {
-		// TODO Auto-generated method stub
 		super.setVisibility(visibility);
 		
 		// If we're being set visible again, immediately update the box.
@@ -78,19 +83,18 @@ public class MainMapInfoBoxView extends TextView {
 		// Get the final destination.  We'll translate it to N/S and E/W
 		// instead of positive/negative.  We'll also narrow it down to three
 		// decimal points.
-		DecimalFormat latlonformat = new DecimalFormat("###.000");
 		
 		// The final destination coordinates
 		String finalLine = getContext().getString(R.string.infobox_final) + " "
-			+ latlonformat.format(Math.abs(info.getLatitude())) + (info.getLatitude() >= 0 ? 'N' : 'S') + " "
-			+ latlonformat.format(Math.abs(info.getLongitude())) + (info.getLongitude() >= 0 ? 'E' : 'W');
+			+ mLatLonFormat.format(Math.abs(info.getLatitude())) + (info.getLatitude() >= 0 ? 'N' : 'S') + " "
+			+ mLatLonFormat.format(Math.abs(info.getLongitude())) + (info.getLongitude() >= 0 ? 'E' : 'W');
 		
 		// Your current location coordinates
 		String youLine;
 		if(loc != null) {
 			youLine = getContext().getString(R.string.infobox_you) + " "
-				+ (latlonformat.format(Math.abs(loc.getLatitude()))) + (loc.getLatitude() >= 0 ? 'N' : 'S') + " "
-				+ (latlonformat.format(Math.abs(loc.getLongitude()))) + (loc.getLongitude() >= 0 ? 'E' : 'W');
+				+ (mLatLonFormat.format(Math.abs(loc.getLatitude()))) + (loc.getLatitude() >= 0 ? 'N' : 'S') + " "
+				+ (mLatLonFormat.format(Math.abs(loc.getLongitude()))) + (loc.getLongitude() >= 0 ? 'E' : 'W');
 		} else {
 			youLine = getContext().getString(R.string.infobox_you) + " " + getContext().getString(R.string.standby_title);
 		}
@@ -102,10 +106,7 @@ public class MainMapInfoBoxView extends TextView {
 		setText(finalLine + "\n" + youLine + "\n" + distanceLine);
 	}
 	
-	private String makeDistanceString(float meters) {
-		// Whatever the case, the number format is the same.
-		DecimalFormat distformat = new DecimalFormat("###.###");
-		
+	protected String makeDistanceString(float meters) {
 		// Determine if we're using metric or imperial measurements.  Or, in
 		// theory, other sorts later on.
 		SharedPreferences prefs = getContext().getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
@@ -116,18 +117,18 @@ public class MainMapInfoBoxView extends TextView {
 			// Location object returns distances in meters.  And the fact that
 			// it's in powers of ten.
 			if(meters >= 1000) {
-				return distformat.format(meters / 1000) + "km";
+				return mDistFormat.format(meters / 1000) + "km";
 			} else {
-				return distformat.format(meters) + "m";
+				return mDistFormat.format(meters) + "m";
 			}
 		} else if(units.equals("Imperial")) {
 			// Convert!
 			double feet = meters * METERS_PER_FEET;
 			
 			if(feet >= FEET_PER_MILE) {
-				return distformat.format(feet / FEET_PER_MILE) + "mi";
+				return mDistFormat.format(feet / FEET_PER_MILE) + "mi";
 			} else {
-				return distformat.format(feet) + "ft";
+				return mDistFormat.format(feet) + "ft";
 			}
 		} else {
 			return units + "???";
