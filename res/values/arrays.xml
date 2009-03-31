@@ -8,4 +8,14 @@
         <item>Metric</item>
         <item>Imperial</item>
     </string-array>
+    <string-array name="pref_infobox_entries">
+    	<item>None</item>
+    	<item>Small</item>
+    	<item>Jumbo</item>
+    </string-array>
+    <string-array name="pref_infobox_values">
+    	<item>None</item>
+    	<item>Small</item>
+    	<item>Jumbo</item>
+    </string-array>
 </resources>

@@ -4,19 +4,21 @@
 		<CheckBoxPreference android:key="@string/pref_autozoom_key"
 			android:title="@string/pref_autozoom_title" android:summary="@string/pref_autozoom_summary"
 			android:defaultValue="true" android:persistent="true" />
-		<CheckBoxPreference android:key="@string/pref_infobox_key"
+		<ListPreference android:key="@string/pref_infobox_key"
 			android:summary="@string/pref_infobox_summary" android:title="@string/pref_infobox_title"
-			android:defaultValue="true" android:persistent="true"></CheckBoxPreference>
+			android:defaultValue="Small" android:persistent="true"
+			android:entries="@array/pref_infobox_entries" android:entryValues="@array/pref_infobox_values"
+			android:dialogTitle="@string/pref_infobox_dialogtitle" />
 		<ListPreference android:key="@string/pref_units_key"
 			android:summary="@string/pref_units_summary" android:title="@string/pref_units_title"
 			android:defaultValue="Metric" android:persistent="true"
 			android:entries="@array/pref_units_entries" android:entryValues="@array/pref_units_values"
-			android:dialogTitle="@string/pref_units_dialogtitle"></ListPreference>
+			android:dialogTitle="@string/pref_units_dialogtitle" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
 		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"
 			android:key="@string/pref_remembergraticule_key" android:title="@string/pref_remembergraticule_title"
-			android:defaultValue="true" android:persistent="true"></CheckBoxPreference>
+			android:defaultValue="true" android:persistent="true" />
 	</PreferenceCategory>
 </PreferenceScreen>
 

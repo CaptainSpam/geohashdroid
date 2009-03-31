@@ -44,8 +44,9 @@
 <string name="pref_remembergraticule_summary">When starting the program, fill in the last graticule used</string>
 <string name="pref_remembergraticule_key">RememberGraticule</string>
 <string name="pref_infobox_title">Info box</string>
-<string name="pref_infobox_summary">Display an info box on the map</string>
-<string name="pref_infobox_key">InfoBox</string>
+<string name="pref_infobox_summary">Size of the main map infobox</string>
+<string name="pref_infobox_dialogtitle">Select infobox size</string>
+<string name="pref_infobox_key">InfoBoxSize</string>
 <string name="pref_units_title">Units</string>
 <string name="pref_units_summary">Units used in distance calculations</string>
 <string name="pref_units_key">Units</string>
