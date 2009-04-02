@@ -241,17 +241,34 @@ public class MainMap extends MapActivity {
 	protected void onResume() {
 		super.onResume();
 		
-		// Determine if the InfoBox should be displayed.  I sure hope it's
-		// expected that preferences can't be changed without stopping/starting
-		// this Activity.
-		SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
+		// Determine what sort of infobox gets displayed.  Make the other one
+		// invisible, too.  Or both.
 		MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
-		infobox.setVisibility(prefs.getBoolean(getResources().getString(R.string.pref_infobox_key), true) ? View.VISIBLE : View.INVISIBLE);
+		MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
+		
+		SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
+		String setting = prefs.getString(getResources().getString(R.string.pref_infobox_key), "Small");
+		
+		// And now, check it.
+		if(setting.equals("Jumbo")) {
+			// Jumbo disables the compass!
+			mMyLocation.disableCompass();
+			infobox.setVisibility(View.INVISIBLE);
+			infoboxbig.setVisibility(View.VISIBLE);
+		} else if(setting.equals("Small")) {
+			mMyLocation.enableCompass();
+			infobox.setVisibility(View.VISIBLE);
+			infoboxbig.setVisibility(View.INVISIBLE);
+		} else {
+			mMyLocation.enableCompass();
+			infobox.setVisibility(View.INVISIBLE);
+			infoboxbig.setVisibility(View.INVISIBLE);
+		}
+		
 		populateInfoBox();
 		
 		// MyLocationOverlay comes right back on.
 		mMyLocation.enableMyLocation();
-		mMyLocation.enableCompass();
 	
 		// As does the wakelock.
 		mWakeLock.acquire();
@@ -563,11 +580,19 @@ public class MainMap extends MapActivity {
 	}
 	
 	private void populateInfoBox() {
-		// Populates the InfoBox with the needed information.  Note that this
-		// just gets skipped if the box isn't being displayed.
+		// Populates the InfoBoxes with the needed information.  Note that this
+		// just gets skipped if the box isn't being displayed.  We only send
+		// the data to whatever's visible, if anything.
 		MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
+		MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
 		
-		infobox.update(mInfo, mMyLocation.getLastFix());
+		SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
+		String setting = prefs.getString(getResources().getString(R.string.pref_infobox_key), "Small");
+		
+		if(setting.equals("Jumbo"))
+			infoboxbig.update(mInfo, mMyLocation.getLastFix());
+		else if(setting.equals("Small"))
+			infobox.update(mInfo, mMyLocation.getLastFix());
 	}
 	
 	/**
