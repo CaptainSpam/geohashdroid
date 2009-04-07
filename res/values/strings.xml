@@ -17,6 +17,7 @@
 <string name="go_disabled_label">Enter a graticule</string>
 <string name="ok_label">Okay</string>
 <string name="gratmap_go_label">Use this one</string>
+<string name="backtomap_label">Back to the map</string>
 
 <string name="cancel_label">Cancel</string>
 <string name="darn_label">Darn!</string>
@@ -68,6 +69,10 @@
 <string name="infobox_final">To:</string>
 <string name="infobox_you">You:</string>
 <string name="infobox_30w">(uses 30W rule)</string>
+
+<string name="details_finish">Finish</string>
+<string name="details_you">You</string>
+<string name="details_dist">Distance:</string>
 
 <string name="hint_lat">Lat</string>
 <string name="hint_lon">Lon</string>

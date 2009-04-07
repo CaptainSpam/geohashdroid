@@ -9,4 +9,8 @@
 
 <dimen name="input_graticule_width">60px</dimen>
 <dimen name="infobox_jumbo_fontsize">22dp</dimen>
+<dimen name="details_title_fontsize">18pt</dimen>
+<dimen name="details_subtitle_fontsize">14pt</dimen>
+<dimen name="details_coords_fontsize">12pt</dimen>
+<dimen name="details_padding">15px</dimen>
 </resources>
