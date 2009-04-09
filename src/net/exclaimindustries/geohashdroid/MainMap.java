@@ -331,7 +331,8 @@ public class MainMap extends MapActivity {
 		// it says later.
 		item = menu.add(Menu.NONE, MENU_MAP_MODE, 1, R.string.menu_item_mode_sat);
 		item.setIcon(android.R.drawable.ic_menu_mapmode);
-		menu.add(Menu.NONE, MENU_INFO, 2, R.string.menu_item_details);
+		item = menu.add(Menu.NONE, MENU_INFO, 2, R.string.menu_item_details);
+		item.setIcon(android.R.drawable.ic_menu_info_details);
 		item = menu.add(Menu.NONE, MENU_SETTINGS, 3, R.string.menu_item_settings);
 		item.setIcon(android.R.drawable.ic_menu_preferences);
 		
