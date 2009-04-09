@@ -31,6 +31,7 @@
 
 <string name="map_activity_title">The Map</string>
 <string name="gratmap_activity_title">Tap your graticule</string>
+<string name="detail_activity_title">Details</string>
 <string name="destination_label">Today\'s Point</string>
 
 <string name="find_location">Trying to determine your location...</string>
@@ -60,7 +61,7 @@
 <string name="menu_item_recenter">Recenter</string>
 <string name="menu_item_recenter_destination">The final destination</string>
 <string name="menu_item_recenter_mylocation">Your current location</string>
-<string name="menu_item_info">Details</string>
+<string name="menu_item_details">Details</string>
 <string name="menu_item_mode_street">Normal map</string>
 <string name="menu_item_mode_sat">Satellite</string>
 <string name="menu_item_about">About</string>

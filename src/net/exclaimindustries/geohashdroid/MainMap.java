@@ -331,8 +331,7 @@ public class MainMap extends MapActivity {
 		// it says later.
 		item = menu.add(Menu.NONE, MENU_MAP_MODE, 1, R.string.menu_item_mode_sat);
 		item.setIcon(android.R.drawable.ic_menu_mapmode);
-		// TODO: Make a detailed info screen.
-		//menu.add(Menu.NONE, MENU_INFO, 2, R.string.menu_item_info);
+		menu.add(Menu.NONE, MENU_INFO, 2, R.string.menu_item_details);
 		item = menu.add(Menu.NONE, MENU_SETTINGS, 3, R.string.menu_item_settings);
 		item.setIcon(android.R.drawable.ic_menu_preferences);
 		
@@ -403,6 +402,14 @@ public class MainMap extends MapActivity {
 				}
 				return true;
 			}	
+		case MENU_INFO:
+			{
+				// Pop up our detail window!
+				Intent i = new Intent(this, DetailedInfoScreen.class);
+				i.putExtra(INFO, mInfo);
+				startActivity(i);
+				return true;
+			}
 		case MENU_SETTINGS:
 			{
 				// Pop up our settings window!
