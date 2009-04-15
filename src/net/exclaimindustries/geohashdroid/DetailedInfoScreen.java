@@ -33,6 +33,10 @@ import android.widget.TextView;
  */
 public class DetailedInfoScreen extends Activity implements LocationListener {
 	
+	// Two minutes (in milliseconds).  If the last known check is older than
+	// that, we ignore it.
+	private static final int LOCATION_VALID_TIME = 120000;
+	
 	private static final String INFO = "info";
 	
 	private boolean mIsGPSActive = false; 
@@ -48,9 +52,9 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	protected static final int FEET_PER_MILE = 5280;
 	
 	/** The decimal format for the coordinates. */
-	protected DecimalFormat mLatLonFormat = new DecimalFormat("###.00000000");
+	protected static final DecimalFormat LAT_LON_FORMAT = new DecimalFormat("###.00000000");
 	/** The decimal format for distances. */
-	protected DecimalFormat mDistFormat = new DecimalFormat("###.######");
+	protected static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");
 
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -87,14 +91,14 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		// whole shebang now.
 		mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		
-		// Populate the location with the last known data, if we had any.  As
-		// usual, GPS takes precedence.
+		// Populate the location with the last known data, if we had any AND
+		// it's relatively recent.  As usual, GPS takes precedence.
 		Location lastKnown = mManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-		if(lastKnown != null) {
+		if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
 			updateInfo(lastKnown);
 		} else {
 			lastKnown = mManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-			if(lastKnown != null) {
+			if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
 				updateInfo(lastKnown);
 			}
 		}
@@ -209,12 +213,12 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	private String makeLatitude(Location loc) {
 		// This builds up a latitude string, including a degree symbol and an
 		// N/S suffix.
-		return mLatLonFormat.format(Math.abs(loc.getLatitude())) + "\u00b0" + (loc.getLatitude() > 0 ? "N" : "S");
+		return LAT_LON_FORMAT.format(Math.abs(loc.getLatitude())) + "\u00b0" + (loc.getLatitude() > 0 ? "N" : "S");
 	}
 
 	private String makeLongitude(Location loc) {
 		// Same as before, just with longitude.  And, well, E/W.
-		return mLatLonFormat.format(Math.abs(loc.getLongitude())) + "\u00b0" + (loc.getLongitude() > 0 ? "E" : "W");
+		return LAT_LON_FORMAT.format(Math.abs(loc.getLongitude())) + "\u00b0" + (loc.getLongitude() > 0 ? "E" : "W");
 	}
 	
 	// TODO: This shouldn't need to be repeated between this and MainMapInfoBoxView.
@@ -229,18 +233,18 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 			// Location object returns distances in meters.  And the fact that
 			// it's in powers of ten.
 			if(meters >= 1000) {
-				return mDistFormat.format(meters / 1000) + "km";
+				return DIST_FORMAT.format(meters / 1000) + "km";
 			} else {
-				return mDistFormat.format(meters) + "m";
+				return DIST_FORMAT.format(meters) + "m";
 			}
 		} else if(units.equals("Imperial")) {
 			// Convert!
 			double feet = meters * METERS_PER_FEET;
 			
 			if(feet >= FEET_PER_MILE) {
-				return mDistFormat.format(feet / FEET_PER_MILE) + "mi";
+				return DIST_FORMAT.format(feet / FEET_PER_MILE) + "mi";
 			} else {
-				return mDistFormat.format(feet) + "ft";
+				return DIST_FORMAT.format(feet) + "ft";
 			}
 		} else {
 			return units + "???";
