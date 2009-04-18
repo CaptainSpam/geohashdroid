@@ -12,7 +12,6 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -43,13 +42,6 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	
 	private Info mInfo;
 	private LocationManager mManager;
-	
-	// TODO: I need to make the conversion stuff somehow common or extendable,
-	// not repeated between this and MainMapInfoBoxView.
-	/** The number of meters per feet. */
-	protected static final double METERS_PER_FEET = 3.2808399;
-	/** The number of feet per mile. */
-	protected static final int FEET_PER_MILE = 5280;
 	
 	/** The decimal format for the coordinates. */
 	protected static final DecimalFormat LAT_LON_FORMAT = new DecimalFormat("###.00000000");
@@ -205,7 +197,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 			tv.setText(makeLongitude(loc));
 			tv = (TextView)findViewById(R.id.Distance);
 			
-			tv.setText(makeDistanceString(mInfo.getDistanceInMeters(loc)));
+			tv.setText(DistanceConverter.makeDistanceString(this, DIST_FORMAT, mInfo.getDistanceInMeters(loc)));
 		}
 		
 	}
@@ -220,35 +212,4 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		// Same as before, just with longitude.  And, well, E/W.
 		return LAT_LON_FORMAT.format(Math.abs(loc.getLongitude())) + "\u00b0" + (loc.getLongitude() > 0 ? "E" : "W");
 	}
-	
-	// TODO: This shouldn't need to be repeated between this and MainMapInfoBoxView.
-	private String makeDistanceString(float meters) {
-		// Determine if we're using metric or imperial measurements.  Or, in
-		// theory, other sorts later on.
-		SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
-		String units = prefs.getString(getResources().getString(R.string.pref_units_key), "Metric");
-		
-		if(units.equals("Metric")) {
-			// Meters are easy, if not only for the fact that, by default, the
-			// Location object returns distances in meters.  And the fact that
-			// it's in powers of ten.
-			if(meters >= 1000) {
-				return DIST_FORMAT.format(meters / 1000) + "km";
-			} else {
-				return DIST_FORMAT.format(meters) + "m";
-			}
-		} else if(units.equals("Imperial")) {
-			// Convert!
-			double feet = meters * METERS_PER_FEET;
-			
-			if(feet >= FEET_PER_MILE) {
-				return DIST_FORMAT.format(feet / FEET_PER_MILE) + "mi";
-			} else {
-				return DIST_FORMAT.format(feet) + "ft";
-			}
-		} else {
-			return units + "???";
-		}
-	}
-	
 }

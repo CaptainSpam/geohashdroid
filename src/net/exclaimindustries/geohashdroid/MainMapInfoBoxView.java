@@ -10,7 +10,6 @@ package net.exclaimindustries.geohashdroid;
 import java.text.DecimalFormat;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.location.Location;
 import android.util.AttributeSet;
 import android.view.View;
@@ -28,12 +27,6 @@ public class MainMapInfoBoxView extends TextView {
 	protected Info lastInfo = null;
 	/** The last known location. */
 	protected Location lastLoc = null;
-	
-	// Handy stuff!
-	/** The number of meters per feet. */
-	protected static final double METERS_PER_FEET = 3.2808399;
-	/** The number of feet per mile. */
-	protected static final int FEET_PER_MILE = 5280;
 	
 	/** The decimal format for the coordinates. */
 	protected DecimalFormat mLatLonFormat = new DecimalFormat("###.000");
@@ -101,37 +94,8 @@ public class MainMapInfoBoxView extends TextView {
 		
 		// The distance to the final destination (as the crow flies)
 		String distanceLine = getContext().getString(R.string.infobox_dist) + " "
-			+ (loc != null ? (makeDistanceString(info.getDistanceInMeters(loc))) : getContext().getString(R.string.standby_title));
+			+ (loc != null ? (DistanceConverter.makeDistanceString(getContext(), mDistFormat, info.getDistanceInMeters(loc))) : getContext().getString(R.string.standby_title));
 		
 		setText(finalLine + "\n" + youLine + "\n" + distanceLine);
-	}
-	
-	protected String makeDistanceString(float meters) {
-		// Determine if we're using metric or imperial measurements.  Or, in
-		// theory, other sorts later on.
-		SharedPreferences prefs = getContext().getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
-		String units = prefs.getString(getResources().getString(R.string.pref_units_key), "Metric");
-		
-		if(units.equals("Metric")) {
-			// Meters are easy, if not only for the fact that, by default, the
-			// Location object returns distances in meters.  And the fact that
-			// it's in powers of ten.
-			if(meters >= 1000) {
-				return mDistFormat.format(meters / 1000) + "km";
-			} else {
-				return mDistFormat.format(meters) + "m";
-			}
-		} else if(units.equals("Imperial")) {
-			// Convert!
-			double feet = meters * METERS_PER_FEET;
-			
-			if(feet >= FEET_PER_MILE) {
-				return mDistFormat.format(feet / FEET_PER_MILE) + "mi";
-			} else {
-				return mDistFormat.format(feet) + "ft";
-			}
-		} else {
-			return units + "???";
-		}
 	}
 }
