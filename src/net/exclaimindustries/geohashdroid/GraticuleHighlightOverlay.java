@@ -28,6 +28,9 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 	private Context mContext;
 	private boolean mHandleTaps = true;
 	
+	private static Paint outlinePaint = null;
+	private static Paint fillPaint = null;
+	
 	/**
 	 * Constructs a new GraticuleHighlightOverlay with the given Graticule selected.
 	 * Note that if the Graticule is null, this won't draw anything until the
@@ -41,6 +44,19 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 		mContext = c;
 		mGraticule = g;
 		mListener = gcl;
+		
+		// Make both paints here and stash them for later.
+		if(outlinePaint == null) {
+			outlinePaint = new Paint();
+			outlinePaint.setColor(mContext.getResources().getColor(R.color.graticule_stroke));
+			outlinePaint.setStrokeWidth(2);
+			outlinePaint.setStrokeJoin(Join.ROUND);
+		}
+		
+		if(fillPaint == null) {
+			fillPaint = new Paint();
+			fillPaint.setColor(mContext.getResources().getColor(R.color.graticule_fill));
+		}
 	}
 
 	@Override
@@ -93,14 +109,9 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 	@Override
 	protected void drawGraticule(Canvas c, Projection pr, Graticule g) {
 		// Fill it in first...
-		Paint paint = new Paint();
-		paint.setColor(mContext.getResources().getColor(R.color.graticule_fill));
-		drawGraticuleFill(c,pr,g,paint);
+		drawGraticuleFill(c,pr,g,fillPaint);
 		
 		// Then, outline it.
-		paint.setColor(mContext.getResources().getColor(R.color.graticule_stroke));
-		paint.setStrokeWidth(2);
-		paint.setStrokeJoin(Join.ROUND);
-		drawGraticuleOutline(c,pr,g,paint);
+		drawGraticuleOutline(c,pr,g,outlinePaint);
 	}
 }

@@ -30,6 +30,8 @@ public class GraticuleOutlineOverlay extends GraticuleOverlay {
 	private Graticule mGraticule;
 	private boolean mHandleTrackball = true;
 	
+	private static Paint outlinePaint = null;
+	
 	/**
 	 * Constructs a new GraticuleOutlineOverlay with the given Graticule
 	 * outlined.  Note that if the Graticule is null, this won't draw
@@ -41,6 +43,16 @@ public class GraticuleOutlineOverlay extends GraticuleOverlay {
 	public GraticuleOutlineOverlay(Context c, Graticule g) {
 		mContext = c;
 		mGraticule = g;
+		
+		// Predefine the not-going-to-change outline paint so we're not just
+		// constantly recreating it every draw.
+		if(outlinePaint == null) {
+			outlinePaint = new Paint();
+			
+			outlinePaint.setColor(mContext.getResources().getColor(R.color.graticule_outline));
+			outlinePaint.setStrokeWidth(2);
+			outlinePaint.setStrokeJoin(Join.ROUND);
+		}
 	}
 	
 	@Override
@@ -119,13 +131,8 @@ public class GraticuleOutlineOverlay extends GraticuleOverlay {
 	 */
 	@Override
 	protected void drawGraticule(Canvas c, Projection pr, Graticule g) {
-		Paint paint = new Paint();
-		
 		// Only the outline this time.
-		paint.setColor(mContext.getResources().getColor(R.color.graticule_outline));
-		paint.setStrokeWidth(2);
-		paint.setStrokeJoin(Join.ROUND);
-		drawGraticuleOutline(c,pr,g,paint);
+		drawGraticuleOutline(c,pr,g,outlinePaint);
 	}
 
 	/**
