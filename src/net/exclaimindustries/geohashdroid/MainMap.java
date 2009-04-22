@@ -89,9 +89,10 @@ public class MainMap extends MapActivity {
 		// first place, was released on the last onStop.  Thus, this is safe.
 		PowerManager pl = (PowerManager)getSystemService(Context.POWER_SERVICE);
 		mWakeLock = pl.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK 
-				| PowerManager.ACQUIRE_CAUSES_WAKEUP,
+				| PowerManager.ACQUIRE_CAUSES_WAKEUP
+                                | PowerManager.ON_AFTER_RELEASE,
 				DEBUG_TAG);
-		// The first call to onStart will acquire.
+		// The first call to onResume will acquire.
 		
 		boolean restarting = false;
 		

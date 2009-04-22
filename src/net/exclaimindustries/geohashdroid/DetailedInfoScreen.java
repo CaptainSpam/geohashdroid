@@ -63,11 +63,14 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		// Lay 'er out!
 		setContentView(R.layout.detail);
 		
-		// Get me a wakelock!
-		// TODO: Can I safely just pass the wakelock from MainMap in to here?
+		// Get me a wakelock!  Since we're dealing with something the
+		// user might want to take pictures of outside the phone, this
+                // one keeps the screen bright at all times, hence why we don't
+                // just try to keep the same lock from MainMap.
 		PowerManager pl = (PowerManager)getSystemService(Context.POWER_SERVICE);
-		mWakeLock = pl.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK 
-				| PowerManager.ACQUIRE_CAUSES_WAKEUP,
+		mWakeLock = pl.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK 
+				| PowerManager.ACQUIRE_CAUSES_WAKEUP
+                                | PowerManager.ON_AFTER_RELEASE,
 				DEBUG_TAG);
 
 		// Get us some info!
