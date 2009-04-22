@@ -18,8 +18,8 @@ import android.content.SharedPreferences;
  * @author Nicholas Killewald
  */
 public class DistanceConverter {
-	/** The number of meters per feet. */
-	public static final double METERS_PER_FEET = 3.2808399;
+	/** The number of feet per meter. */
+	public static final double FEET_PER_METER = 3.2808399;
 	/** The number of feet per mile. */
 	public static final int FEET_PER_MILE = 5280;
 	
@@ -50,7 +50,7 @@ public class DistanceConverter {
 			}
 		} else if(units.equals("Imperial")) {
 			// Convert!
-			double feet = distance * METERS_PER_FEET;
+			double feet = distance * FEET_PER_METER;
 			
 			if(feet >= FEET_PER_MILE) {
 				return df.format(feet / FEET_PER_MILE) + "mi";
