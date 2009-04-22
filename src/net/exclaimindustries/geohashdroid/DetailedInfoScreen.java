@@ -17,6 +17,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -43,6 +44,10 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	private Info mInfo;
 	private LocationManager mManager;
 	
+	private PowerManager.WakeLock mWakeLock;
+	
+	private static final String DEBUG_TAG = "DetailedInfoScreen";
+	
 	/** The decimal format for the coordinates. */
 	protected static final DecimalFormat LAT_LON_FORMAT = new DecimalFormat("###.00000000");
 	/** The decimal format for distances. */
@@ -57,6 +62,13 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		
 		// Lay 'er out!
 		setContentView(R.layout.detail);
+		
+		// Get me a wakelock!
+		// TODO: Can I safely just pass the wakelock from MainMap in to here?
+		PowerManager pl = (PowerManager)getSystemService(Context.POWER_SERVICE);
+		mWakeLock = pl.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK 
+				| PowerManager.ACQUIRE_CAUSES_WAKEUP,
+				DEBUG_TAG);
 
 		// Get us some info!
 		if(icicle != null && icicle.containsKey(INFO)) {
@@ -84,15 +96,12 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		
 		// Populate the location with the last known data, if we had any AND
-		// it's relatively recent.  As usual, GPS takes precedence.
+		// it's a GPS fix.  Network fixes are somewhat unreliable in terms of
+		// time, making it somewhat often that it'll come up with a bogus
+		// location once 
 		Location lastKnown = mManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 		if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
 			updateInfo(lastKnown);
-		} else {
-			lastKnown = mManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-			if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
-				updateInfo(lastKnown);
-			}
 		}
 		
 		// The actual updates are requested at onResume.
@@ -126,6 +135,9 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		
 		// Stop getting location updates.
 		mManager.removeUpdates(this);
+		
+		// SLEEEEEEEP!
+		mWakeLock.release();
 	}
 
 	/* (non-Javadoc)
@@ -142,6 +154,9 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
     	for(String s : providers) {
     		mManager.requestLocationUpdates(s, 0, 0, this);
     	}
+    	
+    	// Don't sleeeeeeep!
+    	mWakeLock.acquire();
 	}
 
 	@Override
