@@ -65,12 +65,12 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		
 		// Get me a wakelock!  Since we're dealing with something the
 		// user might want to take pictures of outside the phone, this
-                // one keeps the screen bright at all times, hence why we don't
-                // just try to keep the same lock from MainMap.
+		// one keeps the screen bright at all times, hence why we don't
+		// just try to keep the same lock from MainMap.
 		PowerManager pl = (PowerManager)getSystemService(Context.POWER_SERVICE);
 		mWakeLock = pl.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK 
 				| PowerManager.ACQUIRE_CAUSES_WAKEUP
-                                | PowerManager.ON_AFTER_RELEASE,
+				| PowerManager.ON_AFTER_RELEASE,
 				DEBUG_TAG);
 
 		// Get us some info!
@@ -103,6 +103,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		// time, making it somewhat often that it'll come up with a bogus
 		// location once 
 		Location lastKnown = mManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		
 		if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
 			updateInfo(lastKnown);
 		}
@@ -150,16 +151,16 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	protected void onResume() {
 		super.onResume();
 		
-    	// See what's open.
-    	List<String> providers = mManager.getProviders(true);
+		// See what's open.
+		List<String> providers = mManager.getProviders(true);
 
-    	// Now, register all providers and get us going!
-    	for(String s : providers) {
-    		mManager.requestLocationUpdates(s, 0, 0, this);
-    	}
-    	
-    	// Don't sleeeeeeep!
-    	mWakeLock.acquire();
+		// Now, register all providers and get us going!
+		for(String s : providers) {
+			mManager.requestLocationUpdates(s, 0, 0, this);
+		}
+		
+		// Don't sleeeeeeep!
+		mWakeLock.acquire();
 	}
 
 	@Override
@@ -193,7 +194,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// If GPS goes down, flip our good friend, the boolean.
 		if(provider.equals(LocationManager.GPS_PROVIDER) && status != LocationProvider.AVAILABLE)
-			mIsGPSActive = true;
+			mIsGPSActive = false;
 	}
 	
 	private void updateInfo(Location loc) {
