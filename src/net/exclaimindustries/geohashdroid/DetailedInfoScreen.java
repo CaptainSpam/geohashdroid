@@ -106,6 +106,11 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		
 		if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
 			updateInfo(lastKnown);
+        } else {
+            lastKnown = mManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
+                    updateInfo(lastKnown);
+            }
 		}
 		
 		// The actual updates are requested at onResume.
