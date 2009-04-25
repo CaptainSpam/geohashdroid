@@ -77,7 +77,7 @@
 <string name="details_you">You</string>
 <string name="details_dist">Distance:</string>
 <!-- Remember to enclose this in parentheses! -->
-<string name="details_accuracy">Accurate to </string>
+<string name="details_accuracy">Accurate to</string>
 
 <string name="hint_lat">Lat</string>
 <string name="hint_lon">Lon</string>

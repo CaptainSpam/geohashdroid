@@ -52,6 +52,8 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	protected static final DecimalFormat LAT_LON_FORMAT = new DecimalFormat("###.00000000");
 	/** The decimal format for distances. */
 	protected static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");
+	/** The decimal format for accuracy. */
+	protected static final DecimalFormat ACCURACY_FORMAT = new DecimalFormat("###.##");
 
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -224,7 +226,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 			tv = (TextView)findViewById(R.id.Distance);
 			tv.setText(DistanceConverter.makeDistanceString(this, DIST_FORMAT, mInfo.getDistanceInMeters(loc)));
 			tv = (TextView)findViewById(R.id.Accuracy);
-			tv.setText("(" + getResources().getString(R.string.details_accuracy) + DistanceConverter.makeDistanceString(this, DIST_FORMAT, loc.getAccuracy()) + ")");
+			tv.setText("(" + getResources().getString(R.string.details_accuracy) + " " + DistanceConverter.makeDistanceString(this, ACCURACY_FORMAT, loc.getAccuracy()) + ")");
 		}
 		
 	}
