@@ -189,12 +189,12 @@ public class MainMap extends MapActivity {
 			
 			try {
 				// If any of this fails, we fall back to mDestination.
-				float lat = icicle.getFloat(CENTERLAT);
-				float lon = icicle.getFloat(CENTERLON);
+				int lat = icicle.getInt(CENTERLAT);
+				int lon = icicle.getInt(CENTERLON);
 				int zoom = icicle.getInt(ZOOM);
 				
 				mcontrol.setZoom(zoom);
-				mcontrol.setCenter(new GeoPoint((int)(lat * 1000000), (int)(lon * 1000000)));
+				mcontrol.setCenter(new GeoPoint(lat, lon));
 			} catch (Exception e) {
 				// We failed to re-center (somehow the bundle was defined with
 				// the HashMaker but without centering data), so just center
@@ -285,8 +285,8 @@ public class MainMap extends MapActivity {
 		// need to worry about making sure mMyLocation is stopped.  First, put
 		// the center in so that we know where to look when we come back.
 		GeoPoint center = mMapView.getMapCenter();
-		outState.putFloat(CENTERLAT, (float)(center.getLatitudeE6()) / 1000000f);
-		outState.putFloat(CENTERLON, (float)(center.getLongitudeE6()) / 1000000f);
+		outState.putInt(CENTERLAT, center.getLatitudeE6());
+		outState.putInt(CENTERLON, center.getLongitudeE6());
 		
 		// Stash the old orientation.  I'm not at all sure if this will be
 		// useful.  I had a plan for it a bit ago, but that didn't work out
