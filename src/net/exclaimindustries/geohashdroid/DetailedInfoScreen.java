@@ -105,21 +105,6 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		// whole shebang now.
 		mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		
-		// Populate the location with the last known data, if we had any AND
-		// it's a GPS fix.  Network fixes are somewhat unreliable in terms of
-		// time, making it somewhat often that it'll come up with a bogus
-		// location once 
-		Location lastKnown = mManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-		
-		if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
-			updateInfo(lastKnown);
-        } else {
-            lastKnown = mManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
-                    updateInfo(lastKnown);
-            }
-		}
-		
 		// The actual updates are requested at onResume.
 		
 		// And make sure we quit when told.
@@ -191,6 +176,22 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	protected void onResume() {
 		super.onResume();
 		
+		// Don't sleeeeeeep!
+		mWakeLock.acquire();
+		
+		// Populate the location with the last known data, if it's no older
+		// than two minutes, GPS taking precedence.
+		Location lastKnown = mManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		
+		if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
+			updateInfo(lastKnown);
+        } else {
+            lastKnown = mManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            if(lastKnown != null && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
+                    updateInfo(lastKnown);
+            }
+		}
+		
 		// See what's open.
 		List<String> providers = mManager.getProviders(true);
 
@@ -198,9 +199,6 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		for(String s : providers) {
 			mManager.requestLocationUpdates(s, 0, 0, this);
 		}
-		
-		// Don't sleeeeeeep!
-		mWakeLock.acquire();
 	}
 
 	@Override
