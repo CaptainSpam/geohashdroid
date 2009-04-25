@@ -32,6 +32,11 @@ public class MainMapInfoBoxView extends TextView {
 	protected DecimalFormat mLatLonFormat = new DecimalFormat("###.000");
 	/** The decimal format for distances. */
 	protected DecimalFormat mDistFormat = new DecimalFormat("###.###");
+	
+	/** Threshold for the "Accuracy Low" warning (currently 64m). **/
+	protected static final int LOW_ACCURACY_THRESHOLD = 64;
+	/** Threshold for the "Accuracy Really Low" warning (currently 200m). **/
+	protected static final int REALLY_LOW_ACCURACY_THRESHOLD = 200;
 
 	public MainMapInfoBoxView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -71,6 +76,8 @@ public class MainMapInfoBoxView extends TextView {
 		lastInfo = info;
 		lastLoc = loc;
 		
+		Context c = getContext();
+		
 		if(getVisibility() != View.VISIBLE) return;
 		
 		// Get the final destination.  We'll translate it to N/S and E/W
@@ -78,24 +85,39 @@ public class MainMapInfoBoxView extends TextView {
 		// decimal points.
 		
 		// The final destination coordinates
-		String finalLine = getContext().getString(R.string.infobox_final) + " "
+		String finalLine = c.getString(R.string.infobox_final) + " "
 			+ mLatLonFormat.format(Math.abs(info.getLatitude())) + (info.getLatitude() >= 0 ? 'N' : 'S') + " "
 			+ mLatLonFormat.format(Math.abs(info.getLongitude())) + (info.getLongitude() >= 0 ? 'E' : 'W');
 		
 		// Your current location coordinates
 		String youLine;
 		if(loc != null) {
-			youLine = getContext().getString(R.string.infobox_you) + " "
+			youLine = c.getString(R.string.infobox_you) + " "
 				+ (mLatLonFormat.format(Math.abs(loc.getLatitude()))) + (loc.getLatitude() >= 0 ? 'N' : 'S') + " "
 				+ (mLatLonFormat.format(Math.abs(loc.getLongitude()))) + (loc.getLongitude() >= 0 ? 'E' : 'W');
 		} else {
-			youLine = getContext().getString(R.string.infobox_you) + " " + getContext().getString(R.string.standby_title);
+			youLine = c.getString(R.string.infobox_you) + " " + c.getString(R.string.standby_title);
 		}
 		
 		// The distance to the final destination (as the crow flies)
-		String distanceLine = getContext().getString(R.string.infobox_dist) + " "
-			+ (loc != null ? (DistanceConverter.makeDistanceString(getContext(), mDistFormat, info.getDistanceInMeters(loc))) : getContext().getString(R.string.standby_title));
+		String distanceLine = c.getString(R.string.infobox_dist) + " "
+			+ (loc != null ? (DistanceConverter.makeDistanceString(c, mDistFormat, info.getDistanceInMeters(loc))) : c.getString(R.string.standby_title));
 		
-		setText(finalLine + "\n" + youLine + "\n" + distanceLine);
+		// Whether or not this is at all accurate.
+		String accuracyLine;
+		if(loc == null) {
+			accuracyLine = "";
+		} else {
+			float accuracy = loc.getAccuracy();
+			if(accuracy >= REALLY_LOW_ACCURACY_THRESHOLD) {
+				accuracyLine = "\n" + c.getString(R.string.infobox_accuracy_really_low);
+			} else if(accuracy >= LOW_ACCURACY_THRESHOLD) {
+				accuracyLine = "\n" + c.getString(R.string.infobox_accuracy_low);
+			} else {
+				accuracyLine = "";
+			}
+		}
+		
+		setText(finalLine + "\n" + youLine + "\n" + distanceLine + accuracyLine);
 	}
 }

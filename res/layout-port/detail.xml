@@ -57,14 +57,19 @@
 		<TextView android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:text="@string/details_dist"
 			android:layout_gravity="center_horizontal" android:id="@+id/DistanceLabel"
-			android:paddingRight="@dimen/details_distance_padding" android:textSize="@dimen/details_distance_fontsize"></TextView>
+			android:paddingRight="@dimen/details_distance_padding"
+			android:textSize="@dimen/details_distance_fontsize"></TextView>
 		<TextView android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:id="@+id/Distance"
 			android:text="@string/standby_title" android:textSize="@dimen/details_distance_fontsize"></TextView>
 	</LinearLayout>
+	<TextView android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+		android:textSize="@dimen/details_accuracy_fontsize" android:id="@+id/Accuracy"></TextView>
 	<Button android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
 		android:id="@+id/Okay" android:text="@string/backtomap_label"></Button>
+
 
 
 </LinearLayout>

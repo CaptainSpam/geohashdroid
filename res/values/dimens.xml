@@ -13,6 +13,8 @@
 <dimen name="details_subtitle_fontsize">14pt</dimen>
 <dimen name="details_coords_fontsize">12pt</dimen>
 <dimen name="details_distance_fontsize">10pt</dimen>
-<dimen name="details_padding">15px</dimen>
+<dimen name="details_accuracy_fontsize">6pt</dimen>
+<dimen name="details_padding">12px</dimen>
+<dimen name="details_padding_horiz">8px</dimen>
 <dimen name="details_distance_padding">10px</dimen>
 </resources>
