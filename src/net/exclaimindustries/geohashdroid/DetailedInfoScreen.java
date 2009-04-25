@@ -10,9 +10,6 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.List;
 
-import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapController;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -24,12 +21,10 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 /**
  * The <code>DetailedInfoScreen</code> displays, in detail, just where the user
@@ -166,7 +161,6 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 		}
 		return false;
 	}
-
 	
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
