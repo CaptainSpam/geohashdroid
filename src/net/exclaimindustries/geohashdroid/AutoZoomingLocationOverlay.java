@@ -12,7 +12,6 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
@@ -35,6 +34,7 @@ import com.google.android.maps.MyLocationOverlay;
 public class AutoZoomingLocationOverlay extends MyLocationOverlay {
 	private Handler mHandler;
 	private boolean mFirstFix = false;
+	
 	// This is set to true if we've recieved a GPS fix so we know to ignore any
 	// cell tower fixes insofar as handling is concerned.  This is reset to
 	// false if GPS is disabled for whatever reason, and starts out false so we
@@ -58,10 +58,16 @@ public class AutoZoomingLocationOverlay extends MyLocationOverlay {
 	 */
 	public static final int ORIENTATION_CHANGED = 2;
 	/**
-	 * Message indicating that this is the first location fix, and thus the
-	 * Normal View menu item should become active, if it wasn't before.
+	 * Message indicating that this is, in fact, the first location fix, and
+	 * thus the Normal View menu item should become active, if it wasn't 
+	 * before.
 	 */
 	public static final int FIRST_FIX = 3;
+	/**
+	 * Message indicating that the fix, in fact, has been lost.  In this case,
+	 * the handler should indicate a "Stand by..." sort of message.
+	 */
+	public static final int LOST_FIX = 4;
 	
 	public AutoZoomingLocationOverlay(Context context, MapView mapView) {
 		super(context, mapView);
@@ -108,7 +114,13 @@ public class AutoZoomingLocationOverlay extends MyLocationOverlay {
 	public synchronized void onLocationChanged(Location location) {
 		super.onLocationChanged(location);
 		
-		if(location == null) return;
+		// If the location is null, we've lost any fix we had before and should
+		// fall back to a "Stand by..." message.
+		if(location == null) {
+			Message mess = Message.obtain(mHandler,LOST_FIX);
+			mess.sendToTarget();
+			return;
+		}
 		
 		// First, set the fix flag if we need to.
 		if(location.getProvider().equals(android.location.LocationManager.GPS_PROVIDER))

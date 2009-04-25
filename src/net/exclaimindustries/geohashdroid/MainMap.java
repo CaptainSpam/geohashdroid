@@ -655,10 +655,13 @@ public class MainMap extends MapActivity {
 				
 				break;
 			case AutoZoomingLocationOverlay.FIRST_FIX:
-				// On the first fix, we reset the Normal View menu item.  Just
-				// in case it was up at the time.
+			case AutoZoomingLocationOverlay.LOST_FIX:
+				// On the first fix or a complete signal loss, we reset the
+				// Normal View menu item and populate the info box.  It works
+				// for both.
 				resetRecenterMenuItem();
 				populateInfoBox();
+				break;
 			}
 		}
 	}
