@@ -12,6 +12,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
@@ -106,6 +107,8 @@ public class AutoZoomingLocationOverlay extends MyLocationOverlay {
 	@Override
 	public synchronized void onLocationChanged(Location location) {
 		super.onLocationChanged(location);
+		
+		if(location == null) return;
 		
 		// First, set the fix flag if we need to.
 		if(location.getProvider().equals(android.location.LocationManager.GPS_PROVIDER))
