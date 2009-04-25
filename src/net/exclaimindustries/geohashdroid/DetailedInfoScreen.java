@@ -10,18 +10,26 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.List;
 
+import com.google.android.maps.GeoPoint;
+import com.google.android.maps.MapController;
+
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * The <code>DetailedInfoScreen</code> displays, in detail, just where the user
@@ -54,6 +62,8 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 	protected static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");
 	/** The decimal format for accuracy. */
 	protected static final DecimalFormat ACCURACY_FORMAT = new DecimalFormat("###.##");
+	
+	private static final int MENU_SETTINGS = 3;
 
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -128,6 +138,35 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 			
 		});
 	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		
+		MenuItem item;
+		
+		// The only thing we have in this menu is settings.  Simple.
+		item = menu.add(Menu.NONE, MENU_SETTINGS, 0, R.string.menu_item_settings);
+		item.setIcon(android.R.drawable.ic_menu_preferences);
+		
+		return true;
+	}
+	
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		super.onMenuItemSelected(featureId, item);
+		
+		switch(item.getItemId()) {
+		case MENU_SETTINGS:
+			{
+				// Pop up our settings window!
+				startActivity(new Intent(this, PreferenceEditScreen.class));
+				return true;
+			}		
+		}
+		return false;
+	}
+
 	
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
