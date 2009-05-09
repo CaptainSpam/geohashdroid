@@ -19,18 +19,20 @@ import android.view.LayoutInflater;
  */
 public class AboutDialog extends AlertDialog {
 
-	public AboutDialog(Context context) {
-		super(context);
-		create();
-	}
+    public AboutDialog(Context context) {
+        super(context);
+        create();
+    }
 
-	private void create() {
-		// We can't use setContextView on this (I don't think), so we need to
-		// inflate the layout ourselves.
-		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		
-		setView(inflater.inflate(R.layout.about, null));
-		setTitle(R.string.menu_item_about);
-		setButton(getContext().getResources().getString(R.string.ok_label), (Message)null);
-	}
+    private void create() {
+        // We can't use setContextView on this (I don't think), so we need to
+        // inflate the layout ourselves.
+        LayoutInflater inflater = (LayoutInflater)getContext()
+                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        setView(inflater.inflate(R.layout.about, null));
+        setTitle(R.string.menu_item_about);
+        setButton(getContext().getResources().getString(R.string.ok_label),
+                (Message)null);
+    }
 }

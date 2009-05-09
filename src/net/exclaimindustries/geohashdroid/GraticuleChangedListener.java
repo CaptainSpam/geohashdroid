@@ -13,5 +13,5 @@ package net.exclaimindustries.geohashdroid;
  * @author Nicholas Killewald
  */
 public interface GraticuleChangedListener {
-	public void graticuleUpdated(Graticule g);
+    public void graticuleUpdated(Graticule g);
 }

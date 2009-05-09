@@ -20,17 +20,16 @@ import android.preference.PreferenceManager;
  */
 public class PreferenceEditScreen extends PreferenceActivity {
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		
-		PreferenceManager manager = getPreferenceManager();
-		
-		manager.setSharedPreferencesName(GeohashDroid.PREFS_BASE);
-		
-		addPreferencesFromResource(R.xml.prefs);
-		
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-	}
+        PreferenceManager manager = getPreferenceManager();
+
+        manager.setSharedPreferencesName(GeohashDroid.PREFS_BASE);
+
+        addPreferencesFromResource(R.xml.prefs);
+
+    }
 
 }
