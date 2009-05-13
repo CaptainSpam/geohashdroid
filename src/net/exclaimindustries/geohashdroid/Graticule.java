@@ -205,7 +205,7 @@ public class Graticule implements Serializable {
 
         // Skip the following if latitude is unaffected.
         if (latOff != 0) {
-            if (g.isSouth == goingSouth) {
+            if (g.isSouth() == goingSouth) {
                 // Going the same direction, no equator-hacking needed.
                 finalLat = g.getLatitude() + latOff;
             } else {
@@ -220,7 +220,7 @@ public class Graticule implements Serializable {
         }
 
         if (lonOff != 0) {
-            if (g.isWest == goingWest) {
+            if (g.isWest() == goingWest) {
                 // Going the same direction, no Meridian-hacking needed.
                 finalLon = g.getLongitude() + lonOff;
             } else {
