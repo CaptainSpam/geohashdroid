@@ -16,11 +16,13 @@ import android.location.Location;
 /**
  * <p>
  * A <code>Graticule</code> represents, well, a graticule. A 1x1 square degree
- * space on the earth's surface. The very heart of Geohashing.
+ * space on the earth's surface. The very heart of Geohashing*.  The base
+ * implementation of a Graticule is designed to be immutable owing to a few odd
+ * things that happen around the equator and Prime Meridian.
  * </p>
  * 
  * <p>
- * Well, maybe not the heart. Maybe the kidneys.
+ * *: Well, maybe not the heart. At least the kidneys for sure.
  * </p>
  * 
  * @author Nicholas Killewald
@@ -71,14 +73,14 @@ public class Graticule implements Serializable {
     /**
      * <p>
      * Constructs a new Graticule with the given latitude and longitude. Note
-     * that this will try to correct invalid values by assuming you want to wrap
-     * around the earth.
+     * that values that shoot around the planet will be clamped to 89 degrees
+     * latitude and 179 degrees longitude (positive or negative).
      * </p>
      * 
      * <p>
      * With this constructor, you <b>MUST</b> specify if this is south or west
      * (that is, negative values). This is to account for the "negative zero"
-     * graticules, for those living on the prime meridian or equator, as you
+     * graticules, for those living on the Prime Meridian or equator, as you
      * can't very well input -0 as a Java int and have it distinct from 0.
      * </p>
      * 
@@ -105,15 +107,14 @@ public class Graticule implements Serializable {
     /**
      * <p>
      * Constructs a new Graticule with the given latitude and longitude as
-     * floats. This can thus make Graticules directly from GPS inputs. Note that
-     * this will try to correct invalid values by assuming you want to wrap
-     * around the earth only in that direction. For example, (95N, 75W) will
-     * become (85N, 75W).
+     * doubles. This can thus make Graticules directly from GPS inputs. Note
+     * that values that shoot around the planet will be clamped to 89 degrees
+     * latitude and 179 degrees longitude (positive or negative).
      * </p>
      * 
      * <p>
      * Negative values will be interpreted as south and west. Please don't use
-     * this if you're standing directly on the equator and/or prime meridian and
+     * this if you're standing directly on the equator and/or Prime Meridian and
      * GPS gives you a direct zero.
      * </p>
      * 
@@ -125,8 +126,12 @@ public class Graticule implements Serializable {
     public Graticule(double latitude, double longitude) {
         if (latitude < 0)
             mSouth = true;
+        else
+            mSouth = false;
         if (longitude < 0)
             mWest = true;
+        else
+            mWest = false;
         this.setLatitude(Math.abs((int)latitude));
         this.setLongitude(Math.abs((int)longitude));
     }
@@ -148,10 +153,89 @@ public class Graticule implements Serializable {
             throws NullPointerException, NumberFormatException {
         if (latitude.charAt(0) == '-')
             mSouth = true;
+        else
+            mSouth = false;
         if (longitude.charAt(0) == '-')
             mWest = true;
+        else
+            mWest = false;
         this.setLatitude(Math.abs(new Integer(latitude)));
         this.setLongitude(Math.abs(new Integer(longitude)));
+    }
+
+    /**
+     * <p>
+     * Constructs a new Graticule offset from an existing one.  That is to say,
+     * copy an existing Graticule and move it by however many degrees as is
+     * specified.  Under the current implementation, if this gets offset past
+     * the edges of the earth, it will clamp to 89 degrees latitude and 179
+     * degrees longitude (positive or negative).
+     * </p>
+     *
+     * <p>
+     * Note carefully that moving one degree west of zero longitude will go to
+     * "negative zero" longitude.  Same with latitude.  There is a distinction.
+     * Therefore, be very careful when crossing the Prime Meridian and/or the
+     * equator.
+     * </p>
+     *
+     * @param g
+     *            Graticule to copy
+     * @param latOff
+     *            number of degrees north to offset (negative is south)
+     * @param lonOff
+     *            number of degrees east to offset (negative is west)
+     * @return
+     *             a brand spakin' new Graticule, offset as per suggestion
+     */
+    public static Graticule createOffsetFrom(Graticule g, int latOff, int lonOff) {
+        // We already have all the data we need from the old Graticule.  But,
+        // we need to account for passing through the Prime Meridian and/or
+        // equator.  If the sign changes, decrement the amount of the change by
+        // one.  This logic is gratiutously loopy.
+        boolean goingSouth = (latOff < 0);
+        boolean goingWest = (lonOff < 0);
+        latOff = Math.abs(latOff);
+        lonOff = Math.abs(lonOff);
+
+        int finalLat = g.getLatitude();
+        int finalLon = g.getLongitude();
+        boolean finalSouth = g.isSouth();
+        boolean finalWest = g.isWest();
+
+        // Skip the following if latitude is unaffected.
+        if (latOff != 0) {
+            if (g.isSouth == goingSouth) {
+                // Going the same direction, no equator-hacking needed.
+                finalLat = g.getLatitude() + latOff;
+            } else {
+                // Going opposite directions, check for equator-hacking.
+                if (g.getLatitude() < latOff) {
+                    // We cross the equator!
+                    latOff--;
+                    finalSouth = !finalSouth;
+                }
+                finalLat = Math.abs(g.getLatitude() - latOff);
+            }
+        }
+
+        if (lonOff != 0) {
+            if (g.isWest == goingWest) {
+                // Going the same direction, no Meridian-hacking needed.
+                finalLon = g.getLongitude() + lonOff;
+            } else {
+                // Going opposite directions, check for Meridian-hacking.
+                if (g.getLongitude() < lonOff) {
+                    // We cross the Prime Meridian!
+                    lonOff--;
+                    finalWest = !finalWest;
+                }
+                finalLon = Math.abs(g.getLongitude() - lonOff);
+            }
+        }
+
+        // Now make the new Graticule object and return it.
+        return new Graticule(finalLat, finalSouth, finalLon, finalWest);
     }
 
     /**
@@ -166,32 +250,10 @@ public class Graticule implements Serializable {
     }
 
     private void setLatitude(int latitude) {
-        // We want to translate invalid entries to best guesses. To that end,
-        // we assume that shooting off one end just wraps to the other side (so
-        // an input of 100 will result in 80, and -100 will result in -80).
-
-        // If this is less than 90, save it as-is. This MUST be unsigned as
-        // per the constructor.
-        if (latitude > 90) {
-            // If true, swap the south flag.
-            boolean endsUpNegative = false;
-
-            if ((latitude / 180) % 2 == 0) {
-                // Even number of rotations, this will wind up negative.
-                endsUpNegative = true;
-            }
-
-            if ((latitude / 90) % 2 == 1) {
-                // If odd, we subtract the modulo from 90 to get the base.
-                latitude = (90 - latitude % 90);
-            } else {
-                // If even, the base is the modulo from 90.
-                latitude %= 90;
-            }
-
-            if (!endsUpNegative)
-                mSouth = !mSouth;
-        }
+        // Work out invalid entries by clamping 'em down.
+        if (latitude > 89)
+            latitude = 89;
+        
         this.mLatitude = latitude;
     }
 
@@ -220,30 +282,11 @@ public class Graticule implements Serializable {
     }
 
     private void setLongitude(int longitude) {
-        // We also want to translate this to best guesses. Problem being, we
-        // don't just wrap back and forth like with latitude. If we shoot off
-        // the negative axis, -180 immediately becomes 179 (note: positive),
-        // and similar with the positive axis (180 becomes -179).
-        if (longitude > 180) {
-            // Mash it down to what it should be. We're assuming a full 360-
-            // degree earth, so we offset the value. I have a whiteboard full
-            // of probably unnecessary equations that shows this.
-            longitude = ((longitude + 180) % 360 - 180);
-
-            // If we wound up negative, flip the sign.
-            if (longitude < 0) {
-                mWest = !mWest;
-                longitude = Math.abs(longitude);
-            }
-        }
-
-        // Note that for graticule purposes, 180 and -180 are completely
-        // invalid. In those cases, we'll just call them 179 and -179,
-        // respectively.
-        if (longitude == 180)
-            this.mLongitude = 179;
-        else
-            this.mLongitude = longitude;
+        // Clamp!  Clamp!  Clamp!
+        if (longitude > 179)
+            longitude = 179;
+       
+        this.mLongitude = longitude;
     }
 
     /**
