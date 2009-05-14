@@ -49,10 +49,14 @@
 <string name="pref_infobox_summary">Size of the main map infobox</string>
 <string name="pref_infobox_dialogtitle">Select infobox size</string>
 <string name="pref_infobox_key">InfoBoxSize</string>
-<string name="pref_units_title">Units</string>
+<string name="pref_units_title">Measurement units</string>
 <string name="pref_units_summary">Units used in distance calculations</string>
 <string name="pref_units_key">Units</string>
 <string name="pref_units_dialogtitle">Select units</string>
+<string name="pref_coordunits_title">Coordinate units</string>
+<string name="pref_coordunits_summary">Units used in coordinate readouts</string>
+<string name="pref_coordunits_key">CoordUnits</string>
+<string name="pref_coordunits_dialogtitle">Select units</string>
 <string name="pref_cat_map">Map options</string>
 <string name="pref_cat_other">Other options</string>
 

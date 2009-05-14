@@ -8,6 +8,16 @@
         <item>Metric</item>
         <item>Imperial</item>
     </string-array>
+    <string-array name="pref_coordunits_entries">
+    	<item>Degrees (38.03992°N)</item>
+    	<item>Minutes (38° 2.3952′N)</item>
+    	<item>Seconds (38° 2′ 23.712″N)</item>
+    </string-array>
+    <string-array name="pref_coordunits_values">
+    	<item>Degrees</item>
+    	<item>Minutes</item>
+    	<item>Seconds</item>
+    </string-array>    
     <string-array name="pref_infobox_entries">
     	<item>None</item>
     	<item>Small</item>
