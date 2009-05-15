@@ -14,6 +14,11 @@
 			android:defaultValue="Metric" android:persistent="true"
 			android:entries="@array/pref_units_entries" android:entryValues="@array/pref_units_values"
 			android:dialogTitle="@string/pref_units_dialogtitle" />
+		<ListPreference android:key="@string/pref_coordunits_key"
+			android:summary="@string/pref_coordunits_summary" android:title="@string/pref_coordunits_title"
+			android:defaultValue="Degrees" android:persistent="true"
+			android:entries="@array/pref_coordunits_entries" android:entryValues="@array/pref_coordunits_values"
+			android:dialogTitle="@string/pref_coordunits_dialogtitle" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
 		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"
