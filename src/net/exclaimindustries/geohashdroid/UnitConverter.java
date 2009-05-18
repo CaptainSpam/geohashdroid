@@ -17,7 +17,7 @@ import android.content.SharedPreferences;
  * 
  * @author Nicholas Killewald
  */
-public class DistanceConverter {
+public class UnitConverter {
     /** The number of feet per meter. */
     public static final double FEET_PER_METER = 3.2808399;
     /** The number of feet per mile. */

@@ -113,7 +113,7 @@ public class MainMapInfoBoxView extends TextView {
         // The distance to the final destination (as the crow flies)
         String distanceLine = c.getString(R.string.infobox_dist)
                 + " "
-                + (loc != null ? (DistanceConverter.makeDistanceString(c,
+                + (loc != null ? (UnitConverter.makeDistanceString(c,
                         mDistFormat, info.getDistanceInMeters(loc))) : c
                         .getString(R.string.standby_title));
 

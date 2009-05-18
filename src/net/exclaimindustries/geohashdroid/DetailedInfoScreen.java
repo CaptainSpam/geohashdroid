@@ -270,13 +270,13 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
             tv = (TextView)findViewById(R.id.YouLon);
             tv.setText(makeLongitude(loc));
             tv = (TextView)findViewById(R.id.Distance);
-            tv.setText(DistanceConverter.makeDistanceString(this, DIST_FORMAT,
+            tv.setText(UnitConverter.makeDistanceString(this, DIST_FORMAT,
                     mInfo.getDistanceInMeters(loc)));
             tv = (TextView)findViewById(R.id.Accuracy);
             tv.setText("("
                     + getResources().getString(R.string.details_accuracy)
                     + " "
-                    + DistanceConverter.makeDistanceString(this,
+                    + UnitConverter.makeDistanceString(this,
                             ACCURACY_FORMAT, loc.getAccuracy()) + ")");
         }
 
