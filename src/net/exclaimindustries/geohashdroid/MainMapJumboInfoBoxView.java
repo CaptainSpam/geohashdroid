@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 import android.content.Context;
 import android.location.Location;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.View;
 
 /**
@@ -76,27 +77,36 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
             return;
         
         // Because the minutes and seconds readouts are MUCH longer than that of
-        // degrees, we need to use short form for them.
-        boolean useLongForm = false;
+        // degrees, we need to use short form for them, AND reduce the font
+        // size just a bit.
+        int format = UnitConverter.OUTPUT_SHORT;
+        String pref = UnitConverter.getCoordUnitPreference(c);
         
-        if(UnitConverter.getCoordUnitPreference(c).equals("Degrees"))
-            useLongForm = true;
-
+        if(pref.equals("Degrees"))
+            format = UnitConverter.OUTPUT_LONG;
+        else
+            format = UnitConverter.OUTPUT_SHORT;
+        
+        if(pref.equals("Seconds"))
+            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        else
+            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+                
         // Get the final destination. We'll translate it to N/S and E/W
         // instead of positive/negative. We'll also narrow it down to three
         // decimal points.
 
         // The final destination coordinates
         String finalLine = c.getString(R.string.infobox_final) + " "
-                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, useLongForm) + " "
-                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, useLongForm);
+                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, format) + " "
+                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, format);
 
         // Your current location coordinates
         String youLine;
         if (loc != null) {
             youLine = c.getString(R.string.infobox_you) + " "
-                    + UnitConverter.makeLatitudeCoordinateString(c, loc.getLatitude(), false, useLongForm) + " "
-                    + UnitConverter.makeLongitudeCoordinateString(c, loc.getLongitude(), false, useLongForm);
+                    + UnitConverter.makeLatitudeCoordinateString(c, loc.getLatitude(), false, format) + " "
+                    + UnitConverter.makeLongitudeCoordinateString(c, loc.getLongitude(), false, format);
         } else {
             youLine = c.getString(R.string.infobox_you) + " "
                     + c.getString(R.string.standby_title);

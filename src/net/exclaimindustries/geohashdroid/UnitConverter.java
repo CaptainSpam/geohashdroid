@@ -24,8 +24,16 @@ public class UnitConverter {
     /** The number of feet per mile. */
     public static final int FEET_PER_MILE = 5280;
     
+    /** Output should be short, with fewer decimal places. */
+    public static final int OUTPUT_SHORT = 0;
+    /** Output should be long, with more decimal places. */
+    public static final int OUTPUT_LONG = 1;
+    /** Output should be even longer, with even more decimal places. */
+    public static final int OUTPUT_DETAILED = 2;
+    
     protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("###.000");
-    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.000000");
+    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.00000");
+    protected static final DecimalFormat DETAIL_FORMAT = new DecimalFormat("###.00000000");
 
     /**
      * Perform a distance conversion. This will attempt to get whatever
@@ -83,15 +91,15 @@ public class UnitConverter {
      *            Location to calculate
      * @param useNegative
      *            true to use positive/negative values, false to use N/S or E/W
-     * @param longForm
-     *            use more decimal places
+     * @param format
+     *            specify the output format using one of the OUTPUT_ statics
      * @return
      *             a string form of the coordinates given
      */
     public static String makeFullCoordinateString(Context c, Location l,
-            boolean useNegative, boolean longForm) {
-        return makeLatitudeCoordinateString(c, l.getLatitude(), useNegative, longForm) + " "
-            + makeLongitudeCoordinateString(c, l.getLongitude(), useNegative, longForm);
+            boolean useNegative, int format) {
+        return makeLatitudeCoordinateString(c, l.getLatitude(), useNegative, format) + " "
+            + makeLongitudeCoordinateString(c, l.getLongitude(), useNegative, format);
     }
     
     /**
@@ -103,13 +111,13 @@ public class UnitConverter {
      *            Latitude to calculate
      * @param useNegative
      *            true to use positive/negative values, false to use N/S
-     * @param longForm
-     *            use more decimal places
+     * @param format
+     *            specify the output format using one of the OUTPUT_ statics
      * @return
      *             a string form of the latitude of the coordinates given
      */
     public static String makeLatitudeCoordinateString(Context c, double lat,
-            boolean useNegative, boolean longForm) {
+            boolean useNegative, int format) {
         String units = getCoordUnitPreference(c);
         
         // Keep track of whether or not this is negative.  We'll attach the
@@ -120,7 +128,7 @@ public class UnitConverter {
         double rawCoord = Math.abs(lat);
         String coord;
         
-        coord = makeCoordinateString(units, rawCoord, longForm);
+        coord = makeCoordinateString(units, rawCoord, format);
         
         // Now, attach negative or suffix, as need be.
         if(useNegative) {
@@ -145,13 +153,13 @@ public class UnitConverter {
      *            Longitude to calculate
      * @param useNegative
      *            true to use positive/negative values, false to use E/W
-     * @param longForm
-     *            use more decimal places
+     * @param format
+     *            specify the output format using one of the OUTPUT_ statics
      * @return
      *             a string form of the longitude of the coordinates given
      */
     public static String makeLongitudeCoordinateString(Context c, double lon,
-            boolean useNegative, boolean longForm) {
+            boolean useNegative, int format) {
         String units = getCoordUnitPreference(c);
         
         // Keep track of whether or not this is negative.  We'll attach the
@@ -162,7 +170,7 @@ public class UnitConverter {
         double rawCoord = Math.abs(lon);
         String coord;
         
-        coord = makeCoordinateString(units, rawCoord, longForm);
+        coord = makeCoordinateString(units, rawCoord, format);
         
         // Now, attach negative or suffix, as need be.
         if(useNegative) {
@@ -178,33 +186,45 @@ public class UnitConverter {
         }
     }
     
-    private static String makeCoordinateString(String units, double coord, boolean longForm) {
+    private static String makeCoordinateString(String units, double coord, int format) {
         // Just does the generic coordinate conversion stuff for coordinates.
         if(units.equals("Degrees")) {
             // Easy case: Use the result Location gives us, modified by the
             // longForm boolean.
-            if(longForm) 
-                return LONG_FORMAT.format(coord) + "\u00b0";
-            else
-                return SHORT_FORMAT.format(coord) + "\u00b0";
+            switch(format) {
+                case OUTPUT_SHORT:
+                    return SHORT_FORMAT.format(coord) + "\u00b0";
+                case OUTPUT_LONG:
+                    return LONG_FORMAT.format(coord) + "\u00b0";
+                default:
+                    return DETAIL_FORMAT.format(coord) + "\u00b0";
+            }
         } else if(units.equals("Minutes")) {
             // Harder case 1: Minutes.
             String temp = Location.convert(coord, Location.FORMAT_MINUTES);
             String[] split = temp.split(":");
             
-            if(longForm)
-                return split[0] + "\u00b0" + split[1] + "\u2032";
-            else
-                return split[0] + "\u00b0" + split[1].substring(0, 5) + "\u2032";
+            switch(format) {
+                case OUTPUT_SHORT:
+                    return split[0] + "\u00b0" + split[1].substring(0, 5) + "\u2032";
+                case OUTPUT_LONG:
+                    return split[0] + "\u00b0" + split[1].substring(0, 7) + "\u2032";
+                default:
+                    return split[0] + "\u00b0" + split[1]+ "\u2032";
+            }
         } else if(units.equals("Seconds")) {
             // Harder case 2: Seconds.
             String temp = Location.convert(coord, Location.FORMAT_SECONDS);
             String[] split = temp.split(":");
             
-            if(longForm)
-                return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
-            else
-                return split[0] + "\u00b0" + split[1] + "\u2032" + split[2].substring(0, 5) + "\u2033";
+            switch(format) {
+                case OUTPUT_SHORT:
+                    return split[0] + "\u00b0" + split[1] + "\u2032" + split[2].substring(0, 5) + "\u2033";
+                case OUTPUT_LONG:
+                    return split[0] + "\u00b0" + split[1] + "\u2032" + split[2].substring(0, 7) + "\u2033";
+                default:
+                    return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
+            }
         } else {
             return "???";
         }

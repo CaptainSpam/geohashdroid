@@ -92,15 +92,15 @@ public class MainMapInfoBoxView extends TextView {
 
         // The final destination coordinates
         String finalLine = c.getString(R.string.infobox_final) + " "
-                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, false) + " "
-                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, false);
+                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, UnitConverter.OUTPUT_SHORT) + " "
+                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, UnitConverter.OUTPUT_SHORT);
 
         // Your current location coordinates
         String youLine;
         if (loc != null) {
             youLine = c.getString(R.string.infobox_you) + " "
-                    + UnitConverter.makeLatitudeCoordinateString(c, loc.getLatitude(), false, false) + " "
-                    + UnitConverter.makeLongitudeCoordinateString(c, loc.getLongitude(), false, false);
+                    + UnitConverter.makeLatitudeCoordinateString(c, loc.getLatitude(), false, UnitConverter.OUTPUT_SHORT) + " "
+                    + UnitConverter.makeLongitudeCoordinateString(c, loc.getLongitude(), false, UnitConverter.OUTPUT_SHORT);
         } else {
             youLine = c.getString(R.string.infobox_you) + " "
                     + c.getString(R.string.standby_title);
