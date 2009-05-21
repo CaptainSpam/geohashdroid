@@ -86,9 +86,11 @@ public class GraticuleMapInfoBoxView extends TextView {
             setText(getContext().getString(R.string.graticule_label)
                     + " "
                     + grat.getLatitude()
+                    + "\u00b0"
                     + (grat.isSouth() ? 'S' : 'N')
                     + " "
                     + grat.getLongitude()
+                    + "\u00b0"
                     + (grat.isWest() ? 'W' : 'E')
                     + (grat.uses30WRule() ? "\n"
                             + getContext().getString(R.string.infobox_30w) : ""));
