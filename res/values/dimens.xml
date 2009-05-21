@@ -3,7 +3,7 @@
 
 <dimen name="button_go_width">100px</dimen>
 <dimen name="button_go_height">40px</dimen>
-<dimen name="infobox_width">200px</dimen>
+<dimen name="infobox_width">160px</dimen>
 <dimen name="infobox_height">100px</dimen>
 <dimen name="infobox_padding">5px</dimen>
 
