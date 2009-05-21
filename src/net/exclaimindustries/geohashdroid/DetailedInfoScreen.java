@@ -100,10 +100,10 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 
         // The final destination.
         tv = (TextView)findViewById(R.id.DestLat);
-        tv.setText(makeLatitude(mInfo.getFinalLocation()));
+        tv.setText(UnitConverter.makeLatitudeCoordinateString(this, mInfo.getFinalLocation().getLatitude(), false, UnitConverter.OUTPUT_DETAILED);
 
         tv = (TextView)findViewById(R.id.DestLon);
-        tv.setText(makeLongitude(mInfo.getFinalLocation()));
+        tv.setText(UnitConverter.makeLongitudeCoordinateString(this, mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED);
 
         // Grab a LocationManager. None of this specialized one-shot nonsense
         // like with the main GeohashDroid class. Nuh-uh. We're reading the
@@ -266,9 +266,9 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
             tv.setText("");
         } else {
             TextView tv = (TextView)findViewById(R.id.YouLat);
-            tv.setText(makeLatitude(loc));
+            tv.setText(UnitConverter.makeLatitudeCoordinateString(this, loc.getLatitude(), false, UnitConverter.OUTPUT_DETAILED);
             tv = (TextView)findViewById(R.id.YouLon);
-            tv.setText(makeLongitude(loc));
+            tv.setText(UnitConverter.makeLongitudeCoordinateString(this, loc.getLongitude(), false, UnitConverter.OUTPUT_DETAILED);
             tv = (TextView)findViewById(R.id.Distance);
             tv.setText(UnitConverter.makeDistanceString(this, DIST_FORMAT,
                     mInfo.getDistanceInMeters(loc)));
@@ -282,16 +282,4 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 
     }
 
-    private String makeLatitude(Location loc) {
-        // This builds up a latitude string, including a degree symbol and an
-        // N/S suffix.
-        return LAT_LON_FORMAT.format(Math.abs(loc.getLatitude())) + "\u00b0"
-                + (loc.getLatitude() > 0 ? "N" : "S");
-    }
-
-    private String makeLongitude(Location loc) {
-        // Same as before, just with longitude. And, well, E/W.
-        return LAT_LON_FORMAT.format(Math.abs(loc.getLongitude())) + "\u00b0"
-                + (loc.getLongitude() > 0 ? "E" : "W");
-    }
 }
