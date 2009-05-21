@@ -210,7 +210,13 @@ public class UnitConverter {
         }
     }
     
-    private static String getCoordUnitPreference(Context c) {
+    /**
+     * Grab the current coordinate unit preference.
+     * 
+     * @param c Context from whence the preferences arise
+     * @return "Degrees", "Minutes", or "Seconds"
+     */
+    public static String getCoordUnitPreference(Context c) {
         // Units GO!!!
         SharedPreferences prefs = c.getSharedPreferences(
                 GeohashDroid.PREFS_BASE, 0);

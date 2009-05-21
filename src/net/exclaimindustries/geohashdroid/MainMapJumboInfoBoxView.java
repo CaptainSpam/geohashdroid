@@ -74,6 +74,13 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
 
         if (getVisibility() != View.VISIBLE)
             return;
+        
+        // Because the minutes and seconds readouts are MUCH longer than that of
+        // degrees, we need to use short form for them.
+        boolean useLongForm = false;
+        
+        if(UnitConverter.getCoordUnitPreference(c).equals("Degrees"))
+            useLongForm = true;
 
         // Get the final destination. We'll translate it to N/S and E/W
         // instead of positive/negative. We'll also narrow it down to three
@@ -81,19 +88,15 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
 
         // The final destination coordinates
         String finalLine = c.getString(R.string.infobox_final) + " "
-                + mLatLonFormat.format(Math.abs(info.getLatitude()))
-                + (info.getLatitude() >= 0 ? 'N' : 'S') + " "
-                + mLatLonFormat.format(Math.abs(info.getLongitude()))
-                + (info.getLongitude() >= 0 ? 'E' : 'W');
+                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, useLongForm) + " "
+                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, useLongForm);
 
         // Your current location coordinates
         String youLine;
         if (loc != null) {
             youLine = c.getString(R.string.infobox_you) + " "
-                    + (mLatLonFormat.format(Math.abs(loc.getLatitude())))
-                    + (loc.getLatitude() >= 0 ? 'N' : 'S') + " "
-                    + (mLatLonFormat.format(Math.abs(loc.getLongitude())))
-                    + (loc.getLongitude() >= 0 ? 'E' : 'W');
+                    + UnitConverter.makeLatitudeCoordinateString(c, loc.getLatitude(), false, useLongForm) + " "
+                    + UnitConverter.makeLongitudeCoordinateString(c, loc.getLongitude(), false, useLongForm);
         } else {
             youLine = c.getString(R.string.infobox_you) + " "
                     + c.getString(R.string.standby_title);
