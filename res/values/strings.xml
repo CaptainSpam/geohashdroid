@@ -49,7 +49,7 @@
 <string name="pref_infobox_summary">Size of the main map infobox</string>
 <string name="pref_infobox_dialogtitle">Select infobox size</string>
 <string name="pref_infobox_key">InfoBoxSize</string>
-<string name="pref_units_title">Measurement units</string>
+<string name="pref_units_title">Distance units</string>
 <string name="pref_units_summary">Units used in distance calculations</string>
 <string name="pref_units_key">Units</string>
 <string name="pref_units_dialogtitle">Select units</string>

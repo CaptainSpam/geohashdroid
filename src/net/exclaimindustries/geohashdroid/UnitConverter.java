@@ -10,6 +10,7 @@ import java.text.DecimalFormat;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.location.Location;
 
 /**
  * This is a simple utility class which converts a distance output (in meters)
@@ -22,11 +23,14 @@ public class UnitConverter {
     public static final double FEET_PER_METER = 3.2808399;
     /** The number of feet per mile. */
     public static final int FEET_PER_MILE = 5280;
+    
+    protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("###.000");
+    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.000000");
 
     /**
-     * Do the actual conversion. This will attempt to get whatever preference is
-     * set for the job and, using the given DecimalFormat, convert it into a
-     * string, suitable for displaying.
+     * Perform a distance conversion. This will attempt to get whatever
+     * preference is set for the job and, using the given DecimalFormat, convert
+     * it into a string, suitable for displaying.
      * 
      * @param c
      *            the context from which to get the preferences
@@ -66,5 +70,151 @@ public class UnitConverter {
         } else {
             return units + "???";
         }
+    }
+    
+    /**
+     * Perform a coordinate conversion.  This will read in whatever preference
+     * is currently in play (degrees, minutes, seconds) and return a string with
+     * both latitude and longitude separated by a space.
+     * 
+     * @param c
+     *            Context from whence the preference comes
+     * @param l
+     *            Location to calculate
+     * @param useNegative
+     *            true to use positive/negative values, false to use N/S or E/W
+     * @param longForm
+     *            use more decimal places
+     * @return
+     *             a string form of the coordinates given
+     */
+    public static String makeFullCoordinateString(Context c, Location l,
+            boolean useNegative, boolean longForm) {
+        return makeLatitudeCoordinateString(c, l.getLatitude(), useNegative, longForm) + " "
+            + makeLongitudeCoordinateString(c, l.getLongitude(), useNegative, longForm);
+    }
+    
+    /**
+     * This is the latitude half of makeFullCoordinateString.
+     * 
+     * @param c
+     *            Context from whence the preference comes
+     * @param lat
+     *            Latitude to calculate
+     * @param useNegative
+     *            true to use positive/negative values, false to use N/S
+     * @param longForm
+     *            use more decimal places
+     * @return
+     *             a string form of the latitude of the coordinates given
+     */
+    public static String makeLatitudeCoordinateString(Context c, double lat,
+            boolean useNegative, boolean longForm) {
+        String units = getCoordUnitPreference(c);
+        
+        // Keep track of whether or not this is negative.  We'll attach the
+        // prefix or suffix later.
+        boolean isNegative = lat < 0;
+        // Make this absolute so we know we won't have to juggle negatives until
+        // we know what they'll wind up being.
+        double rawCoord = Math.abs(lat);
+        String coord;
+        
+        coord = makeCoordinateString(units, rawCoord, longForm);
+        
+        // Now, attach negative or suffix, as need be.
+        if(useNegative) {
+            if(isNegative)
+                return "-" + coord;
+            else
+                return coord;
+        } else {
+            if(isNegative)
+                return coord + "S";
+            else
+                return coord + "N";
+        }
+    }
+    
+    /**
+     * This is the longitude half of makeFullCoordinateString.
+     * 
+     * @param c
+     *            Context from whence the preference comes
+     * @param lon
+     *            Longitude to calculate
+     * @param useNegative
+     *            true to use positive/negative values, false to use E/W
+     * @param longForm
+     *            use more decimal places
+     * @return
+     *             a string form of the longitude of the coordinates given
+     */
+    public static String makeLongitudeCoordinateString(Context c, double lon,
+            boolean useNegative, boolean longForm) {
+        String units = getCoordUnitPreference(c);
+        
+        // Keep track of whether or not this is negative.  We'll attach the
+        // prefix or suffix later.
+        boolean isNegative = lon < 0;
+        // Make this absolute so we know we won't have to juggle negatives until
+        // we know what they'll wind up being.
+        double rawCoord = Math.abs(lon);
+        String coord;
+        
+        coord = makeCoordinateString(units, rawCoord, longForm);
+        
+        // Now, attach negative or suffix, as need be.
+        if(useNegative) {
+            if(isNegative)
+                return "-" + coord;
+            else
+                return coord;
+        } else {
+            if(isNegative)
+                return coord + "W";
+            else
+                return coord + "E";
+        }
+    }
+    
+    private static String makeCoordinateString(String units, double coord, boolean longForm) {
+        // Just does the generic coordinate conversion stuff for coordinates.
+        if(units.equals("Degrees")) {
+            // Easy case: Use the result Location gives us, modified by the
+            // longForm boolean.
+            if(longForm) 
+                return LONG_FORMAT.format(coord) + "\u00b0";
+            else
+                return SHORT_FORMAT.format(coord) + "\u00b0";
+        } else if(units.equals("Minutes")) {
+            // Harder case 1: Minutes.
+            String temp = Location.convert(coord, Location.FORMAT_MINUTES);
+            String[] split = temp.split(":");
+            
+            if(longForm)
+                return split[0] + "\u00b0" + split[1] + "\u2032";
+            else
+                return split[0] + "\u00b0" + split[1].substring(0, 5) + "\u2032";
+        } else if(units.equals("Seconds")) {
+            // Harder case 2: Seconds.
+            String temp = Location.convert(coord, Location.FORMAT_SECONDS);
+            String[] split = temp.split(":");
+            
+            if(longForm)
+                return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
+            else
+                return split[0] + "\u00b0" + split[1] + "\u2032" + split[2].substring(0, 5) + "\u2033";
+        } else {
+            return "???";
+        }
+    }
+    
+    private static String getCoordUnitPreference(Context c) {
+        // Units GO!!!
+        SharedPreferences prefs = c.getSharedPreferences(
+                GeohashDroid.PREFS_BASE, 0);
+        return prefs.getString(c.getResources().getString(
+                R.string.pref_coordunits_key), "Degrees");
     }
 }
