@@ -51,9 +51,6 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 
     private static final String DEBUG_TAG = "DetailedInfoScreen";
 
-    /** The decimal format for the coordinates. */
-    protected static final DecimalFormat LAT_LON_FORMAT = new DecimalFormat(
-            "###.00000000");
     /** The decimal format for distances. */
     protected static final DecimalFormat DIST_FORMAT = new DecimalFormat(
             "###.######");
@@ -62,6 +59,8 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
             "###.##");
 
     private static final int MENU_SETTINGS = 3;
+    
+    private Location lastLoc;
 
     /*
      * (non-Javadoc)
@@ -97,13 +96,6 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
         TextView tv = (TextView)findViewById(R.id.Date);
         tv.setText(DateFormat.getDateInstance(DateFormat.LONG).format(
                 mInfo.getCalendar().getTime()));
-
-        // The final destination.
-        tv = (TextView)findViewById(R.id.DestLat);
-        tv.setText(UnitConverter.makeLatitudeCoordinateString(this, mInfo.getFinalLocation().getLatitude(), false, UnitConverter.OUTPUT_DETAILED);
-
-        tv = (TextView)findViewById(R.id.DestLon);
-        tv.setText(UnitConverter.makeLongitudeCoordinateString(this, mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED);
 
         // Grab a LocationManager. None of this specialized one-shot nonsense
         // like with the main GeohashDroid class. Nuh-uh. We're reading the
@@ -187,22 +179,26 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 
         // Don't sleeeeeeep!
         mWakeLock.acquire();
+        
+        updateDest();
 
         // Populate the location with the last known data, if it's no older
         // than two minutes, GPS taking precedence.
-        Location lastKnown = mManager
+        Location lastKnownGPS = mManager
                 .getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location lastKnownTower = mManager
+                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
-        if (lastKnown != null
-                && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
-            updateInfo(lastKnown);
+        if (lastKnownGPS != null
+                && System.currentTimeMillis() - lastKnownGPS.getTime() < LOCATION_VALID_TIME) {
+            updateInfo(lastKnownGPS);
+        } else if (lastKnownTower != null
+                && System.currentTimeMillis() - lastKnownTower.getTime() < LOCATION_VALID_TIME) {
+            updateInfo(lastKnownTower);
         } else {
-            lastKnown = mManager
-                    .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (lastKnown != null
-                    && System.currentTimeMillis() - lastKnown.getTime() < LOCATION_VALID_TIME) {
-                updateInfo(lastKnown);
-            }
+            // If all else fails, just use whatever we last knew.  If that's
+            // null, well, so be it, we go to standby.
+            updateInfo(lastLoc);
         }
 
         // See what's open.
@@ -219,14 +215,18 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
         if (location.getProvider() != null
                 && location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
             // If this was a GPS fix, flip on our handy boolean and update!
+            lastLoc = location;
             mIsGPSActive = true;
             updateInfo(location);
         } else if (!mIsGPSActive) {
             // If this wasn't a GPS fix, but last we knew, GPS wasn't active
             // (or doesn't have a fix yet), update anyway.
+            lastLoc = location;
             updateInfo(location);
         }
-
+        // We don't update lastLoc otherwise.  If neither of those were true,
+        // that was an update from the cell towers when GPS was active, so we
+        // don't want to remember THAT.
     }
 
     @Override
@@ -249,6 +249,20 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
                 && status != LocationProvider.AVAILABLE)
             mIsGPSActive = false;
     }
+    
+    private void updateDest() {
+        // This is called during onResume, either on first run or when we get
+        // back from the preferences screen, possibly with a new coordinate
+        // format.
+        TextView tv;
+        
+        // The final destination.
+        tv = (TextView)findViewById(R.id.DestLat);
+        tv.setText(UnitConverter.makeLatitudeCoordinateString(this, mInfo.getFinalLocation().getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
+
+        tv = (TextView)findViewById(R.id.DestLon);
+        tv.setText(UnitConverter.makeLongitudeCoordinateString(this, mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
+    }
 
     private void updateInfo(Location loc) {
         // This updates the current location and distance info. Unless loc is
@@ -266,9 +280,9 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
             tv.setText("");
         } else {
             TextView tv = (TextView)findViewById(R.id.YouLat);
-            tv.setText(UnitConverter.makeLatitudeCoordinateString(this, loc.getLatitude(), false, UnitConverter.OUTPUT_DETAILED);
+            tv.setText(UnitConverter.makeLatitudeCoordinateString(this, loc.getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
             tv = (TextView)findViewById(R.id.YouLon);
-            tv.setText(UnitConverter.makeLongitudeCoordinateString(this, loc.getLongitude(), false, UnitConverter.OUTPUT_DETAILED);
+            tv.setText(UnitConverter.makeLongitudeCoordinateString(this, loc.getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
             tv = (TextView)findViewById(R.id.Distance);
             tv.setText(UnitConverter.makeDistanceString(this, DIST_FORMAT,
                     mInfo.getDistanceInMeters(loc)));
