@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="net.exclaimindustries.geohashdroid" android:versionCode="613" android:versionName="0.6.5-pre1">
+	package="net.exclaimindustries.geohashdroid" android:versionCode="614" android:versionName="0.6.5-pre2">
 	<uses-sdk android:minSdkVersion="2" />
 	<application android:icon="@drawable/icon" android:label="@string/app_name"
 		android:theme="@android:style/Theme.Light" android:description="@string/app_description" android:debuggable="true">
