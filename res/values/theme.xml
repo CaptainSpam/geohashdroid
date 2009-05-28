@@ -3,4 +3,7 @@
     <style name="Theme.NoBackground" parent="android:Theme">
         <item name="android:windowBackground">@null</item>
     </style>
+    <style name="Theme.NoBackground.NoTitleBar" parent="android:Theme.NoTitleBar">
+        <item name="android:windowBackground">@null</item>
+    </style>
 </resources>
