@@ -1,9 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
-    <style name="Theme.NoBackground" parent="android:Theme">
+    <style name="Theme.NoBackground" parent="android:Theme.Light">
         <item name="android:windowBackground">@null</item>
     </style>
-    <style name="Theme.NoBackground.NoTitleBar" parent="android:Theme.NoTitleBar">
+    
+    <style name="Theme.NoBackground.NoTitleBar" parent="android:Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@null</item>
-    </style>
+    </style>   
+    
+    <!--
+    	These are split between portrait and landscape due to the background
+    	being used.  This may be undone later.
+    -->
+    <style name="Theme.GeohashDroid.Portrait" parent="android:Theme.Light">
+    	<item name="android:windowBackground">@drawable/geohashdroid_bg_port</item>
+   	</style>
+   	
+   	<style name="Theme.GeohashDroid.Landscape" parent="android:Theme.Light">
+    	<item name="android:windowBackground">@drawable/geohashdroid_bg_land</item>
+   	</style>
+
 </resources>

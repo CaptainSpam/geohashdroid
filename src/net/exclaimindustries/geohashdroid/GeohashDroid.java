@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -51,7 +50,7 @@ import android.widget.ImageButton;
  * 
  * @author Nicholas Killewald
  */
-public class GeohashDroid extends Activity {
+public class GeohashDroid extends PlainActivity {
     // Top-level static strings; everything drags reference from here.
     public static final String PREFS_BASE = "GeohashDroid";
     public static final String DEFAULT_LAT = "DefaultLatitude";
