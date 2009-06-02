@@ -17,7 +17,7 @@
 		<LinearLayout android:layout_height="wrap_content"
 			android:id="@+id/LeftSide" android:layout_gravity="center_horizontal"
 			android:layout_weight="1" android:layout_width="fill_parent"
-			android:orientation="vertical" android:paddingBottom="@dimen/details_padding_horiz" android:paddingTop="@dimen/details_padding_horiz" android:paddingLeft="@dimen/details_padding" android:paddingRight="@dimen/details_padding">
+			android:orientation="vertical" android:paddingBottom="@dimen/details_padding_horiz" android:paddingLeft="@dimen/details_padding" android:paddingRight="@dimen/details_padding">
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/DestLabel"
 				android:gravity="center" android:textSize="@dimen/details_subtitle_fontsize"
@@ -36,7 +36,7 @@
 		<LinearLayout android:layout_height="wrap_content"
 			android:id="@+id/RightSide" android:layout_weight="1"
 			android:layout_width="fill_parent" android:orientation="vertical"
-			android:paddingLeft="@dimen/details_padding" android:paddingRight="@dimen/details_padding" android:paddingBottom="@dimen/details_padding_horiz" android:paddingTop="@dimen/details_padding_horiz">
+			android:paddingLeft="@dimen/details_padding" android:paddingRight="@dimen/details_padding" android:paddingBottom="@dimen/details_padding_horiz">
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/YouLabel"
 				android:gravity="center" android:textSize="@dimen/details_subtitle_fontsize"

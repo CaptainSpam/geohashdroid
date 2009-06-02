@@ -712,7 +712,7 @@ public class GeohashDroid extends PlainActivity {
 
     private void attachListeners() {
         // Now, register the Refresh button's activity...
-        ImageButton searchButton = (ImageButton)findViewById(R.id.RefreshButton);
+        Button searchButton = (Button)findViewById(R.id.RefreshButton);
 
         // Owing to the way location updates work, we don't need a new thread
         // for the festivities. We get these updates asynchronously anyway, so
@@ -727,7 +727,7 @@ public class GeohashDroid extends PlainActivity {
         });
 
         // Then the map button...
-        ImageButton mapButton = (ImageButton)findViewById(R.id.MapButton);
+        Button mapButton = (Button)findViewById(R.id.MapButton);
 
         mapButton.setOnClickListener(new OnClickListener() {
 
