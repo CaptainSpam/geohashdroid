@@ -10,6 +10,7 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.List;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -33,7 +34,7 @@ import android.widget.TextView;
  * 
  * @author Nicholas Killewald
  */
-public class DetailedInfoScreen extends PlainActivity implements LocationListener {
+public class DetailedInfoScreen extends Activity implements LocationListener {
 
     // Two minutes (in milliseconds). If the last known check is older than
     // that, we ignore it.

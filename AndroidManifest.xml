@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="net.exclaimindustries.geohashdroid" android:versionName="0.6.6-pre1" android:versionCode="616">
+	package="net.exclaimindustries.geohashdroid" android:versionName="0.6.6-pre1"
+	android:versionCode="616">
 	<uses-sdk android:minSdkVersion="2" />
 	<application android:icon="@drawable/icon" android:label="@string/app_name"
-		android:theme="@android:style/Theme.Light" android:description="@string/app_description" android:debuggable="true">
+		android:description="@string/app_description" android:debuggable="true"
+		android:theme="@style/Theme.GeohashDroid">
 		<uses-library android:name="com.google.android.maps" />
 		<activity android:label="@string/app_name" android:name=".GeohashDroid">
 			<intent-filter>
@@ -12,16 +14,19 @@
 			</intent-filter>
 		</activity>
 
-		<activity android:name="MainMap" android:label="@string/map_activity_title" android:theme="@style/Theme.NoBackground.NoTitleBar"></activity>
+		<activity android:name="MainMap" android:label="@string/map_activity_title"
+			android:theme="@style/Theme.NoBackground.NoTitleBar"></activity>
 		<activity android:name="PreferenceEditScreen" android:label="@string/app_name"
 			android:theme="@android:style/Theme"></activity>
-		<activity android:name="GraticuleMap" android:label="@string/gratmap_activity_title" android:theme="@style/Theme.NoBackground">
+		<activity android:name="GraticuleMap" android:label="@string/gratmap_activity_title"
+			android:theme="@style/Theme.NoBackground">
 			<intent-filter>
 				<action android:name="net.exclaimindustries.geohashdroid.PICK_GRATICULE"></action>
 				<category android:name="android.intent.category.DEFAULT"></category>
 			</intent-filter>
 		</activity>
-	<activity android:name="DetailedInfoScreen" android:label="@string/detail_activity_title"></activity>
+		<activity android:name="DetailedInfoScreen" android:label="@string/detail_activity_title"></activity>
+
 </application>
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>

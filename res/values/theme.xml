@@ -7,17 +7,9 @@
     <style name="Theme.NoBackground.NoTitleBar" parent="android:Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@null</item>
     </style>   
-    
-    <!--
-    	These are split between portrait and landscape due to the background
-    	being used.  This may be undone later.
-    -->
-    <style name="Theme.GeohashDroid.Portrait" parent="android:Theme.Light">
-    	<item name="android:windowBackground">@drawable/geohashdroid_bg_port</item>
-   	</style>
-   	
-   	<style name="Theme.GeohashDroid.Landscape" parent="android:Theme.Light">
-    	<item name="android:windowBackground">@drawable/geohashdroid_bg_land</item>
+  	
+   	<style name="Theme.GeohashDroid" parent="android:Theme.Light">
+   		<item name="android:windowBackground">@drawable/geohashing_logo_background</item>
    	</style>
 
 </resources>
