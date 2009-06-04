@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <LinearLayout android:id="@+id/LinearLayout01"
 	xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_gravity="center_horizontal" android:layout_height="fill_parent"
-	android:orientation="vertical" android:layout_width="fill_parent">
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_gravity="center" android:layout_height="wrap_content">
 	<TextView android:text="TODAY'S DATE" android:layout_height="wrap_content"
 		android:layout_gravity="center_horizontal" android:layout_width="wrap_content"
 		android:focusable="false" android:focusableInTouchMode="false"
 		android:gravity="center_horizontal" android:id="@+id/Date"
-		android:textSize="@dimen/details_title_fontsize"></TextView>
-	
-	
-	
+		android:textSize="@dimen/details_title_fontsize_land"></TextView>
+
+
+
 	<LinearLayout android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:id="@+id/Horiz"
 		android:orientation="horizontal" android:layout_gravity="center_horizontal">
 		<LinearLayout android:layout_height="wrap_content"
-			android:id="@+id/LeftSide" android:layout_gravity="center_horizontal"
-			android:layout_weight="1" android:layout_width="fill_parent"
-			android:orientation="vertical" android:paddingBottom="@dimen/details_padding_horiz" android:paddingLeft="@dimen/details_padding" android:paddingRight="@dimen/details_padding">
+			android:id="@+id/LeftSide" android:layout_weight="1"
+			android:layout_width="fill_parent" android:orientation="vertical"
+			android:layout_gravity="center_vertical" android:layout_margin="@dimen/details_padding_horiz">
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/DestLabel"
 				android:gravity="center" android:textSize="@dimen/details_subtitle_fontsize"
@@ -26,17 +26,17 @@
 				android:text="@string/details_finish"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
-				android:id="@+id/DestLat" android:textSize="@dimen/details_coords_fontsize"
-				android:text="@string/standby_title"></TextView>
+				android:id="@+id/DestLat" android:text="@string/standby_title"
+				android:textSize="@dimen/details_coords_fontsize_land"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/DestLon"
-				android:layout_gravity="center_horizontal" android:textSize="@dimen/details_coords_fontsize"
-				android:text="@string/standby_title"></TextView>
+				android:layout_gravity="center_horizontal" android:text="@string/standby_title"
+				android:textSize="@dimen/details_coords_fontsize_land"></TextView>
 		</LinearLayout>
 		<LinearLayout android:layout_height="wrap_content"
 			android:id="@+id/RightSide" android:layout_weight="1"
 			android:layout_width="fill_parent" android:orientation="vertical"
-			android:paddingLeft="@dimen/details_padding" android:paddingRight="@dimen/details_padding" android:paddingBottom="@dimen/details_padding_horiz">
+			android:layout_gravity="center_vertical" android:layout_margin="@dimen/details_padding_horiz">
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/YouLabel"
 				android:gravity="center" android:textSize="@dimen/details_subtitle_fontsize"
@@ -45,13 +45,13 @@
 				android:text="@string/details_you"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/YouLat"
-				android:layout_gravity="center_horizontal" android:textSize="@dimen/details_coords_fontsize"
-				android:text="@string/standby_title"></TextView>
+				android:layout_gravity="center_horizontal" android:text="@string/standby_title"
+				android:textSize="@dimen/details_coords_fontsize_land"></TextView>
 
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/YouLon"
-				android:textSize="@dimen/details_coords_fontsize"
-				android:layout_gravity="center_horizontal" android:text="@string/standby_title"></TextView>
+				android:layout_gravity="center_horizontal" android:text="@string/standby_title"
+				android:textSize="@dimen/details_coords_fontsize_land"></TextView>
 		</LinearLayout>
 	</LinearLayout>
 
@@ -68,10 +68,12 @@
 		<TextView android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:id="@+id/Distance"
 			android:text="@string/standby_title" android:textSize="@dimen/details_distance_fontsize"></TextView>
+		<TextView android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:textSize="@dimen/details_accuracy_fontsize"
+			android:id="@+id/Accuracy" android:layout_gravity="center_vertical"
+			android:layout_marginLeft="@dimen/details_padding_horiz"></TextView>
 	</LinearLayout>
-	<TextView android:layout_width="wrap_content"
-		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
-		android:textSize="@dimen/details_accuracy_fontsize" android:id="@+id/Accuracy"></TextView>
+
 	<Button android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
 		android:id="@+id/Okay" android:text="@string/backtomap_label"></Button>
