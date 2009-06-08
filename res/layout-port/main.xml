@@ -17,7 +17,8 @@
 		android:text="@string/graticule_label" android:layout_gravity="center_horizontal"></TextView>
 	<LinearLayout android:layout_height="wrap_content"
 		android:orientation="horizontal" android:id="@+id/GraticuleRow"
-		android:layout_gravity="center_horizontal" android:layout_width="wrap_content">
+                android:layout_gravity="center_horizontal" android:layout_width="wrap_content"
+                android:layout_margin="@dimen/main_padding">
 		<EditText android:layout_height="wrap_content" android:id="@+id/Latitude"
 			android:layout_gravity="center_vertical" android:maxLength="4"
 			android:singleLine="true" android:numeric="signed"
