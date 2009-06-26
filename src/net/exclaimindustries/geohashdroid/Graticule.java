@@ -356,6 +356,53 @@ public class Graticule implements Serializable {
 
         return new GeoPoint(lat, lon);
     }
+    
+    /**
+     * Grab the top-left GeoPoint of this Graticule.  Or, well, the northwest.
+     * 
+     * @return a GeoPoint representing the top-left corner of this Graticule
+     */
+    public GeoPoint getTopLeft() {
+        int top;
+        int left;
+        
+        if (isSouth()) {
+            top = (-1 * getLatitude()) * 1000000;
+        } else {
+            top = (getLatitude() + 1) * 1000000;
+        }
+
+        if (isWest()) {
+            left = (-1 * getLongitude()) * 1000000;
+        } else {
+            left = (getLongitude() + 1) * 1000000;
+        }
+        
+        return new GeoPoint(top, left);
+    }
+    
+    /**
+     * Grab the bottom-right GeoPoint of this Graticule.  Or, well, the southeast.
+     * 
+     * @return a GeoPoint representing the bottom-right corner of this Graticule
+     */
+    public GeoPoint getBottomRight() {
+        int bottom;
+        int right;
+        if (isSouth()) {
+            bottom = (-1 * (getLatitude() + 1)) * 1000000;
+        } else {
+            bottom = getLatitude() * 1000000;
+        }
+
+        if (isWest()) {
+            right = (-1 * (getLongitude() + 1)) * 1000000;
+        } else {
+            right = getLongitude() * 1000000;
+        }
+        
+        return new GeoPoint(bottom, right);
+    }
 
     /*
      * (non-Javadoc)

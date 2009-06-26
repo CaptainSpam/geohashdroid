@@ -12,7 +12,6 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 
-import com.google.android.maps.GeoPoint;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 
@@ -39,70 +38,6 @@ public abstract class GraticuleOverlay extends Overlay {
     protected abstract void drawGraticule(Canvas c, Projection pr, Graticule g);
 
     /**
-     * <code>RectCoords</code> just stashes the coordinates of the rectangle on
-     * which a graticule will be drawn, since we can't get the raw values from
-     * an Android Rect object.
-     * 
-     * @author Nicholas Killewald
-     */
-    protected class RectCoords {
-        int top;
-        int bottom;
-        int left;
-        int right;
-
-        /**
-         * Build us up a RectCoords!
-         * 
-         * @param left
-         *            Left!
-         * @param top
-         *            Top!
-         * @param right
-         *            Right!
-         * @param bottom
-         *            Bottom!
-         */
-        public RectCoords(int left, int top, int right, int bottom) {
-            this.top = top;
-            this.bottom = bottom;
-            this.left = left;
-            this.right = right;
-        }
-    }
-
-    /**
-     * Forms a RectCoords object from the given Graticule.
-     * 
-     * @param g
-     * @return a RectCoords from the graticule.
-     */
-    protected RectCoords getRectFromGraticule(Graticule g) {
-        int top;
-        int bottom;
-        int left;
-        int right;
-
-        if (g.isSouth()) {
-            top = (-1 * g.getLatitude()) * 1000000;
-            bottom = (-1 * (g.getLatitude() + 1)) * 1000000;
-        } else {
-            top = (g.getLatitude() + 1) * 1000000;
-            bottom = g.getLatitude() * 1000000;
-        }
-
-        if (g.isWest()) {
-            left = (-1 * g.getLongitude()) * 1000000;
-            right = (-1 * (g.getLongitude() + 1)) * 1000000;
-        } else {
-            left = (g.getLongitude() + 1) * 1000000;
-            right = g.getLongitude() * 1000000;
-        }
-
-        return new RectCoords(left, top, right, bottom);
-    }
-
-    /**
      * Convenience method to draw the outline of the given graticule on the
      * canvas. Override it if you really really want to.
      * 
@@ -121,16 +56,11 @@ public abstract class GraticuleOverlay extends Overlay {
             return;
         }
 
-        // First, the rectangle. The following aren't the coordinates of the
-        // rectangle, they're the offsets of the GeoPoint.
-        RectCoords rc = getRectFromGraticule(g);
-
         // Now, get two points out of the deal.
-        Point topleft = pr.toPixels(new GeoPoint(rc.top, rc.left), null);
-        Point bottomright = pr
-                .toPixels(new GeoPoint(rc.bottom, rc.right), null);
+        Point topleft = pr.toPixels(g.getTopLeft(), null);
+        Point bottomright = pr.toPixels(g.getBottomRight(), null);
 
-        // Last, draw the line with the Paint supplied.
+        // Then, draw the line with the Paint supplied.
         c.drawLine(topleft.x, topleft.y, bottomright.x, topleft.y, p);
         c.drawLine(bottomright.x, topleft.y, bottomright.x, bottomright.y, p);
         c.drawLine(bottomright.x, bottomright.y, topleft.x, bottomright.y, p);
@@ -156,17 +86,12 @@ public abstract class GraticuleOverlay extends Overlay {
             return;
         }
 
-        // Again, first, the rectangle.
-        RectCoords rc = getRectFromGraticule(g);
-
         // And again, two points.
-        Point topleft = pr.toPixels(new GeoPoint(rc.top, rc.left), null);
-        Point bottomright = pr
-                .toPixels(new GeoPoint(rc.bottom, rc.right), null);
+        Point topleft = pr.toPixels(g.getTopLeft(), null);
+        Point bottomright = pr.toPixels(g.getBottomRight(), null);
 
         // And finally, draw it out.
-        c
-                .drawRect(new Rect(topleft.x, topleft.y, bottomright.x,
+        c.drawRect(new Rect(topleft.x, topleft.y, bottomright.x,
                         bottomright.y), p);
     }
 }
