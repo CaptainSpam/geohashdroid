@@ -26,7 +26,7 @@ public class PreferenceEditScreen extends PreferenceActivity {
 
         PreferenceManager manager = getPreferenceManager();
 
-        manager.setSharedPreferencesName(MainMenu.PREFS_BASE);
+        manager.setSharedPreferencesName(GeohashDroid.PREFS_BASE);
 
         addPreferencesFromResource(R.xml.prefs);
 

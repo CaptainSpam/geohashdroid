@@ -254,7 +254,7 @@ public class MainMap extends MapActivity {
         MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
         MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
 
-        SharedPreferences prefs = getSharedPreferences(MainMenu.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
                 0);
         String setting = prefs.getString(getResources().getString(
                 R.string.pref_infobox_key), "Small");
@@ -521,7 +521,7 @@ public class MainMap extends MapActivity {
 
     private boolean isAutoZoomOn() {
         // Grab the preference and compare to that, too.
-        SharedPreferences prefs = getSharedPreferences(MainMenu.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
                 0);
 
         // The AutoZoom key is guaranteed to exist due to the main activity's
@@ -621,7 +621,7 @@ public class MainMap extends MapActivity {
         MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
         MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
 
-        SharedPreferences prefs = getSharedPreferences(MainMenu.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
                 0);
         String setting = prefs.getString(getResources().getString(
                 R.string.pref_infobox_key), "Small");
