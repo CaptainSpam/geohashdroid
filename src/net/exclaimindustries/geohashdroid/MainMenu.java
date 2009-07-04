@@ -19,7 +19,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -94,8 +93,6 @@ public class MainMenu extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.main);
-
-        Resources res = getResources();
 
         // First things first, set up the default preferences.
         initPrefs();
@@ -239,8 +236,6 @@ public class MainMenu extends Activity {
 
         SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
         SharedPreferences.Editor editor = prefs.edit();
-
-        Resources res = getResources();
 
         // AutoZoom defaults to on.
         if (!prefs.contains(GeohashDroid.PREF_AUTOZOOM)) {
