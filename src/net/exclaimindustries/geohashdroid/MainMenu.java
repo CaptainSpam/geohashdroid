@@ -50,7 +50,7 @@ import android.widget.EditText;
  * 
  * @author Nicholas Killewald
  */
-public class GeohashDroid extends Activity {
+public class MainMenu extends Activity {
     // Top-level static strings; everything drags reference from here.
     public static final String PREFS_BASE = "GeohashDroid";
     public static final String DEFAULT_LAT = "DefaultLatitude";
@@ -286,7 +286,7 @@ public class GeohashDroid extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                GeohashDroid.this
+                                MainMenu.this
                                         .dismissDialog(DIALOG_SEARCHING);
                                 mManager.removeUpdates(mListener);
                                 mLastDialog = ALL_OKAY;
@@ -303,7 +303,7 @@ public class GeohashDroid extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                GeohashDroid.this
+                                MainMenu.this
                                         .dismissDialog(DIALOG_SEARCH_FAIL);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -324,7 +324,7 @@ public class GeohashDroid extends Activity {
                                         && mHashFetcherThread.isAlive()
                                         && mHashFetcherRunner.mHashMaker != null)
                                     mHashFetcherRunner.mHashMaker.abort();
-                                GeohashDroid.this
+                                MainMenu.this
                                         .dismissDialog(DIALOG_FIND_STOCK);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -340,7 +340,7 @@ public class GeohashDroid extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                GeohashDroid.this
+                                MainMenu.this
                                         .dismissDialog(DIALOG_STOCK_NOT_POSTED);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -356,7 +356,7 @@ public class GeohashDroid extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                GeohashDroid.this
+                                MainMenu.this
                                         .dismissDialog(DIALOG_STOCK_ERROR);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -701,7 +701,7 @@ public class GeohashDroid extends Activity {
                         .getLongitudeString());
                 editor.commit();
 
-                Intent i = new Intent(GeohashDroid.this, MainMap.class);
+                Intent i = new Intent(MainMenu.this, MainMap.class);
 
                 i.putExtra(INFO, info);
                 startActivityForResult(i, 0);
@@ -735,7 +735,7 @@ public class GeohashDroid extends Activity {
             public void onClick(View v) {
                 // Intent i = new Intent(GeohashDroid.this, GraticuleMap.class);
                 Intent i = new Intent(
-                        net.exclaimindustries.geohashdroid.GeohashDroid.PICK_GRATICULE);
+                        net.exclaimindustries.geohashdroid.MainMenu.PICK_GRATICULE);
 
                 Graticule g = null;
 

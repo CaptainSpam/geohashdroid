@@ -62,6 +62,7 @@ public class GraticuleHighlightOverlay extends GraticuleOverlay {
 
         if (fillPaint == null) {
             fillPaint = new Paint();
+            fillPaint.setStyle(Paint.Style.FILL);
             fillPaint.setColor(mContext.getResources().getColor(
                     R.color.graticule_fill));
         }
