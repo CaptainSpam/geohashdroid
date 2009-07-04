@@ -149,8 +149,7 @@ public class MainMenu extends Activity {
         SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
         boolean rememberOn = true;
         try {
-            rememberOn = prefs.getBoolean(res
-                    .getString(R.string.pref_remembergraticule_key), true);
+            rememberOn = prefs.getBoolean(GeohashDroid.PREF_REMEMBER_GRATICULE, true);
         } catch (Exception e) {
             rememberOn = true;
         }
@@ -244,15 +243,14 @@ public class MainMenu extends Activity {
         Resources res = getResources();
 
         // AutoZoom defaults to on.
-        if (!prefs.contains(res.getString(R.string.pref_autozoom_key))) {
-            editor.putBoolean(res.getString(R.string.pref_autozoom_key), true);
+        if (!prefs.contains(GeohashDroid.PREF_AUTOZOOM)) {
+            editor.putBoolean(GeohashDroid.PREF_AUTOZOOM, true);
             toReturn = true;
         }
 
         // Graticule remembering defaults to on.
-        if (!prefs.contains(res.getString(R.string.pref_remembergraticule_key))) {
-            editor.putBoolean(res
-                    .getString(R.string.pref_remembergraticule_key), true);
+        if (!prefs.contains(GeohashDroid.PREF_REMEMBER_GRATICULE)) {
+            editor.putBoolean(GeohashDroid.PREF_REMEMBER_GRATICULE, true);
             toReturn = true;
         }
 

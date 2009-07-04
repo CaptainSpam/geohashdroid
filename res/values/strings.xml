@@ -43,21 +43,16 @@
 
 <string name="pref_autozoom_title">Auto-zoom</string>
 <string name="pref_autozoom_summary">Automatically zoom as you move (manual zooming overrides this)</string>
-<string name="pref_autozoom_key">AutoZoom</string>
 <string name="pref_remembergraticule_title">Auto-fill last graticule</string>
 <string name="pref_remembergraticule_summary">When starting the program, fill in the last graticule used</string>
-<string name="pref_remembergraticule_key">RememberGraticule</string>
 <string name="pref_infobox_title">Info box</string>
 <string name="pref_infobox_summary">Size of the main map infobox</string>
 <string name="pref_infobox_dialogtitle">Select infobox size</string>
-<string name="pref_infobox_key">InfoBoxSize</string>
 <string name="pref_units_title">Distance units</string>
 <string name="pref_units_summary">Units used in distance calculations</string>
-<string name="pref_units_key">Units</string>
 <string name="pref_units_dialogtitle">Select units</string>
 <string name="pref_coordunits_title">Coordinate units</string>
 <string name="pref_coordunits_summary">Units used in coordinate readouts</string>
-<string name="pref_coordunits_key">CoordUnits</string>
 <string name="pref_coordunits_dialogtitle">Select units</string>
 <string name="pref_cat_map">Map options</string>
 <string name="pref_cat_other">Other options</string>
@@ -82,7 +77,7 @@
 <string name="details_finish">Finish</string>
 <string name="details_you">You</string>
 <string name="details_dist">Distance:</string>
-<!-- Remember to enclose this in parentheses! -->
+<!-- Remember to enclose this in parentheses in-code! -->
 <string name="details_accuracy">Accurate to</string>
 
 <string name="hint_lat">Lat</string>

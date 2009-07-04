@@ -256,8 +256,7 @@ public class MainMap extends MapActivity {
 
         SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
                 0);
-        String setting = prefs.getString(getResources().getString(
-                R.string.pref_infobox_key), "Small");
+        String setting = prefs.getString(GeohashDroid.PREF_INFOBOX_SIZE, "Small");
 
         // And now, check it.
         if (setting.equals("Jumbo")) {
@@ -529,8 +528,7 @@ public class MainMap extends MapActivity {
         // the hell out of it anyway.
         boolean prefAutoZoom = true;
         try {
-            prefAutoZoom = prefs.getBoolean(getResources().getString(
-                    R.string.pref_autozoom_key), true);
+            prefAutoZoom = prefs.getBoolean(GeohashDroid.PREF_AUTOZOOM, true);
         } catch (Exception e) {
             prefAutoZoom = true;
         }
@@ -623,8 +621,7 @@ public class MainMap extends MapActivity {
 
         SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
                 0);
-        String setting = prefs.getString(getResources().getString(
-                R.string.pref_infobox_key), "Small");
+        String setting = prefs.getString(GeohashDroid.PREF_INFOBOX_SIZE, "Small");
 
         if (setting.equals("Jumbo"))
             infoboxbig.update(mInfo, mMyLocation.getLastFix());

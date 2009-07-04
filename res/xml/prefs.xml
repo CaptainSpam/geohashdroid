@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 	<PreferenceCategory android:title="@string/pref_cat_map">
-		<CheckBoxPreference android:key="@string/pref_autozoom_key"
+		<CheckBoxPreference android:key="AutoZoom"
 			android:title="@string/pref_autozoom_title" android:summary="@string/pref_autozoom_summary"
 			android:defaultValue="true" android:persistent="true" />
-		<ListPreference android:key="@string/pref_infobox_key"
+		<ListPreference android:key="InfoBoxSize"
 			android:summary="@string/pref_infobox_summary" android:title="@string/pref_infobox_title"
 			android:defaultValue="Small" android:persistent="true"
 			android:entries="@array/pref_infobox_entries" android:entryValues="@array/pref_infobox_values"
 			android:dialogTitle="@string/pref_infobox_dialogtitle" />
-		<ListPreference android:key="@string/pref_units_key"
+		<ListPreference android:key="Units"
 			android:summary="@string/pref_units_summary" android:title="@string/pref_units_title"
 			android:defaultValue="Metric" android:persistent="true"
 			android:entries="@array/pref_units_entries" android:entryValues="@array/pref_units_values"
 			android:dialogTitle="@string/pref_units_dialogtitle" />
-		<ListPreference android:key="@string/pref_coordunits_key"
+		<ListPreference android:key="CoordUnits"
 			android:summary="@string/pref_coordunits_summary" android:title="@string/pref_coordunits_title"
 			android:defaultValue="Degrees" android:persistent="true"
 			android:entries="@array/pref_coordunits_entries" android:entryValues="@array/pref_coordunits_values"
@@ -22,7 +22,7 @@
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
 		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"
-			android:key="@string/pref_remembergraticule_key" android:title="@string/pref_remembergraticule_title"
+			android:key="RememberGraticule" android:title="@string/pref_remembergraticule_title"
 			android:defaultValue="true" android:persistent="true" />
 	</PreferenceCategory>
 </PreferenceScreen>
