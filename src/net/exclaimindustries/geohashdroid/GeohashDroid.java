@@ -1,5 +1,5 @@
 /**
- * MainMenu.java
+ * GeohashDroid.java
  * Copyright (C)2009 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
@@ -39,8 +39,8 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 
 /**
- * The <code>MainMenu</code> class is where the entry point resides. It's where the
- * main window sits around and gathers data.
+ * The <code>GeohashDroid/code> class is where the entry point resides. It's
+ * where the main window sits around and gathers data.
  * 
  * TODO: Good gravy, this is ugly and needs cleanup. Like, seriously. A lot of
  * this is major workaroundage for switching orientation (or other configs) when
@@ -49,7 +49,7 @@ import android.widget.EditText;
  * 
  * @author Nicholas Killewald
  */
-public class MainMenu extends Activity {
+public class GeohashDroid extends Activity {
     public static final String LONGITUDE = "longitude";
     public static final String LATITUDE = "latitude";
     public static final String YEAR = "year";
@@ -118,10 +118,12 @@ public class MainMenu extends Activity {
          * Order of priority:
          * 
          * 1. If we're coming back with Intent data (fell back to here from the
-         * map?), use that. 2. If we're coming back from a saved instance state
-         * (usually back from an onPause), keep that. 3. If we have
-         * DefaultLatitude and DefaultLongitude settings AND they're both
-         * Strings, use that. 4. Otherwise, go to a blank.
+         * map?), use that.
+         * 2. If we're coming back from a saved instance state (usually back
+         * from an onPause), keep that.
+         * 3. If we have DefaultLatitude and DefaultLongitude settings AND
+         * they're both Strings, use that.
+         * 4. Otherwise, go to a blank.
          */
 
         // Check savedInstanceState first.
@@ -266,7 +268,7 @@ public class MainMenu extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                MainMenu.this
+                                GeohashDroid.this
                                         .dismissDialog(DIALOG_SEARCHING);
                                 mManager.removeUpdates(mListener);
                                 mLastDialog = ALL_OKAY;
@@ -283,7 +285,7 @@ public class MainMenu extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                MainMenu.this
+                                GeohashDroid.this
                                         .dismissDialog(DIALOG_SEARCH_FAIL);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -304,7 +306,7 @@ public class MainMenu extends Activity {
                                         && mHashFetcherThread.isAlive()
                                         && mHashFetcherRunner.mHashMaker != null)
                                     mHashFetcherRunner.mHashMaker.abort();
-                                MainMenu.this
+                                GeohashDroid.this
                                         .dismissDialog(DIALOG_FIND_STOCK);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -320,7 +322,7 @@ public class MainMenu extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                MainMenu.this
+                                GeohashDroid.this
                                         .dismissDialog(DIALOG_STOCK_NOT_POSTED);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -336,7 +338,7 @@ public class MainMenu extends Activity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                     int whichButton) {
-                                MainMenu.this
+                                GeohashDroid.this
                                         .dismissDialog(DIALOG_STOCK_ERROR);
                                 mLastDialog = ALL_OKAY;
                             }
@@ -681,7 +683,7 @@ public class MainMenu extends Activity {
                         .getLongitudeString());
                 editor.commit();
 
-                Intent i = new Intent(MainMenu.this, MainMap.class);
+                Intent i = new Intent(GeohashDroid.this, MainMap.class);
 
                 i.putExtra(INFO, info);
                 startActivityForResult(i, 0);

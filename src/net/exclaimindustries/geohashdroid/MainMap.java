@@ -103,7 +103,7 @@ public class MainMap extends MapActivity {
             mAutoZoom = icicle.getBoolean(AUTOZOOM);
             restarting = true;
         } else {
-            mInfo = (Info)getIntent().getSerializableExtra(MainMenu.INFO);
+            mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
         }
 
         // Now, gather up our data and do anything we need to that's common to

@@ -87,7 +87,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
         if (icicle != null && icicle.containsKey(INFO)) {
             mInfo = (Info)icicle.getSerializable(INFO);
         } else {
-            mInfo = (Info)getIntent().getSerializableExtra(MainMenu.INFO);
+            mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
         }
 
         // Lay out the initial info. The rest remains on standby for now.
