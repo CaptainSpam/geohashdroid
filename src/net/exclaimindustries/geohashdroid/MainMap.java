@@ -254,9 +254,9 @@ public class MainMap extends MapActivity {
         MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
         MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
 
-        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
-        String setting = prefs.getString(GeohashDroid.PREF_INFOBOX_SIZE, "Small");
+        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
 
         // And now, check it.
         if (setting.equals("Jumbo")) {
@@ -520,7 +520,7 @@ public class MainMap extends MapActivity {
 
     private boolean isAutoZoomOn() {
         // Grab the preference and compare to that, too.
-        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
 
         // The AutoZoom key is guaranteed to exist due to the main activity's
@@ -528,7 +528,7 @@ public class MainMap extends MapActivity {
         // the hell out of it anyway.
         boolean prefAutoZoom = true;
         try {
-            prefAutoZoom = prefs.getBoolean(GeohashDroid.PREF_AUTOZOOM, true);
+            prefAutoZoom = prefs.getBoolean(GHDConstants.PREF_AUTOZOOM, true);
         } catch (Exception e) {
             prefAutoZoom = true;
         }
@@ -619,9 +619,9 @@ public class MainMap extends MapActivity {
         MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
         MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
 
-        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
-        String setting = prefs.getString(GeohashDroid.PREF_INFOBOX_SIZE, "Small");
+        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
 
         if (setting.equals("Jumbo"))
             infoboxbig.update(mInfo, mMyLocation.getLastFix());

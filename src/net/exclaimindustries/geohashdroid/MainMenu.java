@@ -143,10 +143,10 @@ public class MainMenu extends Activity {
 
         // If we had neither a savedInstanceState nor a bundle of extras, we
         // look into preferences. Assuming we do, of course.
-        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         boolean rememberOn = true;
         try {
-            rememberOn = prefs.getBoolean(GeohashDroid.PREF_REMEMBER_GRATICULE, true);
+            rememberOn = prefs.getBoolean(GHDConstants.PREF_REMEMBER_GRATICULE, true);
         } catch (Exception e) {
             rememberOn = true;
         }
@@ -157,10 +157,10 @@ public class MainMenu extends Activity {
             String backupLat = mLatitude.getText().toString();
             String backupLon = mLongitude.getText().toString();
 
-            if (prefs.contains(GeohashDroid.PREF_DEFAULT_LAT) && prefs.contains(GeohashDroid.PREF_DEFAULT_LON)) {
+            if (prefs.contains(GHDConstants.PREF_DEFAULT_LAT) && prefs.contains(GHDConstants.PREF_DEFAULT_LON)) {
                 try {
-                    mLatitude.setText(prefs.getString(GeohashDroid.PREF_DEFAULT_LAT, ""));
-                    mLongitude.setText(prefs.getString(GeohashDroid.PREF_DEFAULT_LON, ""));
+                    mLatitude.setText(prefs.getString(GHDConstants.PREF_DEFAULT_LAT, ""));
+                    mLongitude.setText(prefs.getString(GHDConstants.PREF_DEFAULT_LON, ""));
                 } catch (Exception e) {
                     // In this case, the preferences are set, but they're
                     // somehow not Strings. Clear us back to blanks.
@@ -234,18 +234,18 @@ public class MainMenu extends Activity {
         // everything went well.
         boolean toReturn = false;
 
-        SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         SharedPreferences.Editor editor = prefs.edit();
 
         // AutoZoom defaults to on.
-        if (!prefs.contains(GeohashDroid.PREF_AUTOZOOM)) {
-            editor.putBoolean(GeohashDroid.PREF_AUTOZOOM, true);
+        if (!prefs.contains(GHDConstants.PREF_AUTOZOOM)) {
+            editor.putBoolean(GHDConstants.PREF_AUTOZOOM, true);
             toReturn = true;
         }
 
         // Graticule remembering defaults to on.
-        if (!prefs.contains(GeohashDroid.PREF_REMEMBER_GRATICULE)) {
-            editor.putBoolean(GeohashDroid.PREF_REMEMBER_GRATICULE, true);
+        if (!prefs.contains(GHDConstants.PREF_REMEMBER_GRATICULE)) {
+            editor.putBoolean(GHDConstants.PREF_REMEMBER_GRATICULE, true);
             toReturn = true;
         }
 
@@ -673,11 +673,11 @@ public class MainMenu extends Activity {
                 // time around.
                 // TODO: Actually, what we REALLY want is a "home graticule"
                 // option that WON'T get overwritten by an option.
-                SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE, 0);
+                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(GeohashDroid.PREF_DEFAULT_LAT, info.getGraticule()
+                editor.putString(GHDConstants.PREF_DEFAULT_LAT, info.getGraticule()
                         .getLatitudeString());
-                editor.putString(GeohashDroid.PREF_DEFAULT_LON, info.getGraticule()
+                editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
                         .getLongitudeString());
                 editor.commit();
 
@@ -715,7 +715,7 @@ public class MainMenu extends Activity {
             public void onClick(View v) {
                 // Intent i = new Intent(GeohashDroid.this, GraticuleMap.class);
                 Intent i = new Intent(
-                        net.exclaimindustries.geohashdroid.GeohashDroid.PICK_GRATICULE);
+                        net.exclaimindustries.geohashdroid.GHDConstants.PICK_GRATICULE);
 
                 Graticule g = null;
 
@@ -827,11 +827,11 @@ public class MainMenu extends Activity {
 
                     // If we have an update like this, update the preferences,
                     // too.
-                    SharedPreferences prefs = getSharedPreferences(GeohashDroid.PREFS_BASE,
+                    SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                             0);
                     SharedPreferences.Editor editor = prefs.edit();
-                    editor.putString(GeohashDroid.PREF_DEFAULT_LAT, g.getLatitudeString());
-                    editor.putString(GeohashDroid.PREF_DEFAULT_LON, g.getLongitudeString());
+                    editor.putString(GHDConstants.PREF_DEFAULT_LAT, g.getLatitudeString());
+                    editor.putString(GHDConstants.PREF_DEFAULT_LON, g.getLongitudeString());
                     editor.commit();
                 }
             }

@@ -52,8 +52,8 @@ public class UnitConverter {
             float distance) {
         // First, get the current unit preference.
         SharedPreferences prefs = c.getSharedPreferences(
-                GeohashDroid.PREFS_BASE, 0);
-        String units = prefs.getString(GeohashDroid.PREF_DIST_UNITS, "Metric");
+                GHDConstants.PREFS_BASE, 0);
+        String units = prefs.getString(GHDConstants.PREF_DIST_UNITS, "Metric");
 
         // Second, run the conversion.
         if (units.equals("Metric")) {
@@ -238,7 +238,7 @@ public class UnitConverter {
     public static String getCoordUnitPreference(Context c) {
         // Units GO!!!
         SharedPreferences prefs = c.getSharedPreferences(
-                GeohashDroid.PREFS_BASE, 0);
-        return prefs.getString(GeohashDroid.PREF_COORD_UNITS, "Degrees");
+                GHDConstants.PREFS_BASE, 0);
+        return prefs.getString(GHDConstants.PREF_COORD_UNITS, "Degrees");
     }
 }

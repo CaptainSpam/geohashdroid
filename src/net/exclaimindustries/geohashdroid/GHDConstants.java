@@ -1,5 +1,5 @@
 /**
- * GeohashDroid.java
+ * GHDConstants.java
  * Copyright (C)2009 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
@@ -8,14 +8,12 @@
 package net.exclaimindustries.geohashdroid;
 
 /**
- * The <code>GeohashDroid</code> class doesn't do anything directly.  All it
- * does is serve as a place to store project-wide statics.  All the startup and
- * main menu stuff is now in the slightly-more-appropriately-named
- * <code>MainMenu</code> class.
+ * The <code>GHDConstants</code> class doesn't do anything directly.  All it
+ * does is serve as a place to store project-wide statics.
  * 
  * @author Nicholas Killewald
  */
-public final class GeohashDroid {
+public final class GHDConstants {
     /** Preferences base. */
     public static final String PREFS_BASE = "GeohashDroid";
     
