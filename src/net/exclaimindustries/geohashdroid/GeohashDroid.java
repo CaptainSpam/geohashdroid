@@ -39,7 +39,7 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 
 /**
- * The <code>GeohashDroid/code> class is where the entry point resides. It's
+ * The <code>GeohashDroid</code> class is where the entry point resides. It's
  * where the main window sits around and gathers data.
  * 
  * TODO: Good gravy, this is ugly and needs cleanup. Like, seriously. A lot of
