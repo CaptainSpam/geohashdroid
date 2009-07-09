@@ -41,8 +41,8 @@ public class HashBuilder {
     
     /**
      * Starts a request to get an Info object based on the date and graticule.
-     * The response will come to the Handler specified.  So, it's best to fire
-     * this off in its own thread.
+     * The response will come to the Handler specified.  This will return right
+     * away and kick off a new thread to do the job.
      * 
      * TODO: Needs some way to abort the connection, as well as some way to tell
      * if the process is busy right now.
@@ -54,5 +54,21 @@ public class HashBuilder {
      */
     public static void requestInfo(Calendar c, Graticule g, Handler h) {
         
+    }
+    
+    /**
+     * Checks if the stock price for the given date and graticule (accounting
+     * for the 30W rule) is stored and can be retrieved without going to the
+     * internet.  This is not intended to be threaded.
+     * 
+     * @param c Calendar object with the adventure date requested (this will
+     *          account for the 30W Rule, so don't put it in) 
+     * @param g Graticule to use
+     * @return true if the stock value is stored, false if we need to go to the
+     *         internet for it
+     */
+    public static boolean hasStockStored(Calendar c, Graticule g) {
+        // This is always false until stock caching is working.
+        return false;
     }
 }
