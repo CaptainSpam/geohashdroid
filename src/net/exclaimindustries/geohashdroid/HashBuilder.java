@@ -9,6 +9,8 @@ package net.exclaimindustries.geohashdroid;
 
 import java.util.Calendar;
 
+import org.apache.http.client.methods.HttpGet;
+
 import android.os.Handler;
 
 /**
@@ -67,7 +69,7 @@ public class HashBuilder {
     }
 
     // The most recent status.
-    private static Status mLastStatus = IDLE;
+    private static Status mLastStatus = Status.IDLE;
 
     // Hold on to the request here so we can abort it if requested.  There
     // should be only one request going at any time, so this may also be
