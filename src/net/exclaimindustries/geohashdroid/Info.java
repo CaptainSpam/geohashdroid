@@ -17,16 +17,16 @@ import com.google.android.maps.GeoPoint;
 
 /**
  * <p>
- * An Info object holds all the relevant info that involves the map. This, for
- * the most part, involves the final destination, the current date, and the
- * graticule. It also includes utility methods for calculating data from this
- * information, most importantly the distance between some location and the
- * final destination.
+ * An <code>Info</code> object holds all the relevant info that involves the 
+ * map. This, for the most part, involves the final destination, the current
+ * date, and the graticule. It also includes utility methods for calculating
+ * data from this information, most importantly the distance between some
+ * location and the final destination.
  * </p>
  * 
  * <p>
- * This is meant to be generated from a HashMaker object as the last step once
- * it has all the data it needs.
+ * <code>Info</code> objects are immutable and are meant to be generated from a
+ * HashMaker object as the last step once it has all the data it needs.
  * </p>
  * 
  * @author Nicholas Killewald
