@@ -28,66 +28,10 @@ import android.os.Handler;
  * @author Nicholas Killewald
  */
 public class HashBuilder {
-    /**
-     * The possible statuses that can be returned from this HashBuilder.
-     */
-    public enum Status {
-        /**
-         * HashBuilder is busy, either with getting the stock price or working
-         * out the hash.
-         */
-        BUSY,
-        /**
-         * HashBuilder hasn't been started yet and has no Info object handy.
-         */
-        IDLE,
-        /**
-         * HashBuilder is done, and its last action was successful, in that it
-         * got stock data and calculated a new hash.  If this is returned from
-         * getStatus, you can get a fresh Info object.
-         */
-        DONE_OKAY,
-        /**
-         * The last request couldn't be met because the stock value wasn't
-         * posted for the given day yet.  The last Info object is NOT reset at
-         * this point.  If you really really want, you CAN get the old one.
-         */
-        ERROR_NOT_POSTED,
-        /**
-         * The last request couldn't be met because of some server error.  The
-         * last Info object is NOT reset at this point.  If, for whatever
-         * reason, you actually WANT that data, you can get it.
-         */
-        ERROR_SERVER,
-        /**
-         * The user aborted the most recent request.  Note that this can only
-         * reliably be done during the HTTP connection phase (if one is needed).
-         * Thus, if this status is returned, the previous Info object has NOT
-         * been reset yet.
-         */
-        ABORTED
-    }
     
     // This is used as the lock to prevent multiple requests from happening at
     // once.  This really shouldn't ever happen, but just in case.
     private static Object locker = new Object();
-
-    // The most recent status.
-    private static Status mLastStatus = Status.IDLE;
-
-    // Hold on to the request here so we can abort it if requested.  There
-    // should be only one request going at any time, so this may also be
-    // queried to determine if HashBuilder is busy.
-    private static HttpGet mRequest;
-
-    // Hold on to the most recent Info object generated.  This might be the most
-    // horribly wrong way to handle a nasty synchronization problem.
-    private static Info mLastInfo;
-    
-    // The current handler which will take the response of the current request.
-    // This is updated before a request starts and is liable to be updated in
-    // case the handling object suddenly changes.
-    private static Handler mHandler;
 
     // You don't construct a HashBuilder!  You gotta EARN it!
     private HashBuilder() { }
@@ -103,9 +47,8 @@ public class HashBuilder {
     }
     
     /**
-     * Starts a request to get an Info object based on the date and graticule.
-     * The response will come to the Handler specified.  This will return right
-     * away and kick off a new thread to do the job.
+     * Requests a <code>StockRunner</code> object to perform a stock-fetching
+     * operation.
      * 
      * TODO: Needs some way to abort the connection, as well as some way to tell
      * if the process is busy right now.
@@ -115,32 +58,108 @@ public class HashBuilder {
      * @param g Graticule to use
      * @param h Handler to handle the response once it comes in
      */
-    public static void requestInfo(Calendar c, Graticule g, Handler h) {
+    public static StockRunner requestStockRunner(Calendar c, Graticule g, Handler h) {
         // Start the thread immediately, then return.  The Handler gets whatever
         // happens next.
-        
+        return new StockRunner(c, g, h);
     }
     
     /**
-     * <code>StockRunner</code> is what runs the stocks.
-     * 
-     * @author captainspam
+     * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
+     * as a thread.  Only one will run at a time for purposes of the stock cache
+     * database remaining sane.
      */
-    private class StockRunner implements Runnable {
+    public static class StockRunner implements Runnable {
+        /**
+         * The possible statuses that can be returned from this StockRunner.
+         */
+        public enum Status {
+            /**
+             * This is busy, either with getting the stock price or working out
+             * the hash.
+             */
+            BUSY,
+            /**
+             * This hasn't been started yet and has no Info object handy.
+             */
+            IDLE,
+            /**
+             * This is done, and its last action was successful, in that it got
+             * stock data and calculated a new hash.  If this is returned from
+             * getStatus, you can get a fresh Info object.
+             */
+            DONE_OKAY,
+            /**
+             * The last request couldn't be met because the stock value wasn't
+             * posted for the given day yet.
+             */
+            ERROR_NOT_POSTED,
+            /**
+             * The last request couldn't be met because of some server error.
+             */
+            ERROR_SERVER,
+            /**
+             * The user aborted the request.
+             */
+            ABORTED
+        }
 
+    	private Calendar mCal;
+    	private Graticule mGrat;
+    	private Handler mHandler;
+    	private HttpGet mRequest;
+    	private Status mStatus;
+    	
+    	private StockRunner(Calendar c, Graticule g, Handler h) {
+    		mCal = c;
+    		mGrat = g;
+    		mHandler = h;
+    		mStatus = Status.IDLE;
+    	}
+    	
         @Override
         public void run() {
-            
+        	Info toReturn;
+            // Grab a lock on our lock object.
+        	synchronized(locker) {
+        		// First, if this exists in the cache, use it instead of going
+        		// off to the internet.
+        		toReturn = getStoredInfo(mCal, mGrat);
+        		if(toReturn != null) {
+        			// TODO: Send this data back to Handler and return!
+        			// return;
+        		}
+        		
+        	}
         }
         
-    }
-    
-    /**
-     * Abort the current connection, if one exists.  As the connection will be
-     * recreated next execution, this won't get in the way of the next run.
-     */
-    public static void abort() {
-        if(mRequest != null) mRequest.abort();
+        /**
+         * Updates the Handler that will be informed when this thread is done.
+         * 
+         * @param h the Handler what gets updaterin'.
+         */
+        public void changeHandler(Handler h) {
+        	mHandler = h;
+        }
+        
+        /**
+         * Abort the current connection, if one exists.
+         */
+        public void abort() {
+        	if(mRequest != null) mRequest.abort();
+        }
+        
+        /**
+         * Returns whatever the current status is.  This is returned as a part
+         * of the Handler callback, but if, for instance, the Activity was
+         * destroyed between the call to get the stock value and the time it
+         * actually got it, the new caller will need to come here for the status.
+         *
+         * @return the current status
+         */
+        public Status getStatus() {
+            return mStatus;
+        }
     }
     
     /**
@@ -176,15 +195,4 @@ public class HashBuilder {
         return null;
     }
 
-    /**
-     * Returns whatever the current status is.  This is returned as a part of
-     * the Handler callback, but if, for instance, the Activity was destroyed
-     * between the call to get the stock value and the time it actually got it,
-     * the new caller will need to come here for the status.
-     *
-     * @return the last status encountered
-     */
-    public static Status getStatus() {
-        return mLastStatus;
-    }
 }
