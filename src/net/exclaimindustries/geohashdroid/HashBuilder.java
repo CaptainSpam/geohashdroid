@@ -67,6 +67,10 @@ public class HashBuilder {
          */
         ABORTED
     }
+    
+    // This is used as the lock to prevent multiple requests from happening at
+    // once.  This really shouldn't ever happen, but just in case.
+    private static Object locker = new Object();
 
     // The most recent status.
     private static Status mLastStatus = Status.IDLE;
@@ -77,9 +81,13 @@ public class HashBuilder {
     private static HttpGet mRequest;
 
     // Hold on to the most recent Info object generated.  This might be the most
-    // horribly wrong way to handle a nasty synchronization problem involving
-    // 
-    public static Info mLastInfo;
+    // horribly wrong way to handle a nasty synchronization problem.
+    private static Info mLastInfo;
+    
+    // The current handler which will take the response of the current request.
+    // This is updated before a request starts and is liable to be updated in
+    // case the handling object suddenly changes.
+    private static Handler mHandler;
 
     // You don't construct a HashBuilder!  You gotta EARN it!
     private HashBuilder() { }
@@ -108,7 +116,31 @@ public class HashBuilder {
      * @param h Handler to handle the response once it comes in
      */
     public static void requestInfo(Calendar c, Graticule g, Handler h) {
+        // Start the thread immediately, then return.  The Handler gets whatever
+        // happens next.
         
+    }
+    
+    /**
+     * <code>StockRunner</code> is what runs the stocks.
+     * 
+     * @author captainspam
+     */
+    private class StockRunner implements Runnable {
+
+        @Override
+        public void run() {
+            
+        }
+        
+    }
+    
+    /**
+     * Abort the current connection, if one exists.  As the connection will be
+     * recreated next execution, this won't get in the way of the next run.
+     */
+    public static void abort() {
+        if(mRequest != null) mRequest.abort();
     }
     
     /**
@@ -145,14 +177,14 @@ public class HashBuilder {
     }
 
     /**
-     * Returns whatever the last status was.  This is returned as a part of the
-     * Handler callback, but if, for instance, the Activity was destroyed
+     * Returns whatever the current status is.  This is returned as a part of
+     * the Handler callback, but if, for instance, the Activity was destroyed
      * between the call to get the stock value and the time it actually got it,
      * the new caller will need to come here for the status.
      *
      * @return the last status encountered
      */
-    public static Status getLastStatus() {
+    public static Status getStatus() {
         return mLastStatus;
     }
 }
