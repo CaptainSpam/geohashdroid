@@ -118,9 +118,7 @@ public class HashBuilder {
         		toReturn = getStoredInfo(mCal, mGrat);
         		if(toReturn != null) {
         			// Send this data back to the Handler and return!
-        			Message m = Message.obtain(mHandler);
-        			m.obj = toReturn;
-        			m.what = ALL_OKAY;
+        			Message m = Message.obtain(mHandler, ALL_OKAY, toReturn);
         			m.sendToTarget();
         			return;
         		}
