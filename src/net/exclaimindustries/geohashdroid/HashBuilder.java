@@ -12,6 +12,7 @@ import java.util.Calendar;
 import org.apache.http.client.methods.HttpGet;
 
 import android.os.Handler;
+import android.os.Message;
 
 /**
  * <p>
@@ -39,8 +40,6 @@ public class HashBuilder {
     /**
      * Initializes HashBuilder.  This should be called only once.  Well, it can
      * be called more often, but it won't do anything past the first time.
-     * 
-     * TODO: And come to think of it, it doesn't do anything now, either.
      */
     public static void initialize() {
         // TODO: PUT INIT STUFF HERE ONCE NEEDED
@@ -49,9 +48,6 @@ public class HashBuilder {
     /**
      * Requests a <code>StockRunner</code> object to perform a stock-fetching
      * operation.
-     * 
-     * TODO: Needs some way to abort the connection, as well as some way to tell
-     * if the process is busy right now.
      * 
      * @param c Calendar object with the adventure date requested (this will
      *          account for the 30W Rule, so don't put it in) 
@@ -71,50 +67,45 @@ public class HashBuilder {
      */
     public static class StockRunner implements Runnable {
         /**
-         * The possible statuses that can be returned from this StockRunner.
+         * This is busy, either with getting the stock price or working out
+         * the hash.
          */
-        public enum Status {
-            /**
-             * This is busy, either with getting the stock price or working out
-             * the hash.
-             */
-            BUSY,
-            /**
-             * This hasn't been started yet and has no Info object handy.
-             */
-            IDLE,
-            /**
-             * This is done, and its last action was successful, in that it got
-             * stock data and calculated a new hash.  If this is returned from
-             * getStatus, you can get a fresh Info object.
-             */
-            DONE_OKAY,
-            /**
-             * The last request couldn't be met because the stock value wasn't
-             * posted for the given day yet.
-             */
-            ERROR_NOT_POSTED,
-            /**
-             * The last request couldn't be met because of some server error.
-             */
-            ERROR_SERVER,
-            /**
-             * The user aborted the request.
-             */
-            ABORTED
-        }
+        public static final int BUSY = 0;
+        /**
+         * This hasn't been started yet and has no Info object handy.
+         */
+        public static final int IDLE = 1;
+        /**
+         * This is done, and its last action was successful, in that it got
+         * stock data and calculated a new hash.  If this is returned from
+         * getStatus, you can get a fresh Info object.
+         */
+        public static final int ALL_OKAY = 2;
+        /**
+         * The last request couldn't be met because the stock value wasn't
+         * posted for the given day yet.
+         */
+        public static final int ERROR_NOT_POSTED = 3;
+        /**
+         * The last request couldn't be met because of some server error.
+         */
+        public static final int ERROR_SERVER = 4;
+        /**
+         * The user aborted the request.
+         */
+        public static final int ABORTED = 5;
 
     	private Calendar mCal;
     	private Graticule mGrat;
     	private Handler mHandler;
     	private HttpGet mRequest;
-    	private Status mStatus;
+    	private int mStatus;
     	
     	private StockRunner(Calendar c, Graticule g, Handler h) {
     		mCal = c;
     		mGrat = g;
     		mHandler = h;
-    		mStatus = Status.IDLE;
+    		mStatus = IDLE;
     	}
     	
         @Override
@@ -126,10 +117,15 @@ public class HashBuilder {
         		// off to the internet.
         		toReturn = getStoredInfo(mCal, mGrat);
         		if(toReturn != null) {
-        			// TODO: Send this data back to Handler and return!
-        			// return;
+        			// Send this data back to the Handler and return!
+        			Message m = Message.obtain(mHandler);
+        			m.obj = toReturn;
+        			m.what = ALL_OKAY;
+        			m.sendToTarget();
+        			return;
         		}
         		
+        		// Otherwise, we need to start heading off to the net.
         	}
         }
         
@@ -157,7 +153,7 @@ public class HashBuilder {
          *
          * @return the current status
          */
-        public Status getStatus() {
+        public int getStatus() {
             return mStatus;
         }
     }
