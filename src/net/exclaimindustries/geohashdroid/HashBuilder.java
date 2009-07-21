@@ -31,6 +31,12 @@ import android.os.Message;
  * </p>
  * 
  * <p>
+ * This also encompasses <code>StockRunner</code>, which goes out to the web
+ * to get the current stock data.  <code>HashBuilder</code> itself, though,
+ * does the hash calculations.
+ * </p>
+ * 
+ * <p>
  * This implementation uses the peeron.com site to get the DJIA
  * (http://irc.peeron.com/xkcd/map/data/2008/12/03).
  * </p>
@@ -95,13 +101,22 @@ public class HashBuilder {
         @Override
         public void run() {
         	Info toReturn;
+        	
+            // First, we need to adjust the calendar in the event we're in the
+            // range of the 30W rule.  To that end, sCal is for stock calendar.
+            Calendar sCal = (Calendar)mCal.clone();
+            if(mGrat.uses30WRule())
+                sCal.add(Calendar.DAY_OF_MONTH, -1);
+        	
             // Grab a lock on our lock object.
         	synchronized(locker) {
         		// First, if this exists in the cache, use it instead of going
-        		// off to the internet.
+        		// off to the internet.  This method uses the ACTUAL date, so
+        	    // we can ignore sCal for now.
         		toReturn = getStoredInfo(mCal, mGrat);
         		if(toReturn != null) {
-                    // Send this data back to the Handler and return!
+                    // Hey, whadya know, we've got something!  Send this data
+        		    // back to the Handler and return!
         		    mStatus = ALL_OKAY;
         		    sendMessage(toReturn);
         			return;
@@ -111,7 +126,7 @@ public class HashBuilder {
         		mStatus = BUSY;
         		String stock;
         		try {
-        		    stock = fetchStock();
+        		    stock = fetchStock(sCal);
         		} catch (FileNotFoundException fnfe) {
         		    // If we got a 404, assume it's not posted yet.
         		    mStatus = ERROR_NOT_POSTED;
@@ -132,7 +147,7 @@ public class HashBuilder {
         		}
         		
         		// Good!  Now, we can stash this away in the database for later.
-        		storeInfo(mCal, stock);
+        		storeData(sCal, stock);
         	}
         	
         	// With all the database writing and connection stuff done, we can
@@ -145,13 +160,7 @@ public class HashBuilder {
             m.sendToTarget();
         }
         
-        private String fetchStock() throws FileNotFoundException, IOException {
-            // First, we need to adjust the calendar in the event we're in the
-            // range of the 30W rule.
-            Calendar sCal = (Calendar)mCal.clone();
-            if(mGrat.uses30WRule())
-                sCal.add(Calendar.DAY_OF_MONTH, -1);
-            
+        private String fetchStock(Calendar sCal) throws FileNotFoundException, IOException {
             // Now, generate a string for the URL.
             String sMonthStr;
             String sDayStr;
@@ -317,14 +326,20 @@ public class HashBuilder {
         return null;
     }
     
+    private static Info createInfo(Calendar c, String stockPrice) {
+        // This creates the Info object that'll go right back to whatever was
+        // calling it.  In general, this is the Handler in StockRunner.
+        return null;
+    }
+    
     /**
-     * Stores info away in the database.  This won't do anything if the day's
-     * stock value already exists therein.
+     * Stores stock data away in the database.  This won't do anything if the
+     * day's stock value already exists therein.
      * 
      * @param c date of this stock value
      * @param stockPrice the stock value as a String
      */
-    private static void storeInfo(Calendar c, String stockPrice) {
+    private static void storeData(Calendar c, String stockPrice) {
         
     }
 
