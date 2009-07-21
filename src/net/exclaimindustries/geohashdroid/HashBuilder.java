@@ -299,8 +299,6 @@ public class HashBuilder {
      * @param h Handler to handle the response once it comes in
      */
     public static StockRunner requestStockRunner(Calendar c, Graticule g, Handler h) {
-        // Start the thread immediately, then return.  The Handler gets whatever
-        // happens next.
         return new StockRunner(c, g, h);
     }
     
