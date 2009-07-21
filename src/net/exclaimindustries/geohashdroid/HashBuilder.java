@@ -15,6 +15,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.util.Calendar;
 
+import net.exclaimindustries.tools.HexFraction;
+import net.exclaimindustries.tools.MD5Tools;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -101,6 +104,7 @@ public class HashBuilder {
         @Override
         public void run() {
         	Info toReturn;
+        	String stock;
         	
             // First, we need to adjust the calendar in the event we're in the
             // range of the 30W rule.  To that end, sCal is for stock calendar.
@@ -124,7 +128,6 @@ public class HashBuilder {
         		
         		// Otherwise, we need to start heading off to the net.
         		mStatus = BUSY;
-        		String stock;
         		try {
         		    stock = fetchStock(sCal);
         		} catch (FileNotFoundException fnfe) {
@@ -152,7 +155,15 @@ public class HashBuilder {
         	
         	// With all the database writing and connection stuff done, we can
         	// release the lock and continue on our merry way.  We assemble an
-        	// Info object and get ready to return it.
+        	// Info object and get ready to return it.  This uses the REAL date
+        	// so we display the right thing on the detail screen (or anywhere
+        	// else; the point is, we can report to the user if they're in the
+        	// influence of the 30W Rule).
+        	toReturn = createInfo(mCal, stock, mGrat);
+        	
+        	// And we're done!
+        	mStatus = ALL_OKAY;
+        	sendMessage(toReturn);
         }
         
         private void sendMessage(Object toReturn) {
@@ -326,11 +337,102 @@ public class HashBuilder {
         return null;
     }
     
-    private static Info createInfo(Calendar c, String stockPrice) {
+    /**
+     * Build an Info object.  Since this assumes we already have a stock price
+     * AND the Graticule can tell us if we need to use the 30W rule, use the
+     * REAL date on the Calendar object.
+     * 
+     * @param c date from which this hash comes
+     * @param stockPrice effective stock price (already adjusted for the 30W Rule)
+     * @param g the graticule in question
+     * @return
+     */
+    protected static Info createInfo(Calendar c, String stockPrice, Graticule g) {
         // This creates the Info object that'll go right back to whatever was
         // calling it.  In general, this is the Handler in StockRunner.
-        return null;
+        
+        // So to that end, we first build up the hash.
+        String hash = makeHash(c, stockPrice);
+        
+        // Then, get the latitude and longitude from that.
+        double lat = getLatitude(g, hash);
+        double lon = getLongitude(g, hash);
+        
+        // And finally...
+        return new Info(lat, lon, g, c);
     }
+    
+    /**
+     * Generate the hash string from the date and stock price.  The REAL date,
+     * that is.  Not a 30W Rule-adjusted date.
+     * 
+     * @param c date to use
+     * @param stockPrice stock price to use
+     * @return the hash you're looking for
+     */
+    protected static String makeHash(Calendar c, String stockPrice) {
+        // Just reset the hash. This can be handy alone if the graticule has
+        // changed.  Remember, c is the REAL date, not the STOCK date!
+        String monthStr;
+        String dayStr;
+
+        // Zero-pad the month and date...
+        if (c.get(Calendar.MONTH) + 1 < 10)
+            monthStr = "0" + (c.get(Calendar.MONTH) + 1);
+        else
+            monthStr = new Integer(c.get(Calendar.MONTH) + 1).toString();
+
+        if (c.get(Calendar.DAY_OF_MONTH) < 10)
+            dayStr = "0" + c.get(Calendar.DAY_OF_MONTH);
+        else
+            dayStr = new Integer(c.get(Calendar.DAY_OF_MONTH)).toString();
+
+        // And here it goes!
+        String fullLine = c.get(Calendar.YEAR) + "-" + monthStr + "-"
+                + dayStr + "-" + stockPrice;
+        return MD5Tools.MD5hash(fullLine);
+    }
+    
+    /**
+     * Gets the latitude value of the location for the current date. This is
+     * attached to the current graticule integer value to produce the longitude.
+     * 
+     * @return the fractional latitude value
+     */
+    private static double getLatitudeHash(String hash) {
+        String chunk = hash.substring(0, 16);
+        return HexFraction.calculate(chunk);
+    }
+
+    /**
+     * Gets the longitude value of the location for the current date. This is
+     * attached to the current graticule integer value to produce the latitude.
+     * 
+     * @return the fractional longitude value
+     */
+    private static double getLongitudeHash(String hash) {
+        String chunk = hash.substring(16, 32);
+        return HexFraction.calculate(chunk);
+    }
+
+    private static double getLatitude(Graticule g, String hash) {
+        int lat = g.getLatitude();
+        if (g.isSouth()) {
+            return (lat + getLatitudeHash(hash)) * -1;
+        } else {
+            return lat + getLatitudeHash(hash);
+        }
+    }
+
+    private static double getLongitude(Graticule g, String hash) {
+        int lon = g.getLongitude();
+        if (g.isWest()) {
+            return (lon + getLongitudeHash(hash)) * -1;
+        } else {
+            return lon + getLongitudeHash(hash);
+        }
+    }
+    
     
     /**
      * Stores stock data away in the database.  This won't do anything if the
