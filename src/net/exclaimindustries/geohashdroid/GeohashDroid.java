@@ -7,8 +7,7 @@
  */
 package net.exclaimindustries.geohashdroid;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -82,7 +81,7 @@ public class GeohashDroid extends Activity {
     private LocationManager mManager;
     private LocalLocationListener mListener;
 
-    private HashFetcherRunner mHashFetcherRunner;
+    private HashBuilder.StockRunner mStockRunner;
     private Thread mHashFetcherThread;
 
     private static int mLastDialog = ALL_OKAY;
@@ -102,9 +101,9 @@ public class GeohashDroid extends Activity {
         if (getLastNonConfigurationInstance() != null) {
             RetainedThings retainers = (RetainedThings)getLastNonConfigurationInstance();
             mHashFetcherThread = retainers.hashFetcherThread;
-            mHashFetcherRunner = retainers.hashFetcherRunner;
-            if (mHashFetcherRunner != null)
-                mHashFetcherRunner.resetHandler(new HashFetchThreadHandler(
+            mStockRunner = retainers.stockRunner;
+            if (mStockRunner != null)
+                mStockRunner.changeHandler(new HashFetchThreadHandler(
                         Looper.myLooper()));
             mManager = retainers.locationManager;
             mListener = retainers.locationListener;
@@ -304,8 +303,10 @@ public class GeohashDroid extends Activity {
                                 // Abort the connection and drop the dialog.
                                 if (mHashFetcherThread != null
                                         && mHashFetcherThread.isAlive()
-                                        && mHashFetcherRunner.mHashMaker != null)
-                                    mHashFetcherRunner.mHashMaker.abort();
+                                        && mStockRunner != null)
+                                {
+                                    mStockRunner.abort();
+                                }
                                 GeohashDroid.this
                                         .dismissDialog(DIALOG_FIND_STOCK);
                                 mLastDialog = ALL_OKAY;
@@ -580,74 +581,6 @@ public class GeohashDroid extends Activity {
         resetGoButton();
     }
 
-    private class HashFetcherRunner implements Runnable {
-        private Handler mCallbackHandler;
-        private HashMaker mHashMaker;
-
-        public HashFetcherRunner(Handler handler) {
-            mCallbackHandler = handler;
-        }
-
-        public void resetHandler(Handler handler) {
-            mCallbackHandler = handler;
-        }
-
-        public Handler getHandler() {
-            return mCallbackHandler;
-        }
-
-        @Override
-        public void run() {
-            // We have the information. Let's go get some hash.
-            //
-            // Wait, let me rephrase that...
-
-            // TODO: Analyze potential threading issues. Since this is the
-            // only thing modifying mHashMaker, there shouldn't be anything
-            // explicitly wrong, but I really need to check to make sure.
-
-            // Dig up the date...
-            DatePicker date = (DatePicker)findViewById(R.id.Date);
-
-            // Build a graticule object, which is a bit wacky due to the
-            // negative
-            // zero graticules...
-            Graticule grat = new Graticule(mLatitude.getText().toString(),
-                    mLongitude.getText().toString());
-
-            // And make the maker!
-            try {
-                mHashMaker = new HashMaker(grat, date.getYear(), date
-                        .getMonth(), date.getDayOfMonth());
-            } catch (FileNotFoundException e) {
-                // Failure, this isn't posted yet.
-                mCallbackHandler.sendEmptyMessage(DIALOG_STOCK_NOT_POSTED);
-                return;
-            } catch (IOException e) {
-                // Failure, something else happened.
-                if (mHashMaker == null || !mHashMaker.wasAborted())
-                    mCallbackHandler.sendEmptyMessage(DIALOG_STOCK_ERROR);
-                return;
-            }
-
-            if (mHashMaker.wasAborted()) {
-                return;
-            }
-
-            try {
-                dismissDialog(DIALOG_FIND_STOCK);
-            } catch (Exception e) {
-            }
-
-            if (!mHashMaker.wasAborted()) {
-                Message message = Message.obtain();
-                message.what = ALL_OKAY;
-                message.obj = mHashMaker.makeInfo();
-                mCallbackHandler.sendMessage(message);
-            }
-        }
-    }
-
     private class HashFetchThreadHandler extends Handler {
         public HashFetchThreadHandler(Looper looper) {
             super(looper);
@@ -659,11 +592,14 @@ public class GeohashDroid extends Activity {
                 dismissDialog(DIALOG_FIND_STOCK);
             } catch (Exception e) {
             }
-            if (message.what != ALL_OKAY) {
+            if (message.what != HashBuilder.StockRunner.ALL_OKAY) {
                 switch (message.what) {
-                    case DIALOG_STOCK_NOT_POSTED:
-                    case DIALOG_STOCK_ERROR:
-                        showDialog(message.what);
+                    case HashBuilder.StockRunner.ERROR_NOT_POSTED:
+                        showDialog(DIALOG_STOCK_NOT_POSTED);
+                        break;
+                    case HashBuilder.StockRunner.ERROR_SERVER:
+                        showDialog(DIALOG_STOCK_ERROR);
+                        break;
                 }
             } else {
                 // If, however, we got the all clear, then we're clear! Get
@@ -715,7 +651,6 @@ public class GeohashDroid extends Activity {
 
             @Override
             public void onClick(View v) {
-                // Intent i = new Intent(GeohashDroid.this, GraticuleMap.class);
                 Intent i = new Intent(
                         net.exclaimindustries.geohashdroid.GHDConstants.PICK_GRATICULE);
 
@@ -741,14 +676,32 @@ public class GeohashDroid extends Activity {
         mGoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Hash fetching, on the other hand, has to be its own thread.
-                // Them's the breaks.
-                mLastDialog = DIALOG_FIND_STOCK;
-                showDialog(DIALOG_FIND_STOCK);
-                mHashFetcherRunner = new HashFetcherRunner(
-                        new HashFetchThreadHandler(Looper.myLooper()));
-                mHashFetcherThread = new Thread(mHashFetcherRunner);
-                mHashFetcherThread.start();
+                // First, we check to see if we already know the stock price.
+                // To that end, we need to gather up some data first.
+                DatePicker date = (DatePicker)findViewById(R.id.Date);
+                Calendar cal = Calendar.getInstance();
+                cal.setLenient(true);
+                cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
+                Graticule grat = new Graticule(mLatitude.getText().toString(),
+                        mLongitude.getText().toString());
+                
+                // Now we run the storage check.
+                Info temp = HashBuilder.getStoredInfo(cal, grat);
+                
+                if(temp != null) {
+                    // If that came back valid, we can go straight to the map.
+                    // TODO: Do something!
+                } else {
+                    // If not, we need a stock runner.  Throw up the dialog...
+                    mLastDialog = DIALOG_FIND_STOCK;
+                    showDialog(DIALOG_FIND_STOCK);
+                    
+                    // And let's get going.
+                    mStockRunner = HashBuilder.requestStockRunner(cal, grat,
+                            new HashFetchThreadHandler(Looper.myLooper()));
+                    mHashFetcherThread = new Thread(mStockRunner);
+                    mHashFetcherThread.start();
+                }
             }
         });
 
@@ -797,7 +750,7 @@ public class GeohashDroid extends Activity {
 
     private class RetainedThings {
         // Yes, this is just a bucket of stuff to retain.
-        private HashFetcherRunner hashFetcherRunner;
+        private HashBuilder.StockRunner stockRunner;
         private Thread hashFetcherThread;
         private LocationManager locationManager;
         private LocalLocationListener locationListener;
@@ -807,7 +760,7 @@ public class GeohashDroid extends Activity {
     public Object onRetainNonConfigurationInstance() {
         // Retain what needs retainin'.
         RetainedThings toReturn = new RetainedThings();
-        toReturn.hashFetcherRunner = mHashFetcherRunner;
+        toReturn.stockRunner = mStockRunner;
         toReturn.hashFetcherThread = mHashFetcherThread;
         toReturn.locationManager = mManager;
         toReturn.locationListener = mListener;

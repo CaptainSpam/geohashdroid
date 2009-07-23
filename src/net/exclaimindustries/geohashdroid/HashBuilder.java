@@ -111,7 +111,7 @@ public class HashBuilder {
             Calendar sCal = (Calendar)mCal.clone();
             if(mGrat.uses30WRule())
                 sCal.add(Calendar.DAY_OF_MONTH, -1);
-        	
+            
             // Grab a lock on our lock object.
         	synchronized(locker) {
         		// First, if this exists in the cache, use it instead of going
@@ -142,9 +142,8 @@ public class HashBuilder {
         		    return;
         		}
         		
-        		if(mRequest.isAborted()) {
+        		if(mStatus == ABORTED) {
         		    // If we aborted, send that back, too.
-        		    mStatus = ABORTED;
         		    sendMessage(null);
         		    return;
         		}
@@ -152,6 +151,7 @@ public class HashBuilder {
         		// Good!  Now, we can stash this away in the database for later.
         		storeData(sCal, stock);
         	}
+
         	
         	// With all the database writing and connection stuff done, we can
         	// release the lock and continue on our merry way.  We assemble an
@@ -192,12 +192,22 @@ public class HashBuilder {
             
             HttpClient client = new DefaultHttpClient();
             mRequest = new HttpGet(location);
-            HttpResponse response = client.execute(mRequest);
-            mRequest = null;
+            HttpResponse response;
+            try {
+                response = client.execute(mRequest);
+            } catch (IOException e) {
+                // If there was an exception, but we aborted, return a blank
+                // response (aborting throws an IOException).  If not, there was
+                // a legitimate problem, so throw back the exception.
+                if(mStatus == ABORTED) {
+                    return "";
+                }
+                throw e;
+            }
             
             // If we aborted at this point, just return. The calling method MUST
             // NOT read anything else from here at this point.
-            if (mRequest.isAborted())
+            if (mStatus == ABORTED)
                 return "";
 
             // Response obtained! Now let's get to digging...
@@ -262,7 +272,11 @@ public class HashBuilder {
          * Abort the current connection, if one exists.
          */
         public void abort() {
-        	if(mRequest != null) mRequest.abort();
+        	if(mRequest != null)
+    	    {
+    	        mRequest.abort();
+    	        mStatus = ABORTED;
+    	    }
         }
         
         /**
@@ -285,7 +299,7 @@ public class HashBuilder {
      * Initializes HashBuilder.  This should be called only once.  Well, it can
      * be called more often, but it won't do anything past the first time.
      */
-    public static void initialize() {
+    public static synchronized void initialize() {
         // TODO: PUT INIT STUFF HERE ONCE NEEDED
     }
     
