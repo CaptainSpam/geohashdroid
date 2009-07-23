@@ -135,19 +135,6 @@ public class Info implements Serializable {
     }
 
     /**
-     * Sets all the data in one fell swoop using the given HashMaker object.
-     * 
-     * @param hash
-     *            the HashMaker from which all the data is to be extracted
-     */
-    public void setFromHashMaker(HashMaker hash) {
-        mLatitude = hash.getLatitude();
-        mLongitude = hash.getLongitude();
-        mGraticule = hash.getGraticule();
-        mDate = hash.getCalendar();
-    }
-
-    /**
      * Gets the distance, in meters, from the given Location and the final
      * destination.
      * 

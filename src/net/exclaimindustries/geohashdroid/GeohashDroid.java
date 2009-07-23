@@ -603,7 +603,7 @@ public class GeohashDroid extends Activity {
                 }
             } else {
                 // If, however, we got the all clear, then we're clear! Get
-                // the HashMaker object and act!
+                // the Info object and act!
                 Info info = (Info)message.obj;
 
                 // Stash the Graticule away in preferences. We always want to
