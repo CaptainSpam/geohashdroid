@@ -453,7 +453,7 @@ public class HashBuilder {
      * @param c date of this stock value
      * @param stockPrice the stock value as a String
      */
-    private static void storeData(Calendar c, String stockPrice) {
+    private synchronized static void storeData(Calendar c, String stockPrice) {
         
     }
 
