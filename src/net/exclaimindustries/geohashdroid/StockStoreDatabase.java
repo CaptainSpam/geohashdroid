@@ -131,15 +131,15 @@ public class StockStoreDatabase {
     }
     
     /**
-     * Retrieves an Info bundle from the database, if it exists.  If not,
+     * Retrieves a stock quote from the database, if it exists.  If not,
      * returns null instead.
      * 
      * @param c Calendar containing the date to retrieve (this should NOT be
      *          adjusted for the 30W Rule)
-     * @param g Graticule 
-     * @return
+     * @param g Graticule to use to determine if the 30W Rule is in effect
+     * @return String containing the stock quote, or null if it doesn't exist
      */
-//    public Info getInfo(Calendar c, Graticule g) {
+//    public String getStock(Calendar c, Graticule g) {
 //        
 //    }
 }
