@@ -371,7 +371,7 @@ public class HashBuilder {
         double lon = getLongitude(g, hash);
         
         // And finally...
-        return new Info(lat, lon, g, c);
+        return new Info(lat, lon, g, c, stockPrice);
     }
     
     /**

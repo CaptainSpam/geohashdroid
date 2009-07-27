@@ -33,12 +33,18 @@ import com.google.android.maps.GeoPoint;
  * 
  */
 public class Info implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private double mLatitude;
     private double mLongitude;
     private Graticule mGraticule;
     private Calendar mDate;
+    // Note that this is stored as a String, not a float.  We never actually use
+    // the stock value as a float; it always gets fed directly into the hash as
+    // a String.  And, for hashing purposes, if it were a float, we would need
+    // to ensure it gets padded to two decimal points if need be.  So, it stands
+    // as a String.
+    private String mStock;
 
     /**
      * Creates an Info object with the given data. That's it.
@@ -53,11 +59,12 @@ public class Info implements Serializable {
      *            the date
      */
     public Info(double latitude, double longitude, Graticule graticule,
-            Calendar date) {
+            Calendar date, String stock) {
         mLatitude = latitude;
         mLongitude = longitude;
         mGraticule = graticule;
         mDate = date;
+        mStock = stock;
     }
 
     /**
@@ -132,6 +139,41 @@ public class Info implements Serializable {
      */
     public Date getDate() {
         return mDate.getTime();
+    }
+    
+    /**
+     * Gets the stored stock price as a String, suitable for hashing.
+     * 
+     * <p>
+     * Be careful; this is the stock price used for the hash.  This is not
+     * necessarily the stock price for the date stored in this Info's Calendar
+     * object if the graticule falls under the 30W Rule.
+     * </p>
+     * 
+     * @return the stock as a String
+     */
+    public String getStockString() {
+        return mStock;
+    }
+    
+    /**
+     * <p>
+     * Gets the stored stock price as a float, suitable for things which
+     * GeohashDroid wasn't made for, so I'm not sure why this would be called.
+     * </p>
+     * 
+     * <p>
+     * Be careful; this is the stock price used for the hash.  This is not
+     * necessarily the stock price for the date stored in this Info's Calendar
+     * object if the graticule falls under the 30W Rule.
+     * </p>
+     * 
+     * @return the stock as a float
+     * @throws NumberFormatException the stock value somehow isn't parseable as
+     *                               a float
+     */
+    public float getStockFloat() throws NumberFormatException {
+        return Float.parseFloat(mStock);
     }
 
     /**
