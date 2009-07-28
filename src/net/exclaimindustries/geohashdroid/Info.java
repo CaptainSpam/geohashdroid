@@ -57,6 +57,8 @@ public class Info implements Serializable {
      *            the graticule
      * @param date
      *            the date
+     * @param stock
+     *            the stock value
      */
     public Info(double latitude, double longitude, Graticule graticule,
             Calendar date, String stock) {

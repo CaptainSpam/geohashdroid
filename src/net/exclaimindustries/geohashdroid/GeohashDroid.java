@@ -90,6 +90,8 @@ public class GeohashDroid extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        HashBuilder.initialize(this);
 
         setContentView(R.layout.main);
 

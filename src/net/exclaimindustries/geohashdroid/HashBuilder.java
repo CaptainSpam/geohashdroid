@@ -23,6 +23,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
@@ -51,6 +52,10 @@ public class HashBuilder {
     // This is used as the lock to prevent multiple requests from happening at
     // once.  This really shouldn't ever happen, but just in case.
     private static Object locker = new Object();
+    
+//    private static final String DEBUG_TAG = "HashBuilder";
+    
+    private static StockStoreDatabase mStore;
 
     /**
      * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
@@ -147,19 +152,16 @@ public class HashBuilder {
         		    sendMessage(null);
         		    return;
         		}
-        		
-        		// Good!  Now, we can stash this away in the database for later.
-        		storeData(sCal, stock);
         	}
 
-        	
-        	// With all the database writing and connection stuff done, we can
-        	// release the lock and continue on our merry way.  We assemble an
-        	// Info object and get ready to return it.  This uses the REAL date
-        	// so we display the right thing on the detail screen (or anywhere
-        	// else; the point is, we can report to the user if they're in the
-        	// influence of the 30W Rule).
-        	toReturn = createInfo(mCal, stock, mGrat);
+    		// We assemble an Info object and get ready to return it.  This uses
+        	// the REAL date so we display the right thing on the detail screen
+        	// (or anywhere else; the point is, we can report to the user if
+        	// they're in the influence of the 30W Rule).
+            toReturn = createInfo(mCal, stock, mGrat);
+                
+    		// Good!  Now, we can stash this away in the database for later.
+    		storeData(toReturn);
         	
         	// And we're done!
         	mStatus = ALL_OKAY;
@@ -299,8 +301,10 @@ public class HashBuilder {
      * Initializes HashBuilder.  This should be called only once.  Well, it can
      * be called more often, but it won't do anything past the first time.
      */
-    public static synchronized void initialize() {
-        // TODO: PUT INIT STUFF HERE ONCE NEEDED
+    public static synchronized void initialize(Context c) {
+        if(mStore == null) {
+            mStore = new StockStoreDatabase(c).init();
+        }
     }
     
     /**
@@ -349,6 +353,16 @@ public class HashBuilder {
         return null;
     }
     
+    /**
+     * Stores stock data away in the database.  This won't do anything if the
+     * day's stock value already exists therein.
+     * 
+     * @param i an Info bundle with everything we need
+     */
+    private synchronized static void storeData(Info i) {
+        mStore.storeInfo(i);
+    }
+
     /**
      * Build an Info object.  Since this assumes we already have a stock price
      * AND the Graticule can tell us if we need to use the 30W rule, use the
@@ -443,18 +457,6 @@ public class HashBuilder {
         } else {
             return lon + getLongitudeHash(hash);
         }
-    }
-    
-    
-    /**
-     * Stores stock data away in the database.  This won't do anything if the
-     * day's stock value already exists therein.
-     * 
-     * @param c date of this stock value
-     * @param stockPrice the stock value as a String
-     */
-    private synchronized static void storeData(Calendar c, String stockPrice) {
-        
     }
 
 }
