@@ -15,7 +15,7 @@ import java.util.Calendar;
  *
  * @author Nicholas Killewald
  */
-class DateTools {
+public class DateTools {
 
     /**
      * Generates a YYYYMMDD string from a given Calendar object.
@@ -23,7 +23,7 @@ class DateTools {
      * @param c Calendar from which to get the string
      * @return a YYYYMMDD string
      */
-    public String getDateString(Calendar c) {
+    public static String getDateString(Calendar c) {
         // This grabs a YYYYMMDD string from a Calendar.  The month gets one
         // added to it because it's zero-indexed (January is zero).
         StringBuilder toReturn = new StringBuilder();

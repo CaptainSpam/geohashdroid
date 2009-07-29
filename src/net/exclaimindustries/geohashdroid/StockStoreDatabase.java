@@ -17,6 +17,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import net.exclaimindustries.tools.DateTools;
+
 /**
  * <p>
  * A <code>StockStoreDatabase</code> object talks to the database to store and
@@ -140,10 +142,10 @@ public class StockStoreDatabase {
         
         ContentValues toGo = new ContentValues();
         Calendar cal = getAdjustedCalendar(i.getCalendar(), i.getGraticule());
-        toGo.put(KEY_DATE, getDateString(cal));
+        toGo.put(KEY_DATE, DateTools.getDateString(cal));
         toGo.put(KEY_STOCK, i.getStockString());
         
-        Log.d(DEBUG_TAG, "NOW STORING " + getDateString(cal) + " : " + i.getStockString());
+        Log.d(DEBUG_TAG, "NOW STORING " + DateTools.getDateString(cal) + " : " + i.getStockString());
         
         return mDatabase.insert(DATABASE_TABLE, null, toGo);
     }
@@ -164,7 +166,7 @@ public class StockStoreDatabase {
         
         // Now, to the database!
         Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_STOCK},
-                KEY_DATE + " = " + getDateString(cal),
+                KEY_DATE + " = " + DateTools.getDateString(cal),
                 null, null, null, null);
         
         if(cursor == null) {
@@ -210,28 +212,5 @@ public class StockStoreDatabase {
         
         // There!  Done!
         return cal;
-    }
-    
-    private String getDateString(Calendar c) {
-        // This grabs a YYYYMMDD string from a Calendar.  The month gets one
-        // added to it because it's zero-indexed (January is zero).
-        StringBuilder toReturn = new StringBuilder();
-        
-        toReturn.append(c.get(Calendar.YEAR));
-        
-        int month = c.get(Calendar.MONTH) + 1;
-        if(month < 10) 
-            toReturn.append("0" + month);
-        else
-            toReturn.append(new Integer(month).toString());
-        
-        int day = c.get(Calendar.DAY_OF_MONTH);
-        if(day < 10)
-            toReturn.append("0" + day);
-        else
-            toReturn.append(new Integer(day).toString());
-        
-        Log.d(DEBUG_TAG, "DateString: " + toReturn);
-        return toReturn.toString();
     }
 }
