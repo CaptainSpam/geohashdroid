@@ -334,7 +334,7 @@ public class HashBuilder {
      */
     public static boolean hasStockStored(Calendar c, Graticule g) {
         // This is always false until stock caching is working.
-        return false;
+        return mStore.getStock(c, g) != null;
     }
 
     /**
@@ -350,7 +350,11 @@ public class HashBuilder {
      */
     public static Info getStoredInfo(Calendar c, Graticule g) {
         // This is always null until stock caching is working.
-        return null;
+        String result = mStore.getStock(c, g);
+        
+        if(result == null) return null;
+        
+        return createInfo(c, result, g);
     }
     
     /**

@@ -608,23 +608,7 @@ public class GeohashDroid extends Activity {
                 // the Info object and act!
                 Info info = (Info)message.obj;
 
-                // Stash the Graticule away in preferences. We always want to
-                // remember the last one we used, even if we blank it out next
-                // time around.
-                // TODO: Actually, what we REALLY want is a "home graticule"
-                // option that WON'T get overwritten by an option.
-                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(GHDConstants.PREF_DEFAULT_LAT, info.getGraticule()
-                        .getLatitudeString());
-                editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
-                        .getLongitudeString());
-                editor.commit();
-
-                Intent i = new Intent(GeohashDroid.this, MainMap.class);
-
-                i.putExtra(INFO, info);
-                startActivityForResult(i, 0);
+                dispatchMapIntent(info);
             }
 
         }
@@ -692,7 +676,7 @@ public class GeohashDroid extends Activity {
                 
                 if(temp != null) {
                     // If that came back valid, we can go straight to the map.
-                    // TODO: Do something!
+                    dispatchMapIntent(temp);
                 } else {
                     // If not, we need a stock runner.  Throw up the dialog...
                     mLastDialog = DIALOG_FIND_STOCK;
@@ -794,6 +778,25 @@ public class GeohashDroid extends Activity {
             }
 
         }
+    }
+    
+    private void dispatchMapIntent(Info info) {
+        // Stash the Graticule away in preferences. We always want to remember
+        // the last one we used, even if we blank it out next time around.
+        // TODO: Actually, what we REALLY want is a "home graticule" option that
+        // WON'T get overwritten by an option.
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(GHDConstants.PREF_DEFAULT_LAT, info.getGraticule()
+                .getLatitudeString());
+        editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
+                .getLongitudeString());
+        editor.commit();
+
+        Intent i = new Intent(GeohashDroid.this, MainMap.class);
+
+        i.putExtra(INFO, info);
+        startActivityForResult(i, 0);
     }
 
 }
