@@ -47,10 +47,6 @@ public class StockStoreDatabase {
     private static final String DATABASE_TABLE = "stocks";
     private static final int DATABASE_VERSION = 1;
     
-    // Note that we have three columns for year, month, and day.  Since we can't
-    // store Serializables into the database via ContentValues, it's either this
-    // or we parse out a string when we read it back.
-    
     private static final String DATABASE_CREATE =
         "CREATE TABLE " + DATABASE_TABLE
             + " (" + KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
