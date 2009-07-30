@@ -34,6 +34,8 @@ public final class GHDConstants {
     public static final String PREF_AUTOZOOM = "AutoZoom";
     /** Prefs key specifying info box size. */
     public static final String PREF_INFOBOX_SIZE = "InfoBoxSize";
+    /** Prefs key specifying stock cache size. */
+    public static final String PREF_STOCK_CACHE_SIZE = "StockCacheSize";
     
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to

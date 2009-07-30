@@ -28,4 +28,22 @@
     	<item>Small</item>
     	<item>Jumbo</item>
     </string-array>
+    <string-array name="pref_stockcachesize_entries">
+    	<item>No cache</item>
+    	<item>10</item>
+    	<item>15</item>
+    	<item>25</item>
+    	<item>50</item>
+    	<item>100</item>
+    </string-array>
+    <!-- Yes, this apparently needs to be a string array.  ListPreference
+    	 doesn't like integer arrays. -->
+    <string-array name="pref_stockcachesize_values">
+    	<item>0</item>
+    	<item>10</item>
+    	<item>15</item>
+    	<item>25</item>
+    	<item>50</item>
+    	<item>100</item>
+    </string-array>
 </resources>

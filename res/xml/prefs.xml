@@ -24,6 +24,16 @@
 		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"
 			android:key="RememberGraticule" android:title="@string/pref_remembergraticule_title"
 			android:defaultValue="true" android:persistent="true" />
+		<ListPreference android:summary="@string/pref_stockcachesize_summary"
+			android:title="@string/pref_stockcachesize_title" android:key="StockCacheSize"
+			android:persistent="true" android:entries="@array/pref_stockcachesize_entries"
+			android:entryValues="@array/pref_stockcachesize_values"
+			android:defaultValue="15"></ListPreference>
+		<Preference android:summary="I START THE BROWSER"
+			android:title="CLICK ME">
+			<intent android:action="android.intent.action.VIEW"
+				android:data="http://exclaimindustries.net" />
+		</Preference>
 	</PreferenceCategory>
 </PreferenceScreen>
 

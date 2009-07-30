@@ -251,6 +251,12 @@ public class GeohashDroid extends Activity {
             editor.putBoolean(GHDConstants.PREF_REMEMBER_GRATICULE, true);
             toReturn = true;
         }
+        
+        // The stock cache defaults to 15 entries.
+        if(!prefs.contains(GHDConstants.PREF_STOCK_CACHE_SIZE)) {
+            editor.putString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15");
+            toReturn = true;
+        }
 
         editor.commit();
 
