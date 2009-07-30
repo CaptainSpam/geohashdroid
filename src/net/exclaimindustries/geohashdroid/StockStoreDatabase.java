@@ -11,6 +11,7 @@ import java.util.Calendar;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -182,5 +183,25 @@ public class StockStoreDatabase {
         
         cursor.close();
         return toReturn;
+    }
+    
+    /**
+     * Performs cache cleanup.  This involves pruning the cache down to however
+     * many entries should be the max.
+     */
+    public synchronized void cleanup() {
+    	SharedPreferences prefs = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+    	
+    	try {
+    		// Presumably, initPrefs was already run from the GeohashDroid
+    		// class.  Thus, if the pref doesn't exist at this point or isn't
+    		// parseable into an int, we can quite justifiably spaz out.
+    		int max = Integer.parseInt(prefs.getString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15"));
+    		
+    		// TODO: Flesh this out when I'm not about to sleep.
+    	} catch (Exception e) {
+    		// If something went wrong, let it go.
+    		Log.w(DEBUG_TAG, "HEY!  Couldn't prune the stock cache database: " + e.toString());
+    	}
     }
 }
