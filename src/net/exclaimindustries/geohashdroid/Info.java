@@ -201,6 +201,39 @@ public class Info implements Serializable {
     public float getDistanceInMeters(GeoPoint point) {
         return locationFromGeoPoint(point).distanceTo(getFinalLocation());
     }
+    
+    /**
+     * Returns a calendar representing the date from which the stock price was
+     * pulled.  That is, back a day for the 30W Rule and rewinding to Friday if
+     * it falls on a weekend.
+     * 
+     * @return a new adjusted Calendar
+     */
+    public Calendar getStockCalendar() {
+        // This adjusts the calendar for both the 30W Rule and to clamp all
+        // weekend stocks to the preceding Friday.  This saves a few database
+        // entries, as the weekend will always be Friday's value.  Note that
+        // this doesn't account for holidays when the US stocks aren't trading.
+        
+        // First, clone the calendar.  We don't want to muck about with the
+        // original for various reasons.
+        Calendar cal = (Calendar)(mDate.clone());
+        
+        // Second, 30W Rule hackery.
+        if(mGraticule.uses30WRule())
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+        
+        // Third, if this new date is a weekend, clamp it back to Friday.
+        if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY)
+            // Saturday: Back one day
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+        else if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+            // SUNDAY SUNDAY SUNDAY!!!!!!: Back two days
+            cal.add(Calendar.DAY_OF_MONTH, -2);
+        
+        // There!  Done!
+        return cal;
+    }
 
     private static Location locationFromGeoPoint(GeoPoint point) {
         // It turns out GeoPoint doesn't have the distanceTo method that

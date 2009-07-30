@@ -137,7 +137,7 @@ public class StockStoreDatabase {
         }
         
         ContentValues toGo = new ContentValues();
-        Calendar cal = getAdjustedCalendar(i.getCalendar(), i.getGraticule());
+        Calendar cal = i.getStockCalendar();
         toGo.put(KEY_DATE, DateTools.getDateString(cal));
         toGo.put(KEY_STOCK, i.getStockString());
         
