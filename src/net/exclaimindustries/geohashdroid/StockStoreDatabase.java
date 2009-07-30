@@ -157,7 +157,7 @@ public class StockStoreDatabase {
      */
     public String getStock(Calendar c, Graticule g) {
         // First, adjust the calendar if we need to.
-        Calendar cal = getAdjustedCalendar(c, g);
+        Calendar cal = Info.makeAdjustedCalendar(c, g);
         String toReturn = null;
         
         // Now, to the database!
@@ -182,31 +182,5 @@ public class StockStoreDatabase {
         
         cursor.close();
         return toReturn;
-    }
-    
-    private Calendar getAdjustedCalendar(Calendar c, Graticule g) {
-        // This adjusts the calendar for both the 30W Rule and to clamp all
-        // weekend stocks to the preceding Friday.  This saves a few database
-        // entries, as the weekend will always be Friday's value.  Note that
-        // this doesn't account for holidays when the US stocks aren't trading.
-        
-        // First, clone the calendar.  We don't want to muck about with the
-        // original for various reasons.
-        Calendar cal = (Calendar)(c.clone());
-        
-        // Second, 30W Rule hackery.
-        if(g.uses30WRule())
-            cal.add(Calendar.DAY_OF_MONTH, -1);
-        
-        // Third, if this new date is a weekend, clamp it back to Friday.
-        if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY)
-            // Saturday: Back one day
-            cal.add(Calendar.DAY_OF_MONTH, -1);
-        else if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
-            // SUNDAY SUNDAY SUNDAY!!!!!!: Back two days
-            cal.add(Calendar.DAY_OF_MONTH, -2);
-        
-        // There!  Done!
-        return cal;
     }
 }

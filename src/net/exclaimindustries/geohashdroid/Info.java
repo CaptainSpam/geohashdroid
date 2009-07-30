@@ -210,6 +210,17 @@ public class Info implements Serializable {
      * @return a new adjusted Calendar
      */
     public Calendar getStockCalendar() {
+        return makeAdjustedCalendar(mDate, mGraticule);
+    }
+    
+    /**
+     * Returns a calendar representing the date from which the stock price was
+     * pulled from a given date/graticule pair.  That is, back a day for the 30W
+     * Rule and rewinding to Friday if it falls on a weekend.
+     * 
+     * @return a new adjusted Calendar
+     */
+    public static Calendar makeAdjustedCalendar(Calendar c, Graticule g) {
         // This adjusts the calendar for both the 30W Rule and to clamp all
         // weekend stocks to the preceding Friday.  This saves a few database
         // entries, as the weekend will always be Friday's value.  Note that
@@ -217,10 +228,10 @@ public class Info implements Serializable {
         
         // First, clone the calendar.  We don't want to muck about with the
         // original for various reasons.
-        Calendar cal = (Calendar)(mDate.clone());
+        Calendar cal = (Calendar)(c.clone());
         
         // Second, 30W Rule hackery.
-        if(mGraticule.uses30WRule())
+        if(g.uses30WRule())
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.
