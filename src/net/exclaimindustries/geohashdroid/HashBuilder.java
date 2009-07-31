@@ -365,8 +365,24 @@ public class HashBuilder {
      */
     private synchronized static void storeData(Info i) {
         mStore.storeInfo(i);
+        mStore.cleanup();
+    }
+    
+    /**
+     * Cleans up the database with whatever cleanup needs to be done.
+     * Generally, this means pruning it.
+     */
+    public synchronized static void cleanupDatabase() {
+        mStore.cleanup();
     }
 
+    /**
+     * Wipes out the entire stock cache.  No, seriously.
+     */
+    public synchronized static void deleteCache() {
+        mStore.deleteCache();
+    }
+    
     /**
      * Build an Info object.  Since this assumes we already have a stock price
      * AND the Graticule can tell us if we need to use the 30W rule, use the

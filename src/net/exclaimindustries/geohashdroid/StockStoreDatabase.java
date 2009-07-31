@@ -54,6 +54,8 @@ public class StockStoreDatabase {
             + KEY_DATE + " INTEGER NOT NULL, "
             + KEY_STOCK + " TEXT NOT NULL);";
 
+    private Object locker = new Object();
+    
     /**
      * Implements SQLiteOpenHelper.  Much like Hamburger Helper, this can take
      * a pound of database and turn it into a meal.
@@ -125,26 +127,29 @@ public class StockStoreDatabase {
      * @param i the aforementioned bundle of Info to be stored into the database
      * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public long storeInfo(Info i) {
-        // Fortunately, there's a handy ContentValues object for this sort of
-        // thing.  I mean, we COULD do manual SQLite calls, but why bother?
-        
-        // But first!  First we need to know if this already exists.  If it
-        // does, return a -1.
-        // TODO: No, wrong.  I need a better mechanism for that.
-        if(getStock(i.getCalendar(), i.getGraticule()) != null) {
-            Log.d(DEBUG_TAG, "Stock price already exists, ignoring...");
-            return -1;
+    public synchronized long storeInfo(Info i) {
+        synchronized(locker) {
+            // Fortunately, there's a handy ContentValues object for this sort
+            // of thing.  I mean, we COULD do manual SQLite calls, but why
+            // bother?
+            
+            // But first!  First we need to know if this already exists.  If it
+            // does, return a -1.
+            // TODO: No, wrong.  I need a better mechanism for that.
+            if(getStock(i.getCalendar(), i.getGraticule()) != null) {
+                Log.d(DEBUG_TAG, "Stock price already exists, ignoring...");
+                return -1;
+            }
+            
+            ContentValues toGo = new ContentValues();
+            Calendar cal = i.getStockCalendar();
+            toGo.put(KEY_DATE, DateTools.getDateString(cal));
+            toGo.put(KEY_STOCK, i.getStockString());
+            
+            Log.d(DEBUG_TAG, "NOW STORING " + DateTools.getDateString(cal) + " : " + i.getStockString());
+            
+            return mDatabase.insert(DATABASE_TABLE, null, toGo);
         }
-        
-        ContentValues toGo = new ContentValues();
-        Calendar cal = i.getStockCalendar();
-        toGo.put(KEY_DATE, DateTools.getDateString(cal));
-        toGo.put(KEY_STOCK, i.getStockString());
-        
-        Log.d(DEBUG_TAG, "NOW STORING " + DateTools.getDateString(cal) + " : " + i.getStockString());
-        
-        return mDatabase.insert(DATABASE_TABLE, null, toGo);
     }
     
     /**
@@ -157,32 +162,35 @@ public class StockStoreDatabase {
      * @return String containing the stock quote, or null if it doesn't exist
      */
     public String getStock(Calendar c, Graticule g) {
-        // First, adjust the calendar if we need to.
-        Calendar cal = Info.makeAdjustedCalendar(c, g);
-        String toReturn = null;
-        
-        // Now, to the database!
-        Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_STOCK},
-                KEY_DATE + " = " + DateTools.getDateString(cal),
-                null, null, null, null);
-        
-        if(cursor == null) {
-            // If a problem happens, assume there's no stock to get.
-            Log.w(DEBUG_TAG, "The cursor returned from the query was null!");
-            return null;
-        } else if(cursor.getCount() == 0) {
-            // If nothing resulted from this, the stock doesn't exist in the
-            // cache.
-            Log.d(DEBUG_TAG, "Stock doesn't exist in database");
-        } else {
-            // Otherwise, grab the first one we come across.
-            if(!cursor.moveToFirst()) return null;
+        synchronized(locker) {
+            Log.d(DEBUG_TAG, "Querying the stock database...");
+            // First, adjust the calendar if we need to.
+            Calendar cal = Info.makeAdjustedCalendar(c, g);
+            String toReturn = null;
             
-            toReturn = cursor.getString(0);
+            // Now, to the database!
+            Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_STOCK},
+                    KEY_DATE + " = " + DateTools.getDateString(cal),
+                    null, null, null, null);
+            
+            if(cursor == null) {
+                // If a problem happens, assume there's no stock to get.
+                Log.w(DEBUG_TAG, "HEY!  The cursor returned from the query was null!");
+                return null;
+            } else if(cursor.getCount() == 0) {
+                // If nothing resulted from this, the stock doesn't exist in the
+                // cache.
+                Log.d(DEBUG_TAG, "Stock doesn't exist in database");
+            } else {
+                // Otherwise, grab the first one we come across.
+                if(!cursor.moveToFirst()) return null;
+                
+                toReturn = cursor.getString(0);
+            }
+            
+            cursor.close();
+            return toReturn;
         }
-        
-        cursor.close();
-        return toReturn;
     }
     
     /**
@@ -190,18 +198,57 @@ public class StockStoreDatabase {
      * many entries should be the max.
      */
     public synchronized void cleanup() {
-    	SharedPreferences prefs = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-    	
-    	try {
-    		// Presumably, initPrefs was already run from the GeohashDroid
-    		// class.  Thus, if the pref doesn't exist at this point or isn't
-    		// parseable into an int, we can quite justifiably spaz out.
-    		int max = Integer.parseInt(prefs.getString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15"));
-    		
-    		// TODO: Flesh this out when I'm not about to sleep.
-    	} catch (Exception e) {
-    		// If something went wrong, let it go.
-    		Log.w(DEBUG_TAG, "HEY!  Couldn't prune the stock cache database: " + e.toString());
-    	}
+        synchronized(locker) {
+        	SharedPreferences prefs = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        	
+        	Log.d(DEBUG_TAG, "Pruning database...");
+        	try {
+        		// Presumably, initPrefs was already run from the GeohashDroid
+        		// class.  Thus, if the pref doesn't exist at this point or
+        	    // isn't parseable into an int, we can quite justifiably spaz
+        	    // out.
+        		int max = Integer.parseInt(prefs.getString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15"));
+        		
+        		// Step one: Get the highest row ID.  I could probably ram this
+        		// all into one big monolithic SQL statement, but that would get
+        		// more than a bit unreadable.  Also note very carefully, this
+        		// entire method depends on there being no holes in the rowids.
+        		// "SELECT _rowid FROM stocks ORDER BY _rowid DESC LIMIT 1;"
+        		Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_ROWID},
+        		        null, null, null, null, KEY_ROWID + " DESC", "1");
+        		
+        		cursor.moveToFirst();
+        		int highest = cursor.getInt(0);
+        		cursor.close();
+        		
+        		// Step two: Delete anything in the database older than the
+                // highest minus the max.
+        		// "DELETE FROM stocks WHERE _rowid < (highest - max);"
+        		int deleted = mDatabase.delete(DATABASE_TABLE, KEY_ROWID + " <= " + (highest - max), null);
+        		
+        		Log.d(DEBUG_TAG, "Rows deleted: " + deleted);
+        		
+        	} catch (Exception e) {
+        		// If something went wrong, let it go.
+        		Log.w(DEBUG_TAG, "HEY!  Couldn't prune the stock cache database: " + e.toString());
+        	}
+        }
+    }
+    
+    /**
+     * Erases everything from the stock cache database.  This is really only to
+     * be used if something's gone horribly wrong.
+     */
+    public synchronized void deleteCache() {
+        synchronized(locker) {
+            try {
+                Log.d(DEBUG_TAG, "Emptying the stock cache...");
+                // KABOOM!
+                mDatabase.delete(DATABASE_TABLE, null, null);
+            } catch (Exception e) {
+                // If something went wrong, let it go.
+                Log.w(DEBUG_TAG, "HEY!  Couldn't erase the entire stock cache database: " + e.toString());
+            }
+        }
     }
 }
