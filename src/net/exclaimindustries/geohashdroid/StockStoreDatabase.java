@@ -53,8 +53,6 @@ public class StockStoreDatabase {
             + " (" + KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
             + KEY_DATE + " INTEGER NOT NULL, "
             + KEY_STOCK + " TEXT NOT NULL);";
-
-    private Object locker = new Object();
     
     /**
      * Implements SQLiteOpenHelper.  Much like Hamburger Helper, this can take
@@ -128,7 +126,7 @@ public class StockStoreDatabase {
      * @return the new row ID created, or -1 if it went wrong or already exists
      */
     public synchronized long storeInfo(Info i) {
-        synchronized(locker) {
+        synchronized(mDatabase) {
             // Fortunately, there's a handy ContentValues object for this sort
             // of thing.  I mean, we COULD do manual SQLite calls, but why
             // bother?
@@ -162,7 +160,7 @@ public class StockStoreDatabase {
      * @return String containing the stock quote, or null if it doesn't exist
      */
     public String getStock(Calendar c, Graticule g) {
-        synchronized(locker) {
+        synchronized(mDatabase) {
             Log.d(DEBUG_TAG, "Querying the stock database...");
             // First, adjust the calendar if we need to.
             Calendar cal = Info.makeAdjustedCalendar(c, g);
@@ -186,6 +184,7 @@ public class StockStoreDatabase {
                 if(!cursor.moveToFirst()) return null;
                 
                 toReturn = cursor.getString(0);
+                Log.d(DEBUG_TAG, "Stock found -- Today's lucky number is " + toReturn);
             }
             
             cursor.close();
@@ -198,7 +197,7 @@ public class StockStoreDatabase {
      * many entries should be the max.
      */
     public synchronized void cleanup() {
-        synchronized(locker) {
+        synchronized(mDatabase) {
         	SharedPreferences prefs = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         	
         	Log.d(DEBUG_TAG, "Pruning database...");
@@ -240,7 +239,7 @@ public class StockStoreDatabase {
      * be used if something's gone horribly wrong.
      */
     public synchronized void deleteCache() {
-        synchronized(locker) {
+        synchronized(mDatabase) {
             try {
                 Log.d(DEBUG_TAG, "Emptying the stock cache...");
                 // KABOOM!
