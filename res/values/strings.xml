@@ -56,8 +56,15 @@
 <string name="pref_coordunits_dialogtitle">Select units</string>
 <string name="pref_stockcachesize_title">Stock cache size</string>
 <string name="pref_stockcachesize_summary">Maximum entries to store in the stock cache</string>
+<string name="pref_stockwipe_title">Clear stock cache</string>
+<string name="pref_stockwipe_dialog_text">Are you sure you want to clear all stock cache data?</string>
 <string name="pref_cat_map">Map options</string>
 <string name="pref_cat_other">Other options</string>
+
+<string name="dialog_stockwipe_yes">Yes, clear it</string>
+<string name="dialog_stockwipe_no">No, cancel</string>
+<string name="toast_stockwipe_success">The stock cache database has been cleared.</string>
+<string name="toast_stockwipe_failure">There was a problem clearing the stock cache database.</string>
 
 <string name="menu_item_recenter_normalview">Fit both on screen</string>
 <string name="menu_item_settings">Settings</string>

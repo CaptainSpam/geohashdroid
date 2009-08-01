@@ -238,15 +238,17 @@ public class StockStoreDatabase {
      * Erases everything from the stock cache database.  This is really only to
      * be used if something's gone horribly wrong.
      */
-    public synchronized void deleteCache() {
+    public synchronized boolean deleteCache() {
         synchronized(mDatabase) {
             try {
                 Log.d(DEBUG_TAG, "Emptying the stock cache...");
                 // KABOOM!
                 mDatabase.delete(DATABASE_TABLE, null, null);
+                return true;
             } catch (Exception e) {
                 // If something went wrong, let it go.
                 Log.w(DEBUG_TAG, "HEY!  Couldn't erase the entire stock cache database: " + e.toString());
+                return false;
             }
         }
     }

@@ -378,9 +378,11 @@ public class HashBuilder {
 
     /**
      * Wipes out the entire stock cache.  No, seriously.
+     * 
+     * @return true on success, false on failure
      */
-    public synchronized static void deleteCache() {
-        mStore.deleteCache();
+    public synchronized static boolean deleteCache() {
+        return mStore.deleteCache();
     }
     
     /**

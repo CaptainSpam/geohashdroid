@@ -29,11 +29,8 @@
 			android:persistent="true" android:entries="@array/pref_stockcachesize_entries"
 			android:entryValues="@array/pref_stockcachesize_values"
 			android:defaultValue="15"></ListPreference>
-		<Preference android:summary="I START THE BROWSER"
-			android:title="CLICK ME">
-			<intent android:action="android.intent.action.VIEW"
-				android:data="http://exclaimindustries.net" />
-		</Preference>
+		<Preference android:title="@string/pref_stockwipe_title" 
+			android:key="_stockWipe" />
 	</PreferenceCategory>
 </PreferenceScreen>
 
