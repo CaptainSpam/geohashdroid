@@ -271,7 +271,7 @@ public class GeohashDroid extends Activity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.search_label);
                 build.setTitle(R.string.search_title);
-                build.setIcon(android.R.drawable.ic_dialog_info);
+                build.setIcon(android.R.drawable.ic_dialog_map);
                 build.setNegativeButton(R.string.cancel_label,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
