@@ -271,6 +271,7 @@ public class GeohashDroid extends Activity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.search_label);
                 build.setTitle(R.string.search_title);
+                build.setIcon(android.R.drawable.ic_dialog_info);
                 build.setNegativeButton(R.string.cancel_label,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
@@ -288,6 +289,7 @@ public class GeohashDroid extends Activity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.error_search_failed);
                 build.setTitle(R.string.error_title);
+                build.setIcon(android.R.drawable.ic_dialog_alert);
                 build.setNegativeButton(R.string.darn_label,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
@@ -304,6 +306,7 @@ public class GeohashDroid extends Activity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.stock_label);
                 build.setTitle(R.string.standby_title);
+                build.setIcon(android.R.drawable.ic_dialog_info);
                 build.setNegativeButton(R.string.cancel_label,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
@@ -327,6 +330,7 @@ public class GeohashDroid extends Activity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.error_not_yet_posted);
                 build.setTitle(R.string.error_title);
+                build.setIcon(android.R.drawable.ic_dialog_alert);
                 build.setNegativeButton(R.string.darn_label,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
@@ -343,6 +347,7 @@ public class GeohashDroid extends Activity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.error_server_failure);
                 build.setTitle(R.string.error_title);
+                build.setIcon(android.R.drawable.ic_dialog_alert);
                 build.setNegativeButton(R.string.darn_label,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
