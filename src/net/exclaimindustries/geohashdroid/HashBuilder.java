@@ -333,7 +333,6 @@ public class HashBuilder {
      *         internet for it
      */
     public static boolean hasStockStored(Calendar c, Graticule g) {
-        // This is always false until stock caching is working.
         return mStore.getStock(c, g) != null;
     }
 
@@ -349,7 +348,6 @@ public class HashBuilder {
      *         without going to the internet.
      */
     public static Info getStoredInfo(Calendar c, Graticule g) {
-        // This is always null until stock caching is working.
         String result = mStore.getStock(c, g);
         
         if(result == null) return null;

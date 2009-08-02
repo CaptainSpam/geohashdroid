@@ -25,8 +25,9 @@ import com.google.android.maps.GeoPoint;
  * </p>
  * 
  * <p>
- * <code>Info</code> objects are immutable and are meant to be generated from a
- * HashMaker object as the last step once it has all the data it needs.
+ * <code>Info</code> objects are immutable and are meant to be generated from
+ * HashBuilder as the last step once it has all the data it needs.  It can,
+ * however, be built from anything else as need be.
  * </p>
  * 
  * @author Nicholas Killewald
