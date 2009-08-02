@@ -22,12 +22,20 @@ import com.google.android.maps.Projection;
  * 
  */
 public class FinalDestinationOverlay extends Overlay {
-    private Drawable mDrawable;
-    private GeoPoint mDestination;
+    protected Drawable mDrawable;
+    protected GeoPoint mDestination;
+    protected Graticule mGraticule;
 
-    public FinalDestinationOverlay(Drawable d, GeoPoint p) {
+    /**
+     * Creates a new FinalDestinationOverlay.
+     * 
+     * @param d Drawable to draw as the overlay.  This is presumably a flag.
+     * @param p an Info bundle describing where this destination is
+     */
+    public FinalDestinationOverlay(Drawable d, Info i) {
         mDrawable = d;
-        mDestination = p;
+        mDestination = i.getFinalDestination();
+        mGraticule = i.getGraticule();
     }
 
     @Override

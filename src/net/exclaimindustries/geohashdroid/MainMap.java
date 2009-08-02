@@ -19,6 +19,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
@@ -177,12 +178,7 @@ public class MainMap extends MapActivity {
         // that in all cases.
 
         // Now, add the final destination.
-        Drawable finalMarker = getResources().getDrawable(
-                R.drawable.final_destination);
-        finalMarker.setBounds(0, 0, finalMarker.getIntrinsicWidth(),
-                finalMarker.getIntrinsicHeight());
-        mMapView.getOverlays().add(
-                new FinalDestinationOverlay(finalMarker, mDestination));
+        makeDestinationOverlays();
 
         // If we are restarting, we need to check if we were autozooming when
         // we last left off. If we were, recenter the view on the next update
@@ -362,6 +358,46 @@ public class MainMap extends MapActivity {
         resetMapModeMenuItem(menu);
 
         return true;
+    }
+    
+    private void makeDestinationOverlays() {
+        List<Overlay> overlays = mMapView.getOverlays();
+        
+        // First, the final destination.  We make the drawable here because
+        // otherwise we'd need to pass the context in.
+        Drawable finalMarker = getResources().getDrawable(
+                R.drawable.final_destination);
+        finalMarker.setBounds(0, 0, finalMarker.getIntrinsicWidth(),
+                finalMarker.getIntrinsicHeight());
+        overlays.add(new FinalDestinationOverlay(finalMarker, mInfo));
+        
+        // Second, make the eight nearby (disabled) graticule overlays.  The
+        // only possible way this can be complicated is if the user is doing a
+        // Geohashing run somewhere in Greenland where the 30W longitude line
+        // is, which would mean we'd need a new stock value.
+        Drawable nearbyMarker = getResources().getDrawable(
+                R.drawable.final_destination_disabled);
+        nearbyMarker.setBounds(0, 0, nearbyMarker.getIntrinsicWidth(),
+                nearbyMarker.getIntrinsicHeight());
+        
+        for(int i = -1; i <= 1; i++) {
+            for(int j = -1; j <= 1; j++) {
+                if(i == 0 && j == 0)
+                    continue;
+                
+                // Make an offset graticule and get some info from it.
+                Graticule offset = Graticule.createOffsetFrom(mGraticule, i, j);
+                Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
+                
+                if(inf == null) {
+                    Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays! (either we're in Greenland or the cache is busted)");
+                    continue;
+                }
+                
+                // Then, make us a disabled destination...
+                overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf));
+            }
+        }
     }
 
     private void resetRecenterMenuItem() {
