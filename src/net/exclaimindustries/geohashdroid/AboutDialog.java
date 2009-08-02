@@ -32,6 +32,7 @@ public class AboutDialog extends AlertDialog {
 
         setView(inflater.inflate(R.layout.about, null));
         setTitle(R.string.menu_item_about);
+        setIcon(android.R.drawable.ic_dialog_info);
         setButton(getContext().getResources().getString(R.string.ok_label),
                 (Message)null);
     }
