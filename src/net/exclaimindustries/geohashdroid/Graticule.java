@@ -168,8 +168,11 @@ public class Graticule implements Serializable {
      * Constructs a new Graticule offset from an existing one.  That is to say,
      * copy an existing Graticule and move it by however many degrees as is
      * specified.  Under the current implementation, if this gets offset past
-     * the edges of the earth, it will clamp to 89 degrees latitude and 179
-     * degrees longitude (positive or negative).
+     * the edges of the earth, it will attempt to wrap around.  This allows
+     * people in the far eastern regions of Russia to see the nearby meetup
+     * points if they happen to live near the 180E/W longitude line.  It does
+     * not, however, allow for penguins and Santa Claus yet, so don't try to
+     * fling yourself over the poles.
      * </p>
      *
      * <p>
@@ -194,9 +197,7 @@ public class Graticule implements Serializable {
         // equator.  If the sign changes, decrement the amount of the change by
         // one.  This logic is gratiutously loopy.
         boolean goingSouth = (latOff < 0);
-        boolean goingWest = (lonOff < 0);
         latOff = Math.abs(latOff);
-        lonOff = Math.abs(lonOff);
 
         int finalLat = g.getLatitude();
         int finalLon = g.getLongitude();
@@ -219,21 +220,29 @@ public class Graticule implements Serializable {
             }
         }
 
-        if (lonOff != 0) {
-            if (g.isWest() == goingWest) {
-                // Going the same direction, no Meridian-hacking needed.
-                finalLon = g.getLongitude() + lonOff;
-            } else {
-                // Going opposite directions, check for Meridian-hacking.
-                if (g.getLongitude() < lonOff) {
-                    // We cross the Prime Meridian!
-                    lonOff--;
-                    finalWest = !finalWest;
-                }
-                finalLon = Math.abs(g.getLongitude() - lonOff);
-            }
+        // Meridian hacking can be handled differently to also cover planet-
+        // wrapping at the same time.  This entire stunt depends on treating
+        // the longitude as a value between 0 and 359, inclusive.  In this,
+        // 179W is 0, 0W is 179, 0E is 180, and 179E is 359.
+        
+        // Adjust us properly.  Remember the negative zero graticules!
+        if(finalWest)
+            finalLon = -finalLon + 179;
+        else
+            finalLon += 180;
+        
+        finalLon += lonOff;
+        finalLon %= 360;
+        if(finalLon >= 180) {
+            finalWest = false;
+            finalLon -= 180;
+        } else {
+            finalWest = true;
+            finalLon -= 179;
         }
-
+        
+        finalLon = Math.abs(finalLon);
+        
         // Now make the new Graticule object and return it.
         return new Graticule(finalLat, finalSouth, finalLon, finalWest);
     }
