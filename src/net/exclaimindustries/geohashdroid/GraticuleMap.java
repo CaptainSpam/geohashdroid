@@ -92,19 +92,15 @@ public class GraticuleMap extends MapActivity implements
                 control.zoomToSpan(1000000 * GRATS_TALL, 1000000 * GRATS_WIDE);
         } else {
             // We will auto-pan to (and auto-mark) the last known graticule.
-            // That
-            // is, whatever was passed in via the Intent. If there was no
-            // Graticule
-            // in the Intent, we need to default somewhere. As much as I would
-            // like to
-            // default it to wherever I, the author of this program, am
-            // currently
-            // living, that would confuse more people than it would help, given
-            // that at the time of this writing, I'm somewhere in the middle of
-            // Kentucky. There's no real land/water masses to identify where the
-            // user is, and frankly, nobody really cares about Kentucky
-            // (including
-            // me). So that said, the "default" map location is, oh, Boston, MA.
+            // That is, whatever was passed in via the Intent. If there was no
+            // Graticule in the Intent, we need to default somewhere. As much as
+            // I would like to default it to wherever I, the author of this
+            // program, am currently living, that would confuse more people than
+            // it would help, given that at the time of this writing, I'm
+            // somewhere in the middle of Kentucky. There's no real land/water
+            // masses to identify where the user is, and frankly, nobody really
+            // cares about Kentucky (including me). So that said, the "default"
+            // map location is, oh, Boston, MA.
             Intent i = getIntent();
 
             if (i.hasExtra(GRATICULE)) {
