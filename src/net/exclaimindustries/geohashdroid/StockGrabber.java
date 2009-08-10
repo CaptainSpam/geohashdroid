@@ -45,7 +45,7 @@ public class StockGrabber extends Activity {
     
     private final static int DIALOG_FIND_STOCK = 0;
     
-    private final static String DEBUG_TAG = "StockGrabber";
+//    private final static String DEBUG_TAG = "StockGrabber";
     
     private Calendar mCal;
     private Graticule mGrat;
@@ -84,8 +84,8 @@ public class StockGrabber extends Activity {
             success(inf);
             return;
         } else {
-            // Otherwise, we need a stock runner, AND a dialog.  Meaning we
-            // actually display something.
+            // Otherwise, we need a stock runner.  When setContentView hits,
+        	// the dialog gets thrown up.
             requestWindowFeature(Window.FEATURE_LEFT_ICON);
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
                     WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
@@ -94,11 +94,11 @@ public class StockGrabber extends Activity {
             
             getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, 
                     android.R.drawable.ic_dialog_info);
-//            showDialog(DIALOG_FIND_STOCK);
-//            mRunner = HashBuilder.requestStockRunner(mCal, mGrat,
-//                    new StockFetchHandler(Looper.myLooper()));
-//            mThread = new Thread(mRunner);
-//            mThread.start();
+
+            mRunner = HashBuilder.requestStockRunner(mCal, mGrat,
+                    new StockFetchHandler(Looper.myLooper()));
+            mThread = new Thread(mRunner);
+            mThread.start();
         }
     }
 
@@ -185,14 +185,8 @@ public class StockGrabber extends Activity {
         }
         
         public void handleMessage(Message message) {
-            // First, knock out the dialog, if it exists.
-            try {
-                dismissDialog(DIALOG_FIND_STOCK);
-            } catch (Exception e) {
-                Log.e(DEBUG_TAG, "A message came in to StockGrabber.StockFetchHandler, but the dialog wasn't up!");
-            }
-            
-            // Then, analyze the result and act upon it.
+            // Act upon the result.  The "dialog" gets closed as soon as this
+        	// Activity returns a result.
             if (message.what != HashBuilder.StockRunner.ALL_OKAY) {
                 switch (message.what) {
                     case HashBuilder.StockRunner.ERROR_NOT_POSTED:
