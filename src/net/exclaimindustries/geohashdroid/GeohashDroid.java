@@ -29,6 +29,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -55,8 +56,10 @@ public class GeohashDroid extends Activity {
     public static final String MONTH = "month";
     public static final String DAY = "day";
     public static final String INFO = "info";
+    public static final String CALENDAR = "calendar";
+    public static final String GRATICULE = "graticule";
 
-    // private static final String DEBUG_TAG = "GeohashDroid";
+    private static final String DEBUG_TAG = "GeohashDroid";
 
     private static final int DIALOG_SEARCHING = 0;
     private static final int DIALOG_SEARCH_FAIL = 1;
@@ -73,6 +76,7 @@ public class GeohashDroid extends Activity {
     private static final int MENU_ABOUT = 1;
 
     private static final int REQUEST_PICK_GRATICULE = 0;
+    private static final int REQUEST_STOCK = 1;
 
     private EditText mLatitude;
     private EditText mLongitude;
@@ -662,7 +666,7 @@ public class GeohashDroid extends Activity {
 
                 i.putExtra(GraticuleMap.GRATICULE, g);
 
-                startActivityForResult(i, 0);
+                startActivityForResult(i, REQUEST_PICK_GRATICULE);
             }
 
         });
@@ -682,23 +686,28 @@ public class GeohashDroid extends Activity {
                 Graticule grat = new Graticule(mLatitude.getText().toString(),
                         mLongitude.getText().toString());
                 
-                // Now we run the storage check.
-                Info temp = HashBuilder.getStoredInfo(cal, grat);
+                Intent i = new Intent(GeohashDroid.this, StockGrabber.class);
+                i.putExtra(GRATICULE, grat);
+                i.putExtra(CALENDAR, cal);
+                startActivityForResult(i, REQUEST_STOCK);
                 
-                if(temp != null) {
-                    // If that came back valid, we can go straight to the map.
-                    dispatchMapIntent(temp);
-                } else {
-                    // If not, we need a stock runner.  Throw up the dialog...
-                    mLastDialog = DIALOG_FIND_STOCK;
-                    showDialog(DIALOG_FIND_STOCK);
-                    
-                    // And let's get going.
-                    mStockRunner = HashBuilder.requestStockRunner(cal, grat,
-                            new HashFetchThreadHandler(Looper.myLooper()));
-                    mHashFetcherThread = new Thread(mStockRunner);
-                    mHashFetcherThread.start();
-                }
+//                // Now we run the storage check.
+//                Info temp = HashBuilder.getStoredInfo(cal, grat);
+//                
+//                if(temp != null) {
+//                    // If that came back valid, we can go straight to the map.
+//                    dispatchMapIntent(temp);
+//                } else {
+//                    // If not, we need a stock runner.  Throw up the dialog...
+//                    mLastDialog = DIALOG_FIND_STOCK;
+//                    showDialog(DIALOG_FIND_STOCK);
+//                    
+//                    // And let's get going.
+//                    mStockRunner = HashBuilder.requestStockRunner(cal, grat,
+//                            new HashFetchThreadHandler(Looper.myLooper()));
+//                    mHashFetcherThread = new Thread(mStockRunner);
+//                    mHashFetcherThread.start();
+//                }
             }
         });
 
@@ -785,6 +794,24 @@ public class GeohashDroid extends Activity {
                     editor.putString(GHDConstants.PREF_DEFAULT_LAT, g.getLatitudeString());
                     editor.putString(GHDConstants.PREF_DEFAULT_LON, g.getLongitudeString());
                     editor.commit();
+                }
+            }
+            case REQUEST_STOCK: {
+                switch(resultCode) {
+                    case StockGrabber.RESULT_OK: {
+                        Info i = (Info)data.getSerializableExtra(INFO);
+                        Log.d(DEBUG_TAG, "Request okay, stock was " + i.getStockString());
+                        break;
+                    }
+                    case StockGrabber.RESULT_NOT_POSTED_YET:
+                        Log.d(DEBUG_TAG, "Request not okay, stock wasn't posted yet.");
+                        break;
+                    case StockGrabber.RESULT_CANCEL:
+                        Log.d(DEBUG_TAG, "Request cancelled.");
+                        break;
+                    case StockGrabber.RESULT_SERVER_FAILURE:
+                        Log.e(DEBUG_TAG, "Request not okay, server failure.");
+                        break;
                 }
             }
 

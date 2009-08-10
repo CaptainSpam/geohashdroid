@@ -442,8 +442,7 @@ public class MainMap extends MapActivity {
                 resetNormalCenter(point);
 
                 // Soooooo, if autozoom was off and changing this makes it on,
-                // THEN
-                // we toast back up.
+                // THEN we toast back up.
                 boolean wasAutoZoomOn = isAutoZoomOn();
                 mAutoZoom = true;
                 if (!wasAutoZoomOn && isAutoZoomOn()) {
