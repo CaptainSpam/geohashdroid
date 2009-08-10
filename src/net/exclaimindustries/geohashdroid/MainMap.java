@@ -386,7 +386,7 @@ public class MainMap extends MapActivity {
                     continue;
                 
                 // Make an offset graticule and get some info from it.
-                Graticule offset = Graticule.createOffsetFrom(mGraticule, i, j);
+                Graticule offset = Graticule.createOffsetFrom(mGraticule, j, i);
                 Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
                 
                 if(inf == null) {
