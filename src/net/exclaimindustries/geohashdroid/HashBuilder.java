@@ -26,6 +26,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * <p>
@@ -53,9 +54,15 @@ public class HashBuilder {
     // once.  This really shouldn't ever happen, but just in case.
     private static Object locker = new Object();
     
-//    private static final String DEBUG_TAG = "HashBuilder";
+    private static final String DEBUG_TAG = "HashBuilder";
     
     private static StockStoreDatabase mStore;
+    
+    // These two allow for quick reloading of the most recent stock in a given
+    // instance of the program, bypassing the SQLite database, as well as allow
+    // for a small cache even if the SQLite database is turned off by preferences.
+    private static Calendar mLastDate;
+    private static String mLastStock;
 
     /**
      * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
@@ -333,6 +340,14 @@ public class HashBuilder {
      *         internet for it
      */
     public static boolean hasStockStored(Calendar c, Graticule g) {
+    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
+    	
+    	if(mLastDate != null && mLastStock != null
+    			&& mLastDate.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
+    			&& mLastDate.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
+    			&& mLastDate.get(Calendar.YEAR) == sCal.get(Calendar.YEAR))
+    		return true;
+    	
         return mStore.getStock(c, g) != null;
     }
 
@@ -348,11 +363,37 @@ public class HashBuilder {
      *         without going to the internet.
      */
     public static Info getStoredInfo(Calendar c, Graticule g) {
+    	// First, check the quick cache.
+    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
+    	
+    	// We don't use Calendar.equals here, as that checks all properties,
+    	// including potentially some we don't really care about.
+    	if(mLastDate != null && mLastStock != null
+    			&& mLastDate.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
+    			&& mLastDate.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
+    			&& mLastDate.get(Calendar.YEAR) == sCal.get(Calendar.YEAR)) {
+    		Log.d(DEBUG_TAG, "Stock price is in quick cache: " + mLastStock);
+    		return createInfo(c, mLastStock, g);
+    	}
+    	
         String result = mStore.getStock(c, g);
         
         if(result == null) return null;
         
+        quickCache(sCal, result);
         return createInfo(c, result, g);
+    }
+    
+    /**
+     * Puts the given data into the quick cache.  Note that the Calendar object
+     * is the date of the stock, not the date of the expedition.
+     * 
+     * @param sCal stock calendar to store
+     * @param stock stock value to store
+     */
+    private static void quickCache(Calendar sCal, String stock) {
+    	mLastDate = sCal;
+    	mLastStock = stock;
     }
     
     /**
@@ -362,6 +403,11 @@ public class HashBuilder {
      * @param i an Info bundle with everything we need
      */
     private synchronized static void storeData(Info i) {
+    	// First, replace the last-known results.
+    	quickCache(Info.makeAdjustedCalendar(i.getCalendar(), i.getGraticule()),
+    			i.getStockString());
+    	
+    	// Then, write it to the database.
         mStore.storeInfo(i);
         mStore.cleanup();
     }
