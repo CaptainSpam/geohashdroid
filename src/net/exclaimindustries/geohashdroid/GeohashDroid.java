@@ -29,7 +29,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -59,11 +58,11 @@ public class GeohashDroid extends Activity {
     public static final String CALENDAR = "calendar";
     public static final String GRATICULE = "graticule";
 
-    private static final String DEBUG_TAG = "GeohashDroid";
+//    private static final String DEBUG_TAG = "GeohashDroid";
 
     private static final int DIALOG_SEARCHING = 0;
     private static final int DIALOG_SEARCH_FAIL = 1;
-    private static final int DIALOG_FIND_STOCK = 2;
+//    private static final int DIALOG_FIND_STOCK = 2;
     private static final int DIALOG_STOCK_NOT_POSTED = 3;
     private static final int DIALOG_STOCK_ERROR = 4;
     private static final int DIALOG_ABOUT = 5;
@@ -85,9 +84,6 @@ public class GeohashDroid extends Activity {
     private LocationManager mManager;
     private LocalLocationListener mListener;
 
-    private HashBuilder.StockRunner mStockRunner;
-    private Thread mHashFetcherThread;
-
     private static int mLastDialog = ALL_OKAY;
 
     /** Called when the activity is first created. */
@@ -106,11 +102,6 @@ public class GeohashDroid extends Activity {
         // a bit very very wrong.
         if (getLastNonConfigurationInstance() != null) {
             RetainedThings retainers = (RetainedThings)getLastNonConfigurationInstance();
-            mHashFetcherThread = retainers.hashFetcherThread;
-            mStockRunner = retainers.stockRunner;
-            if (mStockRunner != null)
-                mStockRunner.changeHandler(new HashFetchThreadHandler(
-                        Looper.myLooper()));
             mManager = retainers.locationManager;
             mListener = retainers.locationListener;
         }
@@ -189,10 +180,7 @@ public class GeohashDroid extends Activity {
                     || mLastDialog == DIALOG_STOCK_NOT_POSTED
                     || mLastDialog == DIALOG_STOCK_ERROR)
                 showDialog(mLastDialog);
-            else if (mHashFetcherThread != null && mHashFetcherThread.isAlive()) {
-                mLastDialog = DIALOG_FIND_STOCK;
-                showDialog(DIALOG_FIND_STOCK);
-            } else if (mLastDialog == DIALOG_SEARCHING && mListener != null
+            else if (mLastDialog == DIALOG_SEARCHING && mListener != null
                     && !mListener.isDone()) {
                 mListener.resetHandler(new LocationListenerHandler(Looper
                         .myLooper()));
@@ -300,30 +288,6 @@ public class GeohashDroid extends Activity {
                                     int whichButton) {
                                 GeohashDroid.this
                                         .dismissDialog(DIALOG_SEARCH_FAIL);
-                                mLastDialog = ALL_OKAY;
-                            }
-                        });
-                return build.create();
-            }
-            case DIALOG_FIND_STOCK: {
-                // Box that says we're looking for stock data.
-                AlertDialog.Builder build = new AlertDialog.Builder(this);
-                build.setMessage(R.string.stock_label);
-                build.setTitle(R.string.standby_title);
-                build.setIcon(android.R.drawable.ic_dialog_info);
-                build.setNegativeButton(R.string.cancel_label,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                    int whichButton) {
-                                // Abort the connection and drop the dialog.
-                                if (mHashFetcherThread != null
-                                        && mHashFetcherThread.isAlive()
-                                        && mStockRunner != null)
-                                {
-                                    mStockRunner.abort();
-                                }
-                                GeohashDroid.this
-                                        .dismissDialog(DIALOG_FIND_STOCK);
                                 mLastDialog = ALL_OKAY;
                             }
                         });
@@ -598,37 +562,6 @@ public class GeohashDroid extends Activity {
         resetGoButton();
     }
 
-    private class HashFetchThreadHandler extends Handler {
-        public HashFetchThreadHandler(Looper looper) {
-            super(looper);
-        }
-
-        public void handleMessage(Message message) {
-            // Once we get the message to throw up a new dialog, act on it.
-            try {
-                dismissDialog(DIALOG_FIND_STOCK);
-            } catch (Exception e) {
-            }
-            if (message.what != HashBuilder.StockRunner.ALL_OKAY) {
-                switch (message.what) {
-                    case HashBuilder.StockRunner.ERROR_NOT_POSTED:
-                        showDialog(DIALOG_STOCK_NOT_POSTED);
-                        break;
-                    case HashBuilder.StockRunner.ERROR_SERVER:
-                        showDialog(DIALOG_STOCK_ERROR);
-                        break;
-                }
-            } else {
-                // If, however, we got the all clear, then we're clear! Get
-                // the Info object and act!
-                Info info = (Info)message.obj;
-
-                dispatchMapIntent(info);
-            }
-
-        }
-    }
-
     private void attachListeners() {
         // Now, register the Refresh button's activity...
         Button searchButton = (Button)findViewById(R.id.RefreshButton);
@@ -756,8 +689,6 @@ public class GeohashDroid extends Activity {
 
     private class RetainedThings {
         // Yes, this is just a bucket of stuff to retain.
-        private HashBuilder.StockRunner stockRunner;
-        private Thread hashFetcherThread;
         private LocationManager locationManager;
         private LocalLocationListener locationListener;
     }
@@ -766,8 +697,6 @@ public class GeohashDroid extends Activity {
     public Object onRetainNonConfigurationInstance() {
         // Retain what needs retainin'.
         RetainedThings toReturn = new RetainedThings();
-        toReturn.stockRunner = mStockRunner;
-        toReturn.hashFetcherThread = mHashFetcherThread;
         toReturn.locationManager = mManager;
         toReturn.locationListener = mListener;
         return toReturn;
@@ -775,8 +704,6 @@ public class GeohashDroid extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
         switch (requestCode) {
             case REQUEST_PICK_GRATICULE: {
                 // A return trip from the Graticule picker means we update the
@@ -797,20 +724,21 @@ public class GeohashDroid extends Activity {
                 }
             }
             case REQUEST_STOCK: {
+                // Welcome back from the stock grabber!
                 switch(resultCode) {
                     case StockGrabber.RESULT_OK: {
                         Info i = (Info)data.getSerializableExtra(INFO);
-                        Log.d(DEBUG_TAG, "Request okay, stock was " + i.getStockString());
+                        dispatchMapIntent(i);
                         break;
                     }
                     case StockGrabber.RESULT_NOT_POSTED_YET:
-                        Log.d(DEBUG_TAG, "Request not okay, stock wasn't posted yet.");
-                        break;
-                    case StockGrabber.RESULT_CANCEL:
-                        Log.d(DEBUG_TAG, "Request cancelled.");
+                        showDialog(DIALOG_STOCK_NOT_POSTED);
                         break;
                     case StockGrabber.RESULT_SERVER_FAILURE:
-                        Log.e(DEBUG_TAG, "Request not okay, server failure.");
+                        showDialog(DIALOG_STOCK_ERROR);
+                        break;
+                    case StockGrabber.RESULT_CANCEL:
+                        // This doesn't really do anything.
                         break;
                 }
             }
@@ -834,7 +762,7 @@ public class GeohashDroid extends Activity {
         Intent i = new Intent(GeohashDroid.this, MainMap.class);
 
         i.putExtra(INFO, info);
-        startActivityForResult(i, 0);
+        startActivity(i);
     }
 
 }
