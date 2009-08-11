@@ -18,9 +18,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.view.Window;
-import android.view.WindowManager;
 
 /**
  * The <code>StockGrabber</code> activity grabs a given stock value and returns
@@ -87,8 +85,12 @@ public class StockGrabber extends Activity {
             // Otherwise, we need a stock runner.  When setContentView hits,
         	// the dialog gets thrown up.
             requestWindowFeature(Window.FEATURE_LEFT_ICON);
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
-                    WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+            // I was going to make it so that any "standby" dialog (either the
+            // stock grabber or the location finder) would blur the background
+            // to indicate it was doing something, but I really have to think
+            // that out a bit better.  Doesn't look right.
+//            getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
+//                    WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
 
             setContentView(R.layout.stockdialog);
             
