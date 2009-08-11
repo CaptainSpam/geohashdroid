@@ -84,18 +84,7 @@ public class StockGrabber extends Activity {
         } else {
             // Otherwise, we need a stock runner.  When setContentView hits,
         	// the dialog gets thrown up.
-            requestWindowFeature(Window.FEATURE_LEFT_ICON);
-            // I was going to make it so that any "standby" dialog (either the
-            // stock grabber or the location finder) would blur the background
-            // to indicate it was doing something, but I really have to think
-            // that out a bit better.  Doesn't look right.
-//            getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
-//                    WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
-
-            setContentView(R.layout.stockdialog);
-            
-            getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, 
-                    android.R.drawable.ic_dialog_info);
+            displaySelf();
 
             mRunner = HashBuilder.requestStockRunner(mCal, mGrat,
                     new StockFetchHandler(Looper.myLooper()));
@@ -179,6 +168,21 @@ public class StockGrabber extends Activity {
         i.putExtra(GeohashDroid.INFO, inf);
         setResult(RESULT_OK, i);
         finish();
+    }
+    
+    private void displaySelf() {
+        // ONLY CALL THIS ONCE!
+        requestWindowFeature(Window.FEATURE_LEFT_ICON);
+        // I was going to make it so that any "standby" dialog (either the
+        // stock grabber or the location finder) would blur the background
+        // to indicate it was doing something, but I really have to think
+        // that out a bit better.  Doesn't look right.
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
+//                WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+        setContentView(R.layout.stockdialog);
+        
+        getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, 
+                android.R.drawable.ic_dialog_info);
     }
     
     private class StockFetchHandler extends Handler {
