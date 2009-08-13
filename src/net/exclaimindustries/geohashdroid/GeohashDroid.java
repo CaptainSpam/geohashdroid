@@ -704,6 +704,7 @@ public class GeohashDroid extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case REQUEST_PICK_GRATICULE: {
                 // A return trip from the Graticule picker means we update the
@@ -722,6 +723,7 @@ public class GeohashDroid extends Activity {
                     editor.putString(GHDConstants.PREF_DEFAULT_LON, g.getLongitudeString());
                     editor.commit();
                 }
+                break;
             }
             case REQUEST_STOCK: {
                 // Welcome back from the stock grabber!
@@ -741,6 +743,7 @@ public class GeohashDroid extends Activity {
                         // This doesn't really do anything.
                         break;
                 }
+                break;
             }
 
         }
