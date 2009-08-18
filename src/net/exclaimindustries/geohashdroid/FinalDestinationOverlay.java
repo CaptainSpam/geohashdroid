@@ -60,10 +60,9 @@ public class FinalDestinationOverlay extends Overlay {
             // x needs to be adjusted for the skew, depending on the sign.
             // TODO: Check the skewing algorithm; this can't possibly be right
             // in all cases (i.e. SHADOW_X_SKEW changing).
-            int sign = (SHADOW_X_SKEW > 0 ? 1 : -1);
             float scalefactor = 1 - Math.abs(SHADOW_X_SKEW);
-            x = (int)(p.toPixels(mDestination, null).x - (sign * (mDrawable
-                    .getIntrinsicWidth() * scalefactor)));
+            x = (int)(p.toPixels(mDestination, null).x + (mDrawable
+                    .getIntrinsicWidth() * scalefactor));
             y = (int)(p.toPixels(mDestination, null).y - (mDrawable
                     .getIntrinsicHeight() * SHADOW_Y_SCALE));
         }
