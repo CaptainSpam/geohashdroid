@@ -176,8 +176,13 @@ public class HashBuilder {
         }
         
         private void sendMessage(Object toReturn) {
-            Message m = Message.obtain(mHandler, mStatus, toReturn);
-            m.sendToTarget();
+            // If mHandler is null, either this wasn't set up right or we've
+            // been told to abort and need to put the brakes on quick.
+            if(mHandler != null)
+            {
+                Message m = Message.obtain(mHandler, mStatus, toReturn);
+                m.sendToTarget();
+            }   
         }
         
         private String fetchStock(Calendar sCal) throws FileNotFoundException, IOException {
@@ -283,7 +288,11 @@ public class HashBuilder {
         public void abort() {
         	if(mRequest != null)
     	    {
+        	    // Bail out of the request...
     	        mRequest.abort();
+    	        // Put the brakes on the handler...
+    	        mHandler = null;
+    	        // And change status.
     	        mStatus = ABORTED;
     	    }
         }
