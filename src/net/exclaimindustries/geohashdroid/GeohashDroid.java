@@ -728,7 +728,7 @@ public class GeohashDroid extends Activity {
             case REQUEST_STOCK: {
                 // Welcome back from the stock grabber!
                 switch(resultCode) {
-                    case StockGrabber.RESULT_OK: {
+                    case RESULT_OK: {
                         Info i = (Info)data.getSerializableExtra(INFO);
                         dispatchMapIntent(i);
                         break;
@@ -739,7 +739,7 @@ public class GeohashDroid extends Activity {
                     case StockGrabber.RESULT_SERVER_FAILURE:
                         showDialog(DIALOG_STOCK_ERROR);
                         break;
-                    case StockGrabber.RESULT_CANCEL:
+                    case RESULT_CANCELED:
                         // This doesn't really do anything.
                         break;
                 }

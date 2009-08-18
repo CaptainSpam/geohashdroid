@@ -36,10 +36,8 @@ public class StockGrabber extends Activity {
     // 2. If so, good, return right away.
     // 3. If not, spawn the thread.  Make sure the thread gets stored away in
     // case this activity dies before it's done.
-    public final static int RESULT_OK = 0;
     public final static int RESULT_NOT_POSTED_YET = 1;
     public final static int RESULT_SERVER_FAILURE = 2;
-    public final static int RESULT_CANCEL = 3;
     
     private final static int DIALOG_FIND_STOCK = 0;
     
@@ -89,38 +87,19 @@ public class StockGrabber extends Activity {
             mRunner = HashBuilder.requestStockRunner(mCal, mGrat,
                     new StockFetchHandler(Looper.myLooper()));
             mThread = new Thread(mRunner);
+            mThread.setName("StockRunnerThread");
             mThread.start();
         }
     }
 
     @Override
     protected void onDestroy() {
-        // TODO Auto-generated method stub
         super.onDestroy();
-    }
-
-    @Override
-    protected void onPause() {
-        // TODO Auto-generated method stub
-        super.onPause();
-    }
-
-    @Override
-    protected void onResume() {
-        // TODO Auto-generated method stub
-        super.onResume();
-    }
-
-    @Override
-    protected void onStart() {
-        // TODO Auto-generated method stub
-        super.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        // TODO Auto-generated method stub
-        super.onStop();
+        // When destroyed, just forget about the thread.  If we got a stock but
+        // haven't returned yet (now THAT'S a narrow timing window!), it'll be
+        // there for us in HashBuilder next time.
+        if(mRunner != null)
+            mRunner.abort();
     }
     
     @Override
@@ -145,7 +124,7 @@ public class StockGrabber extends Activity {
                                 }
                                 StockGrabber.this
                                         .dismissDialog(DIALOG_FIND_STOCK);
-                                failure(RESULT_CANCEL);
+                                failure(RESULT_CANCELED);
                             }
                         });
                 return build.create();
