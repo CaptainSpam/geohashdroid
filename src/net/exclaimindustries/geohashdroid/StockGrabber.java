@@ -10,9 +10,6 @@ package net.exclaimindustries.geohashdroid;
 import java.util.Calendar;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -38,8 +35,6 @@ public class StockGrabber extends Activity {
     // case this activity dies before it's done.
     public final static int RESULT_NOT_POSTED_YET = 1;
     public final static int RESULT_SERVER_FAILURE = 2;
-    
-    private final static int DIALOG_FIND_STOCK = 0;
     
 //    private final static String DEBUG_TAG = "StockGrabber";
     
@@ -100,38 +95,6 @@ public class StockGrabber extends Activity {
         // there for us in HashBuilder next time.
         if(mRunner != null)
             mRunner.abort();
-    }
-    
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        switch(id) {
-            case DIALOG_FIND_STOCK: {
-                // Box that says we're looking for stock data.
-                AlertDialog.Builder build = new AlertDialog.Builder(this);
-                build.setMessage(R.string.stock_label);
-                build.setTitle(R.string.standby_title);
-                build.setIcon(android.R.drawable.ic_dialog_info);
-                build.setNegativeButton(R.string.cancel_label,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                    int whichButton) {
-                                // Abort the connection and drop the dialog.
-                                if (mThread != null
-                                        && mThread.isAlive()
-                                        && mRunner != null)
-                                {
-                                    mRunner.abort();
-                                }
-                                StockGrabber.this
-                                        .dismissDialog(DIALOG_FIND_STOCK);
-                                failure(RESULT_CANCELED);
-                            }
-                        });
-                return build.create();
-            }
-        }
-
-        return null;
     }
 
     private void failure(int resultcode) {
