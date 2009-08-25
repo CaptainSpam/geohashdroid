@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string-array name="pref_units_entries">
+        <item>Metric (km)</item>
+        <item>Imperial (miles)</item>
+    </string-array>
+    <string-array name="pref_units_values">
+        <item>Metric</item>
+        <item>Imperial</item>
+    </string-array>
+    <string-array name="pref_coordunits_entries">
+    	<item>Degrees (38.040°N)</item>
+    	<item>Minutes (38° 2.40′N)</item>
+    	<item>Seconds (38° 2′ 23.7″N)</item>
+    </string-array>
+    <string-array name="pref_coordunits_values">
+    	<item>Degrees</item>
+    	<item>Minutes</item>
+    	<item>Seconds</item>
+    </string-array>    
+    <string-array name="pref_infobox_entries">
+    	<item>None</item>
+    	<item>Small</item>
+    	<item>Jumbo</item>
+    </string-array>
+    <string-array name="pref_infobox_values">
+    	<item>None</item>
+    	<item>Small</item>
+    	<item>Jumbo</item>
+    </string-array>
+    <string-array name="pref_stockcachesize_entries">
+    	<item>No cache</item>
+    	<item>10</item>
+    	<item>15</item>
+    	<item>25</item>
+    	<item>50</item>
+    	<item>100</item>
+    </string-array>
+    <!-- Yes, this apparently needs to be a string array.  ListPreference
+    	 doesn't like integer arrays. -->
+    <string-array name="pref_stockcachesize_values">
+    	<item>0</item>
+    	<item>10</item>
+    	<item>15</item>
+    	<item>25</item>
+    	<item>50</item>
+    	<item>100</item>
+    </string-array>
+</resources>

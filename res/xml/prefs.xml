@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory android:title="@string/pref_cat_map">
+		<CheckBoxPreference android:key="AutoZoom"
+			android:title="@string/pref_autozoom_title" android:summary="@string/pref_autozoom_summary"
+			android:defaultValue="true" android:persistent="true" />
+		<ListPreference android:key="InfoBoxSize"
+			android:summary="@string/pref_infobox_summary" android:title="@string/pref_infobox_title"
+			android:defaultValue="Small" android:persistent="true"
+			android:entries="@array/pref_infobox_entries" android:entryValues="@array/pref_infobox_values"
+			android:dialogTitle="@string/pref_infobox_dialogtitle" />
+		<ListPreference android:key="Units"
+			android:summary="@string/pref_units_summary" android:title="@string/pref_units_title"
+			android:defaultValue="Metric" android:persistent="true"
+			android:entries="@array/pref_units_entries" android:entryValues="@array/pref_units_values"
+			android:dialogTitle="@string/pref_units_dialogtitle" />
+		<ListPreference android:key="CoordUnits"
+			android:summary="@string/pref_coordunits_summary" android:title="@string/pref_coordunits_title"
+			android:defaultValue="Degrees" android:persistent="true"
+			android:entries="@array/pref_coordunits_entries" android:entryValues="@array/pref_coordunits_values"
+			android:dialogTitle="@string/pref_coordunits_dialogtitle" />
+	</PreferenceCategory>
+  <PreferenceCategory android:title="@string/pref_cat_wiki">
+    <EditTextPreference android:key="WikiUserName"
+      android:summary="@string/pref_wikiusername_summary" android:title="@string/pref_wikiusername_title"
+      android:defaultValue="" android:persistent="true"
+      android:dialogTitle="@string/pref_wikiusername_dialogtitle" />
+    <EditTextPreference android:key="WikiPassword"
+      android:summary="@string/pref_wikipassword_summary" android:title="@string/pref_wikipassword_title"
+      android:defaultValue="" android:persistent="true"
+      android:dialogTitle="@string/pref_wikipassword_dialogtitle" />
+  </PreferenceCategory>
+	<PreferenceCategory android:title="@string/pref_cat_other">
+		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"
+			android:key="RememberGraticule" android:title="@string/pref_remembergraticule_title"
+			android:defaultValue="true" android:persistent="true" />
+		<ListPreference android:summary="@string/pref_stockcachesize_summary"
+			android:title="@string/pref_stockcachesize_title" android:key="StockCacheSize"
+			android:persistent="true" android:entries="@array/pref_stockcachesize_entries"
+			android:entryValues="@array/pref_stockcachesize_values"
+			android:defaultValue="15"></ListPreference>
+		<Preference android:title="@string/pref_stockwipe_title" 
+			android:key="_stockWipe" />
+	</PreferenceCategory>
+</PreferenceScreen>
+

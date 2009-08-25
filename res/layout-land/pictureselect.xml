@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+  <Gallery xmlns:android="http://schemas.android.com/apk/res/android" 
+        android:id="@+id/gallery"
+        android:layout_width="fill_parent"
+        android:layout_height="140sp"/>
+  <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+    <EditText android:id="@+id/wikiedittext"
+        android:layout_width="250sp"
+        android:layout_height="fill_parent"
+        android:text="..."/>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+      <CheckBox android:id="@+id/includelocation"
+          android:layout_width="wrap_content"
+          android:layout_height="36sp"
+          android:text="Append coordinates"/>
+      <CheckBox android:id="@+id/includetime"
+          android:layout_width="wrap_content"
+          android:layout_height="36sp"
+          android:text="Append local timestamp"/>
+      <Button android:id="@+id/wikieditbutton"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Submit to gallery"/>
+      <TextView android:id="@+id/warningmessage"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"/>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

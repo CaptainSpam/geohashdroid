@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+
+	<dimen name="button_go_width">100px</dimen>
+	<dimen name="button_go_height">40px</dimen>
+	<dimen name="infobox_width">160px</dimen>
+	<dimen name="infobox_height">100px</dimen>
+	<dimen name="infobox_padding">5px</dimen>
+
+	<dimen name="input_graticule_width">85px</dimen>
+	<dimen name="input_graticule_fontsize">12pt</dimen>
+	<dimen name="infobox_jumbo_fontsize">22dp</dimen>
+	<dimen name="infobox_jumbo_fontsize_portrait">18dp</dimen>
+	<dimen name="details_title_fontsize">18pt</dimen>
+	<dimen name="details_title_fontsize_land">16pt</dimen>
+	<dimen name="details_subtitle_fontsize">14pt</dimen>
+	<dimen name="details_coords_fontsize">12pt</dimen>
+	<dimen name="details_coords_fontsize_land">10pt</dimen>
+	<dimen name="details_distance_fontsize">10pt</dimen>
+	<dimen name="details_accuracy_fontsize">6pt</dimen>
+	<dimen name="details_padding">12px</dimen>
+	<dimen name="details_padding_horiz">10px</dimen>
+	<dimen name="details_distance_padding">10px</dimen>
+
+	<dimen name="main_padding">5px</dimen>
+
+
+
+</resources>
