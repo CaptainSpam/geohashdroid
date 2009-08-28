@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.Window;
+import android.view.WindowManager;
 
 /**
  * The <code>StockGrabber</code> activity grabs a given stock value and returns
@@ -114,17 +115,17 @@ public class StockGrabber extends Activity {
     
     private void displaySelf() {
         // ONLY CALL THIS ONCE!
-        requestWindowFeature(Window.FEATURE_LEFT_ICON);
-        // I was going to make it so that any "standby" dialog (either the
-        // stock grabber or the location finder) would blur the background
-        // to indicate it was doing something, but I really have to think
-        // that out a bit better.  Doesn't look right.
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
-//                WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+        // Remove the title so it looks sorta right (the Dialog theme doesn't
+        // *quite* get it right, so no title looks a lot better).
+        requestWindowFeature(Window.FEATURE_NO_TITLE); 
+
+        // Blur the background.  This may change.
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
+                WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+        
+        // Throw up content and away we go!
         setContentView(R.layout.stockdialog);
         
-        getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, 
-                android.R.drawable.ic_dialog_info);
     }
     
     private class StockFetchHandler extends Handler {

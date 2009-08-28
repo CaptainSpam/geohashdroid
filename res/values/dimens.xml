@@ -23,6 +23,8 @@
 	<dimen name="details_distance_padding">10px</dimen>
 
 	<dimen name="main_padding">5px</dimen>
+	<dimen name="dialog_font_size">8pt</dimen>
+	<dimen name="dialog_padding">10px</dimen>
 
 
 
