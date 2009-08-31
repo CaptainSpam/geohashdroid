@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import android.content.Context;
@@ -81,10 +82,16 @@ public class MainMap extends MapActivity {
 
     // The menu we're holding on to to disable
     private Menu mMenu;
+    
+    // Whatever the last state of the Nearby Points preference was.  This is
+    // mostly for efficiency; we only need to act if this changed.
+    private boolean mNearbyOn;
 
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
 
         // First, reset the wakelock. The last one, if one was there in the
         // first place, was released on the last onStop. Thus, this is safe.
@@ -178,7 +185,14 @@ public class MainMap extends MapActivity {
         // that in all cases.
 
         // Now, add the final destination.
-        makeDestinationOverlays();
+        addFinalDestination();
+        
+        // Then, if need be, add the nearby points.  mNearbyOn is initialized
+        // here.
+        mNearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
+        
+        if(mNearbyOn)
+            addNearbyPoints();
 
         // If we are restarting, we need to check if we were autozooming when
         // we last left off. If we were, recenter the view on the next update
@@ -271,6 +285,18 @@ public class MainMap extends MapActivity {
         }
 
         populateInfoBox();
+        
+        // Now, bring in the nearby points, if needed.  If not needed, remove
+        // them.  Only do either if it changed since last time we saw them.
+        boolean nearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
+        
+        if(nearbyOn != mNearbyOn) {
+            if(nearbyOn)
+                addNearbyPoints();
+            else
+                removeNearbyPoints();
+            mNearbyOn = nearbyOn;
+        }
 
         // MyLocationOverlay comes right back on.
         mMyLocation.enableMyLocation();
@@ -360,21 +386,21 @@ public class MainMap extends MapActivity {
         return true;
     }
     
-    private void makeDestinationOverlays() {
+    private void addFinalDestination() {
         List<Overlay> overlays = mMapView.getOverlays();
         
-        // First, the final destination.  We make the drawable here because
+        // Add in the final destination.  We make the drawable here because
         // otherwise we'd need to pass the context in.
         Drawable finalMarker = getResources().getDrawable(
                 R.drawable.final_destination);
         finalMarker.setBounds(0, 0, finalMarker.getIntrinsicWidth(),
                 finalMarker.getIntrinsicHeight());
         overlays.add(new FinalDestinationOverlay(finalMarker, mInfo));
+    }
+    
+    private void addNearbyPoints() {
+        List<Overlay> overlays = mMapView.getOverlays();
         
-        // Second, make the eight nearby (disabled) graticule overlays.  The
-        // only possible way this can be complicated is if the user is doing a
-        // Geohashing run somewhere in Greenland where the 30W longitude line
-        // is, which would mean we'd need a new stock value.
         Drawable nearbyMarker = getResources().getDrawable(
                 R.drawable.final_destination_disabled);
         nearbyMarker.setBounds(0, 0, nearbyMarker.getIntrinsicWidth(),
@@ -397,6 +423,23 @@ public class MainMap extends MapActivity {
                 // Then, make us a disabled destination...
                 overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf));
             }
+        }
+    }
+    
+    private void removeNearbyPoints() {
+        List<Overlay> overlays = mMapView.getOverlays();
+        
+        List<Overlay> toRemove = new LinkedList<Overlay>();
+        // Iterate the list and remove any FinalDestinationDisabledOverlays.
+        for(Overlay o : overlays) {
+            if(o instanceof FinalDestinationDisabledOverlay)
+                toRemove.add(o);
+        }
+        
+        // Now, if we found anything, yoink 'em.
+        if(!toRemove.isEmpty()) {
+            for(Overlay o : toRemove)
+                overlays.remove(o);
         }
     }
 

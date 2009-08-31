@@ -249,6 +249,13 @@ public class GeohashDroid extends Activity {
             editor.putString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15");
             toReturn = true;
         }
+        
+        // Nearby points defaults to off (it makes eight new overlays with
+        // transparencies, it can be a bit hefty on the processor)
+        if(!prefs.contains(GHDConstants.PREF_NEARBY_POINTS)) {
+            editor.putBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
+            toReturn = true;
+        }
 
         editor.commit();
 

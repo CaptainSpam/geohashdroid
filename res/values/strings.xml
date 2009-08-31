@@ -54,6 +54,8 @@
 <string name="pref_coordunits_title">Coordinate units</string>
 <string name="pref_coordunits_summary">Units used in coordinate readouts</string>
 <string name="pref_coordunits_dialogtitle">Select units</string>
+<string name="pref_nearbypoints_title">Show nearby points</string>
+<string name="pref_nearbypoints_summary">Put markers on the meetup points in nearby graticules</string>
 <string name="pref_stockcachesize_title">Stock cache size</string>
 <string name="pref_stockcachesize_summary">Maximum entries to store in the stock cache</string>
 <string name="pref_stockwipe_title">Clear stock cache</string>

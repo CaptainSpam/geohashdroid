@@ -19,6 +19,9 @@
 			android:defaultValue="Degrees" android:persistent="true"
 			android:entries="@array/pref_coordunits_entries" android:entryValues="@array/pref_coordunits_values"
 			android:dialogTitle="@string/pref_coordunits_dialogtitle" />
+		<CheckBoxPreference android:key="NearbyPoints"
+			android:title="@string/pref_nearbypoints_title" android:summary="@string/pref_nearbypoints_summary"
+			android:defaultValue="false" android:persistent="true" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
 		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"

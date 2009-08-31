@@ -36,6 +36,8 @@ public final class GHDConstants {
     public static final String PREF_INFOBOX_SIZE = "InfoBoxSize";
     /** Prefs key specifying stock cache size. */
     public static final String PREF_STOCK_CACHE_SIZE = "StockCacheSize";
+    /** Prefs key specifying to show nearby meetup points. */
+    public static final String PREF_NEARBY_POINTS = "NearbyPoints";
     
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to
