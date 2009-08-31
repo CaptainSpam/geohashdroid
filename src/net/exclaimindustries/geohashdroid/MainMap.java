@@ -397,6 +397,25 @@ public class MainMap extends MapActivity {
                 finalMarker.getIntrinsicHeight());
         overlays.add(new FinalDestinationOverlay(finalMarker, mInfo));
     }
+
+    private void removeFinalDestination() {
+        // This should be simple.  But, to be sure, dig through the entire list
+        // first.
+        List<Overlay> overlays = mMapView.getOverlays();
+
+        List<Overlay> toRemove = new LinkedList<Overlay>();
+
+        for(Overlay o : overlays) {
+            if(o instanceof FinalDestinationOverlay)
+                toRemove.add(o);
+        }
+        
+        // YOINK!
+        if(!toRemove.isEmpty()) {
+            for(Overlay o : toRemove)
+                overlays.remove(o);
+        }
+    }
     
     private void addNearbyPoints() {
         List<Overlay> overlays = mMapView.getOverlays();
