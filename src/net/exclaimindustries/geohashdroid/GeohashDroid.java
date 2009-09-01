@@ -631,23 +631,6 @@ public class GeohashDroid extends Activity {
                 i.putExtra(CALENDAR, cal);
                 startActivityForResult(i, REQUEST_STOCK);
                 
-//                // Now we run the storage check.
-//                Info temp = HashBuilder.getStoredInfo(cal, grat);
-//                
-//                if(temp != null) {
-//                    // If that came back valid, we can go straight to the map.
-//                    dispatchMapIntent(temp);
-//                } else {
-//                    // If not, we need a stock runner.  Throw up the dialog...
-//                    mLastDialog = DIALOG_FIND_STOCK;
-//                    showDialog(DIALOG_FIND_STOCK);
-//                    
-//                    // And let's get going.
-//                    mStockRunner = HashBuilder.requestStockRunner(cal, grat,
-//                            new HashFetchThreadHandler(Looper.myLooper()));
-//                    mHashFetcherThread = new Thread(mStockRunner);
-//                    mHashFetcherThread.start();
-//                }
             }
         });
 
