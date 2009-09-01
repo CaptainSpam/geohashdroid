@@ -79,6 +79,9 @@ public class MainMap extends MapActivity {
     private static final int MENU_RECENTER_DESTINATION = 10;
     private static final int MENU_RECENTER_MYLOCATION = 11;
     private static final int MENU_RECENTER_NORMALVIEW = 12;
+    
+    // Activity request constants
+    private static final int REQUEST_STOCK = 1;
 
     // The menu we're holding on to to disable
     private Menu mMenu;
@@ -86,12 +89,23 @@ public class MainMap extends MapActivity {
     // Whatever the last state of the Nearby Points preference was.  This is
     // mostly for efficiency; we only need to act if this changed.
     private boolean mNearbyOn;
+    
+    // Set by onActivityResult, this indicates that onResume should resume
+    // planting nearby flags.  This should ALWAYS be set to false unless
+    // onActivityResult says so, and then set back to false right afterward.
+    private boolean mResumeFlags;
+    
+    // The next nearby flag that needs planting.  These go from -1 to 1, and
+    // both being zero is right out.
+    private int mNextNearbyX;
+    private int mNextNearbyY;
 
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        mNearbyOn = false;
+        mResumeFlags = false;
 
         // First, reset the wakelock. The last one, if one was there in the
         // first place, was released on the last onStop. Thus, this is safe.
@@ -187,13 +201,6 @@ public class MainMap extends MapActivity {
         // Now, add the final destination.
         addFinalDestination();
         
-        // Then, if need be, add the nearby points.  mNearbyOn is initialized
-        // here.
-        mNearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
-        
-        if(mNearbyOn)
-            addNearbyPoints();
-
         // If we are restarting, we need to check if we were autozooming when
         // we last left off. If we were, recenter the view on the next update
         // (that is, the FIRST update). If we weren't, use the centering and
@@ -290,7 +297,13 @@ public class MainMap extends MapActivity {
         // them.  Only do either if it changed since last time we saw them.
         boolean nearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
         
-        if(nearbyOn != mNearbyOn) {
+        if(mResumeFlags)
+        {
+            // If we're coming back from stock grabbing, plant 'em.
+            mResumeFlags = false;
+            resumeNearbyPoints();
+        } else if(nearbyOn != mNearbyOn) {
+            // Otherwise, if the preference changed, alter the map.
             if(nearbyOn)
                 addNearbyPoints();
             else
@@ -436,12 +449,51 @@ public class MainMap extends MapActivity {
                 
                 if(inf == null) {
                     Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays! (either we're in Greenland or the cache is busted)");
-                    continue;
+                    // Set the nearby variables for next time.
+                    mNextNearbyX = i;
+                    mNextNearbyY = j;
+                    break;
                 }
                 
                 // Then, make us a disabled destination...
                 overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf));
             }
+        }
+    }
+    
+    private void resumeNearbyPoints() {
+        // This is called after addNearbyPoints fails once due to not having a
+        // stock value ready.
+        List<Overlay> overlays = mMapView.getOverlays();
+        
+        Drawable nearbyMarker = getResources().getDrawable(
+                R.drawable.final_destination_disabled);
+        nearbyMarker.setBounds(0, 0, nearbyMarker.getIntrinsicWidth(),
+                nearbyMarker.getIntrinsicHeight());
+        
+        // Since we don't reinitialize the nearby variables, it makes more sense
+        // to use while loops this time around.
+        while(mNextNearbyX <= 1) {
+            while(mNextNearbyY <= 1) {
+                if(mNextNearbyX == 0 && mNextNearbyY == 0)
+                    continue;
+                
+                // Make an offset graticule and get some info from it.
+                Graticule offset = Graticule.createOffsetFrom(mGraticule, mNextNearbyY, mNextNearbyX);
+                Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
+                
+                if(inf == null) {
+                    Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays! (either we're in Greenland or the cache is busted)");
+                    // The nearby variables are now actually set this time.
+                    break;
+                }
+                
+                // Then, make us a disabled destination...
+                overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf));
+                mNextNearbyY++;
+            }
+            mNextNearbyY = -1;
+            mNextNearbyX++;
         }
     }
     
@@ -785,6 +837,44 @@ public class MainMap extends MapActivity {
                     populateInfoBox();
                     break;
             }
+        }
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case REQUEST_STOCK: {
+                // The stock grabber would ONLY be called if the user is on the
+                // 30W or 179E/W lines.  Since we're this far, the initially
+                // requested result must be okay, meaning that the stock must
+                // also exist for whatever end of the 30W line we need to check.
+                // RESULT_NOT_POSTED_YET should NEVER happen.  Regardless, we'll
+                // just treat it as an abort and not redraw the nearby points.
+                // Granted, this may result in repeated problems if the user
+                // keeps on switching between landscape and portrait modes or if
+                // the stock cache has been set to zero, but that's an edge case
+                // I'm not going to worry about just yet.
+                switch(resultCode) {
+                    case RESULT_OK: {
+                        // Stock data came back.  Thus, we can resume planting
+                        // nearby meetup point markers.  We don't need the Info
+                        // bundle returned, since we'll just go to HashBuilder
+                        // anyway.
+                        mResumeFlags = true;
+                        break;
+                    }
+                    // In all other cases, we bail out and ignore the remaining
+                    // points.
+                    case StockGrabber.RESULT_NOT_POSTED_YET:
+                    case StockGrabber.RESULT_SERVER_FAILURE:
+                    case RESULT_CANCELED:
+                        mResumeFlags = false;
+                        break;
+                }
+                break;
+            }
+
         }
     }
 }
