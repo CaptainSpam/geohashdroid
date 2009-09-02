@@ -493,7 +493,7 @@ public class HashBuilder {
         return MD5Tools.MD5hash(fullLine);
     }
 
-    private String getQuickCache(Calendar sCal) {
+    private static String getQuickCache(Calendar sCal) {
     	// We don't use Calendar.equals here, as that checks all properties,
     	// including potentially some we don't really care about.
         
