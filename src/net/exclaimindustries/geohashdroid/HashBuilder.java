@@ -58,11 +58,16 @@ public class HashBuilder {
     
     private static StockStoreDatabase mStore;
     
-    // These two allow for quick reloading of the most recent stock in a given
+    // These four allow for quick reloading of the most recent stock in a given
     // instance of the program, bypassing the SQLite database, as well as allow
     // for a small cache even if the SQLite database is turned off by preferences.
+    // TODO: We only have a need for up to two *guaranteed* stock values, and
+    // even that's an outrageous edge case.  Still, if more are needed, this
+    // might be better as a circular queue or something.  Must decide this.
     private static Calendar mLastDate;
     private static String mLastStock;
+    private static Calendar mTwoDatesAgo;
+    private static String mTwoStocksAgo;
 
     /**
      * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
@@ -351,13 +356,7 @@ public class HashBuilder {
     public static boolean hasStockStored(Calendar c, Graticule g) {
     	Calendar sCal = Info.makeAdjustedCalendar(c, g);
     	
-    	if(mLastDate != null && mLastStock != null
-    			&& mLastDate.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
-    			&& mLastDate.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
-    			&& mLastDate.get(Calendar.YEAR) == sCal.get(Calendar.YEAR))
-    		return true;
-    	
-        return mStore.getStock(c, g) != null;
+        return getQuickCache(sCal) != null || mStore.getStock(c, g) != null;
     }
 
     /**
@@ -374,21 +373,18 @@ public class HashBuilder {
     public static Info getStoredInfo(Calendar c, Graticule g) {
     	// First, check the quick cache.
     	Calendar sCal = Info.makeAdjustedCalendar(c, g);
+
+        // If it's in the quick cache, use it.
+        String result = getQuickCache(sCal);
+        if(result != null)
+            return createInfo(c, result, g);
     	
-    	// We don't use Calendar.equals here, as that checks all properties,
-    	// including potentially some we don't really care about.
-    	if(mLastDate != null && mLastStock != null
-    			&& mLastDate.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
-    			&& mLastDate.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
-    			&& mLastDate.get(Calendar.YEAR) == sCal.get(Calendar.YEAR)) {
-    		Log.d(DEBUG_TAG, "Stock price is in quick cache: " + mLastStock);
-    		return createInfo(c, mLastStock, g);
-    	}
-    	
-        String result = mStore.getStock(c, g);
+        // Otherwise, check the stock cache.
+        result = mStore.getStock(c, g);
         
         if(result == null) return null;
         
+        // If it was in the main cache but not the quick cache, quick cache it.
         quickCache(sCal, result);
         return createInfo(c, result, g);
     }
@@ -401,6 +397,9 @@ public class HashBuilder {
      * @param stock stock value to store
      */
     private static void quickCache(Calendar sCal, String stock) {
+        // Slide over!
+        mTwoDatesAgo = mLastDate;
+        mTwoStocksAgo = mLastStock;
     	mLastDate = sCal;
     	mLastStock = stock;
     }
@@ -492,6 +491,29 @@ public class HashBuilder {
         String fullLine = c.get(Calendar.YEAR) + "-" + monthStr + "-"
                 + dayStr + "-" + stockPrice;
         return MD5Tools.MD5hash(fullLine);
+    }
+
+    private String getQuickCache(Calendar sCal) {
+    	// We don't use Calendar.equals here, as that checks all properties,
+    	// including potentially some we don't really care about.
+        
+        // At any rate, first off, the most recent date.  Then, the second-most.
+        // Failing THAT, return null.
+    	if(mLastDate != null && mLastStock != null
+    			&& mLastDate.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
+    			&& mLastDate.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
+    			&& mLastDate.get(Calendar.YEAR) == sCal.get(Calendar.YEAR)) {
+    		Log.d(DEBUG_TAG, "Stock price is in quick cache: " + mLastStock);
+    		return mLastStock;
+        } else if(mTwoDatesAgo != null && mTwoStocksAgo != null
+    			&& mTwoDatesAgo.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
+    			&& mTwoDatesAgo.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
+    			&& mTwoDatesAgo.get(Calendar.YEAR) == sCal.get(Calendar.YEAR)) {
+    		Log.d(DEBUG_TAG, "Stock price is in quick cache: " + mTwoStocksAgo);
+    		return mTwoStocksAgo;
+        } else {
+            return null;
+        }
     }
     
     /**
