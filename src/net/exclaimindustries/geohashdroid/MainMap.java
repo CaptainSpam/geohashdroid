@@ -297,7 +297,7 @@ public class MainMap extends MapActivity {
         // them.  Only do either if it changed since last time we saw them.
         boolean nearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
         
-        if(mResumeFlags)
+        if(mResumeFlags && nearbyOn)
         {
             // If we're coming back from stock grabbing, plant 'em.
             mResumeFlags = false;
