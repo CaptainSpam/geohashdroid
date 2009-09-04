@@ -7,6 +7,9 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import com.google.android.maps.GeoPoint;
+import com.google.android.maps.MapView;
+
 import android.graphics.drawable.Drawable;
 
 /**
@@ -21,5 +24,14 @@ public class FinalDestinationDisabledOverlay extends FinalDestinationOverlay {
         super(d, i);
     }
 
-    // TODO: Handle tapping.
+    @Override
+    public boolean onTap(GeoPoint p, MapView mapView) {
+        if(isPointOnIcon(p, mapView))
+            // If this isn't even on us, forget it.
+            return false;
+        
+        // TODO: Do something!   
+        return false;
+    }
+    
 }

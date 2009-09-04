@@ -8,6 +8,7 @@
 package net.exclaimindustries.geohashdroid;
 
 import android.graphics.Canvas;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
 import com.google.android.maps.GeoPoint;
@@ -37,6 +38,33 @@ public class FinalDestinationOverlay extends Overlay {
         mDestination = i.getFinalDestination();
         mGraticule = i.getGraticule();
     }
+    
+    /**
+     * Determines if a given GeoPoint (most likely, a tap) is somewhere on the
+     * flag icon.  Or, put better, if the given tap should be handled by the
+     * calling icon.
+     * 
+     * @param p point to check
+     * @param mapView view from which a Projection can be retrieved
+     * @return true if on the icon, false if not
+     */
+    protected boolean isPointOnIcon(GeoPoint p, MapView mapView) {
+        // We need to check if the this is somewhere within the area of the
+        // ICON.  Part of the icon (the flag tip) includes the point, sure, but
+        // the user's going to be tapping the flag, most likely.
+        Point iconPoint = getIconPosition(mapView.getProjection());
+        Point tapPoint = mapView.getProjection().toPixels(p, null);
+        
+        // Now, determine if the tap was anywhere in the icon.
+        if(tapPoint.x > iconPoint.x
+                && tapPoint.x < iconPoint.x + mDrawable.getIntrinsicWidth()
+                && tapPoint.y > iconPoint.y
+                && tapPoint.y < iconPoint.y + mDrawable.getIntrinsicHeight())
+        {
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public void draw(Canvas canvas, MapView mapView, boolean shadow) {
@@ -52,10 +80,9 @@ public class FinalDestinationOverlay extends Overlay {
         int y;
 
         if (!shadow) {
-            x = p.toPixels(mDestination, null).x
-                    - (mDrawable.getIntrinsicWidth() / 2);
-            y = p.toPixels(mDestination, null).y
-                    - (mDrawable.getIntrinsicHeight());
+            Point point = getIconPosition(p);
+            x = point.x;
+            y = point.y;
         } else {
             // x needs to be adjusted for the skew, depending on the sign.
             // TODO: Check the skewing algorithm; this can't possibly be right
@@ -69,5 +96,16 @@ public class FinalDestinationOverlay extends Overlay {
 
         // And now we can draw!
         drawAt(canvas, mDrawable, x, y, shadow);
+    }
+    
+    /**
+     * Gets the top-left position of the icon (not the shadow).
+     * 
+     * @param p Projection from whence the position will come
+     * @return the position as a Point
+     */
+    protected Point getIconPosition(Projection p) {
+        return new Point(p.toPixels(mDestination, null).x - (mDrawable.getIntrinsicWidth() / 2),
+                p.toPixels(mDestination, null).y - (mDrawable.getIntrinsicHeight()));
     }
 }
