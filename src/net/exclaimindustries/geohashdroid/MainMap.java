@@ -448,10 +448,15 @@ public class MainMap extends MapActivity {
                 Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
                 
                 if(inf == null) {
-                    Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays! (either we're in Greenland or the cache is busted)");
+                    Log.d(DEBUG_TAG, "HashBuilder returned null info when making the nearby overlays, trying to get new data...");
                     // Set the nearby variables for next time.
                     mNextNearbyX = i;
                     mNextNearbyY = j;
+                    // Fire off the new activity.
+                    Intent in = new Intent(MainMap.this, StockGrabber.class);
+                    in.putExtra(GeohashDroid.GRATICULE, offset);
+                    in.putExtra(GeohashDroid.CALENDAR, mInfo.getCalendar());
+                    startActivityForResult(in, REQUEST_STOCK);
                     break;
                 }
                 
@@ -483,8 +488,7 @@ public class MainMap extends MapActivity {
                 Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
                 
                 if(inf == null) {
-                    Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays! (either we're in Greenland or the cache is busted)");
-                    // The nearby variables are now actually set this time.
+                    Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays TWICE!  What?");
                     break;
                 }
                 
@@ -862,6 +866,7 @@ public class MainMap extends MapActivity {
                         // bundle returned, since we'll just go to HashBuilder
                         // anyway.
                         mResumeFlags = true;
+                        Log.d(DEBUG_TAG, "Got new data, resuming flag-planting...");
                         break;
                     }
                     // In all other cases, we bail out and ignore the remaining
