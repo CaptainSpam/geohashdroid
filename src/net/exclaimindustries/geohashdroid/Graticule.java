@@ -233,6 +233,9 @@ public class Graticule implements Serializable {
         
         finalLon += lonOff;
         finalLon %= 360;
+        
+        if(finalLon < 0) finalLon = 360 - Math.abs(finalLon);
+        
         if(finalLon >= 180) {
             finalWest = false;
             finalLon -= 180;
