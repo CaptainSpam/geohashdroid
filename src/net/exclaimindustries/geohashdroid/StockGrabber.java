@@ -17,6 +17,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 /**
  * The <code>StockGrabber</code> activity grabs a given stock value and returns
@@ -124,8 +125,10 @@ public class StockGrabber extends Activity {
                 WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
         
         // Throw up content and away we go!
-        setContentView(R.layout.stockdialog);
+        setContentView(R.layout.genericbusydialog);
         
+        TextView textView = (TextView)findViewById(R.id.Text);
+        textView.setText(R.string.stock_label);
     }
     
     private class StockFetchHandler extends Handler {
