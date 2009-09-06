@@ -51,12 +51,9 @@ import android.widget.EditText;
 public class GeohashDroid extends Activity {
     public static final String LONGITUDE = "longitude";
     public static final String LATITUDE = "latitude";
-    public static final String YEAR = "year";
-    public static final String MONTH = "month";
-    public static final String DAY = "day";
-    public static final String INFO = "info";
-    public static final String CALENDAR = "calendar";
-    public static final String GRATICULE = "graticule";
+    public static final String INFO = "net.exclaimindustries.geohashdroid.info";
+    public static final String CALENDAR = "net.exclaimindustries.geohashdroid.calendar";
+    public static final String GRATICULE = "net.exclaimindustries.geohashdroid.graticule";
 
 //    private static final String DEBUG_TAG = "GeohashDroid";
 
@@ -76,6 +73,7 @@ public class GeohashDroid extends Activity {
 
     private static final int REQUEST_PICK_GRATICULE = 0;
     private static final int REQUEST_STOCK = 1;
+    private static final int REQUEST_LOCATION = 2;
 
     private EditText mLatitude;
     private EditText mLongitude;
@@ -604,7 +602,7 @@ public class GeohashDroid extends Activity {
                     // Don't do anything, we can handle it ourselves.
                 }
 
-                i.putExtra(GraticuleMap.GRATICULE, g);
+                i.putExtra(GRATICULE, g);
 
                 startActivityForResult(i, REQUEST_PICK_GRATICULE);
             }
@@ -701,7 +699,7 @@ public class GeohashDroid extends Activity {
                 // Graticule, assuming it wasn't canceled.
                 if (resultCode == RESULT_OK) {
                     Graticule g = (Graticule)data
-                            .getSerializableExtra(GraticuleMap.GRATICULE);
+                            .getSerializableExtra(GRATICULE);
                     updateGraticule(g);
 
                     // If we have an update like this, update the preferences,
@@ -734,6 +732,15 @@ public class GeohashDroid extends Activity {
                         break;
                 }
                 break;
+            }
+            case REQUEST_LOCATION: {
+            	// Welcome back from the location grabber!
+            	switch(resultCode) {
+            		case RESULT_OK:
+            		case LocationGrabber.RESULT_FAIL:
+            		case RESULT_CANCELED:
+            			break;
+            	}
             }
 
         }

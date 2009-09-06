@@ -46,8 +46,6 @@ public class GraticuleMap extends MapActivity implements
     private static final int GRATS_WIDE = 3;
     private static final int GRATS_TALL = 2;
 
-    static final String GRATICULE = "Graticule";
-
     private Graticule mGraticule = null;
 
     @Override
@@ -77,8 +75,8 @@ public class GraticuleMap extends MapActivity implements
 
         if (icicle != null) {
             // If we had a graticule stored from an instance bundle, go with it.
-            if (icicle.containsKey(GRATICULE))
-                mGraticule = (Graticule)icicle.get(GRATICULE);
+            if (icicle.containsKey(GeohashDroid.GRATICULE))
+                mGraticule = (Graticule)icicle.get(GeohashDroid.GRATICULE);
 
             if (icicle.containsKey(CENTERLAT) && icicle.containsKey(CENTERLON))
                 control.setCenter(new GeoPoint(icicle.getInt(CENTERLAT), icicle
@@ -103,8 +101,8 @@ public class GraticuleMap extends MapActivity implements
             // map location is, oh, Boston, MA.
             Intent i = getIntent();
 
-            if (i.hasExtra(GRATICULE)) {
-                mGraticule = (Graticule)i.getSerializableExtra(GRATICULE);
+            if (i.hasExtra(GeohashDroid.GRATICULE)) {
+                mGraticule = (Graticule)i.getSerializableExtra(GeohashDroid.GRATICULE);
             } else {
                 mGraticule = null;
             }
@@ -139,7 +137,7 @@ public class GraticuleMap extends MapActivity implements
                 // A click means we send the Graticule back as an answer to
                 // whatever called this.
                 Intent i = new Intent();
-                i.putExtra(GRATICULE, mGraticule);
+                i.putExtra(GeohashDroid.GRATICULE, mGraticule);
                 setResult(RESULT_OK, i);
                 finish();
             }
@@ -215,7 +213,7 @@ public class GraticuleMap extends MapActivity implements
         outState.putInt(CENTERLON, center.getLongitudeE6());
         outState.putInt(ZOOM, mapView.getZoomLevel());
 
-        outState.putSerializable(GRATICULE, mGraticule);
+        outState.putSerializable(GeohashDroid.GRATICULE, mGraticule);
 
     }
 
