@@ -54,6 +54,7 @@ public class GeohashDroid extends Activity {
     public static final String INFO = "net.exclaimindustries.geohashdroid.info";
     public static final String CALENDAR = "net.exclaimindustries.geohashdroid.calendar";
     public static final String GRATICULE = "net.exclaimindustries.geohashdroid.graticule";
+    public static final String LOCATION = "net.exclaimindustries.geohashdroid.location";
 
 //    private static final String DEBUG_TAG = "GeohashDroid";
 
