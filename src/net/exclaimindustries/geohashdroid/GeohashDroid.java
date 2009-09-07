@@ -29,6 +29,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -49,14 +50,14 @@ import android.widget.EditText;
  * @author Nicholas Killewald
  */
 public class GeohashDroid extends Activity {
-    public static final String LONGITUDE = "longitude";
-    public static final String LATITUDE = "latitude";
+    public static final String LONGITUDE = "net.exclaimindustries.geohashdroid.longitude";
+    public static final String LATITUDE = "net.exclaimindustries.geohashdroid.latitude";
     public static final String INFO = "net.exclaimindustries.geohashdroid.info";
     public static final String CALENDAR = "net.exclaimindustries.geohashdroid.calendar";
     public static final String GRATICULE = "net.exclaimindustries.geohashdroid.graticule";
     public static final String LOCATION = "net.exclaimindustries.geohashdroid.location";
 
-//    private static final String DEBUG_TAG = "GeohashDroid";
+    private static final String DEBUG_TAG = "GeohashDroid";
 
     private static final int DIALOG_SEARCHING = 0;
     private static final int DIALOG_SEARCH_FAIL = 1;
@@ -578,9 +579,12 @@ public class GeohashDroid extends Activity {
         searchButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                mLastDialog = DIALOG_SEARCHING;
-                showDialog(DIALOG_SEARCHING);
-                startLocationSearch();
+                Intent i = new Intent(GeohashDroid.this, LocationGrabber.class);
+                startActivityForResult(i, REQUEST_LOCATION);
+                
+//                mLastDialog = DIALOG_SEARCHING;
+//                showDialog(DIALOG_SEARCHING);
+//                startLocationSearch();
             }
         });
 
@@ -738,6 +742,12 @@ public class GeohashDroid extends Activity {
             	// Welcome back from the location grabber!
             	switch(resultCode) {
             		case RESULT_OK:
+            		{
+            			double lat = data.getDoubleExtra(LATITUDE, 0.0);
+            			double lon = data.getDoubleExtra(LONGITUDE, 0.0);
+            			Log.d(DEBUG_TAG, "RESULT: " + lat + " " + lon);
+            			updateGraticule(lat, lon);
+            		}
             		case LocationGrabber.RESULT_FAIL:
             		case RESULT_CANCELED:
             			break;
