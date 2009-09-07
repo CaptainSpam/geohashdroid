@@ -18,6 +18,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -74,6 +75,7 @@ public class LocationGrabber extends Activity implements LocationListener {
 	protected void onDestroy() {
 		// We need to cancel out of updates.  We'll get a fresh set next time
 		// around if we're coming back.
+		Log.d("LocationGrabber", "DESTROY!");
 		mManager.removeUpdates(this);
 		super.onDestroy();
 	}
@@ -99,6 +101,7 @@ public class LocationGrabber extends Activity implements LocationListener {
     {
         Intent i = new Intent();
         setResult(resultCode, i);
+		mManager.removeUpdates(this);
         finish();
     }
     
@@ -108,6 +111,7 @@ public class LocationGrabber extends Activity implements LocationListener {
     	i.putExtra(GeohashDroid.LATITUDE, l.getLatitude());
     	i.putExtra(GeohashDroid.LONGITUDE, l.getLongitude());
     	setResult(RESULT_OK, i);
+		mManager.removeUpdates(this);
     	finish();
     }
 
