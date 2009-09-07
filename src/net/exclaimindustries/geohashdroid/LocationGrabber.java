@@ -58,6 +58,8 @@ public class LocationGrabber extends Activity implements LocationListener {
 			// FAIL!  No providers are available!
 			failure(RESULT_FAIL);
 		
+		mEnabledProviders = new HashMap<String, Boolean>();
+		
 		// Stuff all the providers into the HashMap, along with their current,
 		// respective statuses.
 		for(String s : providers)
@@ -103,7 +105,8 @@ public class LocationGrabber extends Activity implements LocationListener {
     private void success(Location l)
     {
     	Intent i = new Intent();
-    	i.putExtra(GeohashDroid.LOCATION, l);
+    	i.putExtra(GeohashDroid.LATITUDE, l.getLatitude());
+    	i.putExtra(GeohashDroid.LONGITUDE, l.getLongitude());
     	setResult(RESULT_OK, i);
     	finish();
     }
