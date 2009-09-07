@@ -8,28 +8,17 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -42,11 +31,6 @@ import android.widget.EditText;
  * The <code>GeohashDroid</code> class is where the entry point resides. It's
  * where the main window sits around and gathers data.
  * 
- * TODO: Good gravy, this is ugly and needs cleanup. Like, seriously. A lot of
- * this is major workaroundage for switching orientation (or other configs) when
- * a dialog is active. And I'm CERTAIN there has to be a better way to pull all
- * that off. Really.
- * 
  * @author Nicholas Killewald
  */
 public class GeohashDroid extends Activity {
@@ -57,14 +41,12 @@ public class GeohashDroid extends Activity {
     public static final String GRATICULE = "net.exclaimindustries.geohashdroid.graticule";
     public static final String LOCATION = "net.exclaimindustries.geohashdroid.location";
 
-    private static final String DEBUG_TAG = "GeohashDroid";
+//    private static final String DEBUG_TAG = "GeohashDroid";
 
-    private static final int DIALOG_SEARCHING = 0;
-    private static final int DIALOG_SEARCH_FAIL = 1;
-//    private static final int DIALOG_FIND_STOCK = 2;
-    private static final int DIALOG_STOCK_NOT_POSTED = 3;
-    private static final int DIALOG_STOCK_ERROR = 4;
-    private static final int DIALOG_ABOUT = 5;
+    private static final int DIALOG_SEARCH_FAIL = 0;
+    private static final int DIALOG_STOCK_NOT_POSTED = 1;
+    private static final int DIALOG_STOCK_ERROR = 2;
+    private static final int DIALOG_ABOUT = 3;
 
     private static final int DIALOG_LAST_NUMBER = DIALOG_STOCK_ERROR;
 
@@ -81,9 +63,6 @@ public class GeohashDroid extends Activity {
     private EditText mLongitude;
     private Button mGoButton;
 
-    private LocationManager mManager;
-    private LocalLocationListener mListener;
-
     private static int mLastDialog = ALL_OKAY;
 
     /** Called when the activity is first created. */
@@ -97,14 +76,6 @@ public class GeohashDroid extends Activity {
 
         // First things first, set up the default preferences.
         initPrefs();
-
-        // If something's been retained, re-retain it. This is probably quite
-        // a bit very very wrong.
-        if (getLastNonConfigurationInstance() != null) {
-            RetainedThings retainers = (RetainedThings)getLastNonConfigurationInstance();
-            mManager = retainers.locationManager;
-            mListener = retainers.locationListener;
-        }
 
         // Set ourselves back up if we came in from elsewhere...
         mLatitude = (EditText)findViewById(R.id.Latitude);
@@ -180,13 +151,6 @@ public class GeohashDroid extends Activity {
                     || mLastDialog == DIALOG_STOCK_NOT_POSTED
                     || mLastDialog == DIALOG_STOCK_ERROR)
                 showDialog(mLastDialog);
-            else if (mLastDialog == DIALOG_SEARCHING && mListener != null
-                    && !mListener.isDone()) {
-                mListener.resetHandler(new LocationListenerHandler(Looper
-                        .myLooper()));
-                mLastDialog = DIALOG_SEARCHING;
-                showDialog(DIALOG_SEARCHING);
-            }
         }
     }
 
@@ -265,24 +229,6 @@ public class GeohashDroid extends Activity {
     @Override
     public Dialog onCreateDialog(int id) {
         switch (id) {
-            case DIALOG_SEARCHING: {
-                // Box that says that we're searching, and allows a cancel.
-                AlertDialog.Builder build = new AlertDialog.Builder(this);
-                build.setMessage(R.string.search_label);
-                build.setTitle(R.string.search_title);
-                build.setIcon(android.R.drawable.ic_dialog_map);
-                build.setNegativeButton(R.string.cancel_label,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                    int whichButton) {
-                                GeohashDroid.this
-                                        .dismissDialog(DIALOG_SEARCHING);
-                                mManager.removeUpdates(mListener);
-                                mLastDialog = ALL_OKAY;
-                            }
-                        });
-                return build.create();
-            }
             case DIALOG_SEARCH_FAIL: {
                 // Box that says the graticule auto-detect failed.
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
@@ -387,166 +333,6 @@ public class GeohashDroid extends Activity {
         }
     }
 
-    private class LocalLocationListener implements LocationListener {
-        boolean done = false;
-
-        private LocationListenerHandler mHandler = new LocationListenerHandler(
-                Looper.myLooper());
-        private HashMap<String, Boolean> enabledProviders;
-
-        public LocalLocationListener(HashMap<String, Boolean> enabledProviders) {
-            this.enabledProviders = enabledProviders;
-        }
-
-        public void resetHandler(LocationListenerHandler handler) {
-            mHandler = handler;
-        }
-
-        public boolean isDone() {
-            return done;
-        }
-
-        @Override
-        public void onLocationChanged(Location location) {
-            if (done)
-                return;
-            // WE HAVE A LOCATION! Stop all updates, we are DONE!
-            done = true;
-            mManager.removeUpdates(this);
-            Message mess = Message.obtain();
-            mess.what = ALL_OKAY;
-            Bundle bun = new Bundle();
-            bun.putDouble(LONGITUDE, location.getLongitude());
-            bun.putDouble(LATITUDE, location.getLatitude());
-            mess.setData(bun);
-            mHandler.sendMessage(mess);
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-            if (done)
-                return;
-            // Yoink!
-            enabledProviders.put(provider, false);
-            if (!areAnyProvidersStillAlive()) {
-                done = true;
-                mManager.removeUpdates(this);
-                mHandler.sendEmptyMessage(DIALOG_SEARCH_FAIL);
-            }
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-            if (done)
-                return;
-            // Well, if it got enabled...
-            enabledProviders.put(provider, true);
-            mManager.requestLocationUpdates(provider, 0, 0, this);
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-            if (done)
-                return;
-            // If the provider is gone one way or another, knock it to
-            // false in the map. If it comes back, mark it true. In the
-            // former case, if none are available any more, stop and throw
-            // the error.
-            if (status != LocationProvider.OUT_OF_SERVICE) {
-                enabledProviders.put(provider, true);
-            } else {
-                enabledProviders.put(provider, false);
-                if (!areAnyProvidersStillAlive()) {
-                    // We're screwed!
-                    done = true;
-                    mManager.removeUpdates(this);
-                    mHandler.sendEmptyMessage(DIALOG_SEARCH_FAIL);
-                }
-            }
-        }
-
-        private boolean areAnyProvidersStillAlive() {
-            if (enabledProviders.isEmpty())
-                return false;
-
-            boolean stillAlive = false;
-
-            for (String s : enabledProviders.keySet()) {
-                if (enabledProviders.get(s)) {
-                    stillAlive = true;
-                }
-            }
-
-            return stillAlive;
-        }
-
-    }
-
-    private class LocationListenerHandler extends Handler {
-        public LocationListenerHandler(Looper looper) {
-            super(looper);
-        }
-
-        public void handleMessage(Message message) {
-            // So, when we get hold of a message, we either throw a new error
-            // or clear the old dialog and update our graticules.
-            mLastDialog = ALL_OKAY;
-            dismissDialog(DIALOG_SEARCHING);
-            if (message.what != ALL_OKAY) {
-                mLastDialog = DIALOG_SEARCH_FAIL;
-                showDialog(DIALOG_SEARCH_FAIL);
-            } else {
-                // Found it! Update the graticules!
-                Bundle bun = message.getData();
-                updateGraticule(bun.getDouble(LATITUDE), bun
-                        .getDouble(LONGITUDE));
-            }
-        }
-    }
-
-    private void startLocationSearch() {
-        // Let's start us a LocationManager and get some updates (exactly one
-        // update)! Specifically, whatever response first is what we use. In
-        // theory, since all we're looking for is resolution down to one full
-        // degree, it shouldn't matter if we read from towers or GPS, either
-        // should put us in the ballpark. We'll prefer GPS later during the
-        // map.
-        //
-        // However, my own testing has found the towers sometimes identifying
-        // themselves as being somewhere a couple hundred miles and several
-        // degrees away (no idea how), but I'm willing to chalk that up to
-        // being a fluke from living in Kentucky at the time. I'll change this
-        // to prefer GPS if both are on if this shows up in other parts of the
-        // world.
-        mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-
-        // See what's open.
-        List<String> providers = mManager.getProviders(true);
-
-        // If we don't have any active providers, well, we're kinda screwed.
-        if (providers.isEmpty()) {
-            mLastDialog = DIALOG_SEARCH_FAIL;
-            dismissDialog(DIALOG_SEARCHING);
-            showDialog(DIALOG_SEARCH_FAIL);
-            return;
-        }
-
-        // If we DO have an active provider, let's get to work!
-        // Assume all providers are available to start.
-        HashMap<String, Boolean> enabledProviders = new HashMap<String, Boolean>();
-        for (String s : providers) {
-            enabledProviders.put(s, true);
-        }
-
-        // And here's the listener...
-        mListener = new LocalLocationListener(enabledProviders);
-
-        // Now, register all providers and get us going!
-        for (String s : providers) {
-            mManager.requestLocationUpdates(s, 0, 0, mListener);
-        }
-    }
-
     private void updateGraticule(double latitude, double longitude) {
         // After all that, we DO, in fact, have a graticule!
         // We kind of have to do this to account for the negative zero
@@ -581,10 +367,6 @@ public class GeohashDroid extends Activity {
             public void onClick(View view) {
                 Intent i = new Intent(GeohashDroid.this, LocationGrabber.class);
                 startActivityForResult(i, REQUEST_LOCATION);
-                
-//                mLastDialog = DIALOG_SEARCHING;
-//                showDialog(DIALOG_SEARCHING);
-//                startLocationSearch();
             }
         });
 
@@ -680,21 +462,6 @@ public class GeohashDroid extends Activity {
         mLatitude.addTextChangedListener(tw);
     }
 
-    private class RetainedThings {
-        // Yes, this is just a bucket of stuff to retain.
-        private LocationManager locationManager;
-        private LocalLocationListener locationListener;
-    }
-
-    @Override
-    public Object onRetainNonConfigurationInstance() {
-        // Retain what needs retainin'.
-        RetainedThings toReturn = new RetainedThings();
-        toReturn.locationManager = mManager;
-        toReturn.locationListener = mListener;
-        return toReturn;
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -745,10 +512,12 @@ public class GeohashDroid extends Activity {
             		{
             			double lat = data.getDoubleExtra(LATITUDE, 0.0);
             			double lon = data.getDoubleExtra(LONGITUDE, 0.0);
-            			Log.d(DEBUG_TAG, "RESULT: " + lat + " " + lon);
             			updateGraticule(lat, lon);
+            			break;
             		}
             		case LocationGrabber.RESULT_FAIL:
+            			showDialog(DIALOG_SEARCH_FAIL);
+            			break;
             		case RESULT_CANCELED:
             			break;
             	}
