@@ -18,7 +18,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -37,8 +36,7 @@ public class LocationGrabber extends Activity implements LocationListener {
 	private LocationManager mManager;
 	
 	private HashMap<String, Boolean> mEnabledProviders;
-	
-//  private final static String DEBUG_TAG = "LocationGrabber";
+//    private final static String DEBUG_TAG = "LocationGrabber";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -53,32 +51,43 @@ public class LocationGrabber extends Activity implements LocationListener {
 		// Now, grab a LocationManager.
 		mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		
-		// Set up the hash of providers.  Yes, there's only two.
-		List<String> providers = mManager.getProviders(false);
-		if(providers.isEmpty())
-			// FAIL!  No providers are available!
-			failure(RESULT_FAIL);
-		
-		mEnabledProviders = new HashMap<String, Boolean>();
-		
-		// Stuff all the providers into the HashMap, along with their current,
-		// respective statuses.
-		for(String s : providers)
-			mEnabledProviders.put(s, mManager.isProviderEnabled(s));
-		
-		// Then, register for responses and get ready for fun!
-		for(String s : providers)
-			mManager.requestLocationUpdates(s, 0, 0, this);
+		// Then, stand back and wait for onResume!
 	}
 
 	@Override
-	protected void onDestroy() {
-		// We need to cancel out of updates.  We'll get a fresh set next time
-		// around if we're coming back.
-		Log.d("LocationGrabber", "DESTROY!");
-		mManager.removeUpdates(this);
-		super.onDestroy();
-	}
+    protected void onPause() {
+        super.onPause();
+	    // At pause time, stop requests.  We'll pick them back up at resume.
+	    mManager.removeUpdates(this);
+	    
+	    // We're getting a new set of this anyway, so let's be nice and free a
+	    // little bit of RAM.
+	    mEnabledProviders.clear();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // We want to do all this on every resume, because we won't know the
+        // status of the providers between interruptions.
+        
+        // Set up the hash of providers.  Yes, there's only two.
+        List<String> providers = mManager.getProviders(false);
+        if(providers.isEmpty())
+            // FAIL!  No providers are available!
+            failure(RESULT_FAIL);
+        
+        mEnabledProviders = new HashMap<String, Boolean>();
+        
+        // Stuff all the providers into the HashMap, along with their current,
+        // respective statuses.
+        for(String s : providers)
+            mEnabledProviders.put(s, mManager.isProviderEnabled(s));
+        
+        // Then, register for responses and get ready for fun!
+        for(String s : providers)
+            mManager.requestLocationUpdates(s, 0, 0, this);
+    }
 	
     private void displaySelf() {
         // Same as with StockGrabber...
