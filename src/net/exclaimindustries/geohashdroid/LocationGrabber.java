@@ -57,19 +57,18 @@ public class LocationGrabber extends Activity implements LocationListener {
 	@Override
     protected void onPause() {
         super.onPause();
-	    // At pause time, stop requests.  We'll pick them back up at resume.
-	    mManager.removeUpdates(this);
-	    
-	    // We're getting a new set of this anyway, so let's be nice and free a
-	    // little bit of RAM.
+	    // At pause time, stop everything and return a cancel.
+        failure(RESULT_CANCELED);
 	    mEnabledProviders.clear();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // We want to do all this on every resume, because we won't know the
-        // status of the providers between interruptions.
+        // We want to do all this on every resume (if I ever decide to allow
+        // interruptions to LocationGrabber as opposed to complete stoppage on
+        // the onPause call), because we won't know the status of the providers
+        // between interruptions.
         
         // Set up the hash of providers.  Yes, there's only two.
         List<String> providers = mManager.getProviders(false);
