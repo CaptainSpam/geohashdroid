@@ -293,13 +293,13 @@ public class HashBuilder {
         public void abort() {
         	if(mRequest != null)
     	    {
-        	    // Bail out of the request...
+        	    // Bail out of the request (if there is one)...
     	        mRequest.abort();
-    	        // Put the brakes on the handler...
-    	        mHandler = null;
-    	        // And change status.
-    	        mStatus = ABORTED;
     	    }
+	        // Put the brakes on the handler...
+	        mHandler = null;
+	        // And change status.
+	        mStatus = ABORTED;
         }
         
         /**

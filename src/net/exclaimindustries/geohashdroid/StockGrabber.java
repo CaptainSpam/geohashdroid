@@ -70,17 +70,33 @@ public class StockGrabber extends Activity {
             return;
         }
         
-        // Good!  Data's retrieved, and we're ready to talk to HashBuilder!
+        // Good!  Data's retrieved, and we're ready to talk to HashBuilder!  We
+        // want to do one check to the database right now, though, so that this
+        // activity can return immediately if the data's there.
+        Info inf = HashBuilder.getStoredInfo(mCal, mGrat);
+        if(inf != null) {
+            // We got info!  Woo!  Send it back right away.
+            success(inf);
+            return;
+        }
+        
+        // No data?  Well, all right, but we'll need to make ourselves
+        // presentable first...
+        displaySelf();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Resume!  First, go to the database just in case.  This first case
+        // should be impossible, but I'm going defensive.
         Info inf = HashBuilder.getStoredInfo(mCal, mGrat);
         if(inf != null) {
             // We got info!  Woo!  Send it back right away.
             success(inf);
             return;
         } else {
-            // Otherwise, we need a stock runner.  When setContentView hits,
-        	// the dialog gets thrown up.
-            displaySelf();
-
+            // Otherwise, we need a stock runner.
             mRunner = HashBuilder.requestStockRunner(mCal, mGrat,
                     new StockFetchHandler(Looper.myLooper()));
             mThread = new Thread(mRunner);
@@ -88,15 +104,19 @@ public class StockGrabber extends Activity {
             mThread.start();
         }
     }
-
+    
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // When destroyed, just forget about the thread.  If we got a stock but
-        // haven't returned yet (now THAT'S a narrow timing window!), it'll be
-        // there for us in HashBuilder next time.
+    protected void onPause() {
+        super.onPause();
+        // When paused, abort the thread and bail out entirely.  There's
+        // trickery we COULD do to keep the thread running for when we get back,
+        // but we have no guarantee that we WILL ever get back, so this is the
+        // safest.
         if(mRunner != null)
+        {
             mRunner.abort();
+            failure(RESULT_CANCELED);
+        }
     }
 
     private void failure(int resultcode) {
