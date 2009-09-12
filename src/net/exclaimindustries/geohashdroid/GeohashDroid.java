@@ -521,6 +521,7 @@ public class GeohashDroid extends Activity {
             		case RESULT_CANCELED:
             			break;
             	}
+            	break;
             }
 
         }
