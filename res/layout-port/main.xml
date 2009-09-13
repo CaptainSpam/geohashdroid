@@ -17,8 +17,8 @@
 		android:text="@string/graticule_label" android:layout_gravity="center_horizontal"></TextView>
 	<LinearLayout android:layout_height="wrap_content"
 		android:orientation="horizontal" android:id="@+id/GraticuleRow"
-                android:layout_gravity="center_horizontal" android:layout_width="wrap_content"
-                android:layout_margin="@dimen/main_padding">
+		android:layout_gravity="center_horizontal" android:layout_width="wrap_content"
+		android:layout_margin="@dimen/main_padding">
 		<EditText android:layout_height="wrap_content" android:id="@+id/Latitude"
 			android:layout_gravity="center_vertical" android:maxLength="4"
 			android:singleLine="true" android:numeric="signed"
@@ -35,12 +35,13 @@
 		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
 		android:id="@+id/ButtonRow" android:orientation="horizontal"
 		android:layout_margin="@dimen/main_padding">
-		<Button android:layout_width="wrap_content"
-			android:layout_height="wrap_content" android:drawableLeft="@drawable/refresh"
-			android:id="@+id/RefreshButton" android:layout_gravity="center_horizontal" android:text="@string/autodetect_label"></Button>
+		<CheckBox android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:drawableLeft="@drawable/refresh" android:text="@string/closest_label"
+			android:layout_gravity="center_horizontal" android:id="@+id/AutoBox"></CheckBox>
 		<Button android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:drawableLeft="@drawable/map"
-			android:id="@+id/MapButton" android:layout_gravity="center_horizontal" android:text="@string/gratmap_label"></Button>
+			android:id="@+id/MapButton" android:layout_gravity="center_horizontal"
+			android:text="@string/gratmap_label"></Button>
 	</LinearLayout>
 	<Button android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:text="@string/go_label"

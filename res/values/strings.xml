@@ -18,7 +18,7 @@
 <string name="ok_label">Okay</string>
 <string name="gratmap_go_label">Use this one</string>
 <string name="backtomap_label">Back to the map</string>
-<string name="autodetect_label">Auto-Detect</string>
+<string name="closest_label">Use Closest</string>
 <string name="gratmap_label">Pick From Map</string>
 
 <string name="cancel_label">Cancel</string>

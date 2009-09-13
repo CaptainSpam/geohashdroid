@@ -24,8 +24,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 
 /**
  * The <code>GeohashDroid</code> class is where the entry point resides. It's
@@ -58,10 +61,12 @@ public class GeohashDroid extends Activity {
     private static final int REQUEST_PICK_GRATICULE = 0;
     private static final int REQUEST_STOCK = 1;
     private static final int REQUEST_LOCATION = 2;
+    private static final int REQUEST_MORE_STOCK = 3;
 
     private EditText mLatitude;
     private EditText mLongitude;
     private Button mGoButton;
+    private CheckBox mAutoBox;
 
     private static int mLastDialog = ALL_OKAY;
 
@@ -319,7 +324,14 @@ public class GeohashDroid extends Activity {
         // Read both fields and act accordingly.
         if (mGoButton == null)
             return;
+        
+        // Check over the checkbox.  If it's ticked on, turn on the go button.
+        if (mAutoBox != null && mAutoBox.isChecked()) {
+            mGoButton.setEnabled(true);
+            return;
+        }
 
+        // Otherwise, check to see if we have valid inputs.
         try {
             Integer.parseInt(mLatitude.getText().toString());
             Integer.parseInt(mLongitude.getText().toString());
@@ -356,20 +368,6 @@ public class GeohashDroid extends Activity {
     }
 
     private void attachListeners() {
-        // Now, register the Refresh button's activity...
-        Button searchButton = (Button)findViewById(R.id.RefreshButton);
-
-        // Owing to the way location updates work, we don't need a new thread
-        // for the festivities. We get these updates asynchronously anyway, so
-        // this can be on the main thread.
-        searchButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent i = new Intent(GeohashDroid.this, LocationGrabber.class);
-                startActivityForResult(i, REQUEST_LOCATION);
-            }
-        });
-
         // Then the map button...
         Button mapButton = (Button)findViewById(R.id.MapButton);
 
@@ -394,6 +392,25 @@ public class GeohashDroid extends Activity {
                 startActivityForResult(i, REQUEST_PICK_GRATICULE);
             }
 
+        });
+        
+        // The checkbox needs to be registered so it can disable the graticule
+        // input and map picker as need be.
+        mAutoBox = (CheckBox)findViewById(R.id.AutoBox);
+        
+        mAutoBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                    boolean isChecked) {
+                // Disable or enable the interesting stuff as need be.
+                mLatitude.setEnabled(!isChecked);
+                mLongitude.setEnabled(!isChecked);
+                Button mapButton = (Button)findViewById(R.id.MapButton);
+                mapButton.setEnabled(!isChecked);
+                resetGoButton();
+            }
+            
         });
 
         // And the Go button...
