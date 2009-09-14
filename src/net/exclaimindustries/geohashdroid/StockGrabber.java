@@ -45,6 +45,12 @@ public class StockGrabber extends Activity {
     private HashBuilder.StockRunner mRunner;
     private Thread mThread;
     
+    // These get handed back to the caller in case it needs them.  It may not.
+    // This saves us the trouble of holding them in a somewhat hokey manner in
+    // the caller itself.
+    private double mLatitude;
+    private double mLongitude;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +75,11 @@ public class StockGrabber extends Activity {
             failure(RESULT_SERVER_FAILURE);
             return;
         }
+        
+        // Last call, figure out if we need to return the doubles containing
+        // location data...
+        mLatitude = intent.getDoubleExtra(GeohashDroid.LATITUDE, 0.0);
+        mLongitude = intent.getDoubleExtra(GeohashDroid.LONGITUDE, 0.0);
         
         // Good!  Data's retrieved, and we're ready to talk to HashBuilder!  We
         // want to do one check to the database right now, though, so that this
@@ -130,6 +141,8 @@ public class StockGrabber extends Activity {
         // SUCCESS!  We're ready to go!
         Intent i = new Intent();
         i.putExtra(GeohashDroid.INFO, inf);
+        i.putExtra(GeohashDroid.LATITUDE, mLatitude);
+        i.putExtra(GeohashDroid.LONGITUDE, mLongitude);
         setResult(RESULT_OK, i);
         finish();
     }

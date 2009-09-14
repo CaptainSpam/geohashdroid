@@ -15,10 +15,12 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -44,7 +46,7 @@ public class GeohashDroid extends Activity {
     public static final String GRATICULE = "net.exclaimindustries.geohashdroid.graticule";
     public static final String LOCATION = "net.exclaimindustries.geohashdroid.location";
 
-//    private static final String DEBUG_TAG = "GeohashDroid";
+    private static final String DEBUG_TAG = "GeohashDroid";
 
     private static final int DIALOG_SEARCH_FAIL = 0;
     private static final int DIALOG_STOCK_NOT_POSTED = 1;
@@ -419,20 +421,26 @@ public class GeohashDroid extends Activity {
         mGoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                // First, we check to see if we already know the stock price.
-                // To that end, we need to gather up some data first.
-                DatePicker date = (DatePicker)findViewById(R.id.Date);
-                Calendar cal = Calendar.getInstance();
-                cal.setLenient(true);
-                cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
-                Graticule grat = new Graticule(mLatitude.getText().toString(),
-                        mLongitude.getText().toString());
-                
-                Intent i = new Intent(GeohashDroid.this, StockGrabber.class);
-                i.putExtra(GRATICULE, grat);
-                i.putExtra(CALENDAR, cal);
-                startActivityForResult(i, REQUEST_STOCK);
-                
+                if(!mAutoBox.isChecked()) {
+                    // Without the auto-checker, go straight to whatever was
+                    // input into the graticule boxen.
+                    DatePicker date = (DatePicker)findViewById(R.id.Date);
+                    Calendar cal = Calendar.getInstance();
+                    cal.setLenient(true);
+                    cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
+                    Graticule grat = new Graticule(mLatitude.getText().toString(),
+                            mLongitude.getText().toString());
+                    
+                    Intent i = new Intent(GeohashDroid.this, StockGrabber.class);
+                    i.putExtra(GRATICULE, grat);
+                    i.putExtra(CALENDAR, cal);
+                    startActivityForResult(i, REQUEST_STOCK);
+                } else {
+                    // Otherwise, we need to figure out the location and go from
+                    // there.
+                    Intent i = new Intent(GeohashDroid.this, LocationGrabber.class);
+                    startActivityForResult(i, REQUEST_LOCATION);
+                }
             }
         });
 
@@ -527,9 +535,12 @@ public class GeohashDroid extends Activity {
             	switch(resultCode) {
             		case RESULT_OK:
             		{
+            		    // Now that we have a location, we have the "base"
+            		    // graticule.  Start there, get the eight around it,
+            		    // and figure out where everything is around that.
             			double lat = data.getDoubleExtra(LATITUDE, 0.0);
             			double lon = data.getDoubleExtra(LONGITUDE, 0.0);
-            			updateGraticule(lat, lon);
+            			calculateClosestInfo(lat, lon);
             			break;
             		}
             		case LocationGrabber.RESULT_FAIL:
@@ -540,7 +551,29 @@ public class GeohashDroid extends Activity {
             	}
             	break;
             }
-
+            case REQUEST_MORE_STOCK: {
+                switch(resultCode) {
+                    case RESULT_OK:
+                    {
+                        // Got a stock THIS time.  Let's restart the closest
+                        // calculator.
+                        double lat = data.getDoubleExtra(LATITUDE, 0.0);
+                        double lon = data.getDoubleExtra(LONGITUDE, 0.0);
+                        calculateClosestInfo(lat, lon);
+                        break;
+                    }
+                    case StockGrabber.RESULT_NOT_POSTED_YET:
+                        showDialog(DIALOG_STOCK_NOT_POSTED);
+                        break;
+                    case StockGrabber.RESULT_SERVER_FAILURE:
+                        showDialog(DIALOG_STOCK_ERROR);
+                        break;
+                    case RESULT_CANCELED:
+                        // This doesn't really do anything.
+                        break;
+                }
+                break;
+            }
         }
     }
     
@@ -563,4 +596,82 @@ public class GeohashDroid extends Activity {
         startActivity(i);
     }
 
+    private void calculateClosestInfo(double latitude, double longitude) {
+        // The doubles represent not only where we are, but also the "base"
+        // graticule.  So, we go get that Info first, then we go for the rest.
+        // All of these go to StockGrabber with REQUEST_MORE_STOCK, which will
+        // in turn call this again if anything's needed (or fail if need be).
+        Graticule base = new Graticule(latitude, longitude);
+        
+        Location loc = new Location("");
+        loc.setLatitude(latitude);
+        loc.setLongitude(longitude);
+        
+        DatePicker date = (DatePicker)findViewById(R.id.Date);
+        Calendar cal = Calendar.getInstance();
+        cal.setLenient(true);
+        cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
+        
+        Info inf = HashBuilder.getStoredInfo(cal, base);
+        
+        if(inf == null) {
+            // Oops.  We don't have enough data.  Off to the stock grabber!
+            Intent i = new Intent(GeohashDroid.this, StockGrabber.class);
+            i.putExtra(GRATICULE, base);
+            i.putExtra(CALENDAR, cal);
+            i.putExtra(LATITUDE, latitude);
+            i.putExtra(LONGITUDE, longitude);
+            startActivityForResult(i, REQUEST_MORE_STOCK);
+            
+            // Stop and wait until we get back.  We'll start over at that point.
+            // This may not be the most efficient way to do this, but success
+            // guarantees that the data is cached.
+            return;
+        }
+        
+        // This is the closest Info bundle we've found yet.  Whatever this ends
+        // up as becomes what goes to the map.
+        Info closest = inf;
+        float bestDistance = inf.getDistanceInMeters(loc);
+        Log.d(DEBUG_TAG, "Initial best distance (0,0): " + bestDistance);
+        
+        // Now, get a bunch of offset graticules, get info from each, and figure
+        // out which one is the closest.
+        for(int i = -1; i <= 1; i++) {
+            for(int j = -1; j <= 1; j++) {
+                if(i == 0 && j == 0)
+                    continue;
+                
+                Graticule grat = Graticule.createOffsetFrom(base, j, i);
+                inf = HashBuilder.getStoredInfo(cal, grat);
+                
+                if(inf == null) {
+                    // Oops.  We don't have this data.  We must be on the 30W
+                    // or 180E/W line.  Let's try again.  If this succeeds, then
+                    // it's guaranteed we have BOTH available.
+                    Log.d(DEBUG_TAG, "HashBuilder returned null info when checking nearby graticules, trying to get new data...");
+                    
+                    Intent in = new Intent(GeohashDroid.this, StockGrabber.class);
+                    in.putExtra(GRATICULE, grat);
+                    in.putExtra(CALENDAR, cal);
+                    in.putExtra(LATITUDE, latitude);
+                    in.putExtra(LONGITUDE, longitude);
+                    startActivityForResult(in, REQUEST_MORE_STOCK);
+                    return;
+                }
+                
+                // Got it!  Let's get calculating!
+                float newDist = inf.getDistanceInMeters(loc);
+                if(newDist < bestDistance) {
+                    Log.d(DEBUG_TAG, "New best distance (" + i + "," + j + "): " + newDist);
+                    closest = inf;
+                    bestDistance = newDist; 
+                } else
+                    Log.d(DEBUG_TAG, "New distance (" + i + "," + j + "): " + newDist + " (not better)");
+            }
+        }
+        
+        // There!  Now, we have whatever the closest Info bundle was!
+        dispatchMapIntent(closest);
+    }
 }
