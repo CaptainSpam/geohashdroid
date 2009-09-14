@@ -89,6 +89,26 @@ public class Info implements Serializable {
     }
 
     /**
+     * Gets the fractional part of the latitude of the final destination.  That
+     * is, the part determined by the hash.
+     *
+     * @return the fractional part of the latitude
+     */
+    public double getLatitudeHash() {
+        return Math.abs(mLatitude) - mGraticule.getLatitude();
+    }
+
+    /**
+     * Gets the fractional part of the longitude of the final destination.  That
+     * is, the part determined by the hash.
+     *
+     * @return the fractional part of the longitude
+     */
+    public double getLongitudeHash() {
+        return Math.abs(mLongitude) - mGraticule.getLongitude();
+    }
+
+    /**
      * Returns the final destination as a GeoPoint object, which can be so
      * unbelievably handy when plotting this on a map, given that uses GeoPoints
      * and not doubles.
