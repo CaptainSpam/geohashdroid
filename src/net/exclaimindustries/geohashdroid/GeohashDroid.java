@@ -347,18 +347,6 @@ public class GeohashDroid extends Activity {
         }
     }
 
-    private void updateGraticule(double latitude, double longitude) {
-        // After all that, we DO, in fact, have a graticule!
-        // We kind of have to do this to account for the negative zero
-        // graticules. Oh, the fun of a floating-point coordinate system!
-        String latStr = (latitude < 0 ? "-" : "") + Math.abs((int)latitude);
-        mLatitude.setText(latStr);
-        String lonStr = (longitude < 0 ? "-" : "") + Math.abs((int)longitude);
-        mLongitude.setText(lonStr);
-
-        resetGoButton();
-    }
-
     private void updateGraticule(Graticule g) {
         // This comes from the Graticule picker map.
         String latStr = (g.isSouth() ? "-" : "") + g.getLatitude();
@@ -633,7 +621,6 @@ public class GeohashDroid extends Activity {
         // up as becomes what goes to the map.
         Info closest = inf;
         float bestDistance = inf.getDistanceInMeters(loc);
-        Log.d(DEBUG_TAG, "Initial best distance (0,0): " + bestDistance);
         
         // Now, get a bunch of offset graticules, get info from each, and figure
         // out which one is the closest.
@@ -663,11 +650,9 @@ public class GeohashDroid extends Activity {
                 // Got it!  Let's get calculating!
                 float newDist = inf.getDistanceInMeters(loc);
                 if(newDist < bestDistance) {
-                    Log.d(DEBUG_TAG, "New best distance (" + i + "," + j + "): " + newDist);
                     closest = inf;
-                    bestDistance = newDist; 
-                } else
-                    Log.d(DEBUG_TAG, "New distance (" + i + "," + j + "): " + newDist + " (not better)");
+                    bestDistance = newDist;
+                }
             }
         }
         
