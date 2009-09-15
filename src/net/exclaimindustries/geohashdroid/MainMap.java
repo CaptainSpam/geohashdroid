@@ -573,7 +573,7 @@ public class MainMap extends MapActivity {
             case MENU_INFO: {
                 // Pop up our detail window!
                 Intent i = new Intent(this, DetailedInfoScreen.class);
-                i.putExtra(INFO, mInfo);
+                i.putExtra(GeohashDroid.INFO, mInfo);
                 startActivity(i);
                 return true;
             }
