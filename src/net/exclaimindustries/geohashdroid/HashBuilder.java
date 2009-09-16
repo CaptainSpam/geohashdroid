@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.security.InvalidParameterException;
 import java.util.Calendar;
 
 import net.exclaimindustries.tools.HexFraction;
@@ -57,17 +58,12 @@ public class HashBuilder {
     private static final String DEBUG_TAG = "HashBuilder";
     
     private static StockStoreDatabase mStore;
-    
-    // These four allow for quick reloading of the most recent stock in a given
-    // instance of the program, bypassing the SQLite database, as well as allow
-    // for a small cache even if the SQLite database is turned off by preferences.
-    // TODO: We only have a need for up to two *guaranteed* stock values, and
-    // even that's an outrageous edge case.  Still, if more are needed, this
-    // might be better as a circular queue or something.  Must decide this.
-    private static Calendar mLastDate;
-    private static String mLastStock;
-    private static Calendar mTwoDatesAgo;
-    private static String mTwoStocksAgo;
+    // This set allows for quick reloading of the most recent stock and hash in
+    // a given instance of the program, bypassing the SQLite database, as well
+    // as allow for a small cache even if the SQLite database is turned off by
+    // preferences.
+    private static Info mLastInfo;
+    private static Info mTwoInfosAgo;
 
     /**
      * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
@@ -356,7 +352,7 @@ public class HashBuilder {
     public static boolean hasStockStored(Calendar c, Graticule g) {
     	Calendar sCal = Info.makeAdjustedCalendar(c, g);
     	
-        return getQuickCache(sCal) != null || mStore.getStock(c, g) != null;
+        return getQuickCache(sCal, g) != null || mStore.getStock(c, g) != null;
     }
 
     /**
@@ -375,18 +371,19 @@ public class HashBuilder {
     	Calendar sCal = Info.makeAdjustedCalendar(c, g);
 
         // If it's in the quick cache, use it.
-        String result = getQuickCache(sCal);
+        Info result = getQuickCache(sCal, g);
         if(result != null)
-            return createInfo(c, result, g);
+            return cloneInfo(result, g);
     	
         // Otherwise, check the stock cache.
-        result = mStore.getStock(c, g);
+        String stock = mStore.getStock(c, g);
         
-        if(result == null) return null;
+        if(stock == null) return null;
         
         // If it was in the main cache but not the quick cache, quick cache it.
-        quickCache(sCal, result);
-        return createInfo(c, result, g);
+        Info i = createInfo(c, stock, g);
+        quickCache(i);
+        return i;
     }
     
     /**
@@ -396,12 +393,10 @@ public class HashBuilder {
      * @param sCal stock calendar to store
      * @param stock stock value to store
      */
-    private static void quickCache(Calendar sCal, String stock) {
+    private static void quickCache(Info i) {
         // Slide over!
-        mTwoDatesAgo = mLastDate;
-        mTwoStocksAgo = mLastStock;
-    	mLastDate = sCal;
-    	mLastStock = stock;
+        mTwoInfosAgo = mLastInfo;
+        mLastInfo = i;
     }
     
     /**
@@ -412,8 +407,7 @@ public class HashBuilder {
      */
     private synchronized static void storeData(Info i) {
     	// First, replace the last-known results.
-    	quickCache(Info.makeAdjustedCalendar(i.getCalendar(), i.getGraticule()),
-    			i.getStockString());
+    	quickCache(i);
     	
     	// Then, write it to the database.
         mStore.storeInfo(i);
@@ -463,6 +457,33 @@ public class HashBuilder {
     }
     
     /**
+     * Builds a new Info object by applying a new Graticule to an existing Info
+     * object.  That is to say, change the destination of an Info object to
+     * somewhere else.  As if it were the same day and same stock value (and
+     * thus the same hash).  Note that this will throw an exception if the 
+     * existing Info's 30W-alignment isn't the same as the new Graticule's,
+     * because that would require a trip back to the internet, and by this
+     * point, we should know that we don't need to do so.
+     * 
+     * @param i old Info object to clone
+     * @param g new Graticule to apply
+     * @throws InvalidParameterException the Info and Graticule do not lie on the same side of the 30W line.
+     * @return
+     */
+    protected static Info cloneInfo(Info i, Graticule g) {
+        // This sort of requires the 30W-itude of both to match.
+        if(i.getGraticule().uses30WRule() != g.uses30WRule())
+            throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line.");
+        
+        // Get the destination set...
+        double lat = (g.getLatitude() + i.getLatitudeHash()) * (g.isSouth() ? -1 : 1);
+        double lon = (g.getLongitude() + i.getLongitudeHash()) * (g.isWest() ? -1 : 1);
+        
+        // Then...
+        return new Info(lat, lon, g, i.getCalendar(), i.getStockString());
+    }
+    
+    /**
      * Generate the hash string from the date and stock price.  The REAL date,
      * that is.  Not a 30W Rule-adjusted date.
      * 
@@ -493,27 +514,37 @@ public class HashBuilder {
         return MD5Tools.MD5hash(fullLine);
     }
 
-    private static String getQuickCache(Calendar sCal) {
+    private static Info getQuickCache(Calendar sCal, Graticule g) {
     	// We don't use Calendar.equals here, as that checks all properties,
     	// including potentially some we don't really care about.
         
-        // At any rate, first off, the most recent date.  Then, the second-most.
-        // Failing THAT, return null.
-    	if(mLastDate != null && mLastStock != null
-    			&& mLastDate.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
-    			&& mLastDate.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
-    			&& mLastDate.get(Calendar.YEAR) == sCal.get(Calendar.YEAR)) {
-    		Log.d(DEBUG_TAG, "Stock price is in quick cache: " + mLastStock);
-    		return mLastStock;
-        } else if(mTwoDatesAgo != null && mTwoStocksAgo != null
-    			&& mTwoDatesAgo.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
-    			&& mTwoDatesAgo.get(Calendar.DAY_OF_MONTH)== sCal.get(Calendar.DAY_OF_MONTH)
-    			&& mTwoDatesAgo.get(Calendar.YEAR) == sCal.get(Calendar.YEAR)) {
-    		Log.d(DEBUG_TAG, "Stock price is in quick cache: " + mTwoStocksAgo);
-    		return mTwoStocksAgo;
-        } else {
-            return null;
+        // At any rate, first off, the most recent date/30W combo.  Then, the
+        // second-most.  Failing THAT, return null.
+        if(mLastInfo != null) {
+            Calendar stored = mLastInfo.getStockCalendar();
+            
+            if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
+                    && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
+                    && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
+                    && mLastInfo.getGraticule().uses30WRule() == g.uses30WRule()) {
+                Log.d(DEBUG_TAG, "Hash data is in quick cache: " + mLastInfo.getLatitudeHash() + ", " + mLastInfo.getLongitudeHash());
+                return mLastInfo;
+            }
         }
+        
+        if(mTwoInfosAgo != null) {
+            Calendar stored = mTwoInfosAgo.getStockCalendar();
+            
+            if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
+                    && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
+                    && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
+                    && mTwoInfosAgo.getGraticule().uses30WRule() == g.uses30WRule()) {
+                Log.d(DEBUG_TAG, "Hash data is in quick cache: " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
+                return mTwoInfosAgo;
+            }
+        }
+        
+        return null;
     }
     
     /**
