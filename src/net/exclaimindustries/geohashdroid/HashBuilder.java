@@ -376,12 +376,11 @@ public class HashBuilder {
             return cloneInfo(result, g);
     	
         // Otherwise, check the stock cache.
-        String stock = mStore.getStock(c, g);
+        Info i = mStore.getStock(c, g);
         
-        if(stock == null) return null;
+        if(i == null) return null;
         
         // If it was in the main cache but not the quick cache, quick cache it.
-        Info i = createInfo(c, stock, g);
         quickCache(i);
         return i;
     }

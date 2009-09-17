@@ -43,16 +43,25 @@ public class StockStoreDatabase {
     public static final String KEY_DATE = "date";
     /** The name of the stock value column. */
     public static final String KEY_STOCK = "stock";
+    /** The name of the column flagging if the 30W rule was in effect here. */
+    public static final String KEY_30W = "uses30w";
+    /** The name of the latitude hashpart column. */
+    public static final String KEY_LATHASH = "lathash";
+    /** The name of the longitude hashpart column. */
+    public static final String KEY_LONHASH = "lonhash";
     
     private static final String DATABASE_NAME = "stockstore";
     private static final String DATABASE_TABLE = "stocks";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     
     private static final String DATABASE_CREATE =
         "CREATE TABLE " + DATABASE_TABLE
             + " (" + KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
             + KEY_DATE + " INTEGER NOT NULL, "
-            + KEY_STOCK + " TEXT NOT NULL);";
+            + KEY_STOCK + " TEXT NOT NULL, "
+            + KEY_30W + " INTEGER NOT NULL, "
+            + KEY_LATHASH + " REAL NOT NULL, "
+            + KEY_LONHASH + " REAL NOT NULL);";
     
     /**
      * Implements SQLiteOpenHelper.  Much like Hamburger Helper, this can take
@@ -73,8 +82,10 @@ public class StockStoreDatabase {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            // This IS the first version of the database, so there's nothing to
-            // do here.
+            if(oldVersion == 1) {
+                db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE);
+                db.execSQL(DATABASE_CREATE);
+            }
         }
     }
     
@@ -143,8 +154,13 @@ public class StockStoreDatabase {
             Calendar cal = i.getStockCalendar();
             toGo.put(KEY_DATE, DateTools.getDateString(cal));
             toGo.put(KEY_STOCK, i.getStockString());
+            toGo.put(KEY_30W, i.getGraticule().uses30WRule());
+            toGo.put(KEY_LATHASH, i.getLatitudeHash());
+            toGo.put(KEY_LONHASH, i.getLongitudeHash());
             
-            Log.d(DEBUG_TAG, "NOW STORING " + DateTools.getDateString(cal) + " : " + i.getStockString());
+            Log.d(DEBUG_TAG, "NOW STORING " + DateTools.getDateString(cal)
+                    + (i.getGraticule().uses30WRule() ? "(30W)" : "")+ " : " + i.getStockString()
+                    + " (" + i.getLatitudeHash() + "," + i.getLongitudeHash() + ")");
             
             return mDatabase.insert(DATABASE_TABLE, null, toGo);
         }
@@ -159,16 +175,17 @@ public class StockStoreDatabase {
      * @param g Graticule to use to determine if the 30W Rule is in effect
      * @return String containing the stock quote, or null if it doesn't exist
      */
-    public String getStock(Calendar c, Graticule g) {
+    public Info getStock(Calendar c, Graticule g) {
         synchronized(mDatabase) {
             Log.d(DEBUG_TAG, "Querying the stock database...");
             // First, adjust the calendar if we need to.
             Calendar cal = Info.makeAdjustedCalendar(c, g);
-            String toReturn = null;
+            Info toReturn = null;
             
             // Now, to the database!
-            Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_STOCK},
-                    KEY_DATE + " = " + DateTools.getDateString(cal),
+            Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_STOCK, KEY_LATHASH, KEY_LONHASH},
+                    KEY_DATE + " = " + DateTools.getDateString(cal) + " AND " + KEY_30W + " = "
+                    + (g.uses30WRule() ? "1" : "0"),
                     null, null, null, null);
             
             if(cursor == null) {
@@ -183,8 +200,16 @@ public class StockStoreDatabase {
                 // Otherwise, grab the first one we come across.
                 if(!cursor.moveToFirst()) return null;
                 
-                toReturn = cursor.getString(0);
-                Log.d(DEBUG_TAG, "Stock found -- Today's lucky number is " + toReturn);
+                String stock = cursor.getString(0);
+                double latHash = cursor.getDouble(1);
+                double lonHash = cursor.getDouble(2);
+                Log.d(DEBUG_TAG, "Stock found -- Today's lucky number is " + stock + " (" + latHash + "," + lonHash + ")");
+                
+                // Get the destination set...
+                double lat = (g.getLatitude() + latHash) * (g.isSouth() ? -1 : 1);
+                double lon = (g.getLongitude() + lonHash) * (g.isWest() ? -1 : 1);
+                
+                toReturn = new Info(lat, lon, g, c, stock);
             }
             
             cursor.close();
