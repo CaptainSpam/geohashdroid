@@ -676,6 +676,7 @@ public class GeohashDroid extends Activity {
         }
         
         // There!  Now, we have whatever the closest Info bundle was!
+        updateGraticule(closest.getGraticule());
         dispatchMapIntent(closest);
     }
 }
