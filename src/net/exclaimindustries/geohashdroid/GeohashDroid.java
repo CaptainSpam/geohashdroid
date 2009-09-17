@@ -145,11 +145,18 @@ public class GeohashDroid extends Activity {
                 }
             }
         }
-
+        
         // Now attach the listeners and reset the Go button, and stand back
         // and watch the fun!
         attachListeners();
         resetGoButton();
+        
+        // Tick the checkbox if need be.
+        if(prefs.getBoolean(GHDConstants.PREF_CLOSEST, false)) {
+            mAutoBox.setChecked(true);
+        } else {
+            mAutoBox.setChecked(false);
+        }
 
         // Rebuild the dialogs if any were around when we left.
         if (mLastDialog != ALL_OKAY) {
@@ -227,6 +234,12 @@ public class GeohashDroid extends Activity {
             editor.putBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
             toReturn = true;
         }
+        
+        // The Closest checkbox defaults to off.
+        if(!prefs.contains(GHDConstants.PREF_CLOSEST)) {
+            editor.putBoolean(GHDConstants.PREF_CLOSEST, false);
+            toReturn = true;
+        }        
 
         editor.commit();
 
@@ -399,6 +412,12 @@ public class GeohashDroid extends Activity {
                 Button mapButton = (Button)findViewById(R.id.MapButton);
                 mapButton.setEnabled(!isChecked);
                 resetGoButton();
+                
+                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+                SharedPreferences.Editor editor = prefs.edit();
+                
+                editor.putBoolean(GHDConstants.PREF_CLOSEST, isChecked);
+                editor.commit();
             }
             
         });
