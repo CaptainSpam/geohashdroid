@@ -14,10 +14,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.ZoomControls;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -62,11 +59,7 @@ public class GraticuleMap extends MapActivity implements
         GraticuleMapView mapView = (GraticuleMapView)findViewById(R.id.Map);
 
         // Zoom buttons! Go!
-        LinearLayout zoomLayout = (LinearLayout)findViewById(R.id.ZoomLayout);
-        ZoomControls zoomView = (ZoomControls)mapView.getZoomControls();
-        zoomLayout.addView(zoomView, new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-        mapView.displayZoomControls(true);
+        mapView.setBuiltInZoomControls(true);
 
         // Initial location! Go!
         // Step one, zoom. We want a wide area to view. Like, say, at least
