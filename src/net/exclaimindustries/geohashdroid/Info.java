@@ -34,18 +34,12 @@ import com.google.android.maps.GeoPoint;
  * 
  */
 public class Info implements Serializable {
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = 3L;
 
     private double mLatitude;
     private double mLongitude;
     private Graticule mGraticule;
     private Calendar mDate;
-    // Note that this is stored as a String, not a float.  We never actually use
-    // the stock value as a float; it always gets fed directly into the hash as
-    // a String.  And, for hashing purposes, if it were a float, we would need
-    // to ensure it gets padded to two decimal points if need be.  So, it stands
-    // as a String.
-    private String mStock;
 
     /**
      * Creates an Info object with the given data. That's it.
@@ -58,16 +52,13 @@ public class Info implements Serializable {
      *            the graticule
      * @param date
      *            the date
-     * @param stock
-     *            the stock value
      */
     public Info(double latitude, double longitude, Graticule graticule,
-            Calendar date, String stock) {
+            Calendar date) {
         mLatitude = latitude;
         mLongitude = longitude;
         mGraticule = graticule;
         mDate = date;
-        mStock = stock;
     }
 
     /**
@@ -165,41 +156,6 @@ public class Info implements Serializable {
     }
     
     /**
-     * Gets the stored stock price as a String, suitable for hashing.
-     * 
-     * <p>
-     * Be careful; this is the stock price used for the hash.  This is not
-     * necessarily the stock price for the date stored in this Info's Calendar
-     * object if the graticule falls under the 30W Rule.
-     * </p>
-     * 
-     * @return the stock as a String
-     */
-    public String getStockString() {
-        return mStock;
-    }
-    
-    /**
-     * <p>
-     * Gets the stored stock price as a float, suitable for things which
-     * GeohashDroid wasn't made for, so I'm not sure why this would be called.
-     * </p>
-     * 
-     * <p>
-     * Be careful; this is the stock price used for the hash.  This is not
-     * necessarily the stock price for the date stored in this Info's Calendar
-     * object if the graticule falls under the 30W Rule.
-     * </p>
-     * 
-     * @return the stock as a float
-     * @throws NumberFormatException the stock value somehow isn't parseable as
-     *                               a float
-     */
-    public float getStockFloat() throws NumberFormatException {
-        return Float.parseFloat(mStock);
-    }
-
-    /**
      * Gets the distance, in meters, from the given Location and the final
      * destination.
      * 
@@ -239,6 +195,9 @@ public class Info implements Serializable {
      * pulled from a given date/graticule pair.  That is, back a day for the 30W
      * Rule and rewinding to Friday if it falls on a weekend.
      * 
+     * @param c date to adjust
+     * @param g Graticule to use to determine if the 30W Rule is in effect (if
+     *          null, assumes it isn't and no adjustments are needed for it)
      * @return a new adjusted Calendar
      */
     public static Calendar makeAdjustedCalendar(Calendar c, Graticule g) {
@@ -251,8 +210,9 @@ public class Info implements Serializable {
         // original for various reasons.
         Calendar cal = (Calendar)(c.clone());
         
-        // Second, 30W Rule hackery.
-        if(g.uses30WRule())
+        // Second, 30W Rule hackery.  If g is null, assume we're not in 30W
+        // territory (that is, no adjustment is needed).
+        if(g != null && g.uses30WRule())
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.

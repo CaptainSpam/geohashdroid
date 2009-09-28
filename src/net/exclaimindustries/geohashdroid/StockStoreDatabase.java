@@ -38,30 +38,43 @@ public class StockStoreDatabase {
     private static final String DEBUG_TAG = "StockStoreDatabase";
     
     /** The name of the column for the row's ID. */
-    public static final String KEY_ROWID = "_id";
+    public static final String KEY_STOCKS_ROWID = "_id";
     /** The name of the date column. */
-    public static final String KEY_DATE = "date";
+    public static final String KEY_STOCKS_DATE = "date";
     /** The name of the stock value column. */
-    public static final String KEY_STOCK = "stock";
+    public static final String KEY_STOCKS_STOCK = "stock";
+    
+    /** The name of the column for the row's IDs for hashes. */
+    public static final String KEY_HASHES_ROWID = "_id";
+    /** The name of the date column for hashes. */
+    public static final String KEY_HASHES_DATE = "date";
     /** The name of the column flagging if the 30W rule was in effect here. */
-    public static final String KEY_30W = "uses30w";
+    public static final String KEY_HASHES_30W = "uses30w";
     /** The name of the latitude hashpart column. */
-    public static final String KEY_LATHASH = "lathash";
+    public static final String KEY_HASHES_LATHASH = "lathash";
     /** The name of the longitude hashpart column. */
-    public static final String KEY_LONHASH = "lonhash";
+    public static final String KEY_HASHES_LONHASH = "lonhash";
     
     private static final String DATABASE_NAME = "stockstore";
-    private static final String DATABASE_TABLE = "stocks";
-    private static final int DATABASE_VERSION = 2;
     
-    private static final String DATABASE_CREATE =
-        "CREATE TABLE " + DATABASE_TABLE
-            + " (" + KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + KEY_DATE + " INTEGER NOT NULL, "
-            + KEY_STOCK + " TEXT NOT NULL, "
-            + KEY_30W + " INTEGER NOT NULL, "
-            + KEY_LATHASH + " REAL NOT NULL, "
-            + KEY_LONHASH + " REAL NOT NULL);";
+    private static final String TABLE_STOCKS = "stocks";
+    private static final String TABLE_HASHES = "hashes";
+    
+    private static final int DATABASE_VERSION = 3;
+    
+    private static final String CREATE_STOCKS_TABLE = 
+        "CREATE TABLE " + TABLE_STOCKS
+            + " (" + KEY_STOCKS_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + KEY_STOCKS_DATE + " INTEGER NOT NULL, "
+            + KEY_STOCKS_STOCK + " TEXT NOT NULL);";
+    
+    private static final String CREATE_HASHES_TABLE = 
+        "CREATE TABLE " + TABLE_HASHES
+            + " (" + KEY_HASHES_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + KEY_HASHES_DATE + " INTEGER NOT NULL, "
+            + KEY_HASHES_30W + " INTEGER NOT NULL, "
+            + KEY_HASHES_LATHASH + " REAL NOT NULL, "
+            + KEY_HASHES_LONHASH + " REAL NOT NULL);";
     
     /**
      * Implements SQLiteOpenHelper.  Much like Hamburger Helper, this can take
@@ -77,14 +90,17 @@ public class StockStoreDatabase {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL(DATABASE_CREATE);
+            db.execSQL(CREATE_STOCKS_TABLE);
+            db.execSQL(CREATE_HASHES_TABLE);
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if(oldVersion == 1) {
-                db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE);
-                db.execSQL(DATABASE_CREATE);
+            if(oldVersion == 1 || oldVersion == 2) {
+                // Versions 1 and 2 only had one table, named "stocks".
+                db.execSQL("DROP TABLE IF EXISTS stocks");
+                db.execSQL(CREATE_STOCKS_TABLE);
+                db.execSQL(CREATE_HASHES_TABLE);
             }
         }
     }
@@ -131,7 +147,10 @@ public class StockStoreDatabase {
     }
     
     /**
-     * Stores a bundle of Info into the database.
+     * Stores a bundle of Info into the database.  That is, store a new entry in
+     * the hashes table.  It is presumed this has nothing to do with the actual
+     * stock value.  When retrieved later, this will preserve the fractional
+     * parts of the coordinates (that is, the hash part).
      * 
      * @param i the aforementioned bundle of Info to be stored into the database
      * @return the new row ID created, or -1 if it went wrong or already exists
@@ -145,49 +164,126 @@ public class StockStoreDatabase {
             // But first!  First we need to know if this already exists.  If it
             // does, return a -1.
             // TODO: No, wrong.  I need a better mechanism for that.
-            if(getStock(i.getCalendar(), i.getGraticule()) != null) {
-                Log.d(DEBUG_TAG, "Stock price already exists, ignoring...");
+            if(getInfo(i.getCalendar(), i.getGraticule()) != null) {
+                Log.d(DEBUG_TAG, "Info already exists for that data, ignoring...");
                 return -1;
             }
             
             ContentValues toGo = new ContentValues();
-            Calendar cal = i.getStockCalendar();
-            toGo.put(KEY_DATE, DateTools.getDateString(cal));
-            toGo.put(KEY_STOCK, i.getStockString());
-            toGo.put(KEY_30W, i.getGraticule().uses30WRule());
-            toGo.put(KEY_LATHASH, i.getLatitudeHash());
-            toGo.put(KEY_LONHASH, i.getLongitudeHash());
+            Calendar cal = i.getCalendar();
+            toGo.put(KEY_HASHES_DATE, DateTools.getDateString(cal));
+            toGo.put(KEY_HASHES_30W, i.getGraticule().uses30WRule());
+            toGo.put(KEY_HASHES_LATHASH, i.getLatitudeHash());
+            toGo.put(KEY_HASHES_LONHASH, i.getLongitudeHash());
             
-            Log.d(DEBUG_TAG, "NOW STORING " + DateTools.getDateString(cal)
-                    + (i.getGraticule().uses30WRule() ? "(30W)" : "")+ " : " + i.getStockString()
-                    + " (" + i.getLatitudeHash() + "," + i.getLongitudeHash() + ")");
+            Log.d(DEBUG_TAG, "NOW STORING TO HASHES " + DateTools.getDateString(cal)
+                    + (i.getGraticule().uses30WRule() ? " (30W)" : "") + " : "
+                    + i.getLatitudeHash() + "," + i.getLongitudeHash());
             
-            return mDatabase.insert(DATABASE_TABLE, null, toGo);
+            return mDatabase.insert(TABLE_HASHES, null, toGo);
         }
     }
     
     /**
-     * Retrieves a stock quote from the database, if it exists.  If not,
-     * returns null instead.
+     * Stores a stock value in the stock table.  Presumably, the given calendar
+     * value is already adjusted for weekends and 30W (that is, this is the raw
+     * stock value for that date).
+     * 
+     * @param cal the date of the stock
+     * @param stock the stock itself, as a string
+     * @return the new row ID created, or -1 if it went wrong or already exists
+     */
+    public synchronized long storeStock(Calendar cal, String stock) {
+        synchronized(mDatabase) {
+            // First, check over the database to make sure it doesn't already
+            // exist.
+            if(getStock(cal) != null) {
+                Log.d(DEBUG_TAG, "Stock price already exists in database for " + DateTools.getDateString(cal) + ", ignoring...");
+                return -1;
+            }
+            
+            // Otherwise, store away!
+            ContentValues toGo = new ContentValues();
+            toGo.put(KEY_STOCKS_DATE, DateTools.getDateString(cal));
+            toGo.put(KEY_STOCKS_STOCK, stock);
+            
+            Log.d(DEBUG_TAG, "NOW STORING TO STOCKS " + DateTools.getDateString(cal)
+                    + " : " + stock);
+            
+            return mDatabase.insert(TABLE_STOCKS, null, toGo);
+        }
+    }
+    
+    /**
+     * Retrieves enough data from the database to construct an Info bundle, if
+     * such data exists.  If not, returns null instead.
      * 
      * @param c Calendar containing the date to retrieve (this should NOT be
      *          adjusted for the 30W Rule)
-     * @param g Graticule to use to determine if the 30W Rule is in effect
-     * @return String containing the stock quote, or null if it doesn't exist
+     * @param g Graticule to use to determine if the 30W Rule is in effect and
+     *          to create the new Info bundle with
+     * @return Info bundle you're looking for, or null if the database doesn't
+     *         have the data you want
      */
-    public Info getStock(Calendar c, Graticule g) {
+    public Info getInfo(Calendar c, Graticule g) {
         synchronized(mDatabase) {
-            Log.d(DEBUG_TAG, "Querying the stock database...");
+            Log.d(DEBUG_TAG, "Querying the hashes database...");
             // First, adjust the calendar if we need to.
-            Calendar cal = Info.makeAdjustedCalendar(c, g);
             Info toReturn = null;
             
             // Now, to the database!
-            Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_STOCK, KEY_LATHASH, KEY_LONHASH},
-                    KEY_DATE + " = " + DateTools.getDateString(cal) + " AND " + KEY_30W + " = "
+            Cursor cursor = mDatabase.query(TABLE_HASHES, new String[] {KEY_HASHES_LATHASH, KEY_HASHES_LONHASH},
+                    KEY_HASHES_DATE + " = " + DateTools.getDateString(c) + " AND " + KEY_HASHES_30W + " = "
                     + (g.uses30WRule() ? "1" : "0"),
                     null, null, null, null);
             
+            if(cursor == null) {
+                // If a problem happens, assume there's no stock to get.
+                Log.w(DEBUG_TAG, "HEY!  The cursor returned from the query was null!");
+                return null;
+            } else if(cursor.getCount() == 0) {
+                // If nothing resulted from this, the stock doesn't exist in the
+                // cache.
+                Log.d(DEBUG_TAG, "Info doesn't exist in database");
+            } else {
+                // Otherwise, grab the first one we come across.
+                if(!cursor.moveToFirst()) return null;
+                
+                double latHash = cursor.getDouble(0);
+                double lonHash = cursor.getDouble(1);
+                Log.d(DEBUG_TAG, "Info found -- Today's lucky numbers are " + latHash + "," + lonHash);
+                
+                // Get the destination set...
+                double lat = (g.getLatitude() + latHash) * (g.isSouth() ? -1 : 1);
+                double lon = (g.getLongitude() + lonHash) * (g.isWest() ? -1 : 1);
+                
+                toReturn = new Info(lat, lon, g, c);
+            }
+            
+            cursor.close();
+            return toReturn;
+        }
+    }
+    
+    /**
+     * Retrieves a stock value from the database for the given date.  This date
+     * should already be adjusted for weekends and such.
+     * 
+     * @param cal already-adjusted date for which to get a stock
+     * @return the String representation of the stock, or null if none is stored 
+     */
+    public String getStock(Calendar cal) {
+        synchronized(mDatabase) {
+            Log.d(DEBUG_TAG, "Querying the stock database...");
+            
+            String toReturn = null;
+            
+            // Go!
+            Cursor cursor = mDatabase.query(TABLE_STOCKS, new String[] {KEY_STOCKS_STOCK},
+                    KEY_STOCKS_DATE + " = " + DateTools.getDateString(cal),
+                    null, null, null, null);
+            
+            // And now the check...
             if(cursor == null) {
                 // If a problem happens, assume there's no stock to get.
                 Log.w(DEBUG_TAG, "HEY!  The cursor returned from the query was null!");
@@ -200,16 +296,8 @@ public class StockStoreDatabase {
                 // Otherwise, grab the first one we come across.
                 if(!cursor.moveToFirst()) return null;
                 
-                String stock = cursor.getString(0);
-                double latHash = cursor.getDouble(1);
-                double lonHash = cursor.getDouble(2);
-                Log.d(DEBUG_TAG, "Stock found -- Today's lucky number is " + stock + " (" + latHash + "," + lonHash + ")");
-                
-                // Get the destination set...
-                double lat = (g.getLatitude() + latHash) * (g.isSouth() ? -1 : 1);
-                double lon = (g.getLongitude() + lonHash) * (g.isWest() ? -1 : 1);
-                
-                toReturn = new Info(lat, lon, g, c, stock);
+                toReturn = cursor.getString(0);
+                Log.d(DEBUG_TAG, "Stock found -- Today's lucky number is " + toReturn);
             }
             
             cursor.close();
@@ -238,8 +326,8 @@ public class StockStoreDatabase {
         		// more than a bit unreadable.  Also note very carefully, this
         		// entire method depends on there being no holes in the rowids.
         		// "SELECT _rowid FROM stocks ORDER BY _rowid DESC LIMIT 1;"
-        		Cursor cursor = mDatabase.query(DATABASE_TABLE, new String[] {KEY_ROWID},
-        		        null, null, null, null, KEY_ROWID + " DESC", "1");
+        		Cursor cursor = mDatabase.query(TABLE_STOCKS, new String[] {KEY_STOCKS_ROWID},
+        		        null, null, null, null, KEY_STOCKS_ROWID + " DESC", "1");
         		
         		cursor.moveToFirst();
         		int highest = cursor.getInt(0);
@@ -248,10 +336,22 @@ public class StockStoreDatabase {
         		// Step two: Delete anything in the database older than the
                 // highest minus the max.
         		// "DELETE FROM stocks WHERE _rowid < (highest - max);"
-        		int deleted = mDatabase.delete(DATABASE_TABLE, KEY_ROWID + " <= " + (highest - max), null);
+        		int deleted = mDatabase.delete(TABLE_STOCKS, KEY_STOCKS_ROWID + " <= " + (highest - max), null);
         		
-        		Log.d(DEBUG_TAG, "Rows deleted: " + deleted);
+        		Log.d(DEBUG_TAG, "Stock rows deleted: " + deleted);
         		
+        		// Now, do all that again, but for hashes.
+        		
+        		cursor = mDatabase.query(TABLE_HASHES, new String[] {KEY_HASHES_ROWID},
+        		        null, null, null, null, KEY_HASHES_ROWID + " DESC", "1");
+        		
+        		cursor.moveToFirst();
+        		highest = cursor.getInt(0);
+        		cursor.close();
+        		
+        		deleted = mDatabase.delete(TABLE_HASHES, KEY_HASHES_ROWID + " <= " + (highest - max), null);
+        		
+        		Log.d(DEBUG_TAG, "Info rows deleted: " + deleted);
         	} catch (Exception e) {
         		// If something went wrong, let it go.
         		Log.w(DEBUG_TAG, "HEY!  Couldn't prune the stock cache database: " + e.toString());
@@ -268,7 +368,8 @@ public class StockStoreDatabase {
             try {
                 Log.d(DEBUG_TAG, "Emptying the stock cache...");
                 // KABOOM!
-                mDatabase.delete(DATABASE_TABLE, null, null);
+                mDatabase.delete(TABLE_STOCKS, null, null);
+                mDatabase.delete(TABLE_HASHES, null, null);
                 return true;
             } catch (Exception e) {
                 // If something went wrong, let it go.

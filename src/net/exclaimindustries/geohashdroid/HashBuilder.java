@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.Calendar;
 
+import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.HexFraction;
 import net.exclaimindustries.tools.MD5Tools;
 
@@ -121,9 +122,7 @@ public class HashBuilder {
         	
             // First, we need to adjust the calendar in the event we're in the
             // range of the 30W rule.  To that end, sCal is for stock calendar.
-            Calendar sCal = (Calendar)mCal.clone();
-            if(mGrat.uses30WRule())
-                sCal.add(Calendar.DAY_OF_MONTH, -1);
+            Calendar sCal = Info.makeAdjustedCalendar(mCal, mGrat);
             
             // Grab a lock on our lock object.
         	synchronized(locker) {
@@ -139,26 +138,36 @@ public class HashBuilder {
         			return;
         		}
         		
-        		// Otherwise, we need to start heading off to the net.
-        		mStatus = BUSY;
-        		try {
-        		    stock = fetchStock(sCal);
-        		} catch (FileNotFoundException fnfe) {
-        		    // If we got a 404, assume it's not posted yet.
-        		    mStatus = ERROR_NOT_POSTED;
-        		    sendMessage(null);
-        		    return;
-        		} catch (IOException ioe) {
-        		    // If we got anything else, assume a problem.
-        		    mStatus = ERROR_SERVER;
-        		    sendMessage(null);
-        		    return;
-        		}
+        		// If that failed, we need a stock price.  First, check to see
+        		// if it's in the database.  
+        		stock = getStoredStock(sCal);
         		
-        		if(mStatus == ABORTED) {
-        		    // If we aborted, send that back, too.
-        		    sendMessage(null);
-        		    return;
+        		// If we found something, great!  Let's move on!
+        		if(stock == null) {
+            		// Otherwise, we need to start heading off to the net.
+            		mStatus = BUSY;
+            		try {
+            		    stock = fetchStock(sCal);
+            		    // If this didn't throw an exception, stash it in the
+            		    // database.
+            		    storeStock(sCal, stock);
+            		} catch (FileNotFoundException fnfe) {
+            		    // If we got a 404, assume it's not posted yet.
+            		    mStatus = ERROR_NOT_POSTED;
+            		    sendMessage(null);
+            		    return;
+            		} catch (IOException ioe) {
+            		    // If we got anything else, assume a problem.
+            		    mStatus = ERROR_SERVER;
+            		    sendMessage(null);
+            		    return;
+            		}
+            		
+            		if(mStatus == ABORTED) {
+            		    // If we aborted, send that back, too.
+            		    sendMessage(null);
+            		    return;
+            		}
         		}
         	}
 
@@ -169,7 +178,7 @@ public class HashBuilder {
             toReturn = createInfo(mCal, stock, mGrat);
                 
     		// Good!  Now, we can stash this away in the database for later.
-    		storeData(toReturn);
+    		storeInfo(toReturn);
         	
         	// And we're done!
         	mStatus = ALL_OKAY;
@@ -350,9 +359,9 @@ public class HashBuilder {
      *         internet for it
      */
     public static boolean hasStockStored(Calendar c, Graticule g) {
-    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
+//    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
     	
-        return getQuickCache(sCal, g) != null || mStore.getStock(c, g) != null;
+        return getQuickCache(c, g) != null || mStore.getInfo(c, g) != null;
     }
 
     /**
@@ -368,21 +377,41 @@ public class HashBuilder {
      */
     public static Info getStoredInfo(Calendar c, Graticule g) {
     	// First, check the quick cache.
-    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
+//    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
 
         // If it's in the quick cache, use it.
-        Info result = getQuickCache(sCal, g);
-        if(result != null)
+        Log.d(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c) + (g.uses30WRule() ? " with 30W rule" : " without 30W rule"));
+        Info result = getQuickCache(c, g);
+        if(result != null) {
+            Log.d(DEBUG_TAG, "Data found in quickcache!");
             return cloneInfo(result, g);
+        }
     	
         // Otherwise, check the stock cache.
-        Info i = mStore.getStock(c, g);
+        Info i = mStore.getInfo(c, g);
         
-        if(i == null) return null;
-        
+        if(i == null)
+            return null;
+            
+        Log.d(DEBUG_TAG, "Data found in database!  Quickcaching...");
         // If it was in the main cache but not the quick cache, quick cache it.
         quickCache(i);
         return i;
+    }
+    
+    /**
+     * Attempt to get the stock value stored in the database for the given
+     * already-adjusted date.  This won't go to the internet; that's the
+     * responsibility of a StockRunner.
+     * 
+     * @param c already-adjusted date to check
+     * @return the String representation of the stock, or null if it's not there
+     */
+    public static String getStoredStock(Calendar c) {
+        // We don't quickcache the stock values.
+        Log.d(DEBUG_TAG, "Going to the database for a stock for " + DateTools.getDateString(c));
+        
+        return mStore.getStock(c);
     }
     
     /**
@@ -399,17 +428,22 @@ public class HashBuilder {
     }
     
     /**
-     * Stores stock data away in the database.  This won't do anything if the
-     * day's stock value already exists therein.
+     * Stores Info data away in the database.  This won't do anything if the
+     * day's Info already exists therein.
      * 
      * @param i an Info bundle with everything we need
      */
-    private synchronized static void storeData(Info i) {
+    private synchronized static void storeInfo(Info i) {
     	// First, replace the last-known results.
     	quickCache(i);
     	
     	// Then, write it to the database.
         mStore.storeInfo(i);
+        mStore.cleanup();
+    }
+    
+    private synchronized static void storeStock(Calendar cal, String stock) {
+        mStore.storeStock(cal, stock);
         mStore.cleanup();
     }
     
@@ -452,7 +486,7 @@ public class HashBuilder {
         double lon = getLongitude(g, hash);
         
         // And finally...
-        return new Info(lat, lon, g, c, stockPrice);
+        return new Info(lat, lon, g, c);
     }
     
     /**
@@ -472,14 +506,14 @@ public class HashBuilder {
     protected static Info cloneInfo(Info i, Graticule g) {
         // This sort of requires the 30W-itude of both to match.
         if(i.getGraticule().uses30WRule() != g.uses30WRule())
-            throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line.");
+            throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line; this should not have happened.");
         
         // Get the destination set...
         double lat = (g.getLatitude() + i.getLatitudeHash()) * (g.isSouth() ? -1 : 1);
         double lon = (g.getLongitude() + i.getLongitudeHash()) * (g.isWest() ? -1 : 1);
         
         // Then...
-        return new Info(lat, lon, g, i.getCalendar(), i.getStockString());
+        return new Info(lat, lon, g, i.getCalendar());
     }
     
     /**
@@ -520,25 +554,25 @@ public class HashBuilder {
         // At any rate, first off, the most recent date/30W combo.  Then, the
         // second-most.  Failing THAT, return null.
         if(mLastInfo != null) {
-            Calendar stored = mLastInfo.getStockCalendar();
+            Calendar stored = mLastInfo.getCalendar();
             
             if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
                     && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
                     && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
                     && mLastInfo.getGraticule().uses30WRule() == g.uses30WRule()) {
-                Log.d(DEBUG_TAG, "Hash data is in quick cache: " + mLastInfo.getLatitudeHash() + ", " + mLastInfo.getLongitudeHash());
+                Log.d(DEBUG_TAG, "Hash data is in quick cache (mLastInfo): " + mLastInfo.getLatitudeHash() + ", " + mLastInfo.getLongitudeHash());
                 return mLastInfo;
             }
         }
         
         if(mTwoInfosAgo != null) {
-            Calendar stored = mTwoInfosAgo.getStockCalendar();
+            Calendar stored = mTwoInfosAgo.getCalendar();
             
             if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
                     && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
                     && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
                     && mTwoInfosAgo.getGraticule().uses30WRule() == g.uses30WRule()) {
-                Log.d(DEBUG_TAG, "Hash data is in quick cache: " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
+                Log.d(DEBUG_TAG, "Hash data is in quick cache (mTwoInfosAgo): " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
                 return mTwoInfosAgo;
             }
         }
