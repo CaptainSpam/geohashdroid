@@ -11,7 +11,9 @@ package net.exclaimindustries.geohashdroid;
 import java.util.LinkedList;
 import java.util.List;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
@@ -461,7 +463,7 @@ public class MainMap extends MapActivity {
                 }
                 
                 // Then, make us a disabled destination...
-                overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf));
+                overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf, this));
             }
         }
     }
@@ -493,7 +495,7 @@ public class MainMap extends MapActivity {
                 }
                 
                 // Then, make us a disabled destination...
-                overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf));
+                overlays.add(new FinalDestinationDisabledOverlay(nearbyMarker, inf, this));
                 mNextNearbyY++;
             }
             mNextNearbyY = -1;
@@ -881,5 +883,50 @@ public class MainMap extends MapActivity {
             }
 
         }
+    }
+    
+    /**
+     * Displays the "Switch to X graticule?" prompt.  This should happen as the
+     * result of the user tapping a disabled final destination point.
+     *  
+     * @param i new Info to use
+     */
+    void showSwitchGraticulePrompt(Info i) {
+        // Let's make us a dialog!
+        AlertDialog.Builder build = new AlertDialog.Builder(this);
+        
+        // The title is the new graticule's number.
+        Graticule incoming = i.getGraticule();
+        build.setTitle(incoming.getLatitude() + (incoming.isSouth() ? "S" : "N") + " "
+                + incoming.getLongitude() + (incoming.isWest() ? "W" : "N"));
+        build.setIcon(android.R.drawable.ic_dialog_map);
+        
+        // The text is a question.
+        build.setMessage("EENEY OONEY WAH-NAH!");
+        
+        // The okay button has to be able to send the Info bundle.
+        build.setPositiveButton(R.string.dialog_switch_graticule_okay,
+                new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,
+                        int whichButton) {
+                	// TODO: Send a message back to change the Info bundle.
+                    dialog.dismiss();
+                }
+            });
+        
+        // The cancel button is pretty base.
+        build.setNegativeButton(R.string.dialog_switch_graticule_cancel,
+                new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,
+                        int whichButton) {
+                    dialog.cancel();
+                }
+            });
+        
+        build.show();
+    }
+    
+    private void changeInfo(Info i) {
+        // TODO: Implement!
     }
 }
