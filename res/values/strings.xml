@@ -26,6 +26,19 @@
 
 <string name="dialog_switch_graticule_okay">Yes, change to this one</string>
 <string name="dialog_switch_graticule_cancel">No, keep what I have</string>
+<!--
+TODO: Need a better way to do this if I want translations eventually.  This
+format won't work for all languages, I'd imagine.
+-->
+<string name="dialog_switch_graticule_text1">That point is </string>
+<string name="dialog_switch_graticule_text2">from your current location.  </string>
+<!--
+_text3_known is appended to the end of the above text if the current location
+is known.  _text3_unknown is used if the current location is unknown, as it fits
+in a bit better grammatically (at least in English).
+-->
+<string name="dialog_switch_graticule_text3_known">Do you want to switch to it?</string>
+<string name="dialog_switch_graticule_text3_unknown">Do you want to switch to this point?</string>
 
 <string name="error_title">Error</string>
 <string name="standby_title">Stand by...</string>
