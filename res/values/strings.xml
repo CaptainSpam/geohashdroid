@@ -24,6 +24,9 @@
 <string name="cancel_label">Cancel</string>
 <string name="darn_label">Darn!</string>
 
+<string name="dialog_switch_graticule_okay">Yes, change to this one</string>
+<string name="dialog_switch_graticule_cancel">No, keep what I have</string>
+
 <string name="error_title">Error</string>
 <string name="standby_title">Stand by...</string>
 <string name="stock_label">Retrieving stock data...</string>
