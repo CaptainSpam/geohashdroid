@@ -31,7 +31,7 @@ TODO: Need a better way to do this if I want translations eventually.  This
 format won't work for all languages, I'd imagine.
 -->
 <string name="dialog_switch_graticule_text1">That point is </string>
-<string name="dialog_switch_graticule_text2">from your current location.  </string>
+<string name="dialog_switch_graticule_text2"> from your current location.  </string>
 <!--
 _text3_known is appended to the end of the above text if the current location
 is known.  _text3_unknown is used if the current location is unknown, as it fits
