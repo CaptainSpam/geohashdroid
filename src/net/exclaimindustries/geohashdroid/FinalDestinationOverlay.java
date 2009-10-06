@@ -26,6 +26,7 @@ public class FinalDestinationOverlay extends Overlay {
     protected Drawable mDrawable;
     protected GeoPoint mDestination;
     protected Graticule mGraticule;
+    protected Info mInfo;
 
     /**
      * Creates a new FinalDestinationOverlay.
@@ -35,6 +36,7 @@ public class FinalDestinationOverlay extends Overlay {
      */
     public FinalDestinationOverlay(Drawable d, Info i) {
         mDrawable = d;
+        mInfo = i;
         mDestination = i.getFinalDestination();
         mGraticule = i.getGraticule();
     }

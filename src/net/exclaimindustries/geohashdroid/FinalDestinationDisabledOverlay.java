@@ -20,18 +20,33 @@ import android.graphics.drawable.Drawable;
  */
 public class FinalDestinationDisabledOverlay extends FinalDestinationOverlay {
 
-    public FinalDestinationDisabledOverlay(Drawable d, Info i) {
+    private MainMap mParent;
+    
+    /**
+     * Creates a new disabled final destination overlay.
+     * 
+     * @param d Drawable to use as the flag
+     * @param i Info bundle within this overlay (defines where it is)
+     * @param parent parent MainMap which will pop up a dialog when this is tapped
+     */
+    public FinalDestinationDisabledOverlay(Drawable d, Info i, MainMap parent) {
         super(d, i);
+        mParent = parent;
     }
 
     @Override
     public boolean onTap(GeoPoint p, MapView mapView) {
+        // Disabled destination overlays can be tapped.  This seems more than a
+        // bit counterintuitive, given the name, but it makes sense.  Trust me.
         if(isPointOnIcon(p, mapView))
-            // If this isn't even on us, forget it.
+        {
+            // If this is on us, we need to act!  Give us a popup!
+            mParent.showSwitchGraticulePrompt(mInfo);
+            return true;
+        }
+        else
+            // If not, well, we don't!    
             return false;
-        
-        // TODO: Do something!   
-        return false;
     }
     
 }
