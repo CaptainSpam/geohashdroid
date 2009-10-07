@@ -903,16 +903,18 @@ public class MainMap extends MapActivity {
         build.setIcon(android.R.drawable.ic_dialog_map);
         
         // The text is a question.
-        Location curLoc = mMyLocation.getMyLocation();
+        GeoPoint curGeo = mMyLocation.getMyLocation();
 
-        if(curLoc == null) {
+        if(curGeo == null) {
             // We don't know the location yet, so we go with the 
             // message without any indication of distance.
             build.setMessage(R.string.dialog_switch_graticule_text3_unknown);
         } else {
             // We DO know the location, and thus we need the distance.
-            String distance = UnitConverter.makeDistanceString(this, new DecimalFormat("###.###"), i.getDistanceInMeters(curLoc));
-            build.setMessage(getString(R.string.dialog_switch_graticule_text1) + distance + getString(R.string.dialog_switch_graticule_text2) + getString(R.string.dialog_switch_graticule_text3_known));
+            String distance = UnitConverter.makeDistanceString(this, new DecimalFormat("###.###"), i.getDistanceInMeters(curGeo));
+            build.setMessage(getString(R.string.dialog_switch_graticule_text1) + " "
+                    + distance + " " + getString(R.string.dialog_switch_graticule_text2)
+                    + "  " + getString(R.string.dialog_switch_graticule_text3_known));
         }
         
         // The okay button has to be able to send the Info bundle.
