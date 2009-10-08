@@ -56,7 +56,7 @@ public class MainMap extends MapActivity {
     private Graticule mGraticule;
     // Whether we auto-zoom or not
     private boolean mAutoZoom = true;
-    // Our bucket o' info (data is repeated for convenience)
+    // Our bucket o' info (some data is repeated for convenience)
     private Info mInfo;
 
     private PowerManager.WakeLock mWakeLock;
@@ -103,6 +103,8 @@ public class MainMap extends MapActivity {
     private int mNextNearbyX;
     private int mNextNearbyY;
 
+    private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
+
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -124,18 +126,15 @@ public class MainMap extends MapActivity {
             // If our Bundle has an Info object, we're coming back from
             // elsewhere. We can rebuild from there.
             // TODO: Do I really need to do this? Or is the Intent constant?
-            mInfo = (Info)icicle.getSerializable(INFO);
+            assignNewInfo((Info)icicle.getSerializable(INFO));
             mAutoZoom = icicle.getBoolean(AUTOZOOM);
             restarting = true;
         } else {
-            mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
+            assignNewInfo((Info)getIntent().getSerializableExtra(GeohashDroid.INFO));
         }
 
         // Now, gather up our data and do anything we need to that's common to
         // all cases.
-        mDestination = mInfo.getFinalDestination();
-        mGraticule = mInfo.getGraticule();
-
         setContentView(R.layout.map);
 
         mMapView = (MapView)findViewById(R.id.Map);
@@ -401,6 +400,16 @@ public class MainMap extends MapActivity {
 
         return true;
     }
+
+    private void assignNewInfo(Info i) {
+        // Quick!  Assign mInfo and the repeated values!
+        // TODO: Do I REALLY want to keep the whole repeated value thing?  Is
+        // the matter of convenience THAT important, or am I actually saving
+        // calls by not doing mInfo.getFinalDestination over and over?
+        mInfo = i;
+        mDestination = i.getFinalDestination();
+        mGraticule = i.getGraticule();
+    }
     
     private void addFinalDestination() {
         List<Overlay> overlays = mMapView.getOverlays();
@@ -617,6 +626,7 @@ public class MainMap extends MapActivity {
 
     @Override
     protected boolean isRouteDisplayed() {
+        // No.  No, it's actually not.
         return false;
     }
 
@@ -911,7 +921,7 @@ public class MainMap extends MapActivity {
             build.setMessage(R.string.dialog_switch_graticule_text3_unknown);
         } else {
             // We DO know the location, and thus we need the distance.
-            String distance = UnitConverter.makeDistanceString(this, new DecimalFormat("###.###"), i.getDistanceInMeters(curGeo));
+            String distance = UnitConverter.makeDistanceString(this, mDistFormat, i.getDistanceInMeters(curGeo));
             build.setMessage(getString(R.string.dialog_switch_graticule_text1) + " "
                     + distance + " " + getString(R.string.dialog_switch_graticule_text2)
                     + "  " + getString(R.string.dialog_switch_graticule_text3_known));
@@ -940,6 +950,43 @@ public class MainMap extends MapActivity {
     }
     
     private void changeInfo(Info i) {
-        // TODO: Implement!
+        // Info changing should only occur at the user's behest.  That is, if
+        // the user explicitly changed the graticule via a tap.  What we need
+        // to do, in order, is:
+        //
+        // 1. Remove all current overlays.
+        // 2. Update our concept of mInfo.
+        // 3. Recreate all overlays.  TODO: Do we want logic to determine which
+        //    can be recycled?
+        // 4. Force the infobox to update with the new info.
+        // 5. Recenter and rezoom to the new point.
+        //
+        // With that said...
+
+        // Step One:
+        removeNearbyPoints();
+        removeFinalDestination();
+
+        // Step Two:
+        assignNewInfo(i);
+
+        // Step Three:
+        addFinalDestination();
+
+        // Nearby points should always be on as per this writing, as that's the
+        // only way this will get triggered.  But, just to be safe and somewhat
+        // future-proof...
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
+        boolean nearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
+        if(nearbyOn) addNearbyPoints();
+
+        // Step Four:
+        populateInfoBox();
+
+        // Step Five:
+        // We don't check if zooming is appropriate in this case; we assume
+        // that we're zooming, like it or not, as if we just restarted and we
+        // got our first fix (assuming we know where we are now).
+
     }
 }
