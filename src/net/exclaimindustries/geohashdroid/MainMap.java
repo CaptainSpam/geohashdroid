@@ -976,7 +976,7 @@ public class MainMap extends MapActivity {
         // Nearby points should always be on as per this writing, as that's the
         // only way this will get triggered.  But, just to be safe and somewhat
         // future-proof...
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         boolean nearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
         if(nearbyOn) addNearbyPoints();
 
