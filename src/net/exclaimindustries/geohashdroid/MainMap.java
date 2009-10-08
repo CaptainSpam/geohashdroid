@@ -903,6 +903,7 @@ public class MainMap extends MapActivity {
      * @param i new Info to use
      */
     void showSwitchGraticulePrompt(Info i) {
+        final Info toSend = i;
         // Let's make us a dialog!
         AlertDialog.Builder build = new AlertDialog.Builder(this);
         
@@ -932,8 +933,10 @@ public class MainMap extends MapActivity {
                 new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog,
                         int whichButton) {
-                	// TODO: Send a message back to change the Info bundle.
+                	// TODO: Not sure, I might want to send this as a message,
+                    // not do it at the same time as the dialog.
                     dialog.dismiss();
+                    changeInfo(toSend);
                 }
             });
         
@@ -987,6 +990,15 @@ public class MainMap extends MapActivity {
         // We don't check if zooming is appropriate in this case; we assume
         // that we're zooming, like it or not, as if we just restarted and we
         // got our first fix (assuming we know where we are now).
-
+        GeoPoint curPoint = mMyLocation.getMyLocation();
+        
+        if(curPoint != null) {
+            resetNormalZoom(curPoint);
+            resetNormalCenter(curPoint);
+        } else {
+            mMapView.getController().animateTo(i.getFinalDestination());
+        }
+        
+        // Done and done!
     }
 }
