@@ -10,10 +10,12 @@ package net.exclaimindustries.geohashdroid;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.widget.Toast;
 
 /**
@@ -50,6 +52,9 @@ public class PreferenceEditScreen extends PreferenceActivity {
             }
             
         });
+        
+        // Now, assign proper summaries to various preferences.
+        initializePrefViews(manager.getSharedPreferences());
     }
     
     @Override
@@ -105,5 +110,208 @@ public class PreferenceEditScreen extends PreferenceActivity {
         
         return null;
     }
+    
+    private void initializePrefViews(SharedPreferences prefs) {
+        // There has GOT to be a cleaner way to do this...
+        
+        // Starting it off with autozoom!
+        Preference curPref = (Preference)findPreference(GHDConstants.PREF_AUTOZOOM);
+        if(prefs.getBoolean(GHDConstants.PREF_AUTOZOOM, true))
+            curPref.setSummary(R.string.pref_autozoom_on);
+        else
+            curPref.setSummary(R.string.pref_autozoom_off);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
 
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a Boolean...
+                if(newValue instanceof Boolean) {
+                    if(((Boolean)newValue).booleanValue())
+                        preference.setSummary(R.string.pref_autozoom_on);
+                    else
+                        preference.setSummary(R.string.pref_autozoom_off);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Infobox size!
+        curPref = (Preference)findPreference(GHDConstants.PREF_INFOBOX_SIZE);
+        String set = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
+        if(set.equals("None"))
+            curPref.setSummary(R.string.pref_infobox_off);
+        else if(set.equals("Small"))
+            curPref.setSummary(R.string.pref_infobox_small);
+        else
+            curPref.setSummary(R.string.pref_infobox_jumbo);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a String...
+                if(newValue instanceof String) {
+                    String set = (String)newValue;
+                    if(set.equals("None"))
+                        preference.setSummary(R.string.pref_infobox_off);
+                    else if(set.equals("Small"))
+                        preference.setSummary(R.string.pref_infobox_small);
+                    else
+                        preference.setSummary(R.string.pref_infobox_jumbo);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Distance units!
+        curPref = (Preference)findPreference(GHDConstants.PREF_DIST_UNITS);
+        set = prefs.getString(GHDConstants.PREF_DIST_UNITS, "Metric");
+        if(set.equals("Metric"))
+            curPref.setSummary(R.string.pref_units_metric);
+        else
+            curPref.setSummary(R.string.pref_units_imperial);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a String...
+                if(newValue instanceof String) {
+                    String set = (String)newValue;
+                    if(set.equals("Metric"))
+                        preference.setSummary(R.string.pref_units_metric);
+                    else
+                        preference.setSummary(R.string.pref_units_imperial);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Coordinate units!
+        curPref = (Preference)findPreference(GHDConstants.PREF_COORD_UNITS);
+        set = prefs.getString(GHDConstants.PREF_COORD_UNITS, "Degrees");
+        if(set.equals("Degrees"))
+            curPref.setSummary(R.string.pref_coordunits_degrees);
+        else if(set.equals("Minutes"))
+            curPref.setSummary(R.string.pref_coordunits_minutes);
+        else
+            curPref.setSummary(R.string.pref_coordunits_seconds);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a String...
+                if(newValue instanceof String) {
+                    String set = (String)newValue;
+                    if(set.equals("Degrees"))
+                        preference.setSummary(R.string.pref_coordunits_degrees);
+                    else if(set.equals("Minutes"))
+                        preference.setSummary(R.string.pref_coordunits_minutes);
+                    else
+                        preference.setSummary(R.string.pref_coordunits_seconds);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Nearby points!
+        curPref = (Preference)findPreference(GHDConstants.PREF_NEARBY_POINTS);
+        if(prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false))
+            curPref.setSummary(R.string.pref_nearbypoints_on);
+        else
+            curPref.setSummary(R.string.pref_nearbypoints_off);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a Boolean...
+                if(newValue instanceof Boolean) {
+                    if(((Boolean)newValue).booleanValue())
+                        preference.setSummary(R.string.pref_nearbypoints_on);
+                    else
+                        preference.setSummary(R.string.pref_nearbypoints_off);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Remember graticule!
+        curPref = (Preference)findPreference(GHDConstants.PREF_REMEMBER_GRATICULE);
+        if(prefs.getBoolean(GHDConstants.PREF_REMEMBER_GRATICULE, true))
+            curPref.setSummary(R.string.pref_remembergraticule_on);
+        else
+            curPref.setSummary(R.string.pref_remembergraticule_off);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a Boolean...
+                if(newValue instanceof Boolean) {
+                    if(((Boolean)newValue).booleanValue())
+                        preference.setSummary(R.string.pref_remembergraticule_on);
+                    else
+                        preference.setSummary(R.string.pref_remembergraticule_off);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Cache size!
+        curPref = (Preference)findPreference(GHDConstants.PREF_STOCK_CACHE_SIZE);
+        set = prefs.getString(GHDConstants.PREF_STOCK_CACHE_SIZE, "0");
+        if(set.equals("0"))
+            curPref.setSummary(R.string.pref_stockcachesize_off);
+        else if(set.equals("10"))
+            curPref.setSummary(R.string.pref_stockcachesize_10);
+        else if(set.equals("15"))
+            curPref.setSummary(R.string.pref_stockcachesize_15);
+        else if(set.equals("25"))
+            curPref.setSummary(R.string.pref_stockcachesize_25);
+        else if(set.equals("50"))
+            curPref.setSummary(R.string.pref_stockcachesize_50);
+        else
+            curPref.setSummary(R.string.pref_stockcachesize_100);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a String...
+                if(newValue instanceof String) {
+                    String set = (String)newValue;
+                    if(set.equals("0"))
+                        preference.setSummary(R.string.pref_stockcachesize_off);
+                    else if(set.equals("10"))
+                        preference.setSummary(R.string.pref_stockcachesize_10);
+                    else if(set.equals("15"))
+                        preference.setSummary(R.string.pref_stockcachesize_15);
+                    else if(set.equals("25"))
+                        preference.setSummary(R.string.pref_stockcachesize_25);
+                    else if(set.equals("50"))
+                        preference.setSummary(R.string.pref_stockcachesize_50);
+                    else
+                        preference.setSummary(R.string.pref_stockcachesize_100);
+                }
+                return true;
+            }
+            
+        });
+    }
 }

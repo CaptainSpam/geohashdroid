@@ -2,37 +2,35 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 	<PreferenceCategory android:title="@string/pref_cat_map">
 		<CheckBoxPreference android:key="AutoZoom"
-			android:title="@string/pref_autozoom_title" android:summary="@string/pref_autozoom_summary"
-			android:defaultValue="true" android:persistent="true" />
+			android:title="@string/pref_autozoom_title" android:defaultValue="true"
+			android:persistent="true" />
 		<ListPreference android:key="InfoBoxSize"
-			android:summary="@string/pref_infobox_summary" android:title="@string/pref_infobox_title"
-			android:defaultValue="Small" android:persistent="true"
-			android:entries="@array/pref_infobox_entries" android:entryValues="@array/pref_infobox_values"
-			android:dialogTitle="@string/pref_infobox_dialogtitle" />
-		<ListPreference android:key="Units"
-			android:summary="@string/pref_units_summary" android:title="@string/pref_units_title"
+			android:title="@string/pref_infobox_title" android:defaultValue="Small"
+			android:persistent="true" android:entries="@array/pref_infobox_entries"
+			android:entryValues="@array/pref_infobox_values" android:dialogTitle="@string/pref_infobox_dialogtitle" />
+		<ListPreference android:key="Units" android:title="@string/pref_units_title"
 			android:defaultValue="Metric" android:persistent="true"
 			android:entries="@array/pref_units_entries" android:entryValues="@array/pref_units_values"
 			android:dialogTitle="@string/pref_units_dialogtitle" />
 		<ListPreference android:key="CoordUnits"
-			android:summary="@string/pref_coordunits_summary" android:title="@string/pref_coordunits_title"
-			android:defaultValue="Degrees" android:persistent="true"
-			android:entries="@array/pref_coordunits_entries" android:entryValues="@array/pref_coordunits_values"
+			android:title="@string/pref_coordunits_title" android:defaultValue="Degrees"
+			android:persistent="true" android:entries="@array/pref_coordunits_entries"
+			android:entryValues="@array/pref_coordunits_values"
 			android:dialogTitle="@string/pref_coordunits_dialogtitle" />
 		<CheckBoxPreference android:key="NearbyPoints"
-			android:title="@string/pref_nearbypoints_title" android:summary="@string/pref_nearbypoints_summary"
-			android:defaultValue="false" android:persistent="true" />
+			android:title="@string/pref_nearbypoints_title" android:defaultValue="false"
+			android:persistent="true" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
-		<CheckBoxPreference android:summary="@string/pref_remembergraticule_summary"
-			android:key="RememberGraticule" android:title="@string/pref_remembergraticule_title"
+		<CheckBoxPreference android:key="RememberGraticule"
+			android:title="@string/pref_remembergraticule_title"
 			android:defaultValue="true" android:persistent="true" />
-		<ListPreference android:summary="@string/pref_stockcachesize_summary"
-			android:title="@string/pref_stockcachesize_title" android:key="StockCacheSize"
-			android:persistent="true" android:entries="@array/pref_stockcachesize_entries"
+		<ListPreference android:title="@string/pref_stockcachesize_title"
+			android:key="StockCacheSize" android:persistent="true"
+			android:entries="@array/pref_stockcachesize_entries"
 			android:entryValues="@array/pref_stockcachesize_values"
 			android:defaultValue="15"></ListPreference>
-		<Preference android:title="@string/pref_stockwipe_title" 
+		<Preference android:title="@string/pref_stockwipe_title"
 			android:key="_stockWipe" />
 	</PreferenceCategory>
 </PreferenceScreen>

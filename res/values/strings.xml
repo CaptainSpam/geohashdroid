@@ -59,22 +59,42 @@ in a bit better grammatically (at least in English).
 <string name="autozoom_turned_on">Automatic zooming turned on</string>
 
 <string name="pref_autozoom_title">Auto-zoom</string>
-<string name="pref_autozoom_summary">Automatically zoom as you move (manual zooming overrides this)</string>
+<string name="pref_autozoom_on">Automatically zoom as you move (manual zooming overrides this)</string>
+<string name="pref_autozoom_off">Only zoom manually</string>
+
 <string name="pref_remembergraticule_title">Auto-fill last graticule</string>
-<string name="pref_remembergraticule_summary">When starting the program, fill in the last graticule used</string>
+<string name="pref_remembergraticule_on">When starting the program, fill in the last graticule used</string>
+<string name="pref_remembergraticule_off">When starting the program, leave the graticule blank</string>
+
 <string name="pref_infobox_title">Info box</string>
-<string name="pref_infobox_summary">Size of the main map infobox</string>
 <string name="pref_infobox_dialogtitle">Select infobox size</string>
+<string name="pref_infobox_off">No infobox at all</string>
+<string name="pref_infobox_small">Small-sized infobox</string>
+<string name="pref_infobox_jumbo">Jumbo-sized infobox</string>
+
 <string name="pref_units_title">Distance units</string>
-<string name="pref_units_summary">Units used in distance calculations</string>
 <string name="pref_units_dialogtitle">Select units</string>
+<string name="pref_units_metric">Metric (km)</string>
+<string name="pref_units_imperial">Imperial (miles)</string>
+
 <string name="pref_coordunits_title">Coordinate units</string>
-<string name="pref_coordunits_summary">Units used in coordinate readouts</string>
 <string name="pref_coordunits_dialogtitle">Select units</string>
+<string name="pref_coordunits_degrees">Degrees (38.040°N)</string>
+<string name="pref_coordunits_minutes">Minutes (38° 2.40′N)</string>
+<string name="pref_coordunits_seconds">Seconds (38° 2′ 23.7″N)</string>
+
 <string name="pref_nearbypoints_title">Show nearby points</string>
-<string name="pref_nearbypoints_summary">Put markers on the meetup points in nearby graticules</string>
+<string name="pref_nearbypoints_on">Put markers on the meetup points in nearby graticules</string>
+<string name="pref_nearbypoints_off">Don\'t draw nearby markers</string>
+
 <string name="pref_stockcachesize_title">Stock cache size</string>
-<string name="pref_stockcachesize_summary">Maximum entries to store in the stock cache</string>
+<string name="pref_stockcachesize_off">Don\'t use a stock cache database</string>
+<string name="pref_stockcachesize_10">Ten entries</string>
+<string name="pref_stockcachesize_15">Fifteen entries</string>
+<string name="pref_stockcachesize_25">Twenty-five entries</string>
+<string name="pref_stockcachesize_50">Fifty entries</string>
+<string name="pref_stockcachesize_100">One hundred entries</string>
+
 <string name="pref_stockwipe_title">Clear stock cache</string>
 <string name="pref_stockwipe_dialog_text">Are you sure you want to clear all stock cache data?</string>
 <string name="pref_cat_map">Map options</string>
