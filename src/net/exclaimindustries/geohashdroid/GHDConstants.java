@@ -40,6 +40,10 @@ public final class GHDConstants {
     public static final String PREF_NEARBY_POINTS = "NearbyPoints";
     /** Prefs key specifying whether the closest checkbox is ticked. */
     public static final String PREF_CLOSEST = "ClosestOn";
+    /** Prefs key specifying wiki user name. */
+    public static final String PREF_WIKI_USER = "WikiUserName";
+    /** Prefs key specifying wiki user pass. */
+    public static final String PREF_WIKI_PASS = "WikiPassword";
     
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to

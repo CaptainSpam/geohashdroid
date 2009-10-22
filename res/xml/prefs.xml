@@ -21,6 +21,15 @@
 			android:title="@string/pref_nearbypoints_title" android:defaultValue="false"
 			android:persistent="true" />
 	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/pref_cat_wiki">
+		<EditTextPreference android:key="WikiUserName"
+			android:title="@string/pref_wikiusername_title" android:defaultValue=""
+			android:persistent="true" android:dialogTitle="@string/pref_wikiusername_dialogtitle" />
+		<EditTextPreference android:key="WikiPassword"
+			android:summary="@string/pref_wikipassword_summary" android:title="@string/pref_wikipassword_title"
+			android:defaultValue="" android:persistent="true"
+			android:dialogTitle="@string/pref_wikipassword_dialogtitle" />
+	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
 		<CheckBoxPreference android:key="RememberGraticule"
 			android:title="@string/pref_remembergraticule_title"

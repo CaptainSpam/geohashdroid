@@ -12,10 +12,12 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.Preference.OnPreferenceChangeListener;
+import android.text.InputType;
 import android.widget.Toast;
 
 /**
@@ -313,5 +315,49 @@ public class PreferenceEditScreen extends PreferenceActivity {
             }
             
         });
+        
+        // Wiki user name and password!
+        curPref = (Preference)findPreference(GHDConstants.PREF_WIKI_USER);
+        final EditTextPreference passPref = (EditTextPreference)findPreference(GHDConstants.PREF_WIKI_PASS);
+        
+        ((EditTextPreference)curPref).getEditText().setHint(R.string.pref_wikiusername_hint);
+        passPref.getEditText().setHint(R.string.pref_wikipassword_hint);
+        passPref.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        
+        String wikiName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        
+        // If the user has a name entered, put it in as the summary.  If not,
+        // leave it blank.  Oh, and disable the password field if the username
+        // isn't entered in.
+        if(wikiName.length() != 0) {
+            curPref.setSummary(wikiName);
+            passPref.setEnabled(true);
+        } else
+            passPref.setEnabled(false);
+        
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                // newValue better be a String...
+                if(newValue instanceof String) {
+                    String value = (String)newValue;
+                    preference.setSummary(value);
+                    
+                    if(value.length() == 0)
+                        passPref.setEnabled(false);
+                    else
+                        passPref.setEnabled(true);
+                }
+                return true;
+            }
+            
+        });
+        
+        // Wiki password!
+        // This one only changes in that it gets disabled if there's no username
+        // entered.
+
     }
 }
