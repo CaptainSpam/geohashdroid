@@ -78,10 +78,15 @@ public class MainMap extends MapActivity {
     private static final int MENU_INFO = 2;
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_MAP_MODE = 4;
+    private static final int MENU_POST = 5;
 
     private static final int MENU_RECENTER_DESTINATION = 10;
     private static final int MENU_RECENTER_MYLOCATION = 11;
     private static final int MENU_RECENTER_NORMALVIEW = 12;
+
+    private static final int MENU_POST_MESSAGE = 20;
+    private static final int MENU_POST_PICTURE = 21;
+    private static final int MENU_POST_WIKI = 22;
     
     // Activity request constants
     private static final int REQUEST_STOCK = 1;
@@ -384,6 +389,17 @@ public class MainMap extends MapActivity {
         item = menu.add(Menu.NONE, MENU_SETTINGS, 3,
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
+
+        // And now for the wiki features!
+        sub = menu.addSubMenu(Menu.NONE, MENU_POST, 4,
+                R.string.menu_item_post);
+        sub.setIcon(android.R.drawable.ic_menu_upload);
+        postres.add(Menu.NONE, MENU_POST_MESSAGE, 0,
+                R.string.menu_item_post_message);
+        postres.add(Menu.NONE, MENU_POST_PICTURE, 1,
+                R.string.menu_item_post_picture);
+        postres.add(Menu.NONE, MENU_POST_WIKI, 2,
+                R.string.menu_item_post_wiki);
 
         mMenu = menu;
 
