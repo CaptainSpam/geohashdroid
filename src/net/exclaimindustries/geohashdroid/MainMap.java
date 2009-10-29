@@ -394,11 +394,11 @@ public class MainMap extends MapActivity {
         sub = menu.addSubMenu(Menu.NONE, MENU_POST, 4,
                 R.string.menu_item_post);
         sub.setIcon(android.R.drawable.ic_menu_upload);
-        postres.add(Menu.NONE, MENU_POST_MESSAGE, 0,
+        sub.add(Menu.NONE, MENU_POST_MESSAGE, 0,
                 R.string.menu_item_post_message);
-        postres.add(Menu.NONE, MENU_POST_PICTURE, 1,
+        sub.add(Menu.NONE, MENU_POST_PICTURE, 1,
                 R.string.menu_item_post_picture);
-        postres.add(Menu.NONE, MENU_POST_WIKI, 2,
+        sub.add(Menu.NONE, MENU_POST_WIKI, 2,
                 R.string.menu_item_post_wiki);
 
         mMenu = menu;
