@@ -154,6 +154,7 @@ in a bit better grammatically (at least in English).
 <string name="hint_lon">Lon</string>
 
 <string name="about_by">By Nicholas Killewald</string>
+<string name="about_wiki_features">Wiki features by Thomas Hirsch</string>
 <string name="about_based_on">Based on the Geohashing algorithm by Randall Munroe</string>
 <string name="about_version">SVN version</string>
 <string name="about_date">(BUILD_DATE)</string>
