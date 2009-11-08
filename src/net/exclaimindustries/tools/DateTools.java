@@ -7,6 +7,7 @@
  */
 package net.exclaimindustries.tools;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 /**
@@ -24,25 +25,8 @@ public class DateTools {
      * @return a YYYYMMDD string
      */
     public static String getDateString(Calendar c) {
-        // This grabs a YYYYMMDD string from a Calendar.  The month gets one
-        // added to it because it's zero-indexed (January is zero).
-        StringBuilder toReturn = new StringBuilder();
-        
-        toReturn.append(c.get(Calendar.YEAR));
-        
-        int month = c.get(Calendar.MONTH) + 1;
-        if(month < 10) 
-            toReturn.append("0" + month);
-        else
-            toReturn.append(new Integer(month).toString());
-        
-        int day = c.get(Calendar.DAY_OF_MONTH);
-        if(day < 10)
-            toReturn.append("0" + day);
-        else
-            toReturn.append(new Integer(day).toString());
-        
-        return toReturn.toString();
+        String date = new SimpleDateFormat("yyyyMMdd").format(c.getTime());
+        return date;
     }
     
     /**
@@ -52,30 +36,9 @@ public class DateTools {
      * @return a YYYY-MM-DD string
      */
     public static String getHyphenatedDateString(Calendar c) {
-        // This grabs a YYYY-MM-DD string from a Calendar.  The month still
-        // gets one added to it because it's zero-indexed (January is zero).
-        StringBuilder toReturn = new StringBuilder();
-        
-        toReturn.append(c.get(Calendar.YEAR));
-        
-        // Hyphen!
-        toReturn.append('-');
-        
-        int month = c.get(Calendar.MONTH) + 1;
-        if(month < 10) 
-            toReturn.append("0" + month);
-        else
-            toReturn.append(new Integer(month).toString());
-        
-        // Another hyphen!
-        toReturn.append('-');
-        
-        int day = c.get(Calendar.DAY_OF_MONTH);
-        if(day < 10)
-            toReturn.append("0" + day);
-        else
-            toReturn.append(new Integer(day).toString());
-        
-        return toReturn.toString();
+        // Turns out the SimpleDateFormat class does all the tricky work for me.
+        // Huh.
+        String date = new SimpleDateFormat("yyyy-MM-dd").format(c.getTime());
+        return date;
     }
 }
