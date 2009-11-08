@@ -12,12 +12,15 @@ import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.exclaimindustries.tools.DateTools;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -653,10 +656,24 @@ public class MainMap extends MapActivity {
                 return true;
             }
             case MENU_POST_WIKI: {
-                // Pop up a browser showing the wiki page for this expedition.
-                Intent i = new Intent(this, WikiViewer.class);
-                i.putExtra(INFO, mInfo);
+                // Head out to the browser to get the wiki page for this
+                // expedition.  I know there's a lot of different Android
+                // devices coming out, but I'm at least hoping that they all
+                // have the Browser component or some way to properly handle
+                // the URL Intent.
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
+                
+                // Assemble a URL.  On the wiki, they come in this format:
+                // http://wiki.xkcd.com/geohashing/YYYY-MM-DD LAT LON
+                // (yes, spaces and all... sort of odd, but hey, it works)
+                String page = DateTools.getHyphenatedDateString(mInfo.getCalendar())
+                 + " " + mGraticule.getLatitudeString() + " " + mGraticule.getLongitudeString();
+                
+                i.setData(Uri
+                        .parse("http://wiki.xkcd.com/geohashing/" + page));
                 startActivity(i);
+                
                 return true;
             }
 

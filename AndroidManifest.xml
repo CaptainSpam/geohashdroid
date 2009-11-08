@@ -22,8 +22,7 @@
 			android:theme="@android:style/Theme"></activity>
 		<activity android:name="WikiPictureEditor" android:label="@string/wiki_picture_activity_title"
 			android:theme="@android:style/Theme"></activity>
-		<activity android:name="WikiViewer" android:label="@string/wiki_viewer_activity_title"
-			android:theme="@android:style/Theme"></activity>
+		
 		<activity android:name="GraticuleMap" android:label="@string/gratmap_activity_title"
 			android:theme="@style/Theme.NoBackground">
 			<intent-filter>
