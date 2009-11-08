@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="net.exclaimindustries.geohashdroid" android:versionName="0.7.0-pre3" android:versionCode="625">
-	<uses-sdk android:minSdkVersion="3"/>
+	package="net.exclaimindustries.geohashdroid" android:versionName="0.7.0-pre3"
+	android:versionCode="625">
+	<uses-sdk android:minSdkVersion="3" />
 	<application android:icon="@drawable/icon" android:label="@string/app_name"
-		android:description="@string/app_description" android:theme="@style/Theme.GeohashDroid" android:debuggable="true">
+		android:description="@string/app_description" android:theme="@style/Theme.GeohashDroid"
+		android:debuggable="true">
 		<uses-library android:name="com.google.android.maps" />
 		<activity android:label="@string/app_name" android:name=".GeohashDroid">
 			<intent-filter>
@@ -16,6 +18,12 @@
 			android:theme="@style/Theme.NoBackground.NoTitleBar"></activity>
 		<activity android:name="PreferenceEditScreen" android:label="@string/app_name"
 			android:theme="@android:style/Theme"></activity>
+		<activity android:name="WikiMessageEditor" android:label="@string/wiki_editor_activity_title"
+			android:theme="@android:style/Theme"></activity>
+		<activity android:name="WikiPictureEditor" android:label="@string/wiki_picture_activity_title"
+			android:theme="@android:style/Theme"></activity>
+		<activity android:name="WikiViewer" android:label="@string/wiki_viewer_activity_title"
+			android:theme="@android:style/Theme"></activity>
 		<activity android:name="GraticuleMap" android:label="@string/gratmap_activity_title"
 			android:theme="@style/Theme.NoBackground">
 			<intent-filter>
@@ -27,9 +35,10 @@
 
 		<activity android:name="StockGrabber" android:theme="@android:style/Theme.Dialog"
 			android:label="@string/standby_title" />
-	
-<activity android:label="@string/standby_title" android:name="LocationGrabber" android:theme="@android:style/Theme.Dialog"></activity>
-</application>
+
+		<activity android:label="@string/standby_title" android:name="LocationGrabber"
+			android:theme="@android:style/Theme.Dialog"></activity>
+	</application>
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"></uses-permission>

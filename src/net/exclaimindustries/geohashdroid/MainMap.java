@@ -69,6 +69,7 @@ public class MainMap extends MapActivity {
     private static final String LATSPAN = "latitudeSpan";
     private static final String LONSPAN = "longitudeSpan";
     private static final String INFO = "info";
+    private static final String LOCATION = "location";
     private static final String ORIENTATION = "orientation";
     private static final String ZOOM = "zoomLevel";
     private static final String AUTOZOOM = "autoZoom";
@@ -635,6 +636,30 @@ public class MainMap extends MapActivity {
                 mMapView.setSatellite(!mMapView.isSatellite());
                 return true;
             }
+            case MENU_POST_MESSAGE: {
+                // Pop up a dialog box which allows to enter a message to be sent to the wiki.
+                Intent i = new Intent(this, WikiMessageEditor.class);
+                i.putExtra(INFO, mInfo);
+                i.putExtra(LOCATION, mMyLocation.getLastFix());
+                startActivity(i);
+                return true;
+            }
+            case MENU_POST_PICTURE: {
+                // Pop up a dialog box which allows to enter a message to be sent to the wiki.
+                Intent i = new Intent(this, WikiPictureEditor.class);
+                i.putExtra(INFO, mInfo);
+                i.putExtra(LOCATION, mMyLocation.getLastFix());
+                startActivity(i);
+                return true;
+            }
+            case MENU_POST_WIKI: {
+                // Pop up a browser showing the wiki page for this expedition.
+                Intent i = new Intent(this, WikiViewer.class);
+                i.putExtra(INFO, mInfo);
+                startActivity(i);
+                return true;
+            }
+
         }
 
         return false;
