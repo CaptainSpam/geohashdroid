@@ -16,58 +16,38 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.content.SharedPreferences;
 
 import android.location.Location;
-import android.util.Log;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.StringEntity;
-
-import java.util.List;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.Iterator;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import java.text.SimpleDateFormat;
 /**
- * Displays an edit box and a send button, which shall upload the message entered to the appropriate expedition page in the
- * Geohashing wiki. 
+ * Displays an edit box and a send button, which shall upload the message
+ * entered to the appropriate expedition page in the Geohashing wiki. 
  * 
  * @author Thomas Hirsch
  */
 public class WikiMessageEditor extends Activity {
 
-    private static Pattern re_expedition  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
+    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
 
     private Button submitButton;
-    private CheckBox includeLocation;
-    private CheckBox includeTimestamp;
     private EditText editText;
     private ProgressDialog progress;    
 
-    private HttpClient httpclient;
-    private String pagename;
     protected WikiConnectionHandler connectionHandler;
     
     private static Info mInfo;
-    private HashMap<String, String> formfields;
+    private HashMap<String, String> mFormfields;
 
     static final int PROGRESS_DIALOG = 0;
     static final String STATUS_DISMISS = "Done.";
@@ -96,10 +76,10 @@ public class WikiMessageEditor extends Activity {
         editText     = (EditText)findViewById(R.id.wikiedittext);
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        TextView warning  = (TextView)findViewById(R.id.warningmessage);
+        TextView warning = (TextView)findViewById(R.id.warningmessage);
         String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if ((wpName==null) || (wpName.trim()=="")) {
-          warning.setText("WARNING: You are not logged in. Posting anonymously.");
+        if ((wpName == null) || (wpName.trim().length() == 0)) {
+          warning.setText(R.string.wiki_editor_not_logged_in);
         }
         
         submitButton.setOnClickListener(new View.OnClickListener() {
@@ -133,7 +113,7 @@ public class WikiMessageEditor extends Activity {
     
     class WikiConnectionHandler extends Thread {
       Handler handler;
-      private String oldstatus="";
+      private String mOldStatus="";
       
       WikiConnectionHandler(Handler h) {
         this.handler = h;
@@ -147,8 +127,8 @@ public class WikiMessageEditor extends Activity {
         handler.sendMessage(msg);
       } 
       protected void addStatus(String status) {
-        oldstatus = oldstatus + status;
-        setStatus(oldstatus);
+        mOldStatus = mOldStatus + status;
+        setStatus(mOldStatus);
       }
       protected void dismiss() {
         setStatus(STATUS_DISMISS);
@@ -203,15 +183,15 @@ public class WikiMessageEditor extends Activity {
         addStatus("Retrieving expedition "+expedition+"...");
         String page;
         try {
-          formfields = new HashMap<String,String>();
-          page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+          mFormfields = new HashMap<String,String>();
+          page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
           if ((page==null) || (page.trim().length()==0)) {
             addStatus("non-existant.\n");
 
             //ok, let's create some.
             addStatus("Creating expedition page...");
             try {
-              WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", formfields);
+              WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
               addStatus("done.\n");
             } catch (Exception ex) {
               addStatus("failed.\n"+ex.getMessage());
@@ -220,7 +200,7 @@ public class WikiMessageEditor extends Activity {
  
             addStatus("Re-retrieving expedition...");
             try {
-              page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+              page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
               addStatus("fetched.\n");
             } catch (Exception ex) {
               addStatus("failed.\n"+ex.getMessage());
@@ -233,7 +213,7 @@ public class WikiMessageEditor extends Activity {
           String before = "";
           String after  = "";
             
-          Matcher expeditionq = re_expedition.matcher(page);
+          Matcher expeditionq = RE_EXPEDITION.matcher(page);
           if (expeditionq.matches()) {
             before = expeditionq.group(1)+expeditionq.group(2);
             after  = expeditionq.group(3);
@@ -244,7 +224,7 @@ public class WikiMessageEditor extends Activity {
           String message = "\n*"+editText.getText().toString().trim()+"  -- ~~~"+locationTag+" ~~~~~\n";
             
           addStatus("Inserting message...");
-          WikiUtils.putWikiPage(httpclient, expedition, before+message+after, formfields);
+          WikiUtils.putWikiPage(httpclient, expedition, before+message+after, mFormfields);
           addStatus("Done.\n");
          
             

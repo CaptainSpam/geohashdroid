@@ -132,7 +132,8 @@ in a bit better grammatically (at least in English).
 
 <string name="wiki_editor_activity_title">Enter Message</string>
 <string name="wiki_picture_activity_title">Upload Picture</string>
-<string name="wiki_viewer_activity_title">Today's Expedition</string>
+
+<string name="wiki_editor_not_logged_in">WARNING: You will be posting anonymously.  If you do not wish to be anonymous, you need to set a username and password in settings.</string>
 
 <string name="pref_wiki_message">Gone hashing!</string>
 <string name="pref_wiki_submit_message">Submit</string>
