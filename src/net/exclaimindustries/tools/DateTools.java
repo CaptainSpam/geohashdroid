@@ -18,8 +18,8 @@ import java.util.Calendar;
  */
 public class DateTools {
 
-    private static final SimpleDateFormat dateString = new SimpleDateFormat("yyyyMMdd");
-    private static final SimpleDateFormat hyphenatedDateString = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+    private static final SimpleDateFormat HYPHENATED_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
     /**
      * Generates a YYYYMMDD string from a given Calendar object.
@@ -28,7 +28,7 @@ public class DateTools {
      * @return a YYYYMMDD string
      */
     public static String getDateString(Calendar c) {
-        String date = dateString.format(c.getTime());
+        String date = DATE_FORMAT.format(c.getTime());
         return date;
     }
     
@@ -41,7 +41,7 @@ public class DateTools {
     public static String getHyphenatedDateString(Calendar c) {
         // Turns out the SimpleDateFormat class does all the tricky work for me.
         // Huh.
-        String date = hyphenatedDateString.format(c.getTime());
+        String date = HYPHENATED_DATE_FORMAT.format(c.getTime());
         return date;
     }
 }
