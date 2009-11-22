@@ -41,11 +41,14 @@ import java.io.InputStreamReader;
 /** Various stateless utility methods to query a mediawiki server
  */
 public class WikiUtils {
-  private static Pattern re_form_field_names  = Pattern.compile("<input[^>]*?name=\"([^>]*?)\"[^>]*?value=\"([^>]*?)\"[^>]*?/>");
-  private static Pattern re_form_field_values = Pattern.compile("<input[^>]*?value=\"([^>]*?)\"[^>]*?name=\"([^>]*?)\"[^>]*?/>");
-  private static Pattern re_textarea    = Pattern.compile("<textarea.*?>(.*?)</textarea>",Pattern.DOTALL);
-  private static Pattern re_login_fail  = Pattern.compile("<h2>Login error:</h2>(.*?)</div>",Pattern.DOTALL);
-  private static Pattern re_login_good  = Pattern.compile("Login successful",Pattern.DOTALL);
+  private static final Pattern re_form_field_names  = Pattern.compile("<input[^>]*?name=\"([^>]*?)\"[^>]*?value=\"([^>]*?)\"[^>]*?/>");
+  private static final Pattern re_form_field_values = Pattern.compile("<input[^>]*?value=\"([^>]*?)\"[^>]*?name=\"([^>]*?)\"[^>]*?/>");
+  private static final Pattern re_textarea    = Pattern.compile("<textarea.*?>(.*?)</textarea>",Pattern.DOTALL);
+  private static final Pattern re_login_fail  = Pattern.compile("<h2>Login error:</h2>(.*?)</div>",Pattern.DOTALL);
+  private static final Pattern re_login_good  = Pattern.compile("Login successful",Pattern.DOTALL);
+  
+  /** The base URL for all wiki activities.  Remember the trailing slash! */
+  private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
   
 /** Returns the content of a http request in a single string. 
      @param  httpclient an active HTTP session 
@@ -78,7 +81,7 @@ public class WikiUtils {
      @return            the raw code of the wiki page.
   */
   public static String getWikiPage(HttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
-    HttpGet httpget = new HttpGet("http://wiki.xkcd.com/wgh/index.php?title="+pagename+"&action=edit");
+    HttpGet httpget = new HttpGet(WIKI_BASE_URL + "index.php?title=" + pagename + "&action=edit");
     String page = getHttpPage(httpclient, httpget);
     if ((page == null) || (page=="")) {
       return null;
@@ -119,7 +122,7 @@ public class WikiUtils {
      @param  formfields if not null, this hashmap will be filled with the correct HTML form fields to resubmit the page.
   */
   public static void putWikiPage(HttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws Exception {
-    HttpPost httppost = new HttpPost("http://wiki.xkcd.com/wgh/index.php?title="+pagename+"&action=submit");
+    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "index.php?title="+pagename+"&action=submit");
     Part[] nvps = new Part[formfields.size()+1];
     Iterator<Entry<String,String>> i = formfields.entrySet().iterator();
     int n=0;
@@ -140,7 +143,7 @@ public class WikiUtils {
      @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
   */
   public static void putWikiImage(HttpClient httpclient, String filename, String description, byte[] data) throws Exception {
-    HttpPost httppost = new HttpPost("http://wiki.xkcd.com/geohashing/Special:Upload");
+    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "index.php?title=Special:Upload");
     //httppost.addHeader("Host", "wiki.xkcd.com"); shouldn't be necessary.
     //httppost.addHeader("Referer", "http://wiki.xkcd.com/geohashing/Special:Upload");
     Part[] nvps = new Part[]{
@@ -167,7 +170,7 @@ public class WikiUtils {
   public final static String LOGIN_GOOD = null;
   public static String login(HttpClient httpclient, String wpName, String wpPassword) throws Exception {
     HttpPost httppost = 
-      new HttpPost("http://wiki.xkcd.com//wgh/index.php?title=Special:Userlogin&amp;action=submitlogin&amp;type=login");
+      new HttpPost(WIKI_BASE_URL + "index.php?title=Special:Userlogin&amp;action=submitlogin&amp;type=login");
                 
     ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
     nvps.add(new BasicNameValuePair("wpName", wpName));
