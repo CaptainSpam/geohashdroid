@@ -72,7 +72,7 @@ public class MainMap extends MapActivity {
     private static final String LATSPAN = "latitudeSpan";
     private static final String LONSPAN = "longitudeSpan";
     private static final String INFO = "info";
-    private static final String LOCATION = "location";
+//    private static final String LOCATION = "location";
     private static final String ORIENTATION = "orientation";
     private static final String ZOOM = "zoomLevel";
     private static final String AUTOZOOM = "autoZoom";
@@ -642,16 +642,16 @@ public class MainMap extends MapActivity {
             case MENU_POST_MESSAGE: {
                 // Pop up a dialog box which allows to enter a message to be sent to the wiki.
                 Intent i = new Intent(this, WikiMessageEditor.class);
-                i.putExtra(INFO, mInfo);
-                i.putExtra(LOCATION, mMyLocation.getLastFix());
+                i.putExtra(GeohashDroid.INFO, mInfo);
+                i.putExtra(GeohashDroid.LOCATION, mMyLocation.getLastFix());
                 startActivity(i);
                 return true;
             }
             case MENU_POST_PICTURE: {
                 // Pop up a dialog box which allows to enter a message to be sent to the wiki.
                 Intent i = new Intent(this, WikiPictureEditor.class);
-                i.putExtra(INFO, mInfo);
-                i.putExtra(LOCATION, mMyLocation.getLastFix());
+                i.putExtra(GeohashDroid.INFO, mInfo);
+                i.putExtra(GeohashDroid.LOCATION, mMyLocation.getLastFix());
                 startActivity(i);
                 return true;
             }
@@ -665,13 +665,16 @@ public class MainMap extends MapActivity {
                 i.setAction(Intent.ACTION_VIEW);
                 
                 // Assemble a URL.  On the wiki, they come in this format:
-                // http://wiki.xkcd.com/geohashing/YYYY-MM-DD LAT LON
+                // [WIKI_BASE_URL]YYYY-MM-DD LAT LON
                 // (yes, spaces and all... sort of odd, but hey, it works)
+                
+                // We attach "index.php" to the end of it just to be absolutely
+                // safe.
                 String page = DateTools.getHyphenatedDateString(mInfo.getCalendar())
                  + " " + mGraticule.getLatitudeString() + " " + mGraticule.getLongitudeString();
                 
                 i.setData(Uri
-                        .parse("http://wiki.xkcd.com/geohashing/" + page));
+                        .parse(WikiUtils.getWikiBaseUrl() + "index.php?title=" + page));
                 startActivity(i);
                 
                 return true;
