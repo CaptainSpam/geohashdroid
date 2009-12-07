@@ -86,6 +86,8 @@ public class WikiMessageEditor extends Activity {
           @Override
           public void onClick(View view) {
             showDialog(PROGRESS_DIALOG);
+            connectionHandler = new WikiConnectionHandler(progressHandler);
+            new Thread(connectionHandler).start();
           }
         });
     }
@@ -103,15 +105,13 @@ public class WikiMessageEditor extends Activity {
     protected Dialog onCreateDialog(int id) {
       if (id==PROGRESS_DIALOG) {
         progress = new ProgressDialog(WikiMessageEditor.this);
-        connectionHandler = new WikiConnectionHandler(progressHandler);
-        connectionHandler.start();
         return progress;
       } else {
         return null;
       }
     }
     
-    class WikiConnectionHandler extends Thread {
+    class WikiConnectionHandler implements Runnable {
       Handler handler;
       private String mOldStatus="";
       
