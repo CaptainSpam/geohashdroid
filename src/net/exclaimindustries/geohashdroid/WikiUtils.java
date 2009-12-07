@@ -50,6 +50,16 @@ public class WikiUtils {
   /** The base URL for all wiki activities.  Remember the trailing slash! */
   private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
   
+  /**
+   * Returns the wiki base URL.  That is, the base of where all requests will
+   * be sent.
+   * 
+   * @return the wiki base URL
+   */
+  public static String getWikiBaseUrl() {
+      return WIKI_BASE_URL;
+  }
+  
 /** Returns the content of a http request in a single string. 
      @param  httpclient an active HTTP session 
      @param  httpreq    an HTTP request (GET or POST)
