@@ -40,11 +40,9 @@ public class WikiMessageEditor extends Activity {
 
     private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
 
-    private Button submitButton;
-    private EditText editText;
-    private ProgressDialog progress;    
+    private ProgressDialog mProgress;    
 
-    protected WikiConnectionHandler connectionHandler;
+    private WikiConnectionHandler mConnectionHandler;
     
     private static Info mInfo;
     private HashMap<String, String> mFormfields;
@@ -54,6 +52,16 @@ public class WikiMessageEditor extends Activity {
     static final String TAG = "MessageEditor";
     
     private static Location mLocation;
+
+    private final Handler mProgressHandler = new Handler() {
+      public void handleMessage(Message msg) {
+        String status = msg.getData().getString("status");
+        mProgress.setMessage(status);
+        if (status.equals(STATUS_DISMISS)) {
+          dismissDialog(PROGRESS_DIALOG);
+        }
+      }
+    };
     
     @Override
     protected void onCreate(Bundle icicle) {
@@ -72,8 +80,7 @@ public class WikiMessageEditor extends Activity {
 
         setContentView(R.layout.wikieditor);
 
-        submitButton = (Button)findViewById(R.id.wikieditbutton);
-        editText     = (EditText)findViewById(R.id.wikiedittext);
+        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         TextView warning = (TextView)findViewById(R.id.warningmessage);
@@ -86,32 +93,22 @@ public class WikiMessageEditor extends Activity {
           @Override
           public void onClick(View view) {
             showDialog(PROGRESS_DIALOG);
-            connectionHandler = new WikiConnectionHandler(progressHandler);
-            new Thread(connectionHandler).start();
+            mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
+            new Thread(mConnectionHandler).start();
           }
         });
     }
 
-    final Handler progressHandler = new Handler() {
-      public void handleMessage(Message msg) {
-        String status = msg.getData().getString("status");
-        progress.setMessage(status);
-        if (status.equals(STATUS_DISMISS)) {
-          dismissDialog(PROGRESS_DIALOG);
-        }
-      }
-    };
-
     protected Dialog onCreateDialog(int id) {
       if (id==PROGRESS_DIALOG) {
-        progress = new ProgressDialog(WikiMessageEditor.this);
-        return progress;
+        mProgress = new ProgressDialog(WikiMessageEditor.this);
+        return mProgress;
       } else {
         return null;
       }
     }
     
-    class WikiConnectionHandler implements Runnable {
+    private class WikiConnectionHandler implements Runnable {
       Handler handler;
       private String mOldStatus="";
       
@@ -119,18 +116,25 @@ public class WikiMessageEditor extends Activity {
         this.handler = h;
       }
 
-      protected void setStatus(String status) {
+      private void setStatus(String status) {
         Message msg = handler.obtainMessage();
         Bundle b = new Bundle();
         b.putString("status", status);
-	msg.setData(b);
+	    msg.setData(b);
         handler.sendMessage(msg);
       } 
-      protected void addStatus(String status) {
+      private void addStatus(String status) {
         mOldStatus = mOldStatus + status;
         setStatus(mOldStatus);
       }
-      protected void dismiss() {
+      private void addStatus(int resId) {
+          addStatus(getText(resId).toString());
+      }
+      private void addStatusAndNewline(int resId) {
+          addStatus(resId);
+          addStatus("\n");
+      }
+      private void dismiss() {
         setStatus(STATUS_DISMISS);
       } 
 
@@ -141,13 +145,14 @@ public class WikiMessageEditor extends Activity {
         try {
           httpclient = new DefaultHttpClient();
         } catch (Exception ex) {
-          addStatus("Connection failed.\n"+ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_connection_failed);
+          addStatus(ex.getMessage());
           return;
         }
 
         String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
         if (!wpName.equals("")) {
-          addStatus("Attempting login...");
+          addStatus(R.string.wiki_conn_login);
           String wpPassword = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
           try {
             String fail = WikiUtils.login(httpclient, wpName, wpPassword);
@@ -155,14 +160,15 @@ public class WikiMessageEditor extends Activity {
               addStatus(fail+"\n");
               return;
             } else {
-              addStatus("good.\n");
+              addStatusAndNewline(R.string.wiki_conn_success);
             }
           } catch (Exception ex) {
-            addStatus("failed.\n"+ex.getMessage());
+            addStatusAndNewline(R.string.wiki_conn_failure);
+            addStatus(ex.getMessage());
             return;
           }
         } else {
-          addStatus("WARNING: Posting anonymously.\n");
+          addStatusAndNewline(R.string.wiki_conn_anon_warning);
         }
 
         String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo.getCalendar().getTime());
@@ -175,39 +181,43 @@ public class WikiMessageEditor extends Activity {
         if (mLocation != null) {
           String pos = mLocation.getLatitude()+","+mLocation.getLongitude();
           locationTag = " [http://www.openstreetmap.org/?lat="+mLocation.getLatitude()+"&lon="+mLocation.getLongitude()+"&zoom=16&layers=B000FTF @"+pos+"]";
-          addStatus("Current location: "+pos+"\n");
+          addStatus(R.string.wiki_conn_current_location);
+          addStatus(" " + pos + "\n");
         } else {
-          addStatus("Current location unknown.\n");
+          addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
         }
 
-        addStatus("Retrieving expedition "+expedition+"...");
+        addStatus(R.string.wiki_conn_expedition_retrieving);
+        addStatus(" " + expedition + "...");
         String page;
         try {
           mFormfields = new HashMap<String,String>();
           page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
           if ((page==null) || (page.trim().length()==0)) {
-            addStatus("non-existant.\n");
+            addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);
 
             //ok, let's create some.
-            addStatus("Creating expedition page...");
+            addStatus(R.string.wiki_conn_expedition_creating);
             try {
               WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
-              addStatus("done.\n");
+              addStatusAndNewline(R.string.wiki_conn_success);
             } catch (Exception ex) {
-              addStatus("failed.\n"+ex.getMessage());
+              addStatusAndNewline(R.string.wiki_conn_failure);
+              addStatus(ex.getMessage());
               return;
             }
  
-            addStatus("Re-retrieving expedition...");
+            addStatus(R.string.wiki_conn_expedition_reretrieving);
             try {
               page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-              addStatus("fetched.\n");
+              addStatusAndNewline(R.string.wiki_conn_success);
             } catch (Exception ex) {
-              addStatus("failed.\n"+ex.getMessage());
+              addStatusAndNewline(R.string.wiki_conn_failure);
+              addStatus(ex.getMessage());
               return;
             }
           } else {
-            addStatus("fetched.\n");
+              addStatusAndNewline(R.string.wiki_conn_success);
           }
             
           String before = "";
@@ -220,16 +230,19 @@ public class WikiMessageEditor extends Activity {
           } else {
             before = page;
           }
-            
+
+          EditText editText = (EditText)findViewById(R.id.wikiedittext);
+          
           String message = "\n*"+editText.getText().toString().trim()+"  -- ~~~"+locationTag+" ~~~~~\n";
             
-          addStatus("Inserting message...");
+          addStatus(R.string.wiki_conn_insert_message);
           WikiUtils.putWikiPage(httpclient, expedition, before+message+after, mFormfields);
-          addStatus("Done.\n");
+          addStatusAndNewline(R.string.wiki_conn_done);
          
             
         } catch (Exception ex) {
-          addStatus("failed.\n"+ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_failure);
+          addStatus(ex.getMessage());
         }
         dismiss();
       }
