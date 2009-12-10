@@ -17,14 +17,12 @@ import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.StringEntity;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -50,6 +48,22 @@ public class WikiUtils {
   /** The base URL for all wiki activities.  Remember the trailing slash! */
   private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
   
+  public final static String LOGIN_GOOD = null;
+  
+  // The most recent request issued by WikiUtils.  This allows the abort()
+  // method to work.
+  private static HttpUriRequest mLastRequest;
+  
+  /**
+   * Aborts the current wiki request.  Well, technically, it's the most recent
+   * wiki request.  If it's already done, nothing happens.  This will, of
+   * course, cause exceptions in whatever's servicing the request.
+   */
+  public static void abort() {
+      if(mLastRequest != null)
+          mLastRequest.abort();
+  }
+  
   /**
    * Returns the wiki base URL.  That is, the base of where all requests will
    * be sent.
@@ -66,7 +80,11 @@ public class WikiUtils {
      @return            the body of the http reply
   */
   public static String getHttpPage(HttpClient httpclient, HttpUriRequest httpreq) throws Exception {
+    // Remember the last request.  We might want to abort it later.
+    mLastRequest = httpreq;
+    
     HttpResponse response = httpclient.execute(httpreq);
+   
     HttpEntity entity = response.getEntity();
           
     if (entity!=null) {
@@ -143,7 +161,7 @@ public class WikiUtils {
     nvps[n++] = new StringPart("wpTextbox1", content, "utf-8");
     httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
         
-    String page = getHttpPage(httpclient, httppost);
+    getHttpPage(httpclient, httppost);
   }  
   
   /** Uploads an image to the wiki
@@ -168,7 +186,7 @@ public class WikiUtils {
     };
     httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
     
-    String page = getHttpPage(httpclient, httppost);
+    getHttpPage(httpclient, httppost);
   }
   
   /** Retrieves valid login cookies for an HTTP session.
@@ -177,7 +195,6 @@ public class WikiUtils {
      @param  wpPassword  the matching password to this user name.
      @return             WikiUtils.LOGIN_GOOD if successful, an error message String otherwise.
   */
-  public final static String LOGIN_GOOD = null;
   public static String login(HttpClient httpclient, String wpName, String wpPassword) throws Exception {
     HttpPost httppost = 
       new HttpPost(WIKI_BASE_URL + "index.php?title=Special:Userlogin&amp;action=submitlogin&amp;type=login");

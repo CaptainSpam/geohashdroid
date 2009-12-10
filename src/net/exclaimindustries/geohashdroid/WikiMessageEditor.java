@@ -14,11 +14,14 @@ import android.os.Message;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.DialogInterface.OnCancelListener;
 
 import android.location.Location;
 
@@ -36,7 +39,7 @@ import java.text.SimpleDateFormat;
  * 
  * @author Thomas Hirsch
  */
-public class WikiMessageEditor extends Activity {
+public class WikiMessageEditor extends Activity implements OnCancelListener {
 
     private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
 
@@ -52,6 +55,8 @@ public class WikiMessageEditor extends Activity {
     static final String TAG = "MessageEditor";
     
     private static Location mLocation;
+    
+    private Thread mWikiConnectionThread;
 
     private final Handler mProgressHandler = new Handler() {
       public void handleMessage(Message msg) {
@@ -94,7 +99,8 @@ public class WikiMessageEditor extends Activity {
           public void onClick(View view) {
             showDialog(PROGRESS_DIALOG);
             mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
-            new Thread(mConnectionHandler).start();
+            mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
+            mWikiConnectionThread.start();
           }
         });
     }
@@ -102,10 +108,24 @@ public class WikiMessageEditor extends Activity {
     protected Dialog onCreateDialog(int id) {
       if (id==PROGRESS_DIALOG) {
         mProgress = new ProgressDialog(WikiMessageEditor.this);
+        mProgress.setOnCancelListener(this);
         return mProgress;
       } else {
         return null;
       }
+    }
+    
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        // If the dialog is canceled (that is, the user pressed Back; any other
+        // manner just dismisses the dialog, not cancels it), we want to stop
+        // the connection immediately.  When we call WikiUtils.abort(), that'll
+        // abort the connection, which will cause it to throw exceptions all
+        // over the place.  Fortunately, the thread that runs the connection
+        // will catch just about everything and bail out of the thread once it
+        // stops.
+        if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive())
+            WikiUtils.abort();
     }
     
     private class WikiConnectionHandler implements Runnable {
@@ -145,6 +165,7 @@ public class WikiMessageEditor extends Activity {
         try {
           httpclient = new DefaultHttpClient();
         } catch (Exception ex) {
+          Log.d("WikiMessageEditor", "EXCEPTION: " + ex.getMessage());
           addStatusAndNewline(R.string.wiki_conn_connection_failed);
           addStatus(ex.getMessage());
           return;
@@ -163,6 +184,7 @@ public class WikiMessageEditor extends Activity {
               addStatusAndNewline(R.string.wiki_conn_success);
             }
           } catch (Exception ex) {
+            Log.d("WikiMessageEditor", "EXCEPTION: " + ex.getMessage());
             addStatusAndNewline(R.string.wiki_conn_failure);
             addStatus(ex.getMessage());
             return;
@@ -198,26 +220,15 @@ public class WikiMessageEditor extends Activity {
 
             //ok, let's create some.
             addStatus(R.string.wiki_conn_expedition_creating);
-            try {
-              WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
-              addStatusAndNewline(R.string.wiki_conn_success);
-            } catch (Exception ex) {
-              addStatusAndNewline(R.string.wiki_conn_failure);
-              addStatus(ex.getMessage());
-              return;
-            }
+            WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
+            addStatusAndNewline(R.string.wiki_conn_success);
  
             addStatus(R.string.wiki_conn_expedition_reretrieving);
-            try {
-              page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-              addStatusAndNewline(R.string.wiki_conn_success);
-            } catch (Exception ex) {
-              addStatusAndNewline(R.string.wiki_conn_failure);
-              addStatus(ex.getMessage());
-              return;
-            }
+            
+            page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
+            addStatusAndNewline(R.string.wiki_conn_success);
           } else {
-              addStatusAndNewline(R.string.wiki_conn_success);
+            addStatusAndNewline(R.string.wiki_conn_success);
           }
             
           String before = "";
@@ -241,10 +252,12 @@ public class WikiMessageEditor extends Activity {
          
             
         } catch (Exception ex) {
+          Log.d("WikiMessageEditor", "EXCEPTION: " + ex.getMessage());
           addStatusAndNewline(R.string.wiki_conn_failure);
           addStatus(ex.getMessage());
         }
         dismiss();
       }
   }
+
 }
