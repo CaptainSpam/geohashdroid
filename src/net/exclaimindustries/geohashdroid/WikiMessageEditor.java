@@ -60,7 +60,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
 
     private final Handler mProgressHandler = new Handler() {
       public void handleMessage(Message msg) {
-        String status = msg.getData().getString("status");
+        String status = (String)(msg.obj);
         mProgress.setMessage(status);
         if (status.equals(STATUS_DISMISS)) {
           dismissDialog(PROGRESS_DIALOG);
@@ -138,9 +138,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
 
       private void setStatus(String status) {
         Message msg = handler.obtainMessage();
-        Bundle b = new Bundle();
-        b.putString("status", status);
-	    msg.setData(b);
+        msg.obj = status;
         handler.sendMessage(msg);
       } 
       private void addStatus(String status) {
