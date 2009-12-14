@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.util.Log;
 import android.view.View;
@@ -57,13 +56,16 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
     private static Location mLocation;
     
     private Thread mWikiConnectionThread;
+    
+    // This is set to true if the thread shouldn't be stopped during onDestroy.
+    private boolean mDontStopTheThread = false;
 
     private final Handler mProgressHandler = new Handler() {
       public void handleMessage(Message msg) {
         String status = (String)(msg.obj);
         mProgress.setMessage(status);
         if (status.equals(STATUS_DISMISS)) {
-          dismissDialog(PROGRESS_DIALOG);
+          mProgress.dismiss();
         }
       }
     };
@@ -95,26 +97,66 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         }
         
         submitButton.setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View view) {
-            showDialog(PROGRESS_DIALOG);
-            mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
-            mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
-            mWikiConnectionThread.start();
-          }
-        });
+            @Override
+            public void onClick(View view) {
+              // We don't want to let the Activity handle the dialog.  That WILL
+              // cause it to show up properly and all, but after a configuration
+              // change (i.e. orientation shift), it won't show or update any text
+              // (as far as I know), as we can't reassign the handler properly.
+              // So, we'll handle it ourselves.
+              mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, false, WikiMessageEditor.this);
+              mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
+              mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
+              mWikiConnectionThread.start();
+            }
+          });
+        
+        // Now, let's see if we have anything retained...
+        try {
+            RetainedThings retain = (RetainedThings)getLastNonConfigurationInstance();
+            if(retain != null) {
+                // We have something retained!  Thus, we need to construct the
+                // popup and update it with the right status, assuming the
+                // thread's still going.
+                if(retain.thread != null && retain.thread.isAlive()) {
+                    mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, false, WikiMessageEditor.this);
+                    mConnectionHandler = retain.handler;
+                    mConnectionHandler.resetHandler(mProgressHandler);
+                    mWikiConnectionThread = retain.thread;
+                }
+            }
+        } catch (Exception ex) {}
     }
 
-    protected Dialog onCreateDialog(int id) {
-      if (id==PROGRESS_DIALOG) {
-        mProgress = new ProgressDialog(WikiMessageEditor.this);
-        mProgress.setOnCancelListener(this);
-        return mProgress;
-      } else {
-        return null;
-      }
+    @Override
+    public Object onRetainNonConfigurationInstance() {
+        // If the configuration changes (i.e. orientation shift), we want to
+        // keep track of the thread we used to have.  That'll be used to
+        // populate the new popup next time around, if need be.
+        if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
+            mDontStopTheThread = true;
+            RetainedThings retain = new RetainedThings();
+            retain.handler = mConnectionHandler;
+            retain.thread = mWikiConnectionThread;
+            return retain;
+        } else {
+            return null;
+        }
     }
     
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(!mDontStopTheThread && mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
+            // If we want to stop the thread (default, assuming this isn't a
+            // configuration change), AND the thread is defined, AND it's still
+            // alive, abort it via WikiUtils.  Otherwise, this IS a config
+            // change, so keep the thread running.  We'll catch up with it on
+            // the next run.
+            mConnectionHandler.abort();
+        }
+    }
+
     @Override
     public void onCancel(DialogInterface dialog) {
         // If the dialog is canceled (that is, the user pressed Back; any other
@@ -125,15 +167,24 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         // will catch just about everything and bail out of the thread once it
         // stops.
         if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive())
-            WikiUtils.abort();
+            mConnectionHandler.abort();
     }
     
     private class WikiConnectionHandler implements Runnable {
-      Handler handler;
+      private Handler handler;
       private String mOldStatus="";
       
       WikiConnectionHandler(Handler h) {
         this.handler = h;
+      }
+      
+      public void resetHandler(Handler h) {
+          this.handler = h;
+          setStatus(mOldStatus);
+      }
+      
+      public void abort() {
+          WikiUtils.abort();
       }
 
       private void setStatus(String status) {
@@ -257,5 +308,14 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         dismiss();
       }
   }
+    
+    /**
+     * Since onRetainNonConfigurationInstance returns a plain ol' Object, this
+     * just holds the pieces of data we're retaining.
+     */
+    private class RetainedThings {
+        public Thread thread;
+        public WikiConnectionHandler handler;
+    }
 
 }
