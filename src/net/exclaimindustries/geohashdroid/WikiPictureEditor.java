@@ -22,7 +22,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.Gallery;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 
 import android.content.Context;
@@ -31,35 +30,19 @@ import android.content.res.TypedArray;
 
 import android.provider.MediaStore;
 import android.database.Cursor;
-import android.graphics.drawable.Drawable;
 import android.graphics.Bitmap;
 
 import android.util.Log;
 import android.location.Location;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.StringEntity;
 
-import java.util.List;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.Iterator;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.ByteArrayOutputStream;
 import android.net.Uri;
 
