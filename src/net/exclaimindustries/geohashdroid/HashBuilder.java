@@ -102,13 +102,15 @@ public class HashBuilder {
          */
         public static final int ABORTED = 5;
     
+        private Context mContext;
     	private Calendar mCal;
     	private Graticule mGrat;
     	private Handler mHandler;
     	private HttpGet mRequest;
     	private int mStatus;
     	
-    	private StockRunner(Calendar c, Graticule g, Handler h) {
+    	private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
+    	    mContext = con;
     		mCal = c;
     		mGrat = g;
     		mHandler = h;
@@ -129,7 +131,7 @@ public class HashBuilder {
         		// First, if this exists in the cache, use it instead of going
         		// off to the internet.  This method uses the ACTUAL date, so
         	    // we can ignore sCal for now.
-        		toReturn = getStoredInfo(mCal, mGrat);
+        		toReturn = getStoredInfo(mContext, mCal, mGrat);
         		if(toReturn != null) {
                     // Hey, whadya know, we've got something!  Send this data
         		    // back to the Handler and return!
@@ -140,7 +142,7 @@ public class HashBuilder {
         		
         		// If that failed, we need a stock price.  First, check to see
         		// if it's in the database.  
-        		stock = getStoredStock(sCal);
+        		stock = getStoredStock(mContext, sCal);
         		
         		// If we found something, great!  Let's move on!
         		if(stock == null) {
@@ -150,7 +152,7 @@ public class HashBuilder {
             		    stock = fetchStock(sCal);
             		    // If this didn't throw an exception, stash it in the
             		    // database.
-            		    storeStock(sCal, stock);
+            		    storeStock(mContext, sCal, stock);
             		} catch (FileNotFoundException fnfe) {
             		    // If we got a 404, assume it's not posted yet.
             		    mStatus = ERROR_NOT_POSTED;
@@ -178,7 +180,7 @@ public class HashBuilder {
             toReturn = createInfo(mCal, stock, mGrat);
                 
     		// Good!  Now, we can stash this away in the database for later.
-    		storeInfo(toReturn);
+    		storeInfo(mContext, toReturn);
         	
         	// And we're done!
         	mStatus = ALL_OKAY;
@@ -334,6 +336,22 @@ public class HashBuilder {
     }
     
     /**
+     * Initializes and returns a StockStoreDatabase object.  This should be used
+     * in ALL cases the mStore is needed to ensure it actually exists.  It can,
+     * for instance, stop existing if the app is destroyed to reclaim memory.
+     * 
+     * @param c Context with which StockStoreDatabase will be initialized.
+     * @return
+     */
+    private static synchronized StockStoreDatabase getStore(Context c) {
+        if(mStore == null) {
+            mStore = new StockStoreDatabase(c).init();
+        }
+        
+        return mStore;
+    }
+    
+    /**
      * Requests a <code>StockRunner</code> object to perform a stock-fetching
      * operation.
      * 
@@ -342,8 +360,8 @@ public class HashBuilder {
      * @param g Graticule to use
      * @param h Handler to handle the response once it comes in
      */
-    public static StockRunner requestStockRunner(Calendar c, Graticule g, Handler h) {
-        return new StockRunner(c, g, h);
+    public static StockRunner requestStockRunner(Context con, Calendar c, Graticule g, Handler h) {
+        return new StockRunner(con, c, g, h);
     }
     
     /**
@@ -352,16 +370,17 @@ public class HashBuilder {
      * internet.  If this returns true, the interface should NOT display a popup
      * and should expect to recieve a new Info object quickly.
      * 
+     * @param con Context used to retrieve the database, if needed
      * @param c Calendar object with the adventure date requested (this will
      *          account for the 30W Rule, so don't put it in) 
      * @param g Graticule to use
      * @return true if the stock value is stored, false if we need to go to the
      *         internet for it
      */
-    public static boolean hasStockStored(Calendar c, Graticule g) {
+    public static boolean hasStockStored(Context con, Calendar c, Graticule g) {
 //    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
     	
-        return getQuickCache(c, g) != null || mStore.getInfo(c, g) != null;
+        return getQuickCache(c, g) != null || getStore(con).getInfo(c, g) != null;
     }
 
     /**
@@ -369,13 +388,14 @@ public class HashBuilder {
      * explicitly without going to the internet.  If this can't be done, this
      * will return null.
      *
+     * @param con Context used to retrieve the database, if needed
      * @param c Calendar object with the adventure date requested (this will
      *          account for the 30W Rule, so don't put it in) 
      * @param g Graticule to use
      * @return the Info object for the given data, or null if can't be built
      *         without going to the internet.
      */
-    public static Info getStoredInfo(Calendar c, Graticule g) {
+    public static Info getStoredInfo(Context con, Calendar c, Graticule g) {
     	// First, check the quick cache.
 //    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
 
@@ -388,7 +408,7 @@ public class HashBuilder {
         }
     	
         // Otherwise, check the stock cache.
-        Info i = mStore.getInfo(c, g);
+        Info i = getStore(con).getInfo(c, g);
         
         if(i == null)
             return null;
@@ -404,14 +424,15 @@ public class HashBuilder {
      * already-adjusted date.  This won't go to the internet; that's the
      * responsibility of a StockRunner.
      * 
+     * @param con Context used to retrieve the database, if needed 
      * @param c already-adjusted date to check
      * @return the String representation of the stock, or null if it's not there
      */
-    public static String getStoredStock(Calendar c) {
+    public static String getStoredStock(Context con, Calendar c) {
         // We don't quickcache the stock values.
         Log.d(DEBUG_TAG, "Going to the database for a stock for " + DateTools.getDateString(c));
         
-        return mStore.getStock(c);
+        return getStore(con).getStock(c);
     }
     
     /**
@@ -431,37 +452,45 @@ public class HashBuilder {
      * Stores Info data away in the database.  This won't do anything if the
      * day's Info already exists therein.
      * 
+     * @param con Context used to retrieve the database, if needed
      * @param i an Info bundle with everything we need
      */
-    private synchronized static void storeInfo(Info i) {
+    private synchronized static void storeInfo(Context con, Info i) {
     	// First, replace the last-known results.
     	quickCache(i);
     	
+    	StockStoreDatabase store = getStore(con);
+    	
     	// Then, write it to the database.
-        mStore.storeInfo(i);
-        mStore.cleanup();
+        store.storeInfo(i);
+        store.cleanup();
     }
     
-    private synchronized static void storeStock(Calendar cal, String stock) {
-        mStore.storeStock(cal, stock);
-        mStore.cleanup();
+    private synchronized static void storeStock(Context con, Calendar cal, String stock) {
+        StockStoreDatabase store = getStore(con);
+        
+        store.storeStock(cal, stock);
+        store.cleanup();
     }
     
     /**
      * Cleans up the database with whatever cleanup needs to be done.
      * Generally, this means pruning it.
+     * 
+     * @param con Context used to retrieve the database, if needed
      */
-    public synchronized static void cleanupDatabase() {
-        mStore.cleanup();
+    public synchronized static void cleanupDatabase(Context con) {
+        getStore(con).cleanup();
     }
 
     /**
      * Wipes out the entire stock cache.  No, seriously.
      * 
+     * @param con Context used to retrieve the database, if needed
      * @return true on success, false on failure
      */
-    public synchronized static boolean deleteCache() {
-        return mStore.deleteCache();
+    public synchronized static boolean deleteCache(Context con) {
+        return getStore(con).deleteCache();
     }
     
     /**

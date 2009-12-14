@@ -619,7 +619,7 @@ public class GeohashDroid extends Activity {
         cal.setLenient(true);
         cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
         
-        Info inf = HashBuilder.getStoredInfo(cal, base);
+        Info inf = HashBuilder.getStoredInfo(this, cal, base);
         
         if(inf == null) {
             // Oops.  We don't have enough data.  Off to the stock grabber!
@@ -649,7 +649,7 @@ public class GeohashDroid extends Activity {
                     continue;
                 
                 Graticule grat = Graticule.createOffsetFrom(base, j, i);
-                inf = HashBuilder.getStoredInfo(cal, grat);
+                inf = HashBuilder.getStoredInfo(this, cal, grat);
                 
                 if(inf == null) {
                     // Oops.  We don't have this data.  We must be on the 30W

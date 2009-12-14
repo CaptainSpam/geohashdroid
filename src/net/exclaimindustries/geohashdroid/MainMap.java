@@ -477,7 +477,7 @@ public class MainMap extends MapActivity {
                 
                 // Make an offset graticule and get some info from it.
                 Graticule offset = Graticule.createOffsetFrom(mGraticule, j, i);
-                Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
+                Info inf = HashBuilder.getStoredInfo(this, mInfo.getCalendar(), offset);
                 
                 if(inf == null) {
                     Log.d(DEBUG_TAG, "HashBuilder returned null info when making the nearby overlays, trying to get new data...");
@@ -517,7 +517,7 @@ public class MainMap extends MapActivity {
                 
                 // Make an offset graticule and get some info from it.
                 Graticule offset = Graticule.createOffsetFrom(mGraticule, mNextNearbyY, mNextNearbyX);
-                Info inf = HashBuilder.getStoredInfo(mInfo.getCalendar(), offset);
+                Info inf = HashBuilder.getStoredInfo(this, mInfo.getCalendar(), offset);
                 
                 if(inf == null) {
                     Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays TWICE!  What?");

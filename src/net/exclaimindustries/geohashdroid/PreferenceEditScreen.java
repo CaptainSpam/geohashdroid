@@ -80,7 +80,7 @@ public class PreferenceEditScreen extends PreferenceActivity {
                                 // Clear!
                                 PreferenceEditScreen.this.dismissDialog(DIALOG_WIPESURE);
                                 
-                                if(HashBuilder.deleteCache()) {
+                                if(HashBuilder.deleteCache(PreferenceEditScreen.this)) {
                                     Toast sourdough = Toast.makeText(
                                             PreferenceEditScreen.this,
                                             R.string.toast_stockwipe_success,

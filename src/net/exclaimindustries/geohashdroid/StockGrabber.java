@@ -84,7 +84,7 @@ public class StockGrabber extends Activity {
         // Good!  Data's retrieved, and we're ready to talk to HashBuilder!  We
         // want to do one check to the database right now, though, so that this
         // activity can return immediately if the data's there.
-        Info inf = HashBuilder.getStoredInfo(mCal, mGrat);
+        Info inf = HashBuilder.getStoredInfo(this, mCal, mGrat);
         if(inf != null) {
             // We got info!  Woo!  Send it back right away.
             success(inf);
@@ -101,14 +101,14 @@ public class StockGrabber extends Activity {
         super.onResume();
         // Resume!  First, go to the database just in case.  This first case
         // should be impossible, but I'm going defensive.
-        Info inf = HashBuilder.getStoredInfo(mCal, mGrat);
+        Info inf = HashBuilder.getStoredInfo(this, mCal, mGrat);
         if(inf != null) {
             // We got info!  Woo!  Send it back right away.
             success(inf);
             return;
         } else {
             // Otherwise, we need a stock runner.
-            mRunner = HashBuilder.requestStockRunner(mCal, mGrat,
+            mRunner = HashBuilder.requestStockRunner(this, mCal, mGrat,
                     new StockFetchHandler(Looper.myLooper()));
             mThread = new Thread(mRunner);
             mThread.setName("StockRunnerThread");
