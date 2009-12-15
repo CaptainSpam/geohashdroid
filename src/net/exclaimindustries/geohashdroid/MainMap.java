@@ -20,6 +20,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -643,7 +644,14 @@ public class MainMap extends MapActivity {
                 // Pop up a dialog box which allows to enter a message to be sent to the wiki.
                 Intent i = new Intent(this, WikiMessageEditor.class);
                 i.putExtra(GeohashDroid.INFO, mInfo);
-                i.putExtra(GeohashDroid.LOCATION, mMyLocation.getLastFix());
+
+                Location loc = mMyLocation.getLastFix();
+                if(loc != null) {
+                    // If loc is null, these don't get set, so the default value
+                    // (impossible for each) will be picked up by the Activity.
+                    i.putExtra(GeohashDroid.LATITUDE, loc.getLatitude());
+                    i.putExtra(GeohashDroid.LONGITUDE, loc.getLongitude());
+                }
                 startActivity(i);
                 return true;
             }
@@ -651,7 +659,10 @@ public class MainMap extends MapActivity {
                 // Pop up a dialog box which allows to enter a message to be sent to the wiki.
                 Intent i = new Intent(this, WikiPictureEditor.class);
                 i.putExtra(GeohashDroid.INFO, mInfo);
-                i.putExtra(GeohashDroid.LOCATION, mMyLocation.getLastFix());
+                
+                Location loc = mMyLocation.getLastFix();
+                i.putExtra(GeohashDroid.LATITUDE, loc.getLatitude());
+                i.putExtra(GeohashDroid.LONGITUDE, loc.getLongitude());
                 startActivity(i);
                 return true;
             }

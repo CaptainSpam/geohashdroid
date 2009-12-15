@@ -74,15 +74,19 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         
-        if (icicle != null && icicle.containsKey(GeohashDroid.INFO)) {
-            mInfo = (Info)icicle.getSerializable(GeohashDroid.INFO);
-        } else {
-            mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
-        }
-        if (icicle != null && icicle.containsKey(GeohashDroid.LOCATION)) {
-            mLocation = (Location)icicle.getSerializable(GeohashDroid.LOCATION);
-        } else {
-            mLocation = (Location)getIntent().getSerializableExtra(GeohashDroid.LOCATION);
+        mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
+
+        double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
+        double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);
+        
+        // If either of those were invalid (that is, 200), we don't have a
+        // location.  If they're both valid, we do have one.
+        if(lat > 90 || lat < -90 || lon > 180 || lon < -180)
+            mLocation = null;
+        else {
+            mLocation = new Location((String)null);
+            mLocation.setLatitude(lat);
+            mLocation.setLongitude(lon);
         }
 
         setContentView(R.layout.wikieditor);
