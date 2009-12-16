@@ -169,6 +169,7 @@ in a bit better grammatically (at least in English).
 
 <string name="hint_lat">Lat</string>
 <string name="hint_lon">Lon</string>
+<string name="hint_message">Message</string>
 
 <string name="about_by">By Nicholas Killewald</string>
 <string name="about_wiki_features">Wiki features by Thomas Hirsch</string>
