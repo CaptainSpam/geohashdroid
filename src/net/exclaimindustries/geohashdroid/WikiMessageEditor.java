@@ -51,7 +51,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
 
     static final int PROGRESS_DIALOG = 0;
     static final String STATUS_DISMISS = "Done.";
-    static final String TAG = "MessageEditor";
+    static final String DEBUG_TAG = "MessageEditor";
     
     private static Location mLocation;
     

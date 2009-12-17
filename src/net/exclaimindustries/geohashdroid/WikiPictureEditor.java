@@ -25,7 +25,9 @@ import android.widget.Gallery;
 import android.widget.BaseAdapter;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.res.TypedArray;
 
 import android.provider.MediaStore;
@@ -55,20 +57,14 @@ import java.text.SimpleDateFormat;
  * 
  * @author Thomas Hirsch
  */
-public class WikiPictureEditor extends Activity {
+public class WikiPictureEditor extends Activity implements OnCancelListener {
 
-    private static Pattern re_gallery     = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
+    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
 
-    private Button submitButton;
-    private CheckBox includeLocation;
-    private CheckBox includeTimestamp;
-    private EditText editText;
-    private Gallery gallery;
-    private ProgressDialog progress;    
+    private ProgressDialog mProgress;    
 
-    private HttpClient httpclient;
-    private String pagename;
-    protected WikiConnectionHandler connectionHandler;
+    private WikiConnectionHandler mConnectionHandler;
+    private Thread mWikiConnectionThread;
     
     private Cursor cursor;
     private int column_index;
@@ -76,11 +72,13 @@ public class WikiPictureEditor extends Activity {
 
     private static Info mInfo;
     private static Location mLocation;
-    private HashMap<String, String> formfields;
+    private HashMap<String, String> mFormfields;
+
+    private boolean mDontStopTheThread = false;
 
     static final int PROGRESS_DIALOG = 0;
     static final String STATUS_DISMISS = "Done.";
-    static final String TAG = "PictureEditor";
+    static final String DEBUG_TAG = "PictureEditor";
 
     @Override
     protected void onCreate(Bundle icicle) {
@@ -104,37 +102,72 @@ public class WikiPictureEditor extends Activity {
         setContentView(R.layout.pictureselect);
 
         String [] proj = {MediaStore.Images.Thumbnails._ID}; 
-        Log.d(TAG, "proj.length = "+proj.length);
         for (int i=0;i<proj.length;i++) 
-          Log.d(TAG, "proj."+i+"  "+proj[i]);
         cursor = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, null, null, null);
-        Log.d(TAG, "cursor = "+cursor);
         if (cursor!=null) {
           column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID); 
-          Log.d(TAG, "column_index = "+column_index);
         }
 
-        gallery      = (Gallery)findViewById(R.id.gallery);
-        submitButton = (Button)findViewById(R.id.wikieditbutton);
-        editText     = (EditText)findViewById(R.id.wikiedittext);
+        Gallery gallery = (Gallery)findViewById(R.id.gallery);
+        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         TextView warning  = (TextView)findViewById(R.id.warningmessage);
         String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if ((wpName==null) || (wpName.trim()=="")) {
+        if ((wpName==null) || (wpName.trim().length() == 0)) {
           submitButton.setEnabled(false);
           submitButton.setVisibility(View.GONE);
-          warning.setText("Posting images anonymously is not allowed. Pleare register an user name in the wiki first.");
+          warning.setVisibility(View.VISIBLE);
         }
 
         gallery.setAdapter(new ImageAdapter(this));
-                
+
         submitButton.setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View view) {
-            showDialog(PROGRESS_DIALOG);
-          }
-        });
+            @Override
+            public void onClick(View view) {
+              // We don't want to let the Activity handle the dialog.  That WILL
+              // cause it to show up properly and all, but after a configuration
+              // change (i.e. orientation shift), it won't show or update any text
+              // (as far as I know), as we can't reassign the handler properly.
+              // So, we'll handle it ourselves.
+              mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, false, WikiPictureEditor.this);
+              mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
+              mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
+              mWikiConnectionThread.start();
+            }
+          });
+        
+        // Now, let's see if we have anything retained...
+        try {
+            RetainedThings retain = (RetainedThings)getLastNonConfigurationInstance();
+            if(retain != null) {
+                // We have something retained!  Thus, we need to construct the
+                // popup and update it with the right status, assuming the
+                // thread's still going.
+                if(retain.thread != null && retain.thread.isAlive()) {
+                    mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, false, WikiPictureEditor.this);
+                    mConnectionHandler = retain.handler;
+                    mConnectionHandler.resetHandler(mProgressHandler);
+                    mWikiConnectionThread = retain.thread;
+                }
+            }
+        } catch (Exception ex) {}
+    }
+    
+    @Override
+    public Object onRetainNonConfigurationInstance() {
+        // If the configuration changes (i.e. orientation shift), we want to
+        // keep track of the thread we used to have.  That'll be used to
+        // populate the new popup next time around, if need be.
+        if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
+            mDontStopTheThread  = true;
+            RetainedThings retain = new RetainedThings();
+            retain.handler = mConnectionHandler;
+            retain.thread = mWikiConnectionThread;
+            return retain;
+        } else {
+            return null;
+        }
     }
 
     class ImageAdapter extends BaseAdapter {
@@ -149,7 +182,7 @@ public class WikiPictureEditor extends Activity {
         }
 
         public int getCount() {
-          return cursor==null?0:cursor.getCount();
+          return cursor==null ? 0 : cursor.getCount();
         }
 
         public Object getItem(int position) {
@@ -175,49 +208,72 @@ public class WikiPictureEditor extends Activity {
         }
     } 
 
-    final Handler progressHandler = new Handler() {
+    private final Handler mProgressHandler = new Handler() {
       public void handleMessage(Message msg) {
         String status = msg.getData().getString("status");
-        progress.setMessage(status);
+        mProgress.setMessage(status);
         if (status.equals(STATUS_DISMISS)) {
           dismissDialog(PROGRESS_DIALOG);
         }
       }
     };
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(!mDontStopTheThread && mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
+            // If we want to stop the thread (default, assuming this isn't a
+            // configuration change), AND the thread is defined, AND it's still
+            // alive, abort it via WikiUtils.  Otherwise, this IS a config
+            // change, so keep the thread running.  We'll catch up with it on
+            // the next run.
+            mConnectionHandler.abort();
+        }
+    }
 
-    protected Dialog onCreateDialog(int id) {
-      if (id==PROGRESS_DIALOG) {
-        progress = new ProgressDialog(WikiPictureEditor.this);
-        connectionHandler = new WikiConnectionHandler(progressHandler);
-        connectionHandler.start();
-        return progress;
-      } else {
-        return null;
-      }
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        // TODO Auto-generated method stub
+        
     }
     
-    class WikiConnectionHandler extends Thread {
+    private class WikiConnectionHandler implements Runnable {
       Handler handler;
-      private String oldstatus="";
+      private String mOldStatus = "";
       
       WikiConnectionHandler(Handler h) {
         this.handler = h;
       }
-
-      protected void setStatus(String status) {
-        Message msg = handler.obtainMessage();
-        Bundle b = new Bundle();
-        b.putString("status",status);
-        msg.setData(b);
-        handler.sendMessage(msg);
-      } 
-      protected void addStatus(String status) {
-        oldstatus = oldstatus + status;
-        setStatus(oldstatus);
+      
+      
+      public void resetHandler(Handler h) {
+          this.handler = h;
+          setStatus(mOldStatus);
       }
-      protected void dismiss() {
-        setStatus(STATUS_DISMISS);
-      } 
+      
+      public void abort() {
+          WikiUtils.abort();
+      }
+
+      private void setStatus(String status) {
+          Message msg = handler.obtainMessage();
+          msg.obj = status;
+          handler.sendMessage(msg);
+        } 
+        private void addStatus(String status) {
+          mOldStatus = mOldStatus + status;
+          setStatus(mOldStatus);
+        }
+        private void addStatus(int resId) {
+            addStatus(getText(resId).toString());
+        }
+        private void addStatusAndNewline(int resId) {
+            addStatus(resId);
+            addStatus("\n");
+        }
+        private void dismiss() {
+          setStatus(STATUS_DISMISS);
+        } 
 
 
       public void run() { 
@@ -259,6 +315,7 @@ public class WikiPictureEditor extends Activity {
         String locationTag = "";
         
         try {
+          Gallery gallery = (Gallery)findViewById(R.id.gallery);
           int position = gallery.getSelectedItemPosition();
           cursor.moveToPosition(position);
           int id = cursor.getInt(column_index);
@@ -269,7 +326,7 @@ public class WikiPictureEditor extends Activity {
             int loncol =  cursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE); 
             String lat = cursor.getString(latcol);
             String lon = cursor.getString(loncol);
-            Log.d(TAG, "lat = "+lat+" lon = "+lon);            
+            Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);            
             addStatus("lat = "+lat+" lon = "+lon); //DEBUG also
             locationTag = " [http://www.openstreetmap.org/?lat="+lat+"&lon="+lon+"&zoom=16&layers=B000FTF @"+lat+","+lon+"]";
           } catch (Exception ex) {
@@ -299,6 +356,8 @@ public class WikiPictureEditor extends Activity {
         String lon  = grat.getLongitudeString();
         String expedition = date+"_"+lat+"_"+lon;
         
+        EditText editText = (EditText)findViewById(R.id.wikiedittext);
+        
         String message = editText.getText().toString().trim()+locationTag;
         
         String filename = expedition+"_"+now+".jpg";
@@ -317,15 +376,15 @@ public class WikiPictureEditor extends Activity {
         addStatus("Retrieving expedition "+expedition+"...");
         String page;
         try {
-          formfields=new HashMap<String,String>();        
-          page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+          mFormfields=new HashMap<String,String>();        
+          page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
           if ((page==null) || (page.trim().length()==0)) {
             addStatus("non-existant.\n");
 
             //ok, let's create some.
             addStatus("Creating expedition page...");
             try {
-              WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", formfields);
+              WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
               addStatus("done.\n");
             } catch (Exception ex) {
               addStatus("failed.\n"+ex.getMessage());
@@ -333,7 +392,7 @@ public class WikiPictureEditor extends Activity {
             }
             addStatus("Re-retrieving expedition...");
             try {
-              page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+              page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
               addStatus("fetched.\n");
             } catch (Exception ex) {
               addStatus("failed.\n"+ex.getMessage());
@@ -346,7 +405,7 @@ public class WikiPictureEditor extends Activity {
           String before = "";
           String after  = "";
             
-          Matcher galleryq = re_gallery.matcher(page);
+          Matcher galleryq = RE_GALLERY.matcher(page);
           if (galleryq.matches()) {
             before = galleryq.group(1)+galleryq.group(2);
             after  = galleryq.group(3);
@@ -357,7 +416,7 @@ public class WikiPictureEditor extends Activity {
 
           String galleryentry = "\nImage:"+filename+" | "+message+"\n";
           addStatus("Updating gallery...");
-          WikiUtils.putWikiPage(httpclient, expedition, before+galleryentry+after, formfields);
+          WikiUtils.putWikiPage(httpclient, expedition, before+galleryentry+after, mFormfields);
           addStatus("Done.\n");
         } catch (Exception ex) {
           error = "failed.\n"+ex.getMessage();
@@ -366,4 +425,15 @@ public class WikiPictureEditor extends Activity {
         dismiss();
       }
   }
+    
+    
+    /**
+     * Since onRetainNonConfigurationInstance returns a plain ol' Object, this
+     * just holds the pieces of data we're retaining.
+     */
+    private class RetainedThings {
+        public Thread thread;
+        public WikiConnectionHandler handler;
+    }
+
 }

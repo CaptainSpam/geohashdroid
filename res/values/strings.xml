@@ -134,6 +134,7 @@ in a bit better grammatically (at least in English).
 <string name="wiki_picture_activity_title">Upload Picture</string>
 
 <string name="wiki_editor_not_logged_in">WARNING: You will be posting anonymously.  If you do not wish to be anonymous, you need to set a username and password in settings.</string>
+<string name="wiki_picture_not_logged_in">Posting images anonymously is not allowed, and you haven't specified a username in Preferences.  Please enter one first.</string>
 
 <string name="wiki_conn_failure">failed.</string>
 <string name="wiki_conn_success">okay.</string>
