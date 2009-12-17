@@ -661,8 +661,12 @@ public class MainMap extends MapActivity {
                 i.putExtra(GeohashDroid.INFO, mInfo);
                 
                 Location loc = mMyLocation.getLastFix();
-                i.putExtra(GeohashDroid.LATITUDE, loc.getLatitude());
-                i.putExtra(GeohashDroid.LONGITUDE, loc.getLongitude());
+                if(loc != null) {
+                    // If loc is null, these don't get set, so the default value
+                    // (impossible for each) will be picked up by the Activity.
+                    i.putExtra(GeohashDroid.LATITUDE, loc.getLatitude());
+                    i.putExtra(GeohashDroid.LONGITUDE, loc.getLongitude());
+                }
                 startActivity(i);
                 return true;
             }

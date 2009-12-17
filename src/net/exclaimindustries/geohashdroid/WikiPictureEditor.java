@@ -68,7 +68,6 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
     
     private Cursor cursor;
     private int column_index;
-    private Context context;
 
     private static Info mInfo;
     private static Location mLocation;
@@ -172,9 +171,10 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
     class ImageAdapter extends BaseAdapter {
         int mGalleryItemBackground;
+        Context mContext
 
         ImageAdapter(Context c) {
-            context = c;
+            mContext = c;
             TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
             mGalleryItemBackground = a.getResourceId(
                     R.styleable.Gallery1_android_galleryItemBackground, 0);
@@ -194,7 +194,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
         }
 
         public View getView(int position, View convertView, ViewGroup parent) {
-          ImageView i = new ImageView(context);
+          ImageView i = new ImageView(mContext);
           if (convertView == null) {
                cursor.moveToPosition(position);
                     int id = cursor.getInt(column_index);
