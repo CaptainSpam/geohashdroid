@@ -97,7 +97,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         TextView warning = (TextView)findViewById(R.id.warningmessage);
         String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
         if ((wpName == null) || (wpName.trim().length() == 0)) {
-          warning.setText(R.string.wiki_editor_not_logged_in);
+          warning.setVisibility(View.VISIBLE);
         }
         
         submitButton.setOnClickListener(new View.OnClickListener() {

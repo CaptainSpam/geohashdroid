@@ -20,5 +20,5 @@
         android:text="Submit"/>
   <TextView android:id="@+id/warningmessage"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"/>
+        android:layout_height="fill_parent" android:text="@string/wiki_editor_not_logged_in" android:visibility="gone"/>
   </LinearLayout>
