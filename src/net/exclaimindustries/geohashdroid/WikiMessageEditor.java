@@ -16,6 +16,7 @@ import android.app.ProgressDialog;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.content.DialogInterface;
@@ -253,13 +254,18 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         String expedition = date+"_"+lat+"_"+lon;
 
         String locationTag = "";
-        if (mLocation != null) {
-          String pos = mLocation.getLatitude()+","+mLocation.getLongitude();
-          locationTag = " [http://www.openstreetmap.org/?lat="+mLocation.getLatitude()+"&lon="+mLocation.getLongitude()+"&zoom=16&layers=B000FTF @"+pos+"]";
-          addStatus(R.string.wiki_conn_current_location);
-          addStatus(" " + pos + "\n");
-        } else {
-          addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
+        
+        // Location!  Is the checkbox ticked (and do we have a location handy)?
+        CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+        if(includelocation.isChecked()) {
+          if (mLocation != null) {
+            String pos = mLocation.getLatitude()+","+mLocation.getLongitude();
+            locationTag = " [http://www.openstreetmap.org/?lat="+mLocation.getLatitude()+"&lon="+mLocation.getLongitude()+"&zoom=16&layers=B000FTF @"+pos+"]";
+            addStatus(R.string.wiki_conn_current_location);
+            addStatus(" " + pos + "\n");
+          } else {
+            addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
+          }
         }
 
         addStatus(R.string.wiki_conn_expedition_retrieving);
@@ -297,7 +303,10 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
 
           EditText editText = (EditText)findViewById(R.id.wikiedittext);
           
-          String message = "\n*"+editText.getText().toString().trim()+"  -- ~~~"+locationTag+" ~~~~~\n";
+          CheckBox includetime = (CheckBox)findViewById(R.id.includetime);
+          
+          String message = "\n*"+editText.getText().toString().trim()+"  -- ~~~"
+            + locationTag + (includetime.isChecked() ? " ~~~~~" : "") + "\n";
             
           addStatus(R.string.wiki_conn_insert_message);
           WikiUtils.putWikiPage(httpclient, expedition, before+message+after, mFormfields);

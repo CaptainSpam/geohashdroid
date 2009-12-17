@@ -14,11 +14,11 @@
     <CheckBox android:id="@+id/includelocation"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content"
-          android:text="Append coordinates"/>
+          android:text="Append coordinates" android:checked="true"/>
     <CheckBox android:id="@+id/includetime"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content"
-          android:text="Append local timestamp"/>
+          android:text="Append local timestamp" android:checked="true"/>
     <Button android:id="@+id/wikieditbutton"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content"
