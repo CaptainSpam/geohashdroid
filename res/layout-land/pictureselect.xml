@@ -21,15 +21,14 @@
       <CheckBox android:id="@+id/includelocation"
           android:layout_width="wrap_content"
           android:layout_height="36sp"
-          android:text="Append coordinates"/>
+          android:checked="true" android:text="@string/wiki_dialog_append_coordinates"/>
       <CheckBox android:id="@+id/includetime"
           android:layout_width="wrap_content"
           android:layout_height="36sp"
-          android:text="Append local timestamp"/>
+          android:checked="true" android:text="@string/wiki_dialog_append_time"/>
       <Button android:id="@+id/wikieditbutton"
           android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="Submit to gallery"/>
+          android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture"/>
       <TextView android:id="@+id/warningmessage"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" android:text="@string/wiki_picture_not_logged_in" android:visibility="gone"/>

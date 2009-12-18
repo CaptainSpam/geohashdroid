@@ -171,7 +171,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
     class ImageAdapter extends BaseAdapter {
         int mGalleryItemBackground;
-        Context mContext
+        Context mContext;
 
         ImageAdapter(Context c) {
             mContext = c;
