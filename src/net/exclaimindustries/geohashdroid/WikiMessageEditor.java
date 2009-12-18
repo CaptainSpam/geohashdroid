@@ -109,7 +109,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
               // change (i.e. orientation shift), it won't show or update any text
               // (as far as I know), as we can't reassign the handler properly.
               // So, we'll handle it ourselves.
-              mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, false, WikiMessageEditor.this);
+              mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, true, WikiMessageEditor.this);
               mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
               mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
               mWikiConnectionThread.start();
@@ -124,7 +124,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
                 // popup and update it with the right status, assuming the
                 // thread's still going.
                 if(retain.thread != null && retain.thread.isAlive()) {
-                    mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, false, WikiMessageEditor.this);
+                    mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, true, WikiMessageEditor.this);
                     mConnectionHandler = retain.handler;
                     mConnectionHandler.resetHandler(mProgressHandler);
                     mWikiConnectionThread = retain.thread;

@@ -79,6 +79,17 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
     static final String STATUS_DISMISS = "Done.";
     static final String DEBUG_TAG = "PictureEditor";
 
+
+    private final Handler mProgressHandler = new Handler() {
+        public void handleMessage(Message msg) {
+          String status = (String)(msg.obj);
+          mProgress.setMessage(status);
+          if (status.equals(STATUS_DISMISS)) {
+            mProgress.dismiss();
+          }
+        }
+      };
+    
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -129,7 +140,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
               // change (i.e. orientation shift), it won't show or update any text
               // (as far as I know), as we can't reassign the handler properly.
               // So, we'll handle it ourselves.
-              mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, false, WikiPictureEditor.this);
+              mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, true, WikiPictureEditor.this);
               mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
               mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
               mWikiConnectionThread.start();
@@ -144,7 +155,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
                 // popup and update it with the right status, assuming the
                 // thread's still going.
                 if(retain.thread != null && retain.thread.isAlive()) {
-                    mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, false, WikiPictureEditor.this);
+                    mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, true, WikiPictureEditor.this);
                     mConnectionHandler = retain.handler;
                     mConnectionHandler.resetHandler(mProgressHandler);
                     mWikiConnectionThread = retain.thread;
@@ -207,16 +218,6 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
           return i;
         }
     } 
-
-    private final Handler mProgressHandler = new Handler() {
-      public void handleMessage(Message msg) {
-        String status = msg.getData().getString("status");
-        mProgress.setMessage(status);
-        if (status.equals(STATUS_DISMISS)) {
-          dismissDialog(PROGRESS_DIALOG);
-        }
-      }
-    };
     
     @Override
     protected void onDestroy() {
@@ -233,8 +234,15 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
     @Override
     public void onCancel(DialogInterface dialog) {
-        // TODO Auto-generated method stub
-        
+        // If the dialog is canceled (that is, the user pressed Back; any other
+        // manner just dismisses the dialog, not cancels it), we want to stop
+        // the connection immediately.  When we call WikiUtils.abort(), that'll
+        // abort the connection, which will cause it to throw exceptions all
+        // over the place.  Fortunately, the thread that runs the connection
+        // will catch just about everything and bail out of the thread once it
+        // stops.
+        if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive())
+            mConnectionHandler.abort();
     }
     
     private class WikiConnectionHandler implements Runnable {
