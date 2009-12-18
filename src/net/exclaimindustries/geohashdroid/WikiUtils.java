@@ -46,8 +46,7 @@ public class WikiUtils {
   private static final Pattern re_login_good  = Pattern.compile("Login successful",Pattern.DOTALL);
   
   /** The base URL for all wiki activities.  Remember the trailing slash! */
-//  private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
-  private static final String WIKI_BASE_URL = "http://beanshack.exclaimindustries.net/wiki/";
+  private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
   
   public final static String LOGIN_GOOD = null;
   
