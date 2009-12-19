@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,7 +65,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
     private WikiConnectionHandler mConnectionHandler;
     private Thread mWikiConnectionThread;
     
-    private Cursor cursor;
+    private Cursor mCursor;
     private int column_index;
 
     private static Info mInfo;
@@ -77,7 +76,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
     static final int PROGRESS_DIALOG = 0;
     static final String STATUS_DISMISS = "Done.";
-    static final String DEBUG_TAG = "PictureEditor";
+    static final String DEBUG_TAG = "WikiPictureEditor";
 
 
     private final Handler mProgressHandler = new Handler() {
@@ -113,9 +112,9 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
         String [] proj = {MediaStore.Images.Thumbnails._ID}; 
         for (int i=0;i<proj.length;i++) 
-        cursor = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, null, null, null);
-        if (cursor!=null) {
-          column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID); 
+        mCursor = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, null, null, null);
+        if (mCursor!=null) {
+          column_index = mCursor.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID); 
         }
 
         Gallery gallery = (Gallery)findViewById(R.id.gallery);
@@ -193,7 +192,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
         }
 
         public int getCount() {
-          return cursor==null ? 0 : cursor.getCount();
+          return mCursor==null ? 0 : mCursor.getCount();
         }
 
         public Object getItem(int position) {
@@ -207,8 +206,8 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
         public View getView(int position, View convertView, ViewGroup parent) {
           ImageView i = new ImageView(mContext);
           if (convertView == null) {
-               cursor.moveToPosition(position);
-                    int id = cursor.getInt(column_index);
+               mCursor.moveToPosition(position);
+                    int id = mCursor.getInt(column_index);
                     i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+id));
                     i.setScaleType(ImageView.ScaleType.FIT_XY);
                     i.setLayoutParams(new Gallery.LayoutParams(140, 140));
@@ -285,78 +284,103 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
 
       public void run() { 
-        String error = null;
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
 
         HttpClient httpclient = null;
+        
+        Uri uri;
+        
+        // Before we do anything, grab the image from the mCursor.  If we get a
+        // configuration change, that mCursor will be invalid.
+        try {
+          Gallery gallery = (Gallery)findViewById(R.id.gallery);
+          int position = gallery.getSelectedItemPosition();
+          mCursor.moveToPosition(position);
+          int id = mCursor.getInt(column_index);
+          uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ""+id);
+        } catch (Exception ex) {
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_connection_failed);
+          addStatus(ex.getMessage());
+          return;
+        }
+        
+        
         try {
           httpclient = new DefaultHttpClient();
         } catch (Exception ex) {
-          addStatus("Connection failed.\n"+ex.getMessage());
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_connection_failed);
+          addStatus(ex.getMessage());
           return;
         }
 
         String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
         if (!wpName.equals("")) {
-          addStatus("Attempting login...");
+            addStatus(R.string.wiki_conn_login);
           String wpPassword = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
           try {
             String fail = WikiUtils.login(httpclient, wpName, wpPassword);
             if (fail != WikiUtils.LOGIN_GOOD) {
-              addStatus(fail+"\n");
-              return;
-            } else {
-              addStatus("good.\n");
+                addStatus(fail+"\n");
+                return;
+              } else {
+                addStatusAndNewline(R.string.wiki_conn_success);
             }
           } catch (Exception ex) {
-            addStatus("failed.\n"+ex.getMessage());
-            return;
+              Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+              addStatusAndNewline(R.string.wiki_conn_failure);
+              addStatus(ex.getMessage());
+              return;
           }
         } else {
-          addStatus("Cannot upload pictures as anonymous.\n");
+          addStatusAndNewline(R.string.wiki_conn_anon_pic_error);
           return;
         }
 
-        addStatus("Compressing image...");
         byte[] data = null;
         
         String locationTag = "";
         
         try {
-          Gallery gallery = (Gallery)findViewById(R.id.gallery);
-          int position = gallery.getSelectedItemPosition();
-          cursor.moveToPosition(position);
-          int id = cursor.getInt(column_index);
-          Uri uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ""+id);
-          
-          try {
-            int latcol =  cursor.getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE); 
-            int loncol =  cursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE); 
-            String lat = cursor.getString(latcol);
-            String lon = cursor.getString(loncol);
-            Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);            
-            addStatus("lat = "+lat+" lon = "+lon); //DEBUG also
-            locationTag = " [http://www.openstreetmap.org/?lat="+lat+"&lon="+lon+"&zoom=16&layers=B000FTF @"+lat+","+lon+"]";
-          } catch (Exception ex) {
-            addStatus("Picture location unknown.\n");
-            if (mLocation != null) {
-              locationTag = "@ "+mLocation.toString();
-              addStatus("Current location: "+mLocation.toString()+"\n");
+          CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+          if(includelocation.isChecked()) {
+            try {
+              int latcol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE); 
+              int loncol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE); 
+              String lat = mCursor.getString(latcol);
+              String lon = mCursor.getString(loncol);
+              Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);            
+              locationTag = " [http://www.openstreetmap.org/?lat=" + lat + "&lon="
+                + lon + "&zoom=16&layers=B000FTF @" + lat + "," + lon + "]";
+            } catch (Exception ex) {
+              addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
+              if (mLocation != null) {
+                locationTag = " [http://www.openstreetmap.org/?lat=" + mLocation.getLatitude()
+                  + "&lon=" + mLocation.getLongitude() + "&zoom=16&layers=B000FTF @"
+                  + mLocation.getLatitude() + "," + mLocation.getLongitude() + "]";
+              } else {
+                 addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
+              }
             }
           }
         
+          addStatusAndNewline(R.string.wiki_conn_shrink_image);
+          
           Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
           ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
           bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
           data = bytes.toByteArray();
         } catch (Exception ex) {
-          addStatus("failed. "+ex.getMessage());
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_failure);
+          addStatus(ex.getMessage());
           return;
         }
-        addStatus("done.\n");
+        addStatusAndNewline(R.string.wiki_conn_done);
         
-        addStatus("Uploading image...");
+        addStatus(R.string.wiki_conn_upload_image);
         String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo.getCalendar().getTime());
         String now  = new SimpleDateFormat("HH-mm-ss-SSS").format(new Date());
         Graticule grat = mInfo.getGraticule();
@@ -376,38 +400,45 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
         try {
           WikiUtils.putWikiImage(httpclient, filename, description, data);
         } catch (Exception ex) {
-          addStatus("failed. "+ex.getMessage());
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_failure);
+          addStatus(ex.getMessage());
           return;
         }
-        addStatus("done.\n");
+        addStatusAndNewline(R.string.wiki_conn_done);
         
-        addStatus("Retrieving expedition "+expedition+"...");
+        addStatus(R.string.wiki_conn_expedition_retrieving);
+        addStatus(" " + expedition + "...");
         String page;
         try {
           mFormfields=new HashMap<String,String>();        
           page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
           if ((page==null) || (page.trim().length()==0)) {
-            addStatus("non-existant.\n");
+            addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);;
 
             //ok, let's create some.
-            addStatus("Creating expedition page...");
+            addStatus(R.string.wiki_conn_expedition_creating);
             try {
               WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
-              addStatus("done.\n");
+              addStatusAndNewline(R.string.wiki_conn_success);
             } catch (Exception ex) {
-              addStatus("failed.\n"+ex.getMessage());
+              Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+              addStatusAndNewline(R.string.wiki_conn_failure);
+              addStatus(ex.getMessage());
               return;
             }
-            addStatus("Re-retrieving expedition...");
+            addStatus(R.string.wiki_conn_expedition_reretrieving);
             try {
               page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-              addStatus("fetched.\n");
+              addStatusAndNewline(R.string.wiki_conn_success);
             } catch (Exception ex) {
-              addStatus("failed.\n"+ex.getMessage());
+              Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+              addStatusAndNewline(R.string.wiki_conn_failure);
+              addStatus(ex.getMessage());
               return;
             }
           } else {
-            addStatus("fetched.\n");
+            addStatusAndNewline(R.string.wiki_conn_success);
           }
 
           String before = "";
@@ -423,11 +454,14 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
           }
 
           String galleryentry = "\nImage:"+filename+" | "+message+"\n";
-          addStatus("Updating gallery...");
+          addStatus(R.string.wiki_conn_updating_gallery);
           WikiUtils.putWikiPage(httpclient, expedition, before+galleryentry+after, mFormfields);
-          addStatus("Done.\n");
+          addStatus(R.string.wiki_conn_success);
         } catch (Exception ex) {
-          error = "failed.\n"+ex.getMessage();
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+          addStatusAndNewline(R.string.wiki_conn_failure);
+          addStatus(ex.getMessage());
+          return;
         }
 
         dismiss();

@@ -219,7 +219,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         try {
           httpclient = new DefaultHttpClient();
         } catch (Exception ex) {
-          Log.d("WikiMessageEditor", "EXCEPTION: " + ex.getMessage());
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
           addStatusAndNewline(R.string.wiki_conn_connection_failed);
           addStatus(ex.getMessage());
           return;
@@ -238,7 +238,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
               addStatusAndNewline(R.string.wiki_conn_success);
             }
           } catch (Exception ex) {
-            Log.d("WikiMessageEditor", "EXCEPTION: " + ex.getMessage());
+            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
             addStatusAndNewline(R.string.wiki_conn_failure);
             addStatus(ex.getMessage());
             return;
@@ -260,7 +260,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
         if(includelocation.isChecked()) {
           if (mLocation != null) {
             String pos = mLocation.getLatitude()+","+mLocation.getLongitude();
-            locationTag = " [http://www.openstreetmap.org/?lat="+mLocation.getLatitude()+"&lon="+mLocation.getLongitude()+"&zoom=16&layers=B000FTF @"+pos+"]";
+            locationTag = " [http://www.openstreetmap.org/?lat=" + mLocation.getLatitude() + "&lon=" + mLocation.getLongitude() + "&zoom=16&layers=B000FTF @" + pos + "]";
             addStatus(R.string.wiki_conn_current_location);
             addStatus(" " + pos + "\n");
           } else {
@@ -314,7 +314,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
          
             
         } catch (Exception ex) {
-          Log.d("WikiMessageEditor", "EXCEPTION: " + ex.getMessage());
+          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
           addStatusAndNewline(R.string.wiki_conn_failure);
           addStatus(ex.getMessage());
         }
