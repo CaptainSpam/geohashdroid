@@ -9,14 +9,12 @@
         android:layout_height="140sp"/>
   <EditText android:id="@+id/wikiedittext"
         android:layout_width="fill_parent"
-        android:layout_height="80sp" android:hint="@string/hint_message"/>
+        android:layout_height="80sp" android:hint="@string/hint_message" android:inputType="textCapSentences"/>
   <CheckBox android:id="@+id/includelocation"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:checked="true" android:text="@string/wiki_dialog_append_coordinates"/>
-  <CheckBox android:id="@+id/includetime"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" android:text="@string/wiki_dialog_append_time" android:checked="true"/>
+  
   <Button android:id="@+id/wikieditbutton"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture"/>
