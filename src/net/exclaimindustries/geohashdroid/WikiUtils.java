@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import android.util.Log;
 
 /** Various stateless utility methods to query a mediawiki server
  */
@@ -42,11 +43,12 @@ public class WikiUtils {
   private static final Pattern re_form_field_names  = Pattern.compile("<input[^>]*?name=\"([^>]*?)\"[^>]*?value=\"([^>]*?)\"[^>]*?/>");
   private static final Pattern re_form_field_values = Pattern.compile("<input[^>]*?value=\"([^>]*?)\"[^>]*?name=\"([^>]*?)\"[^>]*?/>");
   private static final Pattern re_textarea    = Pattern.compile("<textarea.*?>(.*?)</textarea>",Pattern.DOTALL);
-  private static final Pattern re_login_fail  = Pattern.compile("<h2>Login error:</h2>(.*?)</div>",Pattern.DOTALL);
-  private static final Pattern re_login_good  = Pattern.compile("Login successful",Pattern.DOTALL);
+  private static final Pattern re_login_fail  = Pattern.compile("Login error.*?<p>(.*?)\\.",Pattern.DOTALL);
+  private static final Pattern re_login_good  = Pattern.compile("My contributions",Pattern.DOTALL); //Successful login is not indicated anymore in never mediawikis
   
   /** The base URL for all wiki activities.  Remember the trailing slash! */
   private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
+  private static final String DEBUG_TAG = "WikiUtils";
   
   public final static String LOGIN_GOOD = null;
   
@@ -124,7 +126,7 @@ public class WikiUtils {
         while (ivq.find()) {
           formfields.put(ivq.group(2), ivq.group(1));
         }
-        formfields.put("wpSummary", "+live expedition message (geohashdroid).");
+        formfields.put("wpSummary", "a live expedition message sent via geohashdroid for android.");
         formfields.remove("wpPreview");
         formfields.remove("wpDiff");
         formfields.remove("wpMinoredit");
@@ -157,6 +159,7 @@ public class WikiUtils {
     while (i.hasNext()) {
       Entry<String, String> e = i.next();
       nvps[n++] = new StringPart(e.getKey(), e.getValue(), "utf-8");
+      Log.d(DEBUG_TAG, "Form field: " + e.getKey()+" = "+e.getValue());
     }
     nvps[n++] = new StringPart("wpTextbox1", content, "utf-8");
     httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
