@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.util.Log;
 import android.view.View;
@@ -19,6 +21,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnCancelListener;
@@ -45,7 +48,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
 
     private ProgressDialog mProgress;    
 
-    private WikiConnectionHandler mConnectionHandler;
+    private MessageConnectionRunner mConnectionHandler;
     
     private static Info mInfo;
     private HashMap<String, String> mFormfields;
@@ -53,6 +56,14 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
     static final int PROGRESS_DIALOG = 0;
     static final String STATUS_DISMISS = "Done.";
     static final String DEBUG_TAG = "MessageEditor";
+    private static final String LAST_ERROR = "LastError";
+    
+    // NOT the same as WikiConnectionRunner.DIALOG_ERROR, confusingly...
+    private static final int DIALOG_ERROR = 0;
+    
+    // We need to define this here, as we've got no other way of passing the
+    // string into the dialog.
+    private String mLastErrorText = "";
     
     private static Location mLocation;
     
@@ -62,13 +73,38 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
     private boolean mDontStopTheThread = false;
 
     private final Handler mProgressHandler = new Handler() {
-      public void handleMessage(Message msg) {
-        String status = (String)(msg.obj);
-        mProgress.setMessage(status);
-        if (status.equals(STATUS_DISMISS)) {
-          mProgress.dismiss();
+        public void handleMessage(Message msg) {
+            switch(msg.what) {
+                case WikiConnectionRunner.DIALOG_UPDATE:
+                {
+                    String status = (String)(msg.obj);
+                    mProgress.setMessage(status);
+                    break;
+                }
+                case WikiConnectionRunner.DIALOG_DISMISS:
+                    mProgress.dismiss();
+                    break;
+                case WikiConnectionRunner.DIALOG_ERROR:
+                {
+                    String status = (String)(msg.obj);
+                    mProgress.dismiss();
+                    if(status != null)
+                    {
+                        // If the status came in null, just dismiss.  That means
+                        // either something went wrong or we actually got a
+                        // dismiss command that was sent wrong.  Otherwise, make
+                        // a new informational dialog.  We'll let it pass if it
+                        // was empty but not null; that just gets turned into a
+                        // generic error.
+                        mLastErrorText = status.trim();
+                        showDialog(DIALOG_ERROR);
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
         }
-      }
     };
     
     @Override
@@ -110,7 +146,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
               // (as far as I know), as we can't reassign the handler properly.
               // So, we'll handle it ourselves.
               mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, true, WikiMessageEditor.this);
-              mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
+              mConnectionHandler = new MessageConnectionRunner(mProgressHandler, WikiMessageEditor.this);
               mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
               mWikiConnectionThread.start();
             }
@@ -131,6 +167,72 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
                 }
             }
         } catch (Exception ex) {}
+        
+        // Then, repopulate the saved instance state.
+        if(icicle != null && icicle.containsKey(LAST_ERROR)) {
+            try {
+                mLastErrorText = icicle.getString(LAST_ERROR);
+            } catch (Exception ex) {}
+        }
+    }
+
+    /* (non-Javadoc)
+     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
+     */
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        
+        // Stash away whatever the last error was in case we need the dialog
+        // back.
+        outState.putString(LAST_ERROR, mLastErrorText);
+    }
+
+    /* (non-Javadoc)
+     * @see android.app.Activity#onCreateDialog(int)
+     */
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        // Here, we create the error dialog.  In onPrepareDialog, we actually
+        // put text in it.  This one we actually CAN handle this way, as this
+        // doesn't require a handler to be reset to repopulate the dialog.
+        switch(id) {
+            case DIALOG_ERROR: {
+                AlertDialog.Builder build = new AlertDialog.Builder(this);
+                build.setMessage(R.string.error_search_failed);
+                build.setTitle(R.string.error_title);
+                build.setIcon(android.R.drawable.ic_dialog_alert);
+                build.setNegativeButton(R.string.darn_label,
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,
+                                int whichButton) {
+                            WikiMessageEditor.this
+                                .dismissDialog(DIALOG_ERROR);
+                    }
+                });
+                return build.create();
+            }
+        }
+        return null;
+    }
+
+    /* (non-Javadoc)
+     * @see android.app.Activity#onPrepareDialog(int, android.app.Dialog)
+     */
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        // And now, we put some text in.
+        super.onPrepareDialog(id, dialog);
+        switch(id) {
+            case DIALOG_ERROR:
+                // If there's actually text to see, use that.  Otherwise, we
+                // need to use the generic.
+                if(mLastErrorText != null && mLastErrorText.length() == 0)
+                    ((AlertDialog)dialog).setMessage(getText(R.string.wiki_generic_error));
+                else
+                    ((AlertDialog)dialog).setMessage(mLastErrorText);
+                break;
+        }
     }
 
     @Override
@@ -175,42 +277,10 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
             mConnectionHandler.abort();
     }
     
-    private class WikiConnectionHandler implements Runnable {
-      private Handler handler;
-      private String mOldStatus="";
-      
-      WikiConnectionHandler(Handler h) {
-        this.handler = h;
+    private class MessageConnectionRunner extends WikiConnectionRunner {
+      MessageConnectionRunner(Handler h, Context c) {
+          super(h, c);
       }
-      
-      public void resetHandler(Handler h) {
-          this.handler = h;
-          setStatus(mOldStatus);
-      }
-      
-      public void abort() {
-          WikiUtils.abort();
-      }
-
-      private void setStatus(String status) {
-        Message msg = handler.obtainMessage();
-        msg.obj = status;
-        handler.sendMessage(msg);
-      } 
-      private void addStatus(String status) {
-        mOldStatus = mOldStatus + status;
-        setStatus(mOldStatus);
-      }
-      private void addStatus(int resId) {
-          addStatus(getText(resId).toString());
-      }
-      private void addStatusAndNewline(int resId) {
-          addStatus(resId);
-          addStatus("\n");
-      }
-      private void dismiss() {
-        setStatus(STATUS_DISMISS);
-      } 
 
       public void run() { 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
@@ -220,8 +290,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
           httpclient = new DefaultHttpClient();
         } catch (Exception ex) {
           Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_connection_failed);
-          addStatus(ex.getMessage());
+          error(ex.getMessage());
           return;
         }
 
@@ -232,15 +301,14 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
           try {
             String fail = WikiUtils.login(httpclient, wpName, wpPassword);
             if (fail != WikiUtils.LOGIN_GOOD) {
-              addStatus(fail+"\n");
+              error(fail);
               return;
             } else {
               addStatusAndNewline(R.string.wiki_conn_success);
             }
           } catch (Exception ex) {
             Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-            addStatusAndNewline(R.string.wiki_conn_failure);
-            addStatus(ex.getMessage());
+            error(ex.getMessage());
             return;
           }
         } else {
@@ -312,13 +380,13 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
           WikiUtils.putWikiPage(httpclient, expedition, before+message+after, mFormfields);
           addStatusAndNewline(R.string.wiki_conn_done);
          
-            
+          dismiss();
         } catch (Exception ex) {
           Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_failure);
-          addStatus(ex.getMessage());
+          error(ex.getMessage());
+          return;
         }
-        dismiss();
+
       }
   }
     
@@ -328,7 +396,7 @@ public class WikiMessageEditor extends Activity implements OnCancelListener {
      */
     private class RetainedThings {
         public Thread thread;
-        public WikiConnectionHandler handler;
+        public MessageConnectionRunner handler;
     }
 
 }
