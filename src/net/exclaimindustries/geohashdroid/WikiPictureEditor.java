@@ -10,8 +10,6 @@ package net.exclaimindustries.geohashdroid;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,9 +22,7 @@ import android.widget.Gallery;
 import android.widget.BaseAdapter;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.res.TypedArray;
 
 import android.provider.MediaStore;
@@ -56,38 +52,17 @@ import java.text.SimpleDateFormat;
  * 
  * @author Thomas Hirsch
  */
-public class WikiPictureEditor extends Activity implements OnCancelListener {
+public class WikiPictureEditor extends WikiBaseActivity {
 
-    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
+    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);   
 
-    private ProgressDialog mProgress;    
-
-    private WikiConnectionHandler mConnectionHandler;
-    private Thread mWikiConnectionThread;
-    
     private Cursor mCursor;
-    private int column_index;
 
     private static Info mInfo;
     private static Location mLocation;
     private HashMap<String, String> mFormfields;
 
-    private boolean mDontStopTheThread = false;
-
-    static final int PROGRESS_DIALOG = 0;
-    static final String STATUS_DISMISS = "Done.";
     static final String DEBUG_TAG = "WikiPictureEditor";
-
-
-    private final Handler mProgressHandler = new Handler() {
-        public void handleMessage(Message msg) {
-          String status = (String)(msg.obj);
-          mProgress.setMessage(status);
-          if (status.equals(STATUS_DISMISS)) {
-            mProgress.dismiss();
-          }
-        }
-      };
     
     @Override
     protected void onCreate(Bundle icicle) {
@@ -110,12 +85,13 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
 
         setContentView(R.layout.pictureselect);
 
-        String [] proj = {MediaStore.Images.Thumbnails._ID}; 
-        for (int i=0;i<proj.length;i++) 
-        mCursor = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, null, null, null);
-        if (mCursor!=null) {
-          column_index = mCursor.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID); 
-        }
+        String [] proj = {
+        		MediaStore.Images.Thumbnails._ID,
+		        MediaStore.Images.Thumbnails.IMAGE_ID,
+		        MediaStore.Images.Thumbnails.KIND };
+        String where = MediaStore.Images.Thumbnails.KIND + "=" + MediaStore.Images.Thumbnails.MINI_KIND;
+
+        mCursor = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, where, null, null);
 
         Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
@@ -140,7 +116,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
               // (as far as I know), as we can't reassign the handler properly.
               // So, we'll handle it ourselves.
               mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, true, WikiPictureEditor.this);
-              mConnectionHandler = new WikiConnectionHandler(mProgressHandler);
+              mConnectionHandler = new PictureConnectionRunner(mProgressHandler, WikiPictureEditor.this);
               mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
               mWikiConnectionThread.start();
             }
@@ -179,11 +155,11 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
         }
     }
 
-    class ImageAdapter extends BaseAdapter {
-        int mGalleryItemBackground;
-        Context mContext;
+    private class ImageAdapter extends BaseAdapter {
+        private int mGalleryItemBackground;
+        private Context mContext;
 
-        ImageAdapter(Context c) {
+        public ImageAdapter(Context c) {
             mContext = c;
             TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
             mGalleryItemBackground = a.getResourceId(
@@ -200,274 +176,268 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
         }
 
         public long getItemId(int position) {
-            return position;
+            mCursor.moveToPosition(position);
+            return mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
         }
 
         public View getView(int position, View convertView, ViewGroup parent) {
-          ImageView i = new ImageView(mContext);
-          if (convertView == null) {
-               mCursor.moveToPosition(position);
-                    int id = mCursor.getInt(column_index);
-                    i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+id));
-                    i.setScaleType(ImageView.ScaleType.FIT_XY);
-                    i.setLayoutParams(new Gallery.LayoutParams(140, 140));
-                    // The preferred Gallery item background
-                    i.setBackgroundResource(mGalleryItemBackground);
+            ImageView i = new ImageView(mContext);
+            if (convertView == null) {
+                mCursor.moveToPosition(position);
+              
+                int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID));
+                i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+id));
+                i.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                i.setLayoutParams(new Gallery.LayoutParams(140, 140));
+                // The preferred Gallery item background
+                i.setBackgroundResource(mGalleryItemBackground);
           }
           return i;
         }
-    } 
-    
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if(!mDontStopTheThread && mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
-            // If we want to stop the thread (default, assuming this isn't a
-            // configuration change), AND the thread is defined, AND it's still
-            // alive, abort it via WikiUtils.  Otherwise, this IS a config
-            // change, so keep the thread running.  We'll catch up with it on
-            // the next run.
-            mConnectionHandler.abort();
-        }
-    }
-
-    @Override
-    public void onCancel(DialogInterface dialog) {
-        // If the dialog is canceled (that is, the user pressed Back; any other
-        // manner just dismisses the dialog, not cancels it), we want to stop
-        // the connection immediately.  When we call WikiUtils.abort(), that'll
-        // abort the connection, which will cause it to throw exceptions all
-        // over the place.  Fortunately, the thread that runs the connection
-        // will catch just about everything and bail out of the thread once it
-        // stops.
-        if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive())
-            mConnectionHandler.abort();
     }
     
-    private class WikiConnectionHandler implements Runnable {
-      Handler handler;
-      private String mOldStatus = "";
+    private class PictureConnectionRunner extends WikiConnectionRunner {
       
-      WikiConnectionHandler(Handler h) {
-        this.handler = h;
-      }
-      
-      
-      public void resetHandler(Handler h) {
-          this.handler = h;
-          setStatus(mOldStatus);
-      }
-      
-      public void abort() {
-          WikiUtils.abort();
-      }
-
-      private void setStatus(String status) {
-          Message msg = handler.obtainMessage();
-          msg.obj = status;
-          handler.sendMessage(msg);
-        } 
-        private void addStatus(String status) {
-          mOldStatus = mOldStatus + status;
-          setStatus(mOldStatus);
+        public PictureConnectionRunner(Handler h, Context c) {
+            super(h, c);
         }
-        private void addStatus(int resId) {
-            addStatus(getText(resId).toString());
-        }
-        private void addStatusAndNewline(int resId) {
-            addStatus(resId);
-            addStatus("\n");
-        }
-        private void dismiss() {
-          setStatus(STATUS_DISMISS);
-        } 
-
 
       public void run() { 
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+    	try {
+          SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
 
-        HttpClient httpclient = null;
+          HttpClient httpclient = null;
         
-        Uri uri;
+          Uri uri;
         
-        // Before we do anything, grab the image from the mCursor.  If we get a
-        // configuration change, that mCursor will be invalid.
-        try {
-          Gallery gallery = (Gallery)findViewById(R.id.gallery);
-          int position = gallery.getSelectedItemPosition();
-          mCursor.moveToPosition(position);
-          int id = mCursor.getInt(column_index);
-          uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ""+id);
-        } catch (Exception ex) {
-          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_connection_failed);
-          addStatus(ex.getMessage());
-          return;
-        }
-        
-        
-        try {
-          httpclient = new DefaultHttpClient();
-        } catch (Exception ex) {
-          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_connection_failed);
-          addStatus(ex.getMessage());
-          return;
-        }
-
-        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if (!wpName.equals("")) {
-            addStatus(R.string.wiki_conn_login);
-          String wpPassword = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
+          // Before we do anything, grab the image from the mCursor.  If we get a
+          // configuration change, that mCursor will be invalid.
           try {
-            String fail = WikiUtils.login(httpclient, wpName, wpPassword);
-            if (fail != WikiUtils.LOGIN_GOOD) {
-                addStatus(fail+"\n");
-                return;
-              } else {
-                addStatusAndNewline(R.string.wiki_conn_success);
-            }
+            Gallery gallery = (Gallery)findViewById(R.id.gallery);
+            int position = gallery.getSelectedItemPosition();
+            mCursor.moveToPosition(position);
+            int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.Thumbnails.IMAGE_ID));
+            uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
           } catch (Exception ex) {
-              Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-              addStatusAndNewline(R.string.wiki_conn_failure);
-              addStatus(ex.getMessage());
-              return;
+            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+            error(ex.getMessage());
+            return;
           }
-        } else {
-          addStatusAndNewline(R.string.wiki_conn_anon_pic_error);
-          return;
-        }
+        
+        
+          try {
+            httpclient = new DefaultHttpClient();
+          } catch (Exception ex) {
+            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+            error(ex.getMessage());
+            return;
+          }
 
-        byte[] data = null;
-        
-        String locationTag = "";
-        
-        try {
-          CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
-          if(includelocation.isChecked()) {
+          String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+          if (!wpName.equals("")) {
+              addStatus(R.string.wiki_conn_login);
+            String wpPassword = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
             try {
-              int latcol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE); 
-              int loncol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE); 
-              String lat = mCursor.getString(latcol);
-              String lon = mCursor.getString(loncol);
-              Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);            
-              locationTag = " [http://www.openstreetmap.org/?lat=" + lat + "&lon="
-                + lon + "&zoom=16&layers=B000FTF @" + lat + "," + lon + "]";
+              String fail = WikiUtils.login(httpclient, wpName, wpPassword);
+              if (fail != WikiUtils.LOGIN_GOOD) {
+                  error(fail);
+                  return;
+                } else {
+                  addStatusAndNewline(R.string.wiki_conn_success);
+              }
             } catch (Exception ex) {
-              addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
-              if (mLocation != null) {
-                locationTag = " [http://www.openstreetmap.org/?lat=" + mLocation.getLatitude()
-                  + "&lon=" + mLocation.getLongitude() + "&zoom=16&layers=B000FTF @"
-                  + mLocation.getLatitude() + "," + mLocation.getLongitude() + "]";
-              } else {
-                 addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
+                Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+                error(ex.getMessage());
+                return;
+            }
+          } else {
+            addStatusAndNewline(R.string.wiki_conn_anon_pic_error);
+            return;
+          }
+
+          byte[] data = null;
+        
+          String locationTag = "";
+        
+          try {
+            CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+            if(includelocation.isChecked()) {
+              try {
+                int latcol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE); 
+                int loncol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE);
+                String lat = mCursor.getString(latcol);
+                String lon = mCursor.getString(loncol);
+                // TODO: This won't work right if the image doesn't have any
+                // location data defined (the strings wind up as nulls).  Must
+                // make sure that if this DOES wind up null, we throw an
+                // exception to get to the catch statement.
+                Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);
+                locationTag = " [http://www.openstreetmap.org/?lat=" + lat + "&lon="
+                  + lon + "&zoom=16&layers=B000FTF @" + lat + "," + lon + "]";
+              } catch (Exception ex) {
+                addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
+                if (mLocation != null) {
+                  locationTag = " [http://www.openstreetmap.org/?lat=" + mLocation.getLatitude()
+                    + "&lon=" + mLocation.getLongitude() + "&zoom=16&layers=B000FTF @"
+                    + mLocation.getLatitude() + "," + mLocation.getLongitude() + "]";
+                } else {
+                   addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
+                }
               }
             }
-          }
         
-          addStatusAndNewline(R.string.wiki_conn_shrink_image);
+            addStatus(R.string.wiki_conn_shrink_image);
           
-          Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
-          ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-
-          bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
-          data = bytes.toByteArray();
-        } catch (Exception ex) {
-          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_failure);
-          addStatus(ex.getMessage());
-          return;
-        }
-        addStatusAndNewline(R.string.wiki_conn_done);
-        
-        addStatus(R.string.wiki_conn_upload_image);
-        String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo.getCalendar().getTime());
-        String now  = new SimpleDateFormat("HH-mm-ss-SSS").format(new Date());
-        Graticule grat = mInfo.getGraticule();
-        String lat  = grat.getLatitudeString();
-        String lon  = grat.getLongitudeString();
-        String expedition = date+"_"+lat+"_"+lon;
-        
-        EditText editText = (EditText)findViewById(R.id.wikiedittext);
-        
-        String message = editText.getText().toString().trim()+locationTag;
-        
-        String filename = expedition+"_"+now+".jpg";
-        String description = message+"\n\n"+
-                             "[[Category:Meetup on "+date+"]]\n" +
-                             "[[Category:Meetup in "+lat+" "+lon+"]]";
-
-        try {
-          WikiUtils.putWikiImage(httpclient, filename, description, data);
-        } catch (Exception ex) {
-          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_failure);
-          addStatus(ex.getMessage());
-          return;
-        }
-        addStatusAndNewline(R.string.wiki_conn_done);
-        
-        addStatus(R.string.wiki_conn_expedition_retrieving);
-        addStatus(" " + expedition + "...");
-        String page;
-        try {
-          mFormfields=new HashMap<String,String>();        
-          page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-          if ((page==null) || (page.trim().length()==0)) {
-            addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);;
-
-            //ok, let's create some.
-            addStatus(R.string.wiki_conn_expedition_creating);
-            try {
-              WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
-              addStatusAndNewline(R.string.wiki_conn_success);
-            } catch (Exception ex) {
-              Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-              addStatusAndNewline(R.string.wiki_conn_failure);
-              addStatus(ex.getMessage());
-              return;
+            // First, we want to scale the image to cut down on memory use and
+            // upload time.  The Geohashing wiki tends to frown upon images over
+            // 150k, so scaling and compressing are the way to go.
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+          
+            // The max we'll allow is 800x600, which should REALLY help with the
+            // filesize (TODO: tweak this). If both dimensions are smaller than
+            // that, we can let it go.
+            if(bitmap.getHeight() > 600 || bitmap.getWidth() > 800) {
+                // So, we determine how we're going to scale this, mostly
+                // because there's no method in Bitmap to maintain aspect ratio
+                // for us.  It's either going to wind up with a width of 800 or
+                // a height of 600 (or both).
+                double scaledByWidthRatio = 800.0 / bitmap.getWidth();
+                double scaledByHeightRatio = 600.0 / bitmap.getHeight();
+                
+                int newWidth = bitmap.getWidth();
+                int newHeight = bitmap.getHeight();
+                
+                if(bitmap.getHeight() * scaledByWidthRatio <= 600) {
+                    // Scale it by making the width 800, as scaling the height
+                    // by the same amount makes it less than or equal to 600.
+                    newWidth = 800;
+                    newHeight = (int)(bitmap.getHeight() * scaledByWidthRatio);
+                } else {
+                    // Otherwise, go by making the height 600.
+                    newWidth = (int)(bitmap.getWidth() * scaledByHeightRatio);
+                    newHeight = 600;
+                }
+                
+                // Now, do the scaling!  GC will take care of the bitmap we're
+                // about to replace.  I hope.
+                bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
             }
-            addStatus(R.string.wiki_conn_expedition_reretrieving);
-            try {
-              page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-              addStatusAndNewline(R.string.wiki_conn_success);
-            } catch (Exception ex) {
-              Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-              addStatusAndNewline(R.string.wiki_conn_failure);
-              addStatus(ex.getMessage());
-              return;
-            }
-          } else {
-            addStatusAndNewline(R.string.wiki_conn_success);
+
+            // Now, compress it! 
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
+            data = bytes.toByteArray();
+          
+            // Do recycling NOW, just to make sure we've booted it out of memory
+            // as soon as possible.
+            bitmap.recycle();
+          } catch (Exception ex) {
+            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+            error(ex.getMessage());
+            return;
           }
+          addStatusAndNewline(R.string.wiki_conn_done);
+        
+          addStatus(R.string.wiki_conn_upload_image);
+          String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo.getCalendar().getTime());
+          String now  = new SimpleDateFormat("HH-mm-ss-SSS").format(new Date());
+          Graticule grat = mInfo.getGraticule();
+          String lat  = grat.getLatitudeString();
+          String lon  = grat.getLongitudeString();
+          String expedition = date+"_"+lat+"_"+lon;
+        
+          EditText editText = (EditText)findViewById(R.id.wikiedittext);
+        
+          String message = editText.getText().toString().trim() + locationTag;
+        
+          String filename = expedition+"_"+now+".jpg";
+          String description = message+"\n\n"+
+                               "[[Category:Meetup on "+date+"]]\n" +
+                               "[[Category:Meetup in "+lat+" "+lon+"]]";
 
-          String before = "";
-          String after  = "";
+          try {
+            WikiUtils.putWikiImage(httpclient, filename, description, data);
+          } catch (Exception ex) {
+            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+            error(ex.getMessage());
+            return;
+          } finally {
+          	// In any event, clear the image data immediately, as we're done
+            // with it.
+            data = null;
+          }
+          addStatusAndNewline(R.string.wiki_conn_done);
+        
+          addStatus(R.string.wiki_conn_expedition_retrieving);
+          addStatus(" " + expedition + "...");
+          String page;
+          try {
+            mFormfields=new HashMap<String,String>();        
+            page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
+            if ((page==null) || (page.trim().length()==0)) {
+              addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);;
+
+              //ok, let's create some.
+              addStatus(R.string.wiki_conn_expedition_creating);
+              try {
+                WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
+                addStatusAndNewline(R.string.wiki_conn_success);
+              } catch (Exception ex) {
+                Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+                error(ex.getMessage());
+                return;
+              }
+              addStatus(R.string.wiki_conn_expedition_reretrieving);
+              try {
+                page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
+                addStatusAndNewline(R.string.wiki_conn_success);
+              } catch (Exception ex) {
+                Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+                error(ex.getMessage());
+                return;
+              }
+            } else {
+              addStatusAndNewline(R.string.wiki_conn_success);
+            }
+
+            String before = "";
+            String after  = "";
             
-          Matcher galleryq = RE_GALLERY.matcher(page);
-          if (galleryq.matches()) {
-            before = galleryq.group(1)+galleryq.group(2);
-            after  = galleryq.group(3);
-          } else {
-            before = page+"\n<gallery>";
-            after  = "</gallery>\n";
-          }
+            Matcher galleryq = RE_GALLERY.matcher(page);
+            if (galleryq.matches()) {
+              before = galleryq.group(1)+galleryq.group(2);
+              after  = galleryq.group(3);
+            } else {
+              before = page+"\n<gallery>";
+              after  = "</gallery>\n";
+            }
 
-          String galleryentry = "\nImage:"+filename+" | "+message+"\n";
-          addStatus(R.string.wiki_conn_updating_gallery);
-          WikiUtils.putWikiPage(httpclient, expedition, before+galleryentry+after, mFormfields);
-          addStatus(R.string.wiki_conn_success);
+            String galleryentry = "\nImage:" + filename + " | " + message + "\n";
+            addStatus(R.string.wiki_conn_updating_gallery);
+            WikiUtils.putWikiPage(httpclient, expedition, before+galleryentry+after, mFormfields);
+            addStatus(R.string.wiki_conn_success);
+          } catch (Exception ex) {
+            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+            error(ex.getMessage());
+            return;
+          }
+          
+          dismiss();
+        } catch (OutOfMemoryError er) {
+    	  // We CAN wind up with an OutOfMemoryError if, for instance, the
+    	  // image is just too big for us to keep in memory.  While we
+    	  // generally want errors to cause this to fail completely, this
+    	  // one we can turn into a message.
+    	  Log.d(DEBUG_TAG, "ERROR: " + er.getMessage());
+    	  error(er.getMessage());
         } catch (Exception ex) {
           Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          addStatusAndNewline(R.string.wiki_conn_failure);
-          addStatus(ex.getMessage());
-          return;
+          error(ex.getMessage());
         }
 
-        dismiss();
+
       }
   }
-    
     
     /**
      * Since onRetainNonConfigurationInstance returns a plain ol' Object, this
@@ -475,7 +445,7 @@ public class WikiPictureEditor extends Activity implements OnCancelListener {
      */
     private class RetainedThings {
         public Thread thread;
-        public WikiConnectionHandler handler;
+        public WikiConnectionRunner handler;
     }
 
 }
