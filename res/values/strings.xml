@@ -162,6 +162,8 @@ in a bit better grammatically (at least in English).
 <string name="wiki_dialog_submit_message">Submit message</string>
 <string name="wiki_dialog_submit_picture">Submit to gallery</string>
 
+<string name="wiki_generic_error">There was an unknown problem communicating with the wiki.</string>
+
 <string name="pref_wiki_message">Gone hashing!</string>
 <string name="pref_wiki_submit_message">Submit</string>
 
