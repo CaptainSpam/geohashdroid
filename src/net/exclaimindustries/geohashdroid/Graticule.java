@@ -253,7 +253,9 @@ public class Graticule implements Serializable {
     /**
      * Returns true if the 30W Rule is in effect. Which is to say, anything east
      * of -30 longitude uses yesterday's stock value, regardless of if the DJIA
-     * was updated to that point.
+     * was updated to that point.  Note that this only determines if the
+     * graticule itself abides by the 30W Rule; if the date is May 26, 2008 or
+     * earlier, 30W is ignored.
      * 
      * @return true if the 30W Rule is in effect, false otherwise
      */

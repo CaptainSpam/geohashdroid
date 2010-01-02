@@ -35,6 +35,8 @@ import com.google.android.maps.GeoPoint;
  */
 public class Info implements Serializable {
     private static final long serialVersionUID = 3L;
+    
+    private static Calendar LIMIT_30W;
 
     private double mLatitude;
     private double mLongitude;
@@ -210,9 +212,19 @@ public class Info implements Serializable {
         // original for various reasons.
         Calendar cal = (Calendar)(c.clone());
         
+        // This is the last date when the 30W rule doesn't apply.
+        if(LIMIT_30W == null) {
+            LIMIT_30W = Calendar.getInstance();
+            LIMIT_30W.set(Calendar.YEAR, 2008);
+            LIMIT_30W.set(Calendar.MONTH, Calendar.MAY);
+            LIMIT_30W.set(Calendar.DAY_OF_MONTH, 26);
+        }
+        
         // Second, 30W Rule hackery.  If g is null, assume we're not in 30W
-        // territory (that is, no adjustment is needed).
-        if(g != null && g.uses30WRule())
+        // territory (that is, no adjustment is needed).  If the date is May
+        // 26, 2008 or earlier, ignore it anyway (the 30W Rule only applies
+        // AFTER it was created).
+        if(cal.after(LIMIT_30W) && g != null && g.uses30WRule())
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.
