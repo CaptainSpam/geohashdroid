@@ -85,13 +85,46 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
         setContentView(R.layout.pictureselect);
 
-        String [] proj = {
-        		MediaStore.Images.Thumbnails._ID,
-		        MediaStore.Images.Thumbnails.IMAGE_ID,
-		        MediaStore.Images.Thumbnails.KIND };
-        String where = MediaStore.Images.Thumbnails.KIND + "=" + MediaStore.Images.Thumbnails.MINI_KIND;
-
-        mCursor = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, where, null, null);
+        String [] proj = {MediaStore.Images.Media.MINI_THUMB_MAGIC,
+                MediaStore.Images.Media._ID,
+                MediaStore.Images.Media.LATITUDE,
+                MediaStore.Images.Media.LONGITUDE};
+        // This is not-equals because that returns zero if it IS from Camera,
+        // which sorts it BEFORE everything else, which returns one.
+        // TODO: Does this work across all languages?  That is, if we're using
+        // a German phone, will this show up as "Kamera"?
+        String order = MediaStore.Images.Media.BUCKET_DISPLAY_NAME + " != 'Camera', "
+            + MediaStore.Images.Media.BUCKET_ID + ","
+            + MediaStore.Images.Media.DATE_TAKEN + " DESC,"
+            + MediaStore.Images.Media.DATE_ADDED + " DESC";
+        mCursor = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, proj, null, null, order);
+//        if (mCursor!=null) {
+//            Cursor TEMP = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null, null, MediaStore.Images.Media.BUCKET_ID + "," + MediaStore.Images.Media.DATE_TAKEN);
+//            Log.d(DEBUG_TAG, MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString());
+//            Log.d(DEBUG_TAG, "COLUMNS IN MAIN MEDIA:");
+//            for(String s : TEMP.getColumnNames())
+//                Log.d(DEBUG_TAG, s);
+//            
+////            if(TEMP.moveToFirst()) {
+////                Log.d(DEBUG_TAG, "ALL DATA:");
+////                do {
+////                    for(int i = 0; i < TEMP.getColumnCount(); i++)
+////                        Log.d(DEBUG_TAG, "  " + TEMP.getColumnName(i) + ": " + TEMP.getString(i));
+////                } while(TEMP.moveToNext());
+////            }
+//            
+//            Cursor TEMP2 = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, null, null, null, null);
+//            Log.d(DEBUG_TAG, MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString());
+//            Log.d(DEBUG_TAG, "COLUMNS IN THUMBNAILS:");
+//            for(String s : TEMP2.getColumnNames())
+//                Log.d(DEBUG_TAG, s);
+//            
+//            // DEBUG!
+//            Log.d(DEBUG_TAG, MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI.toString());
+//            Log.d(DEBUG_TAG, "COLUMNS IN mContext:");
+//            for(String s : mCursor.getColumnNames())
+//                Log.d(DEBUG_TAG, s);
+//        }
 
         Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
@@ -181,16 +214,33 @@ public class WikiPictureEditor extends WikiBaseActivity {
         }
 
         public View getView(int position, View convertView, ViewGroup parent) {
-            ImageView i = new ImageView(mContext);
-            if (convertView == null) {
-                mCursor.moveToPosition(position);
-              
-                int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID));
-                i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+id));
-                i.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                i.setLayoutParams(new Gallery.LayoutParams(140, 140));
-                // The preferred Gallery item background
-                i.setBackgroundResource(mGalleryItemBackground);
+            Log.d(DEBUG_TAG, "getView for " + position);
+          ImageView i = new ImageView(mContext);
+          if (convertView == null) {
+               mCursor.moveToPosition(position);
+               // TODO: There HAS to be a better way to do this.
+               // With the image ID in hand, we should be able to query the
+               // thumbnail provider for the thumbnail ID, which we can then
+               // retrieve.
+               int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID));
+               
+               String proj[] = {MediaStore.Images.Thumbnails._ID};
+               String where = MediaStore.Images.Thumbnails.IMAGE_ID + " = " + id
+                   + " AND " + MediaStore.Images.Thumbnails.KIND + " = " + MediaStore.Images.Thumbnails.MINI_KIND;
+               Cursor thumber = managedQuery(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, where, null, null);
+               
+               if(!thumber.moveToFirst())
+                   Log.w(DEBUG_TAG, "Couldn't find thumbnail for image " + id);
+               else {
+                   int thumbid = thumber.getInt(thumber.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID));
+                   
+                    i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+thumbid));
+                    i.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                    i.setLayoutParams(new Gallery.LayoutParams(140, 140));
+                    // The preferred Gallery item background
+                    i.setBackgroundResource(mGalleryItemBackground);
+               }
+               thumber.close();
           }
           return i;
         }
@@ -218,6 +268,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
             mCursor.moveToPosition(position);
             int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.Thumbnails.IMAGE_ID));
             uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
+            Log.d(DEBUG_TAG, "URI: " + uri.toString());
           } catch (Exception ex) {
             Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
             error(ex.getMessage());
@@ -264,14 +315,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
             if(includelocation.isChecked()) {
               try {
                 int latcol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE); 
-                int loncol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE);
+                int loncol = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE); 
                 String lat = mCursor.getString(latcol);
                 String lon = mCursor.getString(loncol);
-                // TODO: This won't work right if the image doesn't have any
-                // location data defined (the strings wind up as nulls).  Must
-                // make sure that if this DOES wind up null, we throw an
-                // exception to get to the catch statement.
-                Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);
+                Log.d(DEBUG_TAG, "lat = "+lat+" lon = "+lon);            
                 locationTag = " [http://www.openstreetmap.org/?lat=" + lat + "&lon="
                   + lon + "&zoom=16&layers=B000FTF @" + lat + "," + lon + "]";
               } catch (Exception ex) {
