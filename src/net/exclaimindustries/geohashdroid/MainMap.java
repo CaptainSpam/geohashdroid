@@ -490,6 +490,9 @@ public class MainMap extends MapActivity {
                     in.putExtra(GeohashDroid.GRATICULE, offset);
                     in.putExtra(GeohashDroid.CALENDAR, mInfo.getCalendar());
                     startActivityForResult(in, REQUEST_STOCK);
+                    // Set these to terminate both loops.
+                    i = 2;
+                    j = 2;
                     break;
                 }
                 
@@ -513,15 +516,21 @@ public class MainMap extends MapActivity {
         // to use while loops this time around.
         while(mNextNearbyX <= 1) {
             while(mNextNearbyY <= 1) {
-                if(mNextNearbyX == 0 && mNextNearbyY == 0)
+                if(mNextNearbyX == 0 && mNextNearbyY == 0) {
+                    mNextNearbyY++;
                     continue;
+                }
                 
                 // Make an offset graticule and get some info from it.
                 Graticule offset = Graticule.createOffsetFrom(mGraticule, mNextNearbyY, mNextNearbyX);
                 Info inf = HashBuilder.getStoredInfo(this, mInfo.getCalendar(), offset);
                 
                 if(inf == null) {
+                    // If this comes up twice, this is impossible.  This means
+                    // the cache is bad somehow, so we're bailing out now.
                     Log.e(DEBUG_TAG, "HEY!  HashBuilder returned null info when making the nearby overlays TWICE!  What?");
+                    mNextNearbyX = 2;
+                    mNextNearbyY = 2;
                     break;
                 }
                 
