@@ -48,6 +48,7 @@ public class WikiUtils {
   
   /** The base URL for all wiki activities.  Remember the trailing slash! */
   private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
+
   private static final String DEBUG_TAG = "WikiUtils";
   
   public final static String LOGIN_GOOD = null;
@@ -91,14 +92,14 @@ public class WikiUtils {
           
     if (entity!=null) {
       BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
-      String page = "";
+      StringBuilder page = new StringBuilder();
       while (true) {
         String line = in.readLine();
         if (line==null) break;
-        page += line+"\n";
+        page.append(line + "\n");
       }
       in.close();
-      return page;
+      return page.toString();
     } else {
       return null;
     }
