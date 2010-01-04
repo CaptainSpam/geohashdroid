@@ -216,7 +216,7 @@ public class AutoZoomingLocationOverlay extends MyLocationOverlay {
                
                 mIndicator = mapView.getContext().getResources().getDrawable(R.drawable.ic_maps_indicator_current_position);
                 mIndicatorWidth = mIndicator.getIntrinsicWidth();
-                mIndicatorWidth = mIndicator.getIntrinsicHeight();
+                mIndicatorHeight = mIndicator.getIntrinsicHeight();
                 mIndicatorCenter = new Point();
                 mIndicatorLeft = new Point();
             }
