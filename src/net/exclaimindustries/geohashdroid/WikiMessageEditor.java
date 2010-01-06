@@ -69,13 +69,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
         setContentView(R.layout.wikieditor);
 
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
-
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        TextView warning = (TextView)findViewById(R.id.warningmessage);
-        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if ((wpName == null) || (wpName.trim().length() == 0)) {
-          warning.setVisibility(View.VISIBLE);
-        }
         
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -107,6 +100,22 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 }
             }
         } catch (Exception ex) {}
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // Check for username/password here.  That way, when we get back from
+        // the settings screen, it'll update the message accordingly.
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        TextView warning = (TextView)findViewById(R.id.warningmessage);
+        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        if ((wpName == null) || (wpName.trim().length() == 0)) {
+            warning.setVisibility(View.VISIBLE);
+        } else {
+            warning.setVisibility(View.GONE);
+        }
     }
 
     @Override

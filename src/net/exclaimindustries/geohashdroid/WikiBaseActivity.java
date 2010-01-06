@@ -13,10 +13,13 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.DialogInterface.OnCancelListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Menu;
+import android.view.MenuItem;
 
 /**
  * Base class with the various things that both WikiPictureEditor and
@@ -39,6 +42,9 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
     // We need to define this here, as we've got no other way of passing the
     // string into the dialog.
     private String mLastErrorText = "";
+    
+    // Menu constant!  Just one!
+    private static final int MENU_SETTINGS = 0;
     
     protected final Handler mProgressHandler = new Handler() {
         public void handleMessage(Message msg) {
@@ -176,5 +182,35 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         // stops.
         if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive())
             mConnectionHandler.abort();
+    }
+
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        super.onMenuItemSelected(featureId, item);
+        
+        switch(item.getItemId()) {
+            case MENU_SETTINGS: {
+                // Pop up our settings window!
+                startActivity(new Intent(this, PreferenceEditScreen.class));
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        
+        MenuItem item;
+        
+        // Just one this time.
+        item = menu.add(Menu.NONE, MENU_SETTINGS, 3,
+                R.string.menu_item_settings);
+        item.setIcon(android.R.drawable.ic_menu_preferences);
+        
+        return true;
     }
 }

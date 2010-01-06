@@ -129,15 +129,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
         Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
 
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        TextView warning  = (TextView)findViewById(R.id.warningmessage);
-        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if ((wpName==null) || (wpName.trim().length() == 0)) {
-          submitButton.setEnabled(false);
-          submitButton.setVisibility(View.GONE);
-          warning.setVisibility(View.VISIBLE);
-        }
-
         gallery.setAdapter(new ImageAdapter(this));
 
         submitButton.setOnClickListener(new View.OnClickListener() {
@@ -172,6 +163,28 @@ public class WikiPictureEditor extends WikiBaseActivity {
         } catch (Exception ex) {}
     }
     
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // Check for username/password here.  That way, when we get back from
+        // the settings screen, it'll update the message accordingly.
+        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
+
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        TextView warning  = (TextView)findViewById(R.id.warningmessage);
+        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        if ((wpName==null) || (wpName.trim().length() == 0)) {
+            submitButton.setEnabled(false);
+            submitButton.setVisibility(View.GONE);
+            warning.setVisibility(View.VISIBLE);
+        } else {
+            submitButton.setEnabled(true);
+            submitButton.setVisibility(View.VISIBLE);
+            warning.setVisibility(View.GONE);
+        }
+    }
+
     @Override
     public Object onRetainNonConfigurationInstance() {
         // If the configuration changes (i.e. orientation shift), we want to
