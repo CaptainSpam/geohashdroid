@@ -321,6 +321,8 @@ public class PreferenceEditScreen extends PreferenceActivity {
         final EditTextPreference passPref = (EditTextPreference)findPreference(GHDConstants.PREF_WIKI_PASS);
         
         ((EditTextPreference)curPref).getEditText().setHint(R.string.pref_wikiusername_hint);
+        ((EditTextPreference)curPref).getEditText().setSingleLine(true);
+
         passPref.getEditText().setHint(R.string.pref_wikipassword_hint);
         passPref.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         
