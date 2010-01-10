@@ -139,113 +139,118 @@ public class WikiMessageEditor extends WikiBaseActivity {
           super(h, c);
       }
 
-      public void run() { 
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        public void run() {
+            SharedPreferences prefs = getSharedPreferences(
+                    GHDConstants.PREFS_BASE, 0);
 
-        HttpClient httpclient = null;
-        try {
-          httpclient = new DefaultHttpClient();
-        } catch (Exception ex) {
-          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          error(ex.getMessage());
-          return;
-        }
+            try {
+                HttpClient httpclient = new DefaultHttpClient();
 
-        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if (!wpName.equals("")) {
-          addStatus(R.string.wiki_conn_login);
-          String wpPassword = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
-          try {
-            String fail = WikiUtils.login(httpclient, wpName, wpPassword);
-            if (fail != WikiUtils.LOGIN_GOOD) {
-              error(fail);
-              return;
-            } else {
-              addStatusAndNewline(R.string.wiki_conn_success);
+                String wpName = prefs
+                        .getString(GHDConstants.PREF_WIKI_USER, "");
+                if (!wpName.trim().equals("")) {
+                    addStatus(R.string.wiki_conn_login);
+                    String wpPassword = prefs.getString(
+                            GHDConstants.PREF_WIKI_PASS, "");
+                    WikiUtils.login(httpclient, wpName, wpPassword);
+                    addStatusAndNewline(R.string.wiki_conn_success);
+                } else {
+                    addStatusAndNewline(R.string.wiki_conn_anon_warning);
+                }
+
+                String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo
+                        .getCalendar().getTime());
+                Graticule grat = mInfo.getGraticule();
+                String lat = grat.getLatitudeString();
+                String lon = grat.getLongitudeString();
+                String expedition = date + "_" + lat + "_" + lon;
+
+                String locationTag = "";
+
+                // Location! Is the checkbox ticked (and do we have a location
+                // handy)?
+                CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+                if (includelocation.isChecked()) {
+                    if (mLocation != null) {
+                        String pos = mLocation.getLatitude() + ","
+                                + mLocation.getLongitude();
+                        locationTag = " [http://www.openstreetmap.org/?lat="
+                                + mLocation.getLatitude() + "&lon="
+                                + mLocation.getLongitude()
+                                + "&zoom=16&layers=B000FTF @" + pos + "]";
+                        addStatus(R.string.wiki_conn_current_location);
+                        addStatus(" " + pos + "\n");
+                    } else {
+                        addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
+                    }
+                }
+
+                addStatus(R.string.wiki_conn_expedition_retrieving);
+                addStatus(" " + expedition + "...");
+                String page;
+
+                mFormfields = new HashMap<String, String>();
+                page = WikiUtils.getWikiPage(httpclient, expedition,
+                        mFormfields);
+                if ((page == null) || (page.trim().length() == 0)) {
+                    addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);
+
+                    // ok, let's create some.
+                    addStatus(R.string.wiki_conn_expedition_creating);
+                    WikiUtils.putWikiPage(httpclient, expedition,
+                            "{{subst:Expedition|lat=" + lat + "|lon=" + lon
+                                    + "|date=" + date + "}}", mFormfields);
+                    addStatusAndNewline(R.string.wiki_conn_success);
+
+                    addStatus(R.string.wiki_conn_expedition_reretrieving);
+
+                    page = WikiUtils.getWikiPage(httpclient, expedition,
+                            mFormfields);
+                    addStatusAndNewline(R.string.wiki_conn_success);
+                } else {
+                    addStatusAndNewline(R.string.wiki_conn_success);
+                }
+
+                String before = "";
+                String after = "";
+
+                Matcher expeditionq = RE_EXPEDITION.matcher(page);
+                if (expeditionq.matches()) {
+                    before = expeditionq.group(1) + expeditionq.group(2);
+                    after = expeditionq.group(3);
+                } else {
+                    before = page;
+                }
+
+                EditText editText = (EditText)findViewById(R.id.wikiedittext);
+
+                CheckBox includetime = (CheckBox)findViewById(R.id.includetime);
+
+                String message = "\n*" + editText.getText().toString().trim()
+                        + "  -- ~~~" + locationTag
+                        + (includetime.isChecked() ? " ~~~~~" : "") + "\n";
+
+                addStatus(R.string.wiki_conn_insert_message);
+                WikiUtils.putWikiPage(httpclient, expedition, before + message
+                        + after, mFormfields);
+                addStatusAndNewline(R.string.wiki_conn_done);
+
+                dismiss();
+            } catch (WikiException ex) {
+                String error = (String)getText(ex.getErrorTextId());
+                Log.d(DEBUG_TAG, "WIKI EXCEPTION: " + error);
+                error(error);
+            } catch (Exception ex) {
+                Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
+                if(ex.getMessage() != null)
+                    error(ex.getMessage());
+                else
+                    error((String)getText(R.string.wiki_error_unknown));
+                return;
             }
-          } catch (Exception ex) {
-            Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-            error(ex.getMessage());
-            return;
-          }
-        } else {
-          addStatusAndNewline(R.string.wiki_conn_anon_warning);
+
         }
-
-        String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo.getCalendar().getTime());
-        Graticule grat = mInfo.getGraticule();
-        String lat  = grat.getLatitudeString();
-        String lon  = grat.getLongitudeString();
-        String expedition = date+"_"+lat+"_"+lon;
-
-        String locationTag = "";
-        
-        // Location!  Is the checkbox ticked (and do we have a location handy)?
-        CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
-        if(includelocation.isChecked()) {
-          if (mLocation != null) {
-            String pos = mLocation.getLatitude()+","+mLocation.getLongitude();
-            locationTag = " [http://www.openstreetmap.org/?lat=" + mLocation.getLatitude() + "&lon=" + mLocation.getLongitude() + "&zoom=16&layers=B000FTF @" + pos + "]";
-            addStatus(R.string.wiki_conn_current_location);
-            addStatus(" " + pos + "\n");
-          } else {
-            addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
-          }
-        }
-
-        addStatus(R.string.wiki_conn_expedition_retrieving);
-        addStatus(" " + expedition + "...");
-        String page;
-        try {
-          mFormfields = new HashMap<String,String>();
-          page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-          if ((page==null) || (page.trim().length()==0)) {
-            addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);
-
-            //ok, let's create some.
-            addStatus(R.string.wiki_conn_expedition_creating);
-            WikiUtils.putWikiPage(httpclient, expedition, "{{subst:Expedition|lat="+lat+"|lon="+lon+"|date="+date+"}}", mFormfields);
-            addStatusAndNewline(R.string.wiki_conn_success);
- 
-            addStatus(R.string.wiki_conn_expedition_reretrieving);
-            
-            page = WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-            addStatusAndNewline(R.string.wiki_conn_success);
-          } else {
-            addStatusAndNewline(R.string.wiki_conn_success);
-          }
-            
-          String before = "";
-          String after  = "";
-            
-          Matcher expeditionq = RE_EXPEDITION.matcher(page);
-          if (expeditionq.matches()) {
-            before = expeditionq.group(1)+expeditionq.group(2);
-            after  = expeditionq.group(3);
-          } else {
-            before = page;
-          }
-
-          EditText editText = (EditText)findViewById(R.id.wikiedittext);
-          
-          CheckBox includetime = (CheckBox)findViewById(R.id.includetime);
-          
-          String message = "\n*"+editText.getText().toString().trim()+"  -- ~~~"
-            + locationTag + (includetime.isChecked() ? " ~~~~~" : "") + "\n";
-            
-          addStatus(R.string.wiki_conn_insert_message);
-          WikiUtils.putWikiPage(httpclient, expedition, before+message+after, mFormfields);
-          addStatusAndNewline(R.string.wiki_conn_done);
-         
-          dismiss();
-        } catch (Exception ex) {
-          Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-          error(ex.getMessage());
-          return;
-        }
-
-      }
-  }
+    }
     
     /**
      * Since onRetainNonConfigurationInstance returns a plain ol' Object, this
