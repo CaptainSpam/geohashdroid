@@ -235,11 +235,11 @@ public class WikiUtils {
   }  
   
   /** Uploads an image to the wiki
-     @param  httpclient  an active HTTP session, wiki login has to have happened before.
-     @param  filename    the name of the new image file
-     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
-     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
-  */
+    @param  httpclient  an active HTTP session, wiki login has to have happened before.
+    @param  filename    the name of the new image file
+    @param  description the description of the image. An initial description will be used as page content for the image's wiki page
+    @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
+   */
   public static void putWikiImage(HttpClient httpclient, String filename, String description, byte[] data) throws Exception {
     HttpPost httppost = new HttpPost(WIKI_BASE_URL + "index.php?title=Special:Upload");
     //httppost.addHeader("Host", "wiki.xkcd.com"); shouldn't be necessary.
@@ -255,9 +255,51 @@ public class WikiUtils {
       new StringPart("wpDestFileWarningAck", "", "utf-8")
     };
     httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
-    
+
     getHttpPage(httpclient, httppost);
   }
+
+
+/*
+ * NOTE: The following works on a 1.16 wiki.  Problem being, the Geohashing
+ * Wiki is a 1.15 wiki, so we need to use the manual method used above. 
+ */
+//  /** Uploads an image to the wiki
+//     @param  httpclient  an active HTTP session, wiki login has to have happened before.
+//     @param  filename    the name of the new image file
+//     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
+//     @param  formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
+//     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
+//  */
+//  public static void putWikiImage(HttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
+//    if(!formfields.containsKey("token")) {
+//      throw new WikiException(R.string.wiki_error_unknown);
+//    }
+//      
+//    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
+//    //httppost.addHeader("Host", "wiki.xkcd.com"); shouldn't be necessary.
+//    //httppost.addHeader("Referer", "http://wiki.xkcd.com/geohashing/Special:Upload");
+//    Part[] nvps = new Part[]{
+//      new StringPart("action", "upload", "utf-8"),
+//      new StringPart("filename", filename, "utf-8"),
+//      new StringPart("comment", description, "utf-8"),
+//      new StringPart("watch", "true", "utf-8"),
+//      new StringPart("ignorewarning", "true", "utf-8"),
+//      new StringPart("token", formfields.get("token"), "utf-8"),
+//      new StringPart("format", "xml", "utf-8"),
+//      new FilePart("data", new ByteArrayPartSource(filename, data), "image/jpeg", "utf-8"),
+//    };
+//    httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
+//    
+//    Document response = getHttpDocumentDebug(httpclient, httppost);
+//    
+//    Element root = response.getDocumentElement();
+//    
+//    // First, check for errors.
+//    if(doesResponseHaveError(root)) {
+//        throw new WikiException(getErrorTextId(findErrorCode(root)));
+//    }
+//  }
   
   /**
    * Retrieves valid login cookies for an HTTP session.  These will be added to

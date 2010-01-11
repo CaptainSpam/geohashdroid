@@ -98,33 +98,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
             + MediaStore.Images.Media.DATE_TAKEN + " DESC,"
             + MediaStore.Images.Media.DATE_ADDED + " DESC";
         mCursor = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, proj, null, null, order);
-//        if (mCursor!=null) {
-//            Cursor TEMP = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null, null, MediaStore.Images.Media.BUCKET_ID + "," + MediaStore.Images.Media.DATE_TAKEN);
-//            Log.d(DEBUG_TAG, MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString());
-//            Log.d(DEBUG_TAG, "COLUMNS IN MAIN MEDIA:");
-//            for(String s : TEMP.getColumnNames())
-//                Log.d(DEBUG_TAG, s);
-//            
-////            if(TEMP.moveToFirst()) {
-////                Log.d(DEBUG_TAG, "ALL DATA:");
-////                do {
-////                    for(int i = 0; i < TEMP.getColumnCount(); i++)
-////                        Log.d(DEBUG_TAG, "  " + TEMP.getColumnName(i) + ": " + TEMP.getString(i));
-////                } while(TEMP.moveToNext());
-////            }
-//            
-//            Cursor TEMP2 = managedQuery( MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, null, null, null, null);
-//            Log.d(DEBUG_TAG, MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString());
-//            Log.d(DEBUG_TAG, "COLUMNS IN THUMBNAILS:");
-//            for(String s : TEMP2.getColumnNames())
-//                Log.d(DEBUG_TAG, s);
-//            
-//            // DEBUG!
-//            Log.d(DEBUG_TAG, MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI.toString());
-//            Log.d(DEBUG_TAG, "COLUMNS IN mContext:");
-//            for(String s : mCursor.getColumnNames())
-//                Log.d(DEBUG_TAG, s);
-//        }
 
         Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
@@ -280,7 +253,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 mCursor.moveToPosition(position);
                 int id = mCursor
                         .getInt(mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Thumbnails.IMAGE_ID));
+                                .getColumnIndexOrThrow(MediaStore.Images.Media._ID));
                 uri = Uri.withAppendedPath(
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
                 Log.d(DEBUG_TAG, "URI: " + uri.toString());
@@ -403,6 +376,16 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 String description = message + "\n\n" + "[[Category:Meetup on "
                         + date + "]]\n" + "[[Category:Meetup in " + lat + " "
                         + lon + "]]";
+                
+                mFormfields = new HashMap<String, String>();
+                
+                // At this point, we need an edit token.  So, we'll try to get
+                // the expedition page for our token.  See the MediaWiki API
+                // documentation for the reasons why we have to do it this way.
+                // TODO: This only applies to 1.16 MediaWikis, so we can't do
+                // this just yet.
+//                WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
+//                WikiUtils.putWikiImage(httpclient, filename, description, mFormfields, data);
 
                 WikiUtils.putWikiImage(httpclient, filename, description, data);
                 addStatusAndNewline(R.string.wiki_conn_done);
@@ -410,7 +393,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 addStatus(R.string.wiki_conn_expedition_retrieving);
                 addStatus(" " + expedition + "...");
                 String page;
-                mFormfields = new HashMap<String, String>();
+
                 page = WikiUtils.getWikiPage(httpclient, expedition,
                         mFormfields);
                 if ((page == null) || (page.trim().length() == 0)) {
