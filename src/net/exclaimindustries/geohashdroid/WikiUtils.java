@@ -32,8 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
 
@@ -189,7 +187,6 @@ public class WikiUtils {
     }
     
     page = DOMUtil.getSimpleElementText(text);
-    Log.d(DEBUG_TAG, page);
 
     return page;
 }
@@ -426,39 +423,5 @@ public class WikiUtils {
       } catch (Exception ex) {
           return "UnknownError";
       }
-  }
-  
-  
-  private static Document getHttpDocumentDebug(HttpClient httpclient,
-          HttpUriRequest httpreq) throws Exception {
-      // Remember the last request. We might want to abort it later.
-      mLastRequest = httpreq;
-
-      HttpResponse response = httpclient.execute(httpreq);
-
-      HttpEntity entity = response.getEntity();
-      
-      // This will cause the next part to fail, since we can't get the entity's
-      // content stream twice.  This IS a debug method, after all.
-      // TODO: Remove this once the update to use the API is complete.
-      Log.d(DEBUG_TAG, getStringFromStream(entity.getContent()));
-
-      return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(entity.getContent());
-  }
-  
-  private static String getStringFromStream(InputStream stream) throws IOException {
-      BufferedReader buff = new BufferedReader(new InputStreamReader(stream));
-      
-      // Load it up...
-      StringBuffer tempstring = new StringBuffer();
-      char bean[] = new char[1024];
-      int read = 0;
-      while((read = buff.read(bean)) != -1) {
-          tempstring.append(bean, 0, read);
-      }
-      
-      // At the end of output, 
-      
-      return tempstring.toString();
   }
 }
