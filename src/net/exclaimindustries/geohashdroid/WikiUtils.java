@@ -203,6 +203,11 @@ public class WikiUtils {
      @throws Exception     anything else happened, use getMessage
   */
   public static void putWikiPage(HttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws Exception {
+    // If there's no edit token in the hash map, we can't do anything.
+    if(!formfields.containsKey("token")) {
+        throw new WikiException(R.string.wiki_error_protected);
+    }
+
     HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
     
     ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
