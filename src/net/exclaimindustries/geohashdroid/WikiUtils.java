@@ -210,7 +210,6 @@ public class WikiUtils {
     ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
     nvps.add(new BasicNameValuePair("action", "edit"));
     nvps.add(new BasicNameValuePair("title", pagename));
-    nvps.add(new BasicNameValuePair("section", "0"));
     nvps.add(new BasicNameValuePair("text", content));
     nvps.add(new BasicNameValuePair("format", "xml"));
     for(String s : formfields.keySet()) {
