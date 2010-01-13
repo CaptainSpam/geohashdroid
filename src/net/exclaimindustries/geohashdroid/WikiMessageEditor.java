@@ -11,7 +11,6 @@ package net.exclaimindustries.geohashdroid;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.ProgressDialog;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -24,10 +23,12 @@ import android.location.Location;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
-import java.util.HashMap;
 
+import android.util.Log;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.Date;
 
 import java.text.SimpleDateFormat;
 /**
@@ -42,6 +43,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
     
     private static Info mInfo;
     private HashMap<String, String> mFormfields;
+    private final SimpleDateFormat sigDateFormat = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
 
     static final String DEBUG_TAG = "MessageEditor";
     
@@ -225,10 +227,11 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
 
                 CheckBox includetime = (CheckBox)findViewById(R.id.includetime);
+                String localtime = sigDateFormat.format(new Date());
 
                 String message = "\n*" + editText.getText().toString().trim()
                         + "  -- ~~~" + locationTag
-                        + (includetime.isChecked() ? " ~~~~~" : "") + "\n";
+                        + (includetime.isChecked() ? " "+localtime : " ~~~~~") + "\n";
 
                 addStatus(R.string.wiki_conn_insert_message);
                 WikiUtils.putWikiPage(httpclient, expedition, before + message
