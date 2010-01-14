@@ -58,11 +58,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
     private Cursor mCursor;
 
-    private static Info mInfo;
-    private static Location mLocation;
-    private HashMap<String, String> mFormfields;
+    private Info mInfo;
+    private Location mLocation;
 
-    static final String DEBUG_TAG = "WikiPictureEditor";
+    private static final String DEBUG_TAG = "WikiPictureEditor";
     
     @Override
     protected void onCreate(Bundle icicle) {
@@ -377,7 +376,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         + date + "]]\n" + "[[Category:Meetup in " + lat + " "
                         + lon + "]]";
                 
-                mFormfields = new HashMap<String, String>();
+                HashMap<String, String> formfields = new HashMap<String, String>();
                 
                 // At this point, we need an edit token.  So, we'll try to get
                 // the expedition page for our token.  See the MediaWiki API
@@ -395,7 +394,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 String page;
 
                 page = WikiUtils.getWikiPage(httpclient, expedition,
-                        mFormfields);
+                        formfields);
                 if ((page == null) || (page.trim().length() == 0)) {
                     addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);
                     ;
@@ -404,11 +403,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     addStatus(R.string.wiki_conn_expedition_creating);
                     WikiUtils.putWikiPage(httpclient, expedition,
                             "{{subst:Expedition|lat=" + lat + "|lon=" + lon
-                                    + "|date=" + date + "}}", mFormfields);
+                                    + "|date=" + date + "}}", formfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
                     addStatus(R.string.wiki_conn_expedition_reretrieving);
                     page = WikiUtils.getWikiPage(httpclient, expedition,
-                            mFormfields);
+                            formfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
                 } else {
                     addStatusAndNewline(R.string.wiki_conn_success);
@@ -430,7 +429,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         + "\n";
                 addStatus(R.string.wiki_conn_updating_gallery);
                 WikiUtils.putWikiPage(httpclient, expedition, before
-                        + galleryentry + after, mFormfields);
+                        + galleryentry + after, formfields);
                 addStatus(R.string.wiki_conn_success);
 
                 dismiss();

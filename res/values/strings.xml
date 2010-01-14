@@ -105,6 +105,10 @@ in a bit better grammatically (at least in English).
 <string name="pref_wikipassword_dialogtitle">Enter your password</string>
 <string name="pref_wikipassword_hint">Password</string>
 
+<string name="pref_wikiphonetime_title">Post with phone\'s time</string>
+<string name="pref_wikiphonetime_on">Use the time on the phone instead of the wiki\'s time for wiki posts</string>
+<string name="pref_wikiphonetime_off">Use the standard wiki time signature for wiki posts</string>
+
 <string name="pref_stockwipe_title">Clear stock cache</string>
 <string name="pref_stockwipe_dialog_text">Are you sure you want to clear all stock cache data?</string>
 <string name="pref_cat_map">Map options</string>

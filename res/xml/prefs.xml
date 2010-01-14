@@ -30,6 +30,7 @@
 			android:defaultValue="" android:persistent="true"
 			android:dialogTitle="@string/pref_wikipassword_dialogtitle" />
 	
+<CheckBoxPreference android:key="WikiUsePhoneTime" android:title="@string/pref_wikiphonetime_title" android:summaryOff="@string/pref_wikiphonetime_off" android:summaryOn="@string/pref_wikiphonetime_on" android:defaultValue="false" android:persistent="true"></CheckBoxPreference>
 </PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
 		<CheckBoxPreference android:key="RememberGraticule"

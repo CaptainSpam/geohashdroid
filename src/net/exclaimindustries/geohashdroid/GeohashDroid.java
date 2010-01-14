@@ -239,7 +239,13 @@ public class GeohashDroid extends Activity {
         if(!prefs.contains(GHDConstants.PREF_CLOSEST)) {
             editor.putBoolean(GHDConstants.PREF_CLOSEST, false);
             toReturn = true;
-        }        
+        }
+        
+        // The phone time checkbox defaults to off.
+        if(!prefs.contains(GHDConstants.PREF_WIKI_PHONE_TIME)) {
+            editor.putBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
+            toReturn = true;
+        }
 
         editor.commit();
 

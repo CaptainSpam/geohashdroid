@@ -44,6 +44,8 @@ public final class GHDConstants {
     public static final String PREF_WIKI_USER = "WikiUserName";
     /** Prefs key specifying wiki user pass. */
     public static final String PREF_WIKI_PASS = "WikiPassword";
+    /** Prefs key specifying to use the phone's time, not the wiki's */
+    public static final String PREF_WIKI_PHONE_TIME = "WikiUsePhoneTime";
     
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to

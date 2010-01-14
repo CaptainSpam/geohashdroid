@@ -39,15 +39,15 @@ import java.text.SimpleDateFormat;
  */
 public class WikiMessageEditor extends WikiBaseActivity {
 
-    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL); 
+    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
+    private static final SimpleDateFormat sigDateFormat = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
     
-    private static Info mInfo;
+    private Info mInfo;
     private HashMap<String, String> mFormfields;
-    private final SimpleDateFormat sigDateFormat = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
 
-    static final String DEBUG_TAG = "MessageEditor";
+    private static final String DEBUG_TAG = "MessageEditor";
     
-    private static Location mLocation;
+    private Location mLocation;
     
     @Override
     protected void onCreate(Bundle icicle) {
@@ -144,6 +144,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
         public void run() {
             SharedPreferences prefs = getSharedPreferences(
                     GHDConstants.PREFS_BASE, 0);
+            
+            boolean phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
 
             try {
                 HttpClient httpclient = new DefaultHttpClient();
@@ -226,12 +228,11 @@ public class WikiMessageEditor extends WikiBaseActivity {
 
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
 
-                CheckBox includetime = (CheckBox)findViewById(R.id.includetime);
                 String localtime = sigDateFormat.format(new Date());
 
                 String message = "\n*" + editText.getText().toString().trim()
-                        + "  -- ~~~" + locationTag
-                        + (includetime.isChecked() ? " "+localtime : " ~~~~~") + "\n";
+                        + "  -- ~~~" + locationTag + " "
+                        + (phoneTime ? localtime : "~~~~~") + "\n";
 
                 addStatus(R.string.wiki_conn_insert_message);
                 WikiUtils.putWikiPage(httpclient, expedition, before + message
