@@ -116,31 +116,9 @@ public class PreferenceEditScreen extends PreferenceActivity {
     private void initializePrefViews(SharedPreferences prefs) {
         // There has GOT to be a cleaner way to do this...
         
-        // Starting it off with autozoom!
-        Preference curPref = (Preference)findPreference(GHDConstants.PREF_AUTOZOOM);
-        if(prefs.getBoolean(GHDConstants.PREF_AUTOZOOM, true))
-            curPref.setSummary(R.string.pref_autozoom_on);
-        else
-            curPref.setSummary(R.string.pref_autozoom_off);
+        Preference curPref;
         
-        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-
-            @Override
-            public boolean onPreferenceChange(Preference preference,
-                    Object newValue) {
-                // newValue better be a Boolean...
-                if(newValue instanceof Boolean) {
-                    if(((Boolean)newValue).booleanValue())
-                        preference.setSummary(R.string.pref_autozoom_on);
-                    else
-                        preference.setSummary(R.string.pref_autozoom_off);
-                }
-                return true;
-            }
-            
-        });
-        
-        // Infobox size!
+        // Starting it off with infobox size!
         curPref = (Preference)findPreference(GHDConstants.PREF_INFOBOX_SIZE);
         String set = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
         if(set.equals("None"))
@@ -220,54 +198,6 @@ public class PreferenceEditScreen extends PreferenceActivity {
                         preference.setSummary(R.string.pref_coordunits_minutes);
                     else
                         preference.setSummary(R.string.pref_coordunits_seconds);
-                }
-                return true;
-            }
-            
-        });
-        
-        // Nearby points!
-        curPref = (Preference)findPreference(GHDConstants.PREF_NEARBY_POINTS);
-        if(prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false))
-            curPref.setSummary(R.string.pref_nearbypoints_on);
-        else
-            curPref.setSummary(R.string.pref_nearbypoints_off);
-        
-        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-
-            @Override
-            public boolean onPreferenceChange(Preference preference,
-                    Object newValue) {
-                // newValue better be a Boolean...
-                if(newValue instanceof Boolean) {
-                    if(((Boolean)newValue).booleanValue())
-                        preference.setSummary(R.string.pref_nearbypoints_on);
-                    else
-                        preference.setSummary(R.string.pref_nearbypoints_off);
-                }
-                return true;
-            }
-            
-        });
-        
-        // Remember graticule!
-        curPref = (Preference)findPreference(GHDConstants.PREF_REMEMBER_GRATICULE);
-        if(prefs.getBoolean(GHDConstants.PREF_REMEMBER_GRATICULE, true))
-            curPref.setSummary(R.string.pref_remembergraticule_on);
-        else
-            curPref.setSummary(R.string.pref_remembergraticule_off);
-        
-        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-
-            @Override
-            public boolean onPreferenceChange(Preference preference,
-                    Object newValue) {
-                // newValue better be a Boolean...
-                if(newValue instanceof Boolean) {
-                    if(((Boolean)newValue).booleanValue())
-                        preference.setSummary(R.string.pref_remembergraticule_on);
-                    else
-                        preference.setSummary(R.string.pref_remembergraticule_off);
                 }
                 return true;
             }
