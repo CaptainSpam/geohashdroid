@@ -10,7 +10,7 @@
 			android:orientation="vertical" android:padding="10px">
 			<ImageView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/Icon"
-				android:src="@drawable/icon" android:layout_gravity="center_horizontal"></ImageView>
+				android:layout_gravity="center_horizontal" android:src="@drawable/icon_small"></ImageView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/Title"
 				android:text="@string/app_name" android:textSize="14pt"
