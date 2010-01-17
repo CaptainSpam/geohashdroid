@@ -84,6 +84,7 @@ public class MainMap extends MapActivity {
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_MAP_MODE = 4;
     private static final int MENU_POST = 5;
+    private static final int MENU_SEND_TO_MAPS = 6;
 
     private static final int MENU_RECENTER_DESTINATION = 10;
     private static final int MENU_RECENTER_MYLOCATION = 11;
@@ -405,6 +406,11 @@ public class MainMap extends MapActivity {
                 R.string.menu_item_post_picture);
         sub.add(Menu.NONE, MENU_POST_WIKI, 2,
                 R.string.menu_item_post_wiki);
+        
+        // And the export option!
+        item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 5,
+                R.string.menu_item_send_to_maps);
+        item.setIcon(android.R.drawable.ic_menu_myplaces);
 
         mMenu = menu;
 
@@ -699,6 +705,27 @@ public class MainMap extends MapActivity {
                 
                 i.setData(Uri
                         .parse(WikiUtils.getWikiBaseUrl() + "index.php?title=" + page));
+                startActivity(i);
+                
+                return true;
+            }
+            case MENU_SEND_TO_MAPS: {
+                // Send out the final destination's latitude and longitude to
+                // the Maps app (or anything else listening for this intent).
+                // Should be fairly simple.
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
+                
+                // Assemble the URI line.  We'll use a slightly higher-than-
+                // default zoom level (we don't have the ability to say "fit
+                // this and the user's current location on screen" when we're
+                // going to the Maps app).
+                String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
+                
+                // We use the "0,0?q=" form, because that'll put a marker on the
+                // map.  If we just used the normal form, it would just center
+                // the map to that location and not do anything with it.
+                i.setData(Uri.parse("geo:0,0?q=" + location));
                 startActivity(i);
                 
                 return true;

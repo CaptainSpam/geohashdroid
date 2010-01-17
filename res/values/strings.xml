@@ -133,6 +133,7 @@ in a bit better grammatically (at least in English).
 <string name="menu_item_post_message">Send message</string>
 <string name="menu_item_post_picture">Upload picture</string>
 <string name="menu_item_post_wiki">View wiki page</string>
+<string name="menu_item_send_to_maps">Send to Maps</string>
 
 <string name="wiki_editor_activity_title">Enter Message</string>
 <string name="wiki_picture_activity_title">Upload Picture</string>
