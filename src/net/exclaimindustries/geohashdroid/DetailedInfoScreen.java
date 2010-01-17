@@ -17,6 +17,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.Menu;
@@ -59,6 +60,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
             "###.##");
 
     private static final int MENU_SETTINGS = 3;
+    private static final int MENU_SEND_TO_MAPS = 6;
     
     private Location lastLoc;
 
@@ -122,11 +124,16 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 
         MenuItem item;
 
-        // The only thing we have in this menu is settings. Simple.
-        item = menu.add(Menu.NONE, MENU_SETTINGS, 0,
+        // We've got Send To Maps, and we've got settings.  Simple.
+        item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 0,
+                R.string.menu_item_send_to_maps);
+        item.setIcon(android.R.drawable.ic_menu_myplaces);
+        
+        item = menu.add(Menu.NONE, MENU_SETTINGS, 1,
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
 
+        
         return true;
     }
 
@@ -138,6 +145,27 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
             case MENU_SETTINGS: {
                 // Pop up our settings window!
                 startActivity(new Intent(this, PreferenceEditScreen.class));
+                return true;
+            }
+            case MENU_SEND_TO_MAPS: {
+                // Send out the final destination's latitude and longitude to
+                // the Maps app (or anything else listening for this intent).
+                // Should be fairly simple.
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
+                
+                // Assemble the URI line.  We'll use a slightly higher-than-
+                // default zoom level (we don't have the ability to say "fit
+                // this and the user's current location on screen" when we're
+                // going to the Maps app).
+                String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
+                
+                // We use the "0,0?q=" form, because that'll put a marker on the
+                // map.  If we just used the normal form, it would just center
+                // the map to that location and not do anything with it.
+                i.setData(Uri.parse("geo:0,0?q=" + location));
+                startActivity(i);
+                
                 return true;
             }
         }

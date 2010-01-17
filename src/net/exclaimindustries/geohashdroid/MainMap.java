@@ -392,12 +392,9 @@ public class MainMap extends MapActivity {
         item.setIcon(android.R.drawable.ic_menu_mapmode);
         item = menu.add(Menu.NONE, MENU_INFO, 2, R.string.menu_item_details);
         item.setIcon(android.R.drawable.ic_menu_info_details);
-        item = menu.add(Menu.NONE, MENU_SETTINGS, 3,
-                R.string.menu_item_settings);
-        item.setIcon(android.R.drawable.ic_menu_preferences);
 
         // And now for the wiki features!
-        sub = menu.addSubMenu(Menu.NONE, MENU_POST, 4,
+        sub = menu.addSubMenu(Menu.NONE, MENU_POST, 3,
                 R.string.menu_item_post);
         sub.setIcon(android.R.drawable.ic_menu_upload);
         sub.add(Menu.NONE, MENU_POST_MESSAGE, 0,
@@ -408,10 +405,15 @@ public class MainMap extends MapActivity {
                 R.string.menu_item_post_wiki);
         
         // And the export option!
-        item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 5,
+        item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 4,
                 R.string.menu_item_send_to_maps);
         item.setIcon(android.R.drawable.ic_menu_myplaces);
 
+        // Settings comes last!  Settings ALWAYS comes last.
+        item = menu.add(Menu.NONE, MENU_SETTINGS, 5,
+                R.string.menu_item_settings);
+        item.setIcon(android.R.drawable.ic_menu_preferences);
+        
         mMenu = menu;
 
         return true;
