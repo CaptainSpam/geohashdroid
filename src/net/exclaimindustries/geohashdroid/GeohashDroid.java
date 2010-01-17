@@ -9,6 +9,8 @@ package net.exclaimindustries.geohashdroid;
 
 import java.util.Calendar;
 
+import net.exclaimindustries.tools.DateButton;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -437,10 +439,8 @@ public class GeohashDroid extends Activity {
                 if(!mAutoBox.isChecked()) {
                     // Without the auto-checker, go straight to whatever was
                     // input into the graticule boxen.
-                    DatePicker date = (DatePicker)findViewById(R.id.Date);
-                    Calendar cal = Calendar.getInstance();
-                    cal.setLenient(true);
-                    cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
+                    Calendar cal = getActiveCalendar();
+
                     Graticule grat = new Graticule(mLatitude.getText().toString(),
                             mLongitude.getText().toString());
                     
@@ -620,11 +620,8 @@ public class GeohashDroid extends Activity {
         loc.setLatitude(latitude);
         loc.setLongitude(longitude);
         
-        DatePicker date = (DatePicker)findViewById(R.id.Date);
-        Calendar cal = Calendar.getInstance();
-        cal.setLenient(true);
-        cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
-        
+        Calendar cal = getActiveCalendar();
+       
         Info inf = HashBuilder.getStoredInfo(this, cal, base);
         
         if(inf == null) {
@@ -684,5 +681,25 @@ public class GeohashDroid extends Activity {
         // There!  Now, we have whatever the closest Info bundle was!
         updateGraticule(closest.getGraticule());
         dispatchMapIntent(closest);
+    }
+    
+    private Calendar getActiveCalendar() {
+        // This grabs the active Calendar object, be it from DatePicker or from
+        // DateButton.
+        Calendar cal;
+        
+        // First, try the DatePicker.  If this throws, we're using
+        // the small screen and we want a DateButton instead.
+        try {
+            DatePicker date = (DatePicker)findViewById(R.id.Date);
+            cal = Calendar.getInstance();
+            cal.setLenient(true);
+            cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
+        } catch (Exception ex) {
+            DateButton date = (DateButton)findViewById(R.id.DateButton);
+            cal = date.getDate();
+        }
+        
+        return cal;
     }
 }
