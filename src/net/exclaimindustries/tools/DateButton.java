@@ -15,6 +15,9 @@ import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -35,6 +38,12 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
     private Calendar mDate;
     /** Whether or not the dialog is showing (so it can be restored later). */
     private boolean mDialogShown = false;
+    
+    private DatePickerDialog mLastDialog = null;
+    
+    private final static String SHOW_DIALOG = "ShowDialog";
+    private final static String LAST_DATE = "LastDate";
+    private final static String DIALOG_STATE = "DialogState";
     
     public DateButton(Context context) {
         super(context);
@@ -79,18 +88,31 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
     public Calendar getDate() {
         return mDate;
     }
+    
+    private DatePickerDialog constructDialog() {
+        DatePickerDialog dialog = new DatePickerDialog(getContext(), this,
+                mDate.get(Calendar.YEAR), mDate.get(Calendar.MONTH),
+                mDate.get(Calendar.DAY_OF_MONTH));
+        
+        dialog.setOnDismissListener(this);
+        
+        return dialog;
+    }
 
     @Override
     public void onClick(View v) {
         // So!  At this point, bring up the DatePickerDialog.  We'll need
         // to listen for its completion, too, so that's ANOTHER callback...
-        DatePickerDialog dialog = new DatePickerDialog(getContext(), this,
-                mDate.get(Calendar.YEAR), mDate.get(Calendar.MONTH),
-                mDate.get(Calendar.DAY_OF_MONTH));
-        dialog.setOnDismissListener(this);
+        mLastDialog = constructDialog();
         
         mDialogShown = true;
-        dialog.show();
+        mLastDialog.show();
+    }
+    
+    private void restoreDialog(Bundle b) {
+        mLastDialog = constructDialog();
+        mLastDialog.onRestoreInstanceState(b);
+        mLastDialog.show();
     }
 
     @Override
@@ -108,6 +130,72 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
     @Override
     public void onDismiss(DialogInterface dialog) {
         mDialogShown = false;
+    }
+    
+    public static class SavedState extends BaseSavedState {
+        boolean mInternalDialogShown;
+        Calendar mCalendar;
+        Bundle mDialogBundle;
+
+        SavedState(Parcelable superState) {
+            super(superState);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            
+            Bundle b = new Bundle();
+            
+            b.putBoolean(SHOW_DIALOG, mInternalDialogShown);
+            b.putSerializable(LAST_DATE, mCalendar);
+            b.putBundle(DIALOG_STATE, mDialogBundle);
+            
+            out.writeBundle(b);
+        }
+
+        public static final Parcelable.Creator<SavedState> CREATOR
+                = new Parcelable.Creator<SavedState>() {
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
+
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+        };
+
+        private SavedState(Parcel in) {
+            super(in);
+            Bundle b = in.readBundle();
+            
+            mInternalDialogShown = b.getBoolean(SHOW_DIALOG);
+            mCalendar = (Calendar)(b.getSerializable(LAST_DATE));
+            mDialogBundle = b.getBundle(DIALOG_STATE);
+        }
+    }
+    
+    @Override
+    public Parcelable onSaveInstanceState() {
+        Parcelable superState = super.onSaveInstanceState();
+
+        SavedState ss = new SavedState(superState);
+        ss.mInternalDialogShown = mDialogShown;
+        ss.mCalendar = mDate;
+        ss.mDialogBundle = mLastDialog.onSaveInstanceState();
+
+        return ss;
+    }
+
+    @Override
+    public void onRestoreInstanceState(Parcelable state) {
+        SavedState ss = (SavedState)state;
+        super.onRestoreInstanceState(ss.getSuperState());
+
+        mDialogShown = ss.mInternalDialogShown;
+        setDate(ss.mCalendar);
+        if(mDialogShown)
+            restoreDialog(ss.mDialogBundle);
     }
     
 }
