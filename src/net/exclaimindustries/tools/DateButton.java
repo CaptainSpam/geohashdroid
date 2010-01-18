@@ -13,6 +13,8 @@ import java.util.Calendar;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnDismissListener;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -27,10 +29,12 @@ import android.widget.DatePicker;
  * 
  * @author Nicholas Killewald
  */
-public class DateButton extends Button implements OnClickListener, OnDateSetListener {
+public class DateButton extends Button implements OnClickListener, OnDateSetListener, OnDismissListener {
 
     /** The date that'll be returned later. */
     private Calendar mDate;
+    /** Whether or not the dialog is showing (so it can be restored later). */
+    private boolean mDialogShown = false;
     
     public DateButton(Context context) {
         super(context);
@@ -83,7 +87,9 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
         DatePickerDialog dialog = new DatePickerDialog(getContext(), this,
                 mDate.get(Calendar.YEAR), mDate.get(Calendar.MONTH),
                 mDate.get(Calendar.DAY_OF_MONTH));
+        dialog.setOnDismissListener(this);
         
+        mDialogShown = true;
         dialog.show();
     }
 
@@ -97,6 +103,11 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
         cal.set(Calendar.DAY_OF_MONTH, dayOfMonth);
         
         setDate(cal);
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        mDialogShown = false;
     }
     
 }
