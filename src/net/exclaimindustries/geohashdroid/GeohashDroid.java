@@ -255,7 +255,7 @@ public class GeohashDroid extends Activity {
     }
 
     @Override
-    public Dialog onCreateDialog(int id) {
+    protected Dialog onCreateDialog(int id) {
         switch (id) {
             case DIALOG_SEARCH_FAIL: {
                 // Box that says the graticule auto-detect failed.
