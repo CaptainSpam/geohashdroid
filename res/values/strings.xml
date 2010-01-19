@@ -134,10 +134,10 @@ in a bit better grammatically (at least in English).
 <string name="menu_item_mode_street">Normal map</string>
 <string name="menu_item_mode_sat">Satellite</string>
 <string name="menu_item_about">About</string>
-<string name="menu_item_post">Update wiki</string>
-<string name="menu_item_post_message">Send message</string>
+<string name="menu_item_post">Wiki</string>
+<string name="menu_item_post_message">Post message</string>
 <string name="menu_item_post_picture">Upload picture</string>
-<string name="menu_item_post_wiki">View wiki page</string>
+<string name="menu_item_post_wiki">View graticule page</string>
 <string name="menu_item_send_to_maps">Send to Maps</string>
 
 <string name="wiki_editor_activity_title">Enter Message</string>
