@@ -27,16 +27,19 @@ public class FinalDestinationOverlay extends Overlay {
     protected GeoPoint mDestination;
     protected Graticule mGraticule;
     protected Info mInfo;
+    protected MainMap mParent;
 
     /**
      * Creates a new FinalDestinationOverlay.
      * 
      * @param d Drawable to draw as the overlay.  This is presumably a flag.
      * @param p an Info bundle describing where this destination is
+     * @param parent parent MainMap which will pop up a dialog when this is tapped
      */
-    public FinalDestinationOverlay(Drawable d, Info i) {
+    public FinalDestinationOverlay(Drawable d, Info i, MainMap parent) {
         mDrawable = d;
         mInfo = i;
+        mParent = parent;
         mDestination = i.getFinalDestination();
         mGraticule = i.getGraticule();
     }
@@ -109,5 +112,19 @@ public class FinalDestinationOverlay extends Overlay {
     protected Point getIconPosition(Projection p) {
         return new Point(p.toPixels(mDestination, null).x - (mDrawable.getIntrinsicWidth() / 2),
                 p.toPixels(mDestination, null).y - (mDrawable.getIntrinsicHeight()));
+    }
+    
+    @Override
+    public boolean onTap(GeoPoint p, MapView mapView) {
+        // With a tap, we prompt to send it off to the Maps app.  To MainMap!
+        if(isPointOnIcon(p, mapView))
+        {
+            // If this is on us, we need to act!  Give us a popup!
+            mParent.showDialog(MainMap.DIALOG_SEND_TO_MAPS);
+            return true;
+        }
+        else
+            // If not, well, we don't!    
+            return false;
     }
 }

@@ -20,8 +20,6 @@ import android.graphics.drawable.Drawable;
  */
 public class FinalDestinationDisabledOverlay extends FinalDestinationOverlay {
 
-    private MainMap mParent;
-    
     /**
      * Creates a new disabled final destination overlay.
      * 
@@ -30,8 +28,7 @@ public class FinalDestinationDisabledOverlay extends FinalDestinationOverlay {
      * @param parent parent MainMap which will pop up a dialog when this is tapped
      */
     public FinalDestinationDisabledOverlay(Drawable d, Info i, MainMap parent) {
-        super(d, i);
-        mParent = parent;
+        super(d, i, parent);
     }
 
     @Override

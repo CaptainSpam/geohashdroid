@@ -120,6 +120,11 @@ in a bit better grammatically (at least in English).
 <string name="toast_stockwipe_success">The stock cache database has been cleared.</string>
 <string name="toast_stockwipe_failure">There was a problem clearing the stock cache database.</string>
 
+<string name="dialog_send_to_maps_title">Send to Maps?</string>
+<string name="dialog_send_to_maps_text">Do you want to view this point on the Maps app?  Note that it may plot it at the closest road, so you may need to come back here if you want to get more exact.</string>
+<string name="dialog_send_to_maps_yes">Yes, go to Maps</string>
+<string name="dialog_send_to_maps_no">No, stay here</string>
+
 <string name="menu_item_recenter_normalview">Fit both on screen</string>
 <string name="menu_item_settings">Settings</string>
 <string name="menu_item_recenter">Recenter</string>

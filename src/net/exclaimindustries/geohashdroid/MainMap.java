@@ -15,6 +15,7 @@ import java.util.List;
 import net.exclaimindustries.tools.DateTools;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -93,6 +94,9 @@ public class MainMap extends MapActivity {
     private static final int MENU_POST_MESSAGE = 20;
     private static final int MENU_POST_PICTURE = 21;
     private static final int MENU_POST_WIKI = 22;
+    
+    static final int DIALOG_SEND_TO_MAPS = 1;
+    private static final int DIALOG_SWITCH_GRATICULE = 2;
     
     // Activity request constants
     private static final int REQUEST_STOCK = 1;
@@ -440,6 +444,48 @@ public class MainMap extends MapActivity {
         mGraticule = i.getGraticule();
     }
     
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        super.onCreateDialog(id);
+        
+        switch(id) {
+            case DIALOG_SEND_TO_MAPS: {
+                // The maps dialog is a simple question.  We only have one Info
+                // bundle, so this doesn't need to be reprepared or state-saved
+                // with any fanciness later.
+                AlertDialog.Builder build = new AlertDialog.Builder(this);
+                build.setMessage(R.string.dialog_send_to_maps_text);
+                build.setTitle(R.string.dialog_send_to_maps_title);
+                build.setIcon(android.R.drawable.ic_dialog_info);
+                build.setNegativeButton(R.string.dialog_send_to_maps_no,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,
+                                    int whichButton) {
+                                MainMap.this
+                                        .dismissDialog(DIALOG_SEND_TO_MAPS);
+                            }
+                        });
+                build.setPositiveButton(R.string.dialog_send_to_maps_yes,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,
+                                    int whichButton) {
+                                MainMap.this
+                                        .dismissDialog(DIALOG_SEND_TO_MAPS);
+                                sendToMaps();
+                            }
+                        });
+                return build.create();
+            }
+        }
+        
+        return null;
+    }
+
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        super.onPrepareDialog(id, dialog);
+    }
+
     private void addFinalDestination() {
         List<Overlay> overlays = mMapView.getOverlays();
         
@@ -449,7 +495,7 @@ public class MainMap extends MapActivity {
                 R.drawable.final_destination);
         finalMarker.setBounds(0, 0, finalMarker.getIntrinsicWidth(),
                 finalMarker.getIntrinsicHeight());
-        overlays.add(new FinalDestinationOverlay(finalMarker, mInfo));
+        overlays.add(new FinalDestinationOverlay(finalMarker, mInfo, this));
     }
 
     private void removeFinalDestination() {
@@ -712,23 +758,7 @@ public class MainMap extends MapActivity {
                 return true;
             }
             case MENU_SEND_TO_MAPS: {
-                // Send out the final destination's latitude and longitude to
-                // the Maps app (or anything else listening for this intent).
-                // Should be fairly simple.
-                Intent i = new Intent();
-                i.setAction(Intent.ACTION_VIEW);
-                
-                // Assemble the URI line.  We'll use a slightly higher-than-
-                // default zoom level (we don't have the ability to say "fit
-                // this and the user's current location on screen" when we're
-                // going to the Maps app).
-                String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
-                
-                // We use the "0,0?q=" form, because that'll put a marker on the
-                // map.  If we just used the normal form, it would just center
-                // the map to that location and not do anything with it.
-                i.setData(Uri.parse("geo:0,0?q=" + location));
-                startActivity(i);
+                showDialog(DIALOG_SEND_TO_MAPS);
                 
                 return true;
             }
@@ -1114,5 +1144,25 @@ public class MainMap extends MapActivity {
         }
         
         // Done and done!
+    }
+    
+    private void sendToMaps() {
+        // Send out the final destination's latitude and longitude to
+        // the Maps app (or anything else listening for this intent).
+        // Should be fairly simple.
+        Intent i = new Intent();
+        i.setAction(Intent.ACTION_VIEW);
+        
+        // Assemble the URI line.  We'll use a slightly higher-than-
+        // default zoom level (we don't have the ability to say "fit
+        // this and the user's current location on screen" when we're
+        // going to the Maps app).
+        String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
+        
+        // We use the "0,0?q=" form, because that'll put a marker on the
+        // map.  If we just used the normal form, it would just center
+        // the map to that location and not do anything with it.
+        i.setData(Uri.parse("geo:0,0?q=" + location));
+        startActivity(i);        
     }
 }
