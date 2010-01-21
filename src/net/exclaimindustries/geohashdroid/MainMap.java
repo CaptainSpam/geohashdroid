@@ -456,7 +456,7 @@ public class MainMap extends MapActivity {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
                 build.setMessage(R.string.dialog_send_to_maps_text);
                 build.setTitle(R.string.dialog_send_to_maps_title);
-                build.setIcon(android.R.drawable.ic_dialog_info);
+                build.setIcon(android.R.drawable.ic_dialog_map);
                 build.setNegativeButton(R.string.dialog_send_to_maps_no,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
