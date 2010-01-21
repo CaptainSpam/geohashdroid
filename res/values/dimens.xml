@@ -22,6 +22,15 @@
 	<dimen name="details_padding_horiz">10dp</dimen>
 	<dimen name="details_distance_padding">10dp</dimen>
 	<dimen name="details_text_padding">5dp</dimen>
+	
+	<dimen name="details_text_padding_small">2dp</dimen>
+	<dimen name="details_title_fontsize_small">30sp</dimen>
+	<dimen name="details_title_fontsize_small_land">32sp</dimen>
+	<dimen name="details_coords_fontsize_small">24sp</dimen>
+	<dimen name="details_coords_fontsize_small_land">22sp</dimen>
+	<dimen name="details_subtitle_fontsize_small">28sp</dimen>
+	<dimen name="details_distance_fontsize_small">18dip</dimen>
+	<dimen name="details_accuracy_fontsize_small">12dip</dimen>
 
 	<dimen name="main_padding">5dp</dimen>
 	<dimen name="dialog_font_size">18sp</dimen>
