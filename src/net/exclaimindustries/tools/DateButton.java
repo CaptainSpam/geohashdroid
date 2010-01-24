@@ -182,7 +182,8 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
         SavedState ss = new SavedState(superState);
         ss.mInternalDialogShown = mDialogShown;
         ss.mCalendar = mDate;
-        ss.mDialogBundle = mLastDialog.onSaveInstanceState();
+        if(mLastDialog != null)
+            ss.mDialogBundle = mLastDialog.onSaveInstanceState();
 
         return ss;
     }
@@ -194,7 +195,7 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
 
         mDialogShown = ss.mInternalDialogShown;
         setDate(ss.mCalendar);
-        if(mDialogShown)
+        if(mDialogShown && ss.mDialogBundle != null)
             restoreDialog(ss.mDialogBundle);
     }
     
