@@ -9,7 +9,7 @@
         android:layout_height="140sp"/>
   <EditText android:id="@+id/wikiedittext"
         android:layout_width="fill_parent"
-        android:layout_height="80sp" android:hint="@string/hint_message" android:inputType="textCapSentences"/>
+        android:layout_height="80sp" android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine"/>
   <CheckBox android:id="@+id/includelocation"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"

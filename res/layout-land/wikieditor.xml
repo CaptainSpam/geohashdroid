@@ -6,7 +6,7 @@
   <EditText android:id="@+id/wikiedittext"
         android:layout_width="250sp"
         android:layout_height="fill_parent"
-        android:hint="@string/hint_message" android:inputType="textCapSentences"/>
+        android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine"/>
   <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
       android:orientation="vertical"
       android:layout_width="fill_parent"
