@@ -276,18 +276,22 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 if (includelocation.isChecked()) {
                     try {
+                        // First, see if the picture itself has location data.
                         int latcol = mCursor
                                 .getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE);
                         int loncol = mCursor
                                 .getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE);
-                        String lat = mCursor.getString(latcol);
-                        String lon = mCursor.getString(loncol);
+                        String lat = mLatLonFormat.format(mCursor.getString(latcol));
+                        String lon = mLatLonFormat.format(mCursor.getString(loncol));
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + lat + "&lon=" + lon
                                 + "&zoom=16&layers=B000FTF @" + lat + "," + lon
                                 + "]";
                     } catch (Exception ex) {
+                        // If the picture itself doesn't have location data on
+                        // it (that is, something threw an exception up there),
+                        // go by the user's current location, if that's known.
                         addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
                         if (mLocation != null) {
                             locationTag = " [http://www.openstreetmap.org/?lat="
@@ -295,10 +299,12 @@ public class WikiPictureEditor extends WikiBaseActivity {
                                     + "&lon="
                                     + mLocation.getLongitude()
                                     + "&zoom=16&layers=B000FTF @"
-                                    + mLocation.getLatitude()
+                                    + mLatLonFormat.format(mLocation.getLatitude())
                                     + ","
-                                    + mLocation.getLongitude() + "]";
+                                    + mLatLonFormat.format(mLocation.getLongitude())
+                                    + "]";
                         } else {
+                            // Otherwise, we don't use anything at all.
                             addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
                         }
                     }

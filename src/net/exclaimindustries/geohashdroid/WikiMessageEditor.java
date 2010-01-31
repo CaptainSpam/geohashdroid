@@ -176,8 +176,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 if (includelocation.isChecked()) {
                     if (mLocation != null) {
-                        String pos = mLocation.getLatitude() + ","
-                                + mLocation.getLongitude();
+                        String pos = mLatLonFormat.format(mLocation.getLatitude()) + ","
+                                + mLatLonFormat.format(mLocation.getLongitude());
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + mLocation.getLatitude() + "&lon="
                                 + mLocation.getLongitude()

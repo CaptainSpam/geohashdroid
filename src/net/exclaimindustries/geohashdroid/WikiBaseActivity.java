@@ -8,6 +8,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import java.text.DecimalFormat;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -33,6 +35,9 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
     protected boolean mDontStopTheThread = false;
     
     protected WikiConnectionRunner mConnectionHandler;
+    
+    /** This format is used for all latitude/longitude texts in the wiki. */
+    protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.000");
     
     private static final String LAST_ERROR = "LastError";
     
