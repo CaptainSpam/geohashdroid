@@ -281,8 +281,15 @@ public class WikiPictureEditor extends WikiBaseActivity {
                                 .getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE);
                         int loncol = mCursor
                                 .getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE);
-                        String lat = mLatLonFormat.format(mCursor.getString(latcol));
-                        String lon = mLatLonFormat.format(mCursor.getString(loncol));
+                        // Check these just to make sure.
+                        String rawLat = mCursor.getString(latcol);
+                        String rawLon = mCursor.getString(loncol);
+                        
+                        if(rawLat == null || rawLon == null)
+                            throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
+                        
+                        String lat = mLatLonFormat.format(rawLat);
+                        String lon = mLatLonFormat.format(rawLon);
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + lat + "&lon=" + lon
