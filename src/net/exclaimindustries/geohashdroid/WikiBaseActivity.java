@@ -37,7 +37,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
     protected WikiConnectionRunner mConnectionHandler;
     
     /** This format is used for all latitude/longitude texts in the wiki. */
-    protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.000");
+    protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000");
     
     private static final String LAST_ERROR = "LastError";
     
