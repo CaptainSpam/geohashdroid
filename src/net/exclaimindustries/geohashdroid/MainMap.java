@@ -137,16 +137,17 @@ public class MainMap extends MapActivity {
 
         boolean restarting = false;
 
-        if (icicle != null && icicle.containsKey(INFO)) {
-            // If our Bundle has an Info object, we're coming back from
+        if (icicle != null && icicle.containsKey(AUTOZOOM)) {
+            // If our Bundle has an Autozoom boolean, we're coming back from
             // elsewhere. We can rebuild from there.
-            // TODO: Do I really need to do this? Or is the Intent constant?
-            assignNewInfo((Info)icicle.getSerializable(INFO));
             mAutoZoom = icicle.getBoolean(AUTOZOOM);
             restarting = true;
-        } else {
-            assignNewInfo((Info)getIntent().getSerializableExtra(GeohashDroid.INFO));
         }
+        
+        // The Intent stays constant, so we can always get the proper info from
+        // it.  This is better than the store-with-icicle method I used earlier,
+        // since that sometimes persisted when the Intent should've overridden.
+        assignNewInfo((Info)getIntent().getSerializableExtra(GeohashDroid.INFO));
 
         // Now, gather up our data and do anything we need to that's common to
         // all cases.
@@ -357,9 +358,6 @@ public class MainMap extends MapActivity {
         outState.putInt(LONSPAN, mMapView.getLongitudeSpan());
         outState.putInt(ZOOM, mMapView.getZoomLevel());
         outState.putBoolean(AUTOZOOM, mAutoZoom);
-
-        // We can rebuild the destination marker from the stored Info object.
-        outState.putSerializable(INFO, mInfo);
 
         // Autozoom is a curious problem. We can't seem to hold onto our
         // MyLocationOverlay object (and with good reason), so we'll need to
