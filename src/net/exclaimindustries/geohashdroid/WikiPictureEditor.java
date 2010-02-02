@@ -29,6 +29,7 @@ import android.provider.MediaStore;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.location.Location;
 
@@ -56,6 +57,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);   
 
+    /** The medium-density thumbnail dimensions.  This gets scaled. */
+    private static final int NOMINAL_THUMB_DIMEN = 140;
+    /** This gets declared at create time to save some calculation later. */
+    private static int THUMB_DIMEN;
+    
     private Cursor mCursor;
 
     private Info mInfo;
@@ -66,6 +72,16 @@ public class WikiPictureEditor extends WikiBaseActivity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        
+        // Get some display metrics.  We need to scale the gallery thumbnails
+        // accordingly, else they look too small on big screens and too big on
+        // small screens.  We do this here to save calculations later, else
+        // we'd be doing floating-point multiplication on EVERY SINGLE
+        // THUMBNAIL, and we can't guarantee that won't be painful on every
+        // Android phone.
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        THUMB_DIMEN = (int)(NOMINAL_THUMB_DIMEN * metrics.density);
 
         mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
         
@@ -221,7 +237,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                    
                     i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+thumbid));
                     i.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    i.setLayoutParams(new Gallery.LayoutParams(140, 140));
+                    i.setLayoutParams(new Gallery.LayoutParams(THUMB_DIMEN, THUMB_DIMEN));
                     // The preferred Gallery item background
                     i.setBackgroundResource(mGalleryItemBackground);
                }
