@@ -22,7 +22,7 @@ import com.google.android.maps.Overlay;
  * In effect, this overlay just waits for any draw() callback.  If it gets one,
  * it checks the zoom and sends a callback if it changed.
  * 
- * @author captainspam
+ * @author Nicholas Killewald
  *
  */
 public class ZoomChangeOverlay extends Overlay {
@@ -60,7 +60,20 @@ public class ZoomChangeOverlay extends Overlay {
         }
     }
     
+    /**
+     * Interface that gets called upon any time the zoom changes.
+     * 
+     * @author Nicholas Killewald
+     */
     public interface ZoomChangeObserver {
+        /**
+         * Indicates the zoom has changed.  This is called after that's
+         * happened, so the MapView will already be in the new zoomed position.
+         * 
+         * @param mapView the MapView that got zoomed
+         * @param prevZoom the previous zoom level
+         * @param newZoom the new zoom level
+         */
         public void zoomChanged(MapView mapView, int prevZoom, int newZoom);
     }
 }
