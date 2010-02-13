@@ -20,9 +20,4 @@
 		android:text="@string/standby_title" android:background="@color/infobox_background"
 		android:textColor="@color/infobox_text" android:width="@dimen/infobox_width" android:gravity="left"
 		android:padding="@dimen/infobox_padding" android:maxLines="3" android:visibility="visible" android:textSize="@dimen/infobox_jumbo_fontsize_portrait"></view>
-	<LinearLayout android:id="@+id/ZoomLayout"
-		android:layout_width="wrap_content" android:layout_height="wrap_content"
-		android:layout_alignParentBottom="true"
-		android:layout_centerHorizontal="true" />
-
 </RelativeLayout>

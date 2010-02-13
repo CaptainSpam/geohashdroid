@@ -33,11 +33,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.LinearLayout;
 import android.widget.Toast;
-import android.widget.ZoomControls;
-import android.widget.LinearLayout.LayoutParams;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -50,7 +46,7 @@ import com.google.android.maps.Overlay;
  * 
  * @author Nicholas Killewald
  */
-public class MainMap extends MapActivity {
+public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChangeObserver {
     // Final destination
     private GeoPoint mDestination;
     // Our location, overlayed
@@ -154,57 +150,13 @@ public class MainMap extends MapActivity {
         setContentView(R.layout.map);
 
         mMapView = (MapView)findViewById(R.id.Map);
+        mMapView.setBuiltInZoomControls(true);
 
-        // Let's dance! First, we want our zoom controls.
-        LinearLayout zoomLayout = (LinearLayout)findViewById(R.id.ZoomLayout);
-        ZoomControls zoomView = (ZoomControls)mMapView.getZoomControls();
-
-        OnClickListener zoomOutListener = new OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                // When a click happens, we turn off autozoom. Aaaaand then do
-                // the usual zooming stuff (as far as I know). If, however, we
-                // wind up back around the right zoom level, turn autozoom back
-                // on.
-                MapController control = mMapView.getController();
-                control.zoomOut();
-                if (isZoomProper())
-                    setAutoZoom(true);
-                else
-                    setAutoZoom(false);
-            }
-
-        };
-
-        OnClickListener zoomInListener = new OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                // See above.
-                MapController control = mMapView.getController();
-                control.zoomIn();
-                if (isZoomProper())
-                    setAutoZoom(true);
-                else
-                    setAutoZoom(false);
-            }
-
-        };
-
-        zoomView.setOnZoomInClickListener(zoomInListener);
-        zoomView.setOnZoomOutClickListener(zoomOutListener);
-
-        // I managed to get a couple different ways to put the zoom controls on
-        // a map view by searching for tutorials. I read that the way I'm
-        // doing it now doesn't work, which, strangely, appears to be a lie (it
-        // works perfectly for me, and the suggested way doesn't). Huh.
-        zoomLayout.addView(zoomView, new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-        mMapView.displayZoomControls(true);
-
-        // Next, get the list of overlays.
+        // Let's dance!  First, get the list of overlays.
         List<Overlay> overlays = mMapView.getOverlays();
+        
+        // Add in the zoom watcher...
+        overlays.add(new ZoomChangeOverlay(this));
 
         // Then, we figure out where we are and plot it.
         mMyLocation = new AutoZoomingLocationOverlay(this, mMapView);
@@ -304,7 +256,7 @@ public class MainMap extends MapActivity {
             infobox.setVisibility(View.VISIBLE);
             infoboxbig.setVisibility(View.INVISIBLE);
         } else {
-            mMyLocation.enableCompass();
+            mMyLocation.disableCompass();
             infobox.setVisibility(View.INVISIBLE);
             infoboxbig.setVisibility(View.INVISIBLE);
         }
@@ -650,18 +602,11 @@ public class MainMap extends MapActivity {
                 GeoPoint point = mMyLocation.getMyLocation();
                 if (point == null)
                     return true;
+                
+                // The zoom overlay callback will take care of things past this.
                 resetNormalZoom(point);
                 resetNormalCenter(point);
-
-                // Soooooo, if autozoom was off and changing this makes it on,
-                // THEN we toast back up.
-                boolean wasAutoZoomOn = isAutoZoomOn();
-                mAutoZoom = true;
-                if (!wasAutoZoomOn && isAutoZoomOn()) {
-                    Toast wheat = Toast.makeText(MainMap.this,
-                            R.string.autozoom_turned_on, Toast.LENGTH_SHORT);
-                    wheat.show();
-                }
+                
                 return true;
             }
             case MENU_INFO: {
@@ -1162,5 +1107,13 @@ public class MainMap extends MapActivity {
         // the map to that location and not do anything with it.
         i.setData(Uri.parse("geo:0,0?q=" + location));
         startActivity(i);        
+    }
+
+    @Override
+    public void zoomChanged(MapView mapView, int prevZoom, int newZoom) {
+        if (isZoomProper())
+            setAutoZoom(true);
+        else
+            setAutoZoom(false);
     }
 }
