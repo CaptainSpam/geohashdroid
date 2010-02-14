@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import net.exclaimindustries.tools.DateTools;
+import net.exclaimindustries.tools.ZoomChangeOverlay;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
