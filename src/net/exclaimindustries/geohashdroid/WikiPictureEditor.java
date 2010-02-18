@@ -55,7 +55,10 @@ import java.text.SimpleDateFormat;
  */
 public class WikiPictureEditor extends WikiBaseActivity {
 
-    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);   
+    /** Matches the gallery section. */
+    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
+    /** Matches a commented-out gallery section (like from the template). */
+    private static final Pattern RE_GALLERY_COMMENTED = Pattern.compile("^(.*?)(<!--.*<gallery[^>]*>.*?</gallery>.*?-->)(.*)$",Pattern.DOTALL);
 
     /** The medium-density thumbnail dimensions.  This gets scaled. */
     private static final int NOMINAL_THUMB_DIMEN = 140;
