@@ -58,7 +58,12 @@ public class WikiPictureEditor extends WikiBaseActivity {
     /** Matches the gallery section. */
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
     /** Matches a commented-out gallery section (like from the template). */
-    private static final Pattern RE_GALLERY_COMMENTED = Pattern.compile("^(.*?)(<!--.*<gallery[^>]*>.*?</gallery>.*?-->)(.*)$",Pattern.DOTALL);
+    private static final Pattern RE_GALLERY_COMMENTED = Pattern.compile("^(.*)(<!--.*<gallery[^>]*>.*?</gallery>.*?-->)(.*)$",Pattern.DOTALL);
+    /**
+     * Matches the gallery section header.
+     * TODO: Replace with API call to edit the section specifically?
+     */
+    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$");
 
     /** The medium-density thumbnail dimensions.  This gets scaled. */
     private static final int NOMINAL_THUMB_DIMEN = 140;
@@ -448,13 +453,29 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 String before = "";
                 String after = "";
 
+                // Parse out the gallery comments.
+                Matcher commentq = RE_GALLERY_COMMENTED.matcher(page);
+                if(commentq.matches()) {
+                    page = commentq.group(1) + commentq.group(3);
+                }
+                
                 Matcher galleryq = RE_GALLERY.matcher(page);
                 if (galleryq.matches()) {
                     before = galleryq.group(1) + galleryq.group(2);
                     after = galleryq.group(3);
                 } else {
-                    before = page + "\n<gallery>";
-                    after = "</gallery>\n";
+                    // If we didn't match the gallery, find the Photos section
+                    // and create a new gallery in it.
+                    Matcher photosq = RE_GALLERY_SECTION.matcher(page);
+                    if(photosq.matches()) {
+                        before = photosq.group(1) + "\n<gallery>";
+                        after = "</gallery>\n" + photosq.group(2);
+                    } else {
+                        // If we STILL can't find it, just tack it on to the end
+                        // of the page.
+                        before = page + "\n<gallery>";
+                        after = "</gallery>\n";
+                    }
                 }
 
                 String galleryentry = "\nImage:" + filename + " | " + message
