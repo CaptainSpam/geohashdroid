@@ -63,7 +63,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
      * Matches the gallery section header.
      * TODO: Replace with API call to edit the section specifically?
      */
-    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$");
+    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
 
     /** The medium-density thumbnail dimensions.  This gets scaled. */
     private static final int NOMINAL_THUMB_DIMEN = 140;
