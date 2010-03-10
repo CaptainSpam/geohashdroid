@@ -10,6 +10,7 @@ package net.exclaimindustries.geohashdroid;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import android.location.Location;
 
@@ -36,7 +37,7 @@ import com.google.android.maps.GeoPoint;
 public class Info implements Serializable {
     private static final long serialVersionUID = 3L;
     
-    private static Calendar LIMIT_30W;
+    private static final Calendar LIMIT_30W = new GregorianCalendar(2008, Calendar.MAY, 26);
 
     private double mLatitude;
     private double mLongitude;
@@ -211,14 +212,6 @@ public class Info implements Serializable {
         // First, clone the calendar.  We don't want to muck about with the
         // original for various reasons.
         Calendar cal = (Calendar)(c.clone());
-        
-        // This is the last date when the 30W rule doesn't apply.
-        if(LIMIT_30W == null) {
-            LIMIT_30W = Calendar.getInstance();
-            LIMIT_30W.set(Calendar.YEAR, 2008);
-            LIMIT_30W.set(Calendar.MONTH, Calendar.MAY);
-            LIMIT_30W.set(Calendar.DAY_OF_MONTH, 26);
-        }
         
         // Second, 30W Rule hackery.  If g is null, assume we're not in 30W
         // territory (that is, no adjustment is needed).  If the date is May
