@@ -91,7 +91,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
         THUMB_DIMEN = (int)(NOMINAL_THUMB_DIMEN * metrics.density);
 
-        mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
+        mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
         
         double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
         double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);

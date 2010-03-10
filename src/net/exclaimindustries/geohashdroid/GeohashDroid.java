@@ -527,7 +527,7 @@ public class GeohashDroid extends Activity {
                 // Welcome back from the stock grabber!
                 switch(resultCode) {
                     case RESULT_OK: {
-                        Info i = (Info)data.getSerializableExtra(INFO);
+                        Info i = (Info)data.getParcelableExtra(INFO);
                         dispatchMapIntent(i);
                         break;
                     }

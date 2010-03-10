@@ -144,7 +144,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // The Intent stays constant, so we can always get the proper info from
         // it.  This is better than the store-with-icicle method I used earlier,
         // since that sometimes persisted when the Intent should've overridden.
-        assignNewInfo((Info)getIntent().getSerializableExtra(GeohashDroid.INFO));
+        assignNewInfo((Info)getIntent().getParcelableExtra(GeohashDroid.INFO));
 
         // Now, gather up our data and do anything we need to that's common to
         // all cases.

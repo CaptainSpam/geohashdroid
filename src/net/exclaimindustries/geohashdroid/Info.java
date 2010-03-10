@@ -7,12 +7,14 @@
  */
 package net.exclaimindustries.geohashdroid;
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import android.location.Location;
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import com.google.android.maps.GeoPoint;
 
@@ -34,9 +36,7 @@ import com.google.android.maps.GeoPoint;
  * @author Nicholas Killewald
  * 
  */
-public class Info implements Serializable {
-    private static final long serialVersionUID = 3L;
-    
+public class Info implements Parcelable {
     private static final Calendar LIMIT_30W = new GregorianCalendar(2008, Calendar.MAY, 26);
 
     private double mLatitude;
@@ -63,6 +63,17 @@ public class Info implements Serializable {
         mGraticule = graticule;
         mDate = date;
     }
+
+    /**
+     * Deparcelizes an Info object.  Obviously, this is used internally when we
+     * need to rebuild Info from a Parcel, such as during Service operations.
+     * 
+     * @param in the parcel to deparcelize
+     */
+    private Info(Parcel in) {
+        readFromParcel(in);
+    }
+
 
     /**
      * Gets the latitude of the final destination.
@@ -242,5 +253,53 @@ public class Info implements Serializable {
         loc.setLongitude((float)(point.getLongitudeE6() / 1000000.0f));
 
         return loc;
+    }
+    
+    public static final Parcelable.Creator<Info> CREATOR = new Parcelable.Creator<Info>() {
+        public Info createFromParcel(Parcel in) {
+            return new Info(in);
+        }
+
+        public Info[] newArray(int size) {
+            return new Info[size];
+        }
+    };
+
+    
+    @Override
+    public int describeContents() {
+        // We don't do anything special with this.
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        // Fortunately, everything we have is serializable.  Meaning, of course,
+        // we can shove this all in a Bundle, which makes parcelizing a lot
+        // easier.
+        Bundle outgoing = new Bundle();
+        
+        outgoing.putDouble(GeohashDroid.LATITUDE, mLatitude);
+        outgoing.putDouble(GeohashDroid.LONGITUDE, mLongitude);
+        outgoing.putSerializable(GeohashDroid.GRATICULE, mGraticule);
+        outgoing.putSerializable(GeohashDroid.CALENDAR, mDate);
+        
+        dest.writeBundle(outgoing);
+    }
+    
+    /**
+     * Reads an incoming Parcel and deparcelizes it.  I'm going to keep using
+     * the term "deparcelize" and its most logical forms until it catches on.
+     * 
+     * @param in parcel to deparcelize
+     */
+    public void readFromParcel(Parcel in) {
+        // Go!
+        Bundle incoming = in.readBundle();
+        
+        mLatitude = incoming.getDouble(GeohashDroid.LATITUDE);
+        mLongitude = incoming.getDouble(GeohashDroid.LONGITUDE);
+        mGraticule = (Graticule)(incoming.getSerializable(GeohashDroid.GRATICULE));
+        mDate = (Calendar)(incoming.getSerializable(GeohashDroid.CALENDAR));
     }
 }

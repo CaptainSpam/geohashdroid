@@ -53,7 +53,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         
-        mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
+        mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
 
         double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
         double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);
