@@ -118,7 +118,7 @@ public class Info implements Parcelable {
      * unbelievably handy when plotting this on a map, given that uses GeoPoints
      * and not doubles.
      * 
-     * @return a new GeoPoint based on the data obtained from the connection
+     * @return a GeoPoint based on the data obtained from the connection
      */
     public GeoPoint getFinalDestination() {
         return new GeoPoint((int)(getLatitude() * 1000000),
@@ -126,11 +126,10 @@ public class Info implements Parcelable {
     }
 
     /**
-     * Returns the final destination as a new Location object, which isn't quite
-     * as useful as a GeoPoint object, but you never know, it could come in
-     * handy.
+     * Returns the final destination as a Location object, which isn't quite as
+     * useful as a GeoPoint object, but you never know, it could come in handy.
      * 
-     * @return a new providerless Location based on the data obtained from the
+     * @return a providerless Location based on the data obtained from the
      *         connection
      */
     public Location getFinalLocation() {
