@@ -10,12 +10,15 @@ package net.exclaimindustries.geohashdroid;
 import java.util.HashMap;
 import java.util.List;
 
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -37,12 +40,16 @@ public class GeohashService extends Service implements LocationListener {
     // not tracking)
     private Info mInfo;
     // The LocationManager that'll do our location managing
-    private LocationManager mManager;
+    private LocationManager mLocationManager;
+    // The NotificationManager that'll do our notification managing
+    private NotificationManager mNotificationManager;
     // The providers known to be on right now (if all our providers are
     // disabled, then we don't have a location)
     private HashMap<String, Boolean> mEnabledProviders;
     // Whether or not we're actively tracking right now
     private boolean mIsTracking = false;
+    
+    private static final int NOTIFICATION_ID = 1;
     
     /* (non-Javadoc)
      * @see android.app.Service#onBind(android.content.Intent)
@@ -52,6 +59,15 @@ public class GeohashService extends Service implements LocationListener {
         return mBinder;
     }
     
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        
+        // We've got stuff, it needs setting up.
+        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+    }
+
     private final GeohashServiceInterface.Stub mBinder = new GeohashServiceInterface.Stub() {
 
         @Override
@@ -94,10 +110,10 @@ public class GeohashService extends Service implements LocationListener {
             // Here's our Info!  Let's get going!
             mInfo = info;
             
-            mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-            
-            // Set up the hash of providers.  Yes, there's only two.
-            List<String> providers = mManager.getProviders(false);
+            // Do this every time.  We might very well lose a provider at some
+            // point.
+            // TODO: Will we?
+            List<String> providers = mLocationManager.getProviders(false);
             if(providers.isEmpty()) {
                 // FAIL!  No providers are available!  In that case, just return
                 // and don't start anything.  isTracking will let callers know
@@ -111,11 +127,11 @@ public class GeohashService extends Service implements LocationListener {
             // Stuff all the providers into the HashMap, along with their current,
             // respective statuses.
             for(String s : providers)
-                mEnabledProviders.put(s, mManager.isProviderEnabled(s));
+                mEnabledProviders.put(s, mLocationManager.isProviderEnabled(s));
             
             // Then, register for responses and get ready for fun!
             for(String s : providers)
-                mManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
+                mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
             
             // There!  Let's go!
             mIsTracking = true;
@@ -124,7 +140,8 @@ public class GeohashService extends Service implements LocationListener {
         @Override
         public void stopTracking() throws RemoteException {
             // Stop everything!
-            mManager.removeUpdates(GeohashService.this);
+            mLocationManager.removeUpdates(GeohashService.this);
+            mNotificationManager.cancel(NOTIFICATION_ID);
             mIsTracking = false;
         }
         
@@ -153,8 +170,10 @@ public class GeohashService extends Service implements LocationListener {
 
     @Override
     public void onProviderDisabled(String provider) {
+        boolean wereAnyProvidersStillAlive = areAnyProvidersStillAlive();
+        
         mEnabledProviders.put(provider, false);
-        if(!areAnyProvidersStillAlive()) {
+        if(wereAnyProvidersStillAlive && !areAnyProvidersStillAlive()) {
             // If that was the last of the providers, set the location to null
             // and notify everyone that we're no longer providing useful data
             // until the providers come back up.
@@ -178,8 +197,14 @@ public class GeohashService extends Service implements LocationListener {
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        // We don't deal with this exactly.  We should (might) get enabled or
-        // disabled callbacks when need be, and that's all we need for now.
+        if (status == LocationProvider.OUT_OF_SERVICE || !mLocationManager.isProviderEnabled(provider)) {
+            // OUT_OF_SERVICE implies the provider is down for the count.
+            // Anything else means the provider is available, but maybe not
+            // enabled.
+            onProviderDisabled(provider);
+        } else {
+            onProviderDisabled(provider);
+        }
     }
 
 }
