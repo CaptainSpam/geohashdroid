@@ -1,21 +1,8 @@
 package net.exclaimindustries.geohashdroid;
 
-import net.exclaimindustries.geohashdroid.Info;
 import android.location.Location;
 
 interface GeohashServiceInterface {
-    /**
-     * Starts tracking for a given Info bundle.  If we were already tracking,
-     * stop that one (and send out a notification) and start this one.
-     */
-    void startTracking(in Info info);
-    
-    /**
-     * Stops tracking whatever was going on.  If this indeed stopped something,
-     * notification will be sent.
-     */
-    void stopTracking();
-    
     /**
      * Determines if there's any tracking going on at all right now.
      */
