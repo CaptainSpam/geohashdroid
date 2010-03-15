@@ -33,7 +33,8 @@
 
 		<activity android:label="@string/standby_title" android:name="LocationGrabber"
 			android:theme="@android:style/Theme.Dialog"></activity>
-	</application>
+	<service android:name="GeohashService" android:label="@string/geohash_service_title"></service>
+</application>
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"></uses-permission>

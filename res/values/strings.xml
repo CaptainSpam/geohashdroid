@@ -51,6 +51,7 @@ in a bit better grammatically (at least in English).
 <string name="map_activity_title">The Map</string>
 <string name="gratmap_activity_title">Tap your graticule</string>
 <string name="detail_activity_title">Details</string>
+<string name="geohash_service_title">Geohash Tracker</string>
 <string name="destination_label">Today\'s Point</string>
 
 <string name="find_location">Trying to determine your location...</string>
@@ -209,6 +210,8 @@ in a bit better grammatically (at least in English).
 <string name="details_dist">Distance:</string>
 <!-- Remember to enclose this in parentheses in-code! -->
 <string name="details_accuracy">Accurate to</string>
+
+<string name="notify_service_ticker">And away we go...</string>
 
 <string name="hint_lat">Lat</string>
 <string name="hint_lon">Lon</string>

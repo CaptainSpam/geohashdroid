@@ -53,6 +53,17 @@ public class GeohashService extends Service implements LocationListener {
     private HashMap<String, Boolean> mEnabledProviders;
     // Whether or not we're actively tracking right now
     private boolean mIsTracking = false;
+    // This is set to true if we've recieved a GPS fix so we know to ignore any
+    // cell tower fixes insofar as handling is concerned. This is reset to
+    // false if GPS is disabled for whatever reason, and starts out false so we
+    // can go to the towers until we get our first fix. This is to solve what
+    // I like to call the "Glasgow Problem", where for some reason when I tried
+    // this in Lexington, KY, I kept getting network fixes somewhere in the
+    // city of Glasgow, KY, some hundred or so miles away. I'm certain there's
+    // already a name for this sort of problem, but I like naming a problem
+    // after a city in Kentucky, mainly because I like to think most of my
+    // problems are related to living in the state of Kentucky.
+    private boolean mHaveGPSFix = false;
     
     private static final int NOTIFICATION_ID = 1;
     
@@ -181,12 +192,34 @@ public class GeohashService extends Service implements LocationListener {
         // New location!
         Log.d(DEBUG_TAG, "Notified of new location!");
         mLastLocation = location;
+        
+        if(location != null) {
+            // First, set the fix flag if we need to.
+            if (location.getProvider().equals(LocationManager.GPS_PROVIDER))
+                mHaveGPSFix = true;
+    
+            
+            // If we have an update, AND we've been getting GPS fixes, BUT this
+            // update didn't come from GPS, ignore it.
+            if(mHaveGPSFix && !location.getProvider().equals(LocationManager.GPS_PROVIDER))
+                return;
+        }
+        
+        // Otherwise, it's a valid update, so send it off.
         updateNotification();
         // TODO: Broadcast this info to anyone listening.
     }
 
     @Override
     public void onProviderDisabled(String provider) {
+        // First off, see if this was GPS going down.  If it is, mark that we
+        // DON'T have GPS any more, and that cell tower updates are okay.
+        if (provider.equals(LocationManager.GPS_PROVIDER))
+        {
+            Log.d(DEBUG_TAG, "GPS provider just died, turning off mHaveGPSFix");
+            mHaveGPSFix = false;
+        }
+        
         boolean wereAnyProvidersStillAlive = areAnyProvidersStillAlive();
         
         mEnabledProviders.put(provider, false);
@@ -194,6 +227,7 @@ public class GeohashService extends Service implements LocationListener {
             // If that was the last of the providers, set the location to null
             // and notify everyone that we're no longer providing useful data
             // until the providers come back up.
+            Log.d(DEBUG_TAG, "Last provider just died, notifying...");
             mLastLocation = null;
             updateNotification();
             // TODO: Broadcast this to anyone listening.
@@ -253,7 +287,8 @@ public class GeohashService extends Service implements LocationListener {
         // middle of the action.
         Intent go = new Intent(this, MainMap.class);
         go.putExtra(GeohashDroid.INFO, mInfo);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, go, 0);
+        go.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, go, PendingIntent.FLAG_CANCEL_CURRENT);
         
         // Then, update the notification...
         mNotification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);

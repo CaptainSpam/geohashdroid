@@ -602,6 +602,14 @@ public class GeohashDroid extends Activity {
         editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
                 .getLongitudeString());
         editor.commit();
+        
+        Intent starter = new Intent(GeohashDroid.this, GeohashService.class);
+        starter.putExtra(INFO, info);
+        // Stop the service if it was going, then kick it on fresh.  We want to
+        // make sure we're only servicing one set of data at a time.
+        // TODO: This is probably not needed.  More research, though, IS needed.
+        stopService(starter);
+        startService(starter);
 
         Intent i = new Intent(GeohashDroid.this, MainMap.class);
 

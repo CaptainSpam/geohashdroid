@@ -30,6 +30,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
@@ -1116,5 +1117,22 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             setAutoZoom(true);
         else
             setAutoZoom(false);
+    }
+
+    @Override
+    public void finish() {
+        // If the activity is being finished somehow, we want to stop the
+        // service.  This shouldn't happen if MainMap is being destroyed due
+        // to it being stuffed in the background.  At least I don't think it
+        // will.  To be honest, I'm not entirely sure, but all the tests I've
+        // run seem to indicate that's the way it goes.
+        stopGeohashService();
+        super.finish();
+    }
+    
+    private boolean stopGeohashService() {
+        Intent stopper = new Intent(MainMap.this, GeohashService.class);
+        stopper.putExtra(INFO, mInfo);
+        return stopService(stopper);
     }
 }
