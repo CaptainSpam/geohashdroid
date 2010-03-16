@@ -1,6 +1,7 @@
 package net.exclaimindustries.geohashdroid;
 
 import android.location.Location;
+import net.exclaimindustries.geohashdroid.Info;
 
 interface GeohashServiceInterface {
     /**
@@ -32,4 +33,11 @@ interface GeohashServiceInterface {
      * where we are right now.
      */
     Location getLastLocation();
+
+    /**
+     * Changes to a new Info bundle (i.e. when someone pokes a nearby point in
+     * MainMap).  This will cause all clients to get a trackingStarted call with
+     * the new data.
+     */
+     void changeInfo(in Info info);
 }
