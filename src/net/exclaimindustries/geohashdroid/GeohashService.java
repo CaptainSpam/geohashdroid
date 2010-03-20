@@ -23,6 +23,7 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -72,6 +73,8 @@ public class GeohashService extends Service implements LocationListener {
     /** The decimal format for distances. */
     private static final DecimalFormat mDistFormat = new DecimalFormat("###.####");
     
+    final RemoteCallbackList<GeohashServiceCallback> mCallbacks = new RemoteCallbackList<GeohashServiceCallback>();
+    
     /* (non-Javadoc)
      * @see android.app.Service#onBind(android.content.Intent)
      */
@@ -82,8 +85,6 @@ public class GeohashService extends Service implements LocationListener {
     
     @Override
     public void onCreate() {
-        super.onCreate();
-        
         Log.i(DEBUG_TAG, "GeohashService now being created...");
         
         // We've got stuff, it needs setting up.
@@ -93,49 +94,16 @@ public class GeohashService extends Service implements LocationListener {
 
     @Override
     public void onStart(Intent intent, int startId) {
-        super.onStart(intent, startId);
-        
         // Start tracking immediately!  The Intent better have the Info bundle
         // we need, or we have a right to crash.
-        mInfo = (Info)(intent.getParcelableExtra(GeohashDroid.INFO));
-        
-        List<String> providers = mLocationManager.getProviders(false);
-        if(providers.isEmpty()) {
-            // FAIL!  No providers are available!  In that case, just return
-            // and don't start anything.  isTracking will let callers know
-            // what's going on.
-            mIsTracking = false;
-            return;
-        }
-            
-        mEnabledProviders = new HashMap<String, Boolean>();
-        
-        // Stuff all the providers into the HashMap, along with their current,
-        // respective statuses.
-        for(String s : providers)
-            mEnabledProviders.put(s, mLocationManager.isProviderEnabled(s));
-        
-        // Then, register for responses and get ready for fun!
-        for(String s : providers)
-            mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
-        
-        // Create and fire off our notification.  We'll populate it with
-        // currently-known data, which should at first give the "Stand By"
-        // message for distance.
-        mNotification = new Notification(android.R.drawable.stat_sys_warning, getText(R.string.notify_service_ticker), System.currentTimeMillis());
-        mNotification.flags = Notification.FLAG_ONGOING_EVENT;
-        updateNotification();
-        
-        // There!  Let's go!
-        mIsTracking = true;
+        startTracking((Info)(intent.getParcelableExtra(GeohashDroid.INFO)));
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         
-        mLocationManager.removeUpdates(GeohashService.this);
-        mNotificationManager.cancel(NOTIFICATION_ID);
+        stopTracking();
     }
 
     private final GeohashServiceInterface.Stub mBinder = new GeohashServiceInterface.Stub() {
@@ -170,6 +138,31 @@ public class GeohashService extends Service implements LocationListener {
         @Override
         public boolean isTracking() throws RemoteException {
             return mIsTracking;
+        }
+
+        @Override
+        public void changeInfo(Info info) throws RemoteException {
+            // New info!  Set ourselves up again and send out new data.
+            startTracking(info);
+        }
+
+        @Override
+        public void stopTracking() throws RemoteException {
+            stopTracking();
+        }
+
+        @Override
+        public void registerCallback(GeohashServiceCallback callback)
+                throws RemoteException {
+            // In you go!
+            if(callback != null) mCallbacks.register(callback);
+        }
+
+        @Override
+        public void unregisterCallback(GeohashServiceCallback callback)
+                throws RemoteException {
+            // Out you go!
+            if(callback != null) mCallbacks.unregister(callback);
         }
     };
     
@@ -297,4 +290,57 @@ public class GeohashService extends Service implements LocationListener {
         mNotificationManager.notify(NOTIFICATION_ID, mNotification);
     }
 
+    private boolean startTracking(Info info) {
+        // This starts tracking with the given data.  It also STOPS tracking
+        // whatever we were tracking before (if anything) and sends out and/or
+        // updates the notification.
+        if(mIsTracking) {
+            // If we're already going, just switch the Info and keep going.
+            mInfo = info;
+            updateNotification();
+            return true;
+        } else {
+            // Otherwise, start it anew.
+            List<String> providers = mLocationManager.getProviders(false);
+            if(providers.isEmpty()) {
+                // FAIL!  No providers are available!  In that case, just return
+                // and don't start anything.  isTracking will let callers know
+                // what's going on.
+                mIsTracking = false;
+                return false;
+            }
+            
+            mInfo = info;
+            
+            mEnabledProviders = new HashMap<String, Boolean>();
+            
+            // Stuff all the providers into the HashMap, along with their current,
+            // respective statuses.
+            for(String s : providers)
+                mEnabledProviders.put(s, mLocationManager.isProviderEnabled(s));
+            
+            // Then, register for responses and get ready for fun!
+            for(String s : providers)
+                mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
+            
+            // Create and fire off our notification.  We'll populate it with
+            // currently-known data, which should at first give the "Stand By"
+            // message for distance.
+            mNotification = new Notification(android.R.drawable.stat_sys_warning, getText(R.string.notify_service_ticker), System.currentTimeMillis());
+            mNotification.flags = Notification.FLAG_ONGOING_EVENT;
+            updateNotification();
+            
+            // There!  Let's go!
+            mIsTracking = true;
+            return true;
+        }
+    }
+    
+    private void stopTracking() {
+        // Stop doing whatever it is we're doing.
+        mInfo = null;
+        
+        mLocationManager.removeUpdates(GeohashService.this);
+        mNotificationManager.cancel(NOTIFICATION_ID);
+    }
 }

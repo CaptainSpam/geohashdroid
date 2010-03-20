@@ -2,8 +2,12 @@ package net.exclaimindustries.geohashdroid;
 
 import android.location.Location;
 import net.exclaimindustries.geohashdroid.Info;
+import net.exclaimindustries.geohashdroid.GeohashServiceCallback;
 
 interface GeohashServiceInterface {
+	void registerCallback(in GeohashServiceCallback callback);
+	void unregisterCallback(in GeohashServiceCallback callback);
+
     /**
      * Determines if there's any tracking going on at all right now.
      */
@@ -37,7 +41,14 @@ interface GeohashServiceInterface {
     /**
      * Changes to a new Info bundle (i.e. when someone pokes a nearby point in
      * MainMap).  This will cause all clients to get a trackingStarted call with
-     * the new data.
+     * the new data.  This will also start tracking right away if it wasn't
+     * tracking to begin with (i.e. the service was started via onBind instead
+     * of onStart).
      */
-     void changeInfo(in Info info);
+     oneway void changeInfo(in Info info);
+     
+     /**
+      * Stops tracking entirely.  All clients will be informed of this.
+      */
+     oneway void stopTracking();
 }
