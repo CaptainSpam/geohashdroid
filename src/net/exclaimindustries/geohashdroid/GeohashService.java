@@ -103,7 +103,7 @@ public class GeohashService extends Service implements LocationListener {
     public void onDestroy() {
         super.onDestroy();
         
-        stopTracking();
+        stopTrackingService();
     }
 
     private final GeohashServiceInterface.Stub mBinder = new GeohashServiceInterface.Stub() {
@@ -148,7 +148,7 @@ public class GeohashService extends Service implements LocationListener {
 
         @Override
         public void stopTracking() throws RemoteException {
-            stopTracking();
+            stopTrackingService();
         }
 
         @Override
@@ -200,7 +200,7 @@ public class GeohashService extends Service implements LocationListener {
         
         // Otherwise, it's a valid update, so send it off.
         updateNotification();
-        // TODO: Broadcast this info to anyone listening.
+        notifyLocation();
     }
 
     @Override
@@ -223,20 +223,13 @@ public class GeohashService extends Service implements LocationListener {
             Log.d(DEBUG_TAG, "Last provider just died, notifying...");
             mLastLocation = null;
             updateNotification();
-            // TODO: Broadcast this to anyone listening.
+            notifyLostFix();
         }
         
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        if(!areAnyProvidersStillAlive()) {
-            // If none of the providers were up at the time, we want to let
-            // everyone know that we're back up.  This doesn't, however, mean
-            // we'll have a Location right away.
-            // TODO: Broadcast this to anyone listening.
-        }
-        
         mEnabledProviders.put(provider, true);
     }
 
@@ -298,7 +291,6 @@ public class GeohashService extends Service implements LocationListener {
             // If we're already going, just switch the Info and keep going.
             mInfo = info;
             updateNotification();
-            return true;
         } else {
             // Otherwise, start it anew.
             List<String> providers = mLocationManager.getProviders(false);
@@ -332,15 +324,70 @@ public class GeohashService extends Service implements LocationListener {
             
             // There!  Let's go!
             mIsTracking = true;
-            return true;
         }
+        
+        notifyTrackingStarted();
+        return true;
     }
     
-    private void stopTracking() {
+    private void notifyTrackingStarted() {
+        // Let all the registered callbacks know we've started tracking.
+        final int N = mCallbacks.beginBroadcast();
+        for (int i=0; i<N; i++) {
+            try {
+                mCallbacks.getBroadcastItem(i).trackingStarted(mInfo);
+            } catch (RemoteException e) {
+
+            }
+        }
+        mCallbacks.finishBroadcast();
+    }
+    
+    private void notifyTrackingStopped() {
+        // Hey!  We stopped!
+        final int N = mCallbacks.beginBroadcast();
+        for (int i=0; i<N; i++) {
+            try {
+                mCallbacks.getBroadcastItem(i).trackingStopped();
+            } catch (RemoteException e) {
+
+            }
+        }
+        mCallbacks.finishBroadcast();
+    }
+    
+    private void notifyLocation() {
+        // New location update!
+        final int N = mCallbacks.beginBroadcast();
+        for (int i=0; i<N; i++) {
+            try {
+                mCallbacks.getBroadcastItem(i).locationUpdate(mLastLocation);
+            } catch (RemoteException e) {
+
+            }
+        }
+        mCallbacks.finishBroadcast();
+    }
+    
+    private void notifyLostFix() {
+        // Oh no!  We've lost all our providers!
+        final int N = mCallbacks.beginBroadcast();
+        for (int i=0; i<N; i++) {
+            try {
+                mCallbacks.getBroadcastItem(i).lostFix();
+            } catch (RemoteException e) {
+
+            }
+        }
+        mCallbacks.finishBroadcast();
+    }
+    
+    private void stopTrackingService() {
         // Stop doing whatever it is we're doing.
         mInfo = null;
         
         mLocationManager.removeUpdates(GeohashService.this);
         mNotificationManager.cancel(NOTIFICATION_ID);
+        notifyTrackingStopped();
     }
 }
