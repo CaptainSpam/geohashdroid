@@ -80,6 +80,7 @@ public class GeohashService extends Service implements LocationListener {
      */
     @Override
     public IBinder onBind(Intent arg0) {
+        Log.d(DEBUG_TAG, "Service is being bound to something...");
         return mBinder;
     }
     
@@ -155,6 +156,7 @@ public class GeohashService extends Service implements LocationListener {
         public void registerCallback(GeohashServiceCallback callback)
                 throws RemoteException {
             // In you go!
+            Log.d(DEBUG_TAG, "New callback: " + callback);
             if(callback != null) mCallbacks.register(callback);
         }
 
@@ -162,7 +164,13 @@ public class GeohashService extends Service implements LocationListener {
         public void unregisterCallback(GeohashServiceCallback callback)
                 throws RemoteException {
             // Out you go!
+            Log.d(DEBUG_TAG, "Unregistering callback: " + callback);
             if(callback != null) mCallbacks.unregister(callback);
+        }
+
+        @Override
+        public Info getInfo() throws RemoteException {
+            return mInfo;
         }
     };
     
@@ -315,6 +323,10 @@ public class GeohashService extends Service implements LocationListener {
             for(String s : providers)
                 mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
             
+            // Just for kicks, get the last known location.  This is allowed to
+            // be null (it's treated as "don't have a fix yet").
+            mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            
             // Create and fire off our notification.  We'll populate it with
             // currently-known data, which should at first give the "Stand By"
             // message for distance.
@@ -384,10 +396,10 @@ public class GeohashService extends Service implements LocationListener {
     
     private void stopTrackingService() {
         // Stop doing whatever it is we're doing.
-        mInfo = null;
-        
+        mIsTracking = false;
         mLocationManager.removeUpdates(GeohashService.this);
         mNotificationManager.cancel(NOTIFICATION_ID);
         notifyTrackingStopped();
+        mInfo = null;
     }
 }

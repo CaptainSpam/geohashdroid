@@ -37,6 +37,11 @@ interface GeohashServiceInterface {
      * where we are right now.
      */
     Location getLastLocation();
+    
+    /**
+     * Gets the info we're currently tracking.
+     */
+    Info getInfo();
 
     /**
      * Changes to a new Info bundle (i.e. when someone pokes a nearby point in
