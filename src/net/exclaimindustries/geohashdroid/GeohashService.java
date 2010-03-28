@@ -70,6 +70,10 @@ public class GeohashService extends Service implements LocationListener {
     
     private static final String DEBUG_TAG = "GeohashService";
     
+    // Two minutes (in milliseconds). If the last known check is older than
+    // that, we ignore it.
+    private static final int LOCATION_VALID_TIME = 120000;
+    
     /** The decimal format for distances. */
     private static final DecimalFormat mDistFormat = new DecimalFormat("###.####");
     
@@ -325,7 +329,12 @@ public class GeohashService extends Service implements LocationListener {
             
             // Just for kicks, get the last known location.  This is allowed to
             // be null (it's treated as "don't have a fix yet").
-            mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location tempLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            
+            // Check if this is really really old data or not.  Anything past...
+            // say... two minutes is too old to use and thus ignored.
+            if(tempLocation != null && System.currentTimeMillis() - tempLocation.getTime() < LOCATION_VALID_TIME)
+                mLastLocation = tempLocation;       
             
             // Create and fire off our notification.  We'll populate it with
             // currently-known data, which should at first give the "Stand By"

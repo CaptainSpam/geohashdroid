@@ -36,11 +36,6 @@ import android.widget.TextView;
  * @author Nicholas Killewald
  */
 public class DetailedInfoScreen extends Activity {
-
-    // Two minutes (in milliseconds). If the last known check is older than
-    // that, we ignore it.
-//    private static final int LOCATION_VALID_TIME = 120000;
-
     private static final String INFO = "info";
 
     private Info mInfo;
