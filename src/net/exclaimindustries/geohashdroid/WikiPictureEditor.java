@@ -297,8 +297,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         if(rawLat == null || rawLon == null)
                             throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
                         
-                        String lat = mLatLonFormat.format(rawLat);
-                        String lon = mLatLonFormat.format(rawLon);
+                        // Parse the following out, first to a double, then
+                        // back to a String using the formatter, just to make
+                        // sure it doesn't get too long on us.
+                        String lat = mLatLonFormat.format(Double.parseDouble(rawLat));
+                        String lon = mLatLonFormat.format(Double.parseDouble(rawLon));
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + lat + "&lon=" + lon
