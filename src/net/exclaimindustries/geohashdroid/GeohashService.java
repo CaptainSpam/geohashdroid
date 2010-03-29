@@ -131,7 +131,14 @@ public class GeohashService extends Service implements LocationListener {
 
         @Override
         public Location getLastLocation() throws RemoteException {
-            return mLastLocation;
+            // First, make sure the last fix is new enough.  If it's too old,
+            // reset it to null.
+            if(mLastLocation != null && System.currentTimeMillis() - mLastLocation.getTime() < LOCATION_VALID_TIME)
+                return mLastLocation;
+            else {
+                mLastLocation = null;
+                return null;
+            }
         }
 
         @Override
@@ -195,7 +202,6 @@ public class GeohashService extends Service implements LocationListener {
     @Override
     public void onLocationChanged(Location location) {
         // New location!
-        Log.d(DEBUG_TAG, "Notified of new location!");
         mLastLocation = location;
         
         if(location != null) {
@@ -270,11 +276,6 @@ public class GeohashService extends Service implements LocationListener {
             + UnitConverter.makeLongitudeCoordinateString(this, mInfo.getLongitude(), false, UnitConverter.OUTPUT_LONG);
         
         // As does the distance.
-        if(mLastLocation == null)
-            Log.d(DEBUG_TAG, "Location is null, putting up standby...");
-        else
-            Log.d(DEBUG_TAG, "Location is not null, putting up an actual location...");
-        
         String contentText = this.getString(R.string.details_dist)
             + " "
             + (mLastLocation != null

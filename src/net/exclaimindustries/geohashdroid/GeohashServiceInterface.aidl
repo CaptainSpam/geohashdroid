@@ -34,7 +34,8 @@ interface GeohashServiceInterface {
     
     /**
      * Gets the last-known location.  This will return null if we don't know
-     * where we are right now.
+     * where we are right now, or if the last fix is too old (currently two
+     * minutes).
      */
     Location getLastLocation();
     

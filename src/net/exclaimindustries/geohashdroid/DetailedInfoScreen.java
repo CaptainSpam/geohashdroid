@@ -83,6 +83,7 @@ public class DetailedInfoScreen extends Activity {
         public void trackingStarted(Info info) throws RemoteException {
             // New info?  Weird.  Well, update it and redraw.
             mInfo = info;
+            updateDest();
             updateDisplay(mLastLoc);
         }
 
@@ -127,11 +128,6 @@ public class DetailedInfoScreen extends Activity {
         }
     };
     
-    /*
-     * (non-Javadoc)
-     * 
-     * @see android.app.Activity#onCreate(android.os.Bundle)
-     */
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
