@@ -653,28 +653,15 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 Intent i = new Intent(this, WikiMessageEditor.class);
                 i.putExtra(GeohashDroid.INFO, mInfo);
 
-                Location loc = mMyLocation.getLastFix();
-                if(loc != null) {
-                    // If loc is null, these don't get set, so the default value
-                    // (impossible for each) will be picked up by the Activity.
-                    i.putExtra(GeohashDroid.LATITUDE, loc.getLatitude());
-                    i.putExtra(GeohashDroid.LONGITUDE, loc.getLongitude());
-                }
                 startActivity(i);
                 return true;
             }
             case MENU_POST_PICTURE: {
-                // Pop up a dialog box which allows to enter a message to be sent to the wiki.
+                // Pop up a dialog box which allows to enter a message to be
+                // sent to the wiki.
                 Intent i = new Intent(this, WikiPictureEditor.class);
                 i.putExtra(GeohashDroid.INFO, mInfo);
                 
-                Location loc = mMyLocation.getLastFix();
-                if(loc != null) {
-                    // If loc is null, these don't get set, so the default value
-                    // (impossible for each) will be picked up by the Activity.
-                    i.putExtra(GeohashDroid.LATITUDE, loc.getLatitude());
-                    i.putExtra(GeohashDroid.LONGITUDE, loc.getLongitude());
-                }
                 startActivity(i);
                 return true;
             }

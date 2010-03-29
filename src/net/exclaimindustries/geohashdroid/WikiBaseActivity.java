@@ -14,12 +14,18 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
+import android.os.RemoteException;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -35,6 +41,25 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
     protected boolean mDontStopTheThread = false;
     
     protected WikiConnectionRunner mConnectionHandler;
+    
+    protected GeohashServiceInterface mService;
+    
+    /**
+     * Service!
+     */
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className,
+                IBinder service) {
+            mService = GeohashServiceInterface.Stub.asInterface(service);
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has been
+            // unexpectedly disconnected.  All that means for us is that we
+            // throw up standby.
+            mService = null;
+        }
+    };
     
     /** This format is used for all latitude/longitude texts in the wiki. */
     protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000");
@@ -104,9 +129,20 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         }
     }
     
-    /* (non-Javadoc)
-     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
-     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        bindService(new Intent(WikiBaseActivity.this, GeohashService.class), mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        
+        unbindService(mConnection);
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -116,9 +152,6 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         outState.putString(LAST_ERROR, mLastErrorText);
     }
     
-    /* (non-Javadoc)
-     * @see android.app.Activity#onCreateDialog(int)
-     */
     @Override
     protected Dialog onCreateDialog(int id) {
         // Here, we create the error dialog.  In onPrepareDialog, we actually
@@ -217,5 +250,20 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         item.setIcon(android.R.drawable.ic_menu_preferences);
         
         return true;
+    }
+    
+    protected Location getCurrentLocation() {
+        // We're perfectly allowed to return null here.  In fact, that's how we
+        // let the caller know there is no location.  We just wrap it up here
+        // to catch the mService == null condition.
+        if(mService != null) {
+            try {
+                return mService.getLastLocation();
+            } catch (RemoteException e) {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 }

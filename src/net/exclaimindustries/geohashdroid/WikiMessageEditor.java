@@ -47,26 +47,11 @@ public class WikiMessageEditor extends WikiBaseActivity {
 
     private static final String DEBUG_TAG = "MessageEditor";
     
-    private Location mLocation;
-    
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         
         mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
-
-        double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
-        double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);
-        
-        // If either of those were invalid (that is, 200), we don't have a
-        // location.  If they're both valid, we do have one.
-        if(lat > 90 || lat < -90 || lon > 180 || lon < -180)
-            mLocation = null;
-        else {
-            mLocation = new Location((String)null);
-            mLocation.setLatitude(lat);
-            mLocation.setLongitude(lon);
-        }
 
         setContentView(R.layout.wikieditor);
 
@@ -175,12 +160,13 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 // handy)?
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 if (includelocation.isChecked()) {
-                    if (mLocation != null) {
-                        String pos = mLatLonFormat.format(mLocation.getLatitude()) + ","
-                                + mLatLonFormat.format(mLocation.getLongitude());
+                    Location loc = getCurrentLocation();
+                    if (loc != null) {
+                        String pos = mLatLonFormat.format(loc.getLatitude()) + ","
+                                + mLatLonFormat.format(loc.getLongitude());
                         locationTag = " [http://www.openstreetmap.org/?lat="
-                                + mLocation.getLatitude() + "&lon="
-                                + mLocation.getLongitude()
+                                + loc.getLatitude() + "&lon="
+                                + loc.getLongitude()
                                 + "&zoom=16&layers=B000FTF @" + pos + "]";
                         addStatus(R.string.wiki_conn_current_location);
                         addStatus(" " + pos + "\n");

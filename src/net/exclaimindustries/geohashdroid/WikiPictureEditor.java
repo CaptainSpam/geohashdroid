@@ -73,7 +73,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private Cursor mCursor;
 
     private Info mInfo;
-    private Location mLocation;
 
     private static final String DEBUG_TAG = "WikiPictureEditor";
     
@@ -92,19 +91,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
         THUMB_DIMEN = (int)(NOMINAL_THUMB_DIMEN * metrics.density);
 
         mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
-        
-        double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
-        double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);
-        
-        // If either of those were invalid (that is, 200), we don't have a
-        // location.  If they're both valid, we do have one.
-        if(lat > 90 || lat < -90 || lon > 180 || lon < -180)
-            mLocation = null;
-        else {
-            mLocation = new Location((String)null);
-            mLocation.setLatitude(lat);
-            mLocation.setLongitude(lon);
-        }
 
         setContentView(R.layout.pictureselect);
 
@@ -324,15 +310,16 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         // it (that is, something threw an exception up there),
                         // go by the user's current location, if that's known.
                         addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
-                        if (mLocation != null) {
+                        Location loc = getCurrentLocation();
+                        if (loc != null) {
                             locationTag = " [http://www.openstreetmap.org/?lat="
-                                    + mLocation.getLatitude()
+                                    + loc.getLatitude()
                                     + "&lon="
-                                    + mLocation.getLongitude()
+                                    + loc.getLongitude()
                                     + "&zoom=16&layers=B000FTF @"
-                                    + mLatLonFormat.format(mLocation.getLatitude())
+                                    + mLatLonFormat.format(loc.getLatitude())
                                     + ","
-                                    + mLatLonFormat.format(mLocation.getLongitude())
+                                    + mLatLonFormat.format(loc.getLongitude())
                                     + "]";
                         } else {
                             // Otherwise, we don't use anything at all.
