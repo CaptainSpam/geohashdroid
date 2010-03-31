@@ -44,8 +44,9 @@ import android.util.Log;
  * </p>
  * 
  * <p>
- * This implementation uses the peeron.com site to get the DJIA
- * (http://irc.peeron.com/xkcd/map/data/2008/12/03).
+ * This implementation uses the peeron.com site to get the DJIA, falling back to
+ * the crox site if peeron can't figure it out (upstream faults, server failure,
+ * etc).
  * </p>
  * 
  * @author Nicholas Killewald
@@ -65,6 +66,13 @@ public class HashBuilder {
     // preferences.
     private static Info mLastInfo;
     private static Info mTwoInfosAgo;
+
+    // This may be expanded later to allow a user-definable list, hence why it
+    // doesn't follow the usual naming conventions I use.  Of course, in THAT
+    // case, we'd need to make it not be a raw array.  The general form is that
+    // %Y is the four-digit year, %m is the zero-padded month, and %d is (wait
+    // for it...) the zero-padded date.
+    private final static String[] mServers = { "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d", "http://geo.crox.net/djia/%Y/%m/%d" };
 
     /**
      * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
