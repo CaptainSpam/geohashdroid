@@ -44,9 +44,9 @@ import android.util.Log;
  * </p>
  * 
  * <p>
- * This implementation uses the peeron.com site to get the DJIA, falling back to
- * the crox site if peeron can't figure it out (upstream faults, server failure,
- * etc).
+ * This implementation uses the Crox site to get the DJIA, falling back to
+ * the peeron.com site if Crox can't figure it out (upstream faults, server
+ * failure, etc).
  * </p>
  * 
  * @author Nicholas Killewald
@@ -66,13 +66,6 @@ public class HashBuilder {
     // preferences.
     private static Info mLastInfo;
     private static Info mTwoInfosAgo;
-
-    // This may be expanded later to allow a user-definable list, hence why it
-    // doesn't follow the usual naming conventions I use.  Of course, in THAT
-    // case, we'd need to make it not be a raw array.  The general form is that
-    // %Y is the four-digit year, %m is the zero-padded month, and %d is (wait
-    // for it...) the zero-padded date.
-    private final static String[] mServers = { "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d", "http://geo.crox.net/djia/%Y/%m/%d" };
 
     /**
      * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
@@ -116,6 +109,14 @@ public class HashBuilder {
     	private Handler mHandler;
     	private HttpGet mRequest;
     	private int mStatus;
+
+        // This may be expanded later to allow a user-definable list, hence why
+    	// it doesn't follow the usual naming conventions I use.  Of course, in
+    	// THAT case, we'd need to make it not be a raw array.  The general form
+    	// is that %Y is the four-digit year, %m is the zero-padded month, and
+    	// %d is (wait for it...) the zero-padded date.
+        private final static String[] mServers = { "http://geo.crox.net/djia/%Y/%m/%d",
+            "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d"};
     	
     	private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
     	    mContext = con;
@@ -158,9 +159,10 @@ public class HashBuilder {
             		mStatus = BUSY;
             		try {
             		    stock = fetchStock(sCal);
-            		    // If this didn't throw an exception, stash it in the
-            		    // database.
-            		    storeStock(mContext, sCal, stock);
+            		    // If this didn't throw an exception AND it's not blank,
+            		    // stash it in the database.
+            		    if(stock.trim().length() != 0)
+            		        storeStock(mContext, sCal, stock);
             		} catch (FileNotFoundException fnfe) {
             		    // If we got a 404, assume it's not posted yet.
             		    mStatus = ERROR_NOT_POSTED;
@@ -220,49 +222,80 @@ public class HashBuilder {
             else
                 sDayStr = new Integer(sCal.get(Calendar.DAY_OF_MONTH)).toString();
 
-            // Good, good! Now, to the web!
-            String location = "http://irc.peeron.com/xkcd/map/data/"
-                    + sCal.get(Calendar.YEAR) + "/" + sMonthStr + "/" + sDayStr;
+            // Good, good! Now, to the web!  Go through our list of sites in
+            // order until we find an answer, we bottom out, or we abort.  In
+            // terms of what we report to the user, "Server error" is lowest-
+            // priority, with "Stock not posted" rating above it.  That is to
+            // say, if one server reports and error but another one explicitly
+            // tells us the stock wasn't found, the latter is what we use.  Of
+            // course, if we get an abort request, that takes absolute
+            // precedence.
+            int curStatus = ERROR_SERVER;
+            String result = "";
             
-            HttpClient client = new DefaultHttpClient();
-            mRequest = new HttpGet(location);
-            HttpResponse response;
-            try {
-                response = client.execute(mRequest);
-            } catch (IOException e) {
-                // If there was an exception, but we aborted, return a blank
-                // response (aborting throws an IOException).  If not, there was
-                // a legitimate problem, so throw back the exception.
+            for(String s : mServers) {
+                // Do all our substitutions...
+                String location = s.replaceAll("%Y", Integer.toString(sCal.get(Calendar.YEAR)));
+                location = location.replaceAll("%m", sMonthStr);
+                location = location.replaceAll("%d", sDayStr);
+                Log.d(DEBUG_TAG, "Trying " + location + "...");
+                
+                // And go fetch!
+                HttpClient client = new DefaultHttpClient();
+                mRequest = new HttpGet(location);
+                HttpResponse response;
+                
+                try {
+                    response = client.execute(mRequest);
+                } catch (IOException e) {
+                    // If there was an exception, but we aborted, return a blank
+                    // response (aborting throws an IOException).  If not, there
+                    // was a legitimate problem with this particular server.
+                    if(mStatus == ABORTED) {
+                        return "";
+                    }
+                    continue;
+                }
+                
+                // Make sure we've caught an abort...
                 if(mStatus == ABORTED) {
                     return "";
                 }
-                throw e;
+                
+                if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                    curStatus = ERROR_NOT_POSTED;
+                } else if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
+                    // A non-okay response that isn't a 404 is bad.  Count this
+                    // one as ERROR_SERVER and just continue.
+                    continue;
+                }
+                
+                // Well, we got this far!  Let's read!
+                result = getStringFromStream(response.getEntity().getContent());
+                
+                // With that done, we try to convert the output to the float.
+                // If this fails, we got bogus data and should roll on.
+                try {
+                    new Float(result);
+                } catch (NumberFormatException nfe) {
+                    result = "";
+                    continue;
+                }
+                
+                // We survived!  Set the status flag and keep going!
+                curStatus = ALL_OKAY;
+                break;
             }
             
-            // If we aborted at this point, just return. The calling method MUST
-            // NOT read anything else from here at this point.
-            if (mStatus == ABORTED)
+            // If we got this far and we still had an ERROR_SERVER or
+            // ERROR_NOT_POSTED, throw 'em.  We failed.  If we got an ABORTED,
+            // return a blank.
+            if(mStatus == ABORTED)
                 return "";
-
-            // Response obtained! Now let's get to digging...
-            if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            else if(curStatus == ERROR_NOT_POSTED)
                 throw new FileNotFoundException();
-            } else if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
+            else if(curStatus == ERROR_SERVER)
                 throw new IOException();
-            }
-
-            String result = getStringFromStream(response.getEntity().getContent());
-
-            // With that done, we try to convert the output to the float. If this
-            // fails, we got bogus data.
-            try {
-                new Float(result);
-            } catch (NumberFormatException nfe) {
-                // I'm recasting this as an IOException because this means there's
-                // a serious communication problem with the server.
-                throw new IOException(
-                        "The stock server was contacted, but it wasn't returning parseable stock data.");
-            }
 
             // If we finally, FINALLY got this far, we've got a successful stock!
             return result;
