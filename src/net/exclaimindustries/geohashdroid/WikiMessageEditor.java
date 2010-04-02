@@ -201,6 +201,9 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     addStatusAndNewline(R.string.wiki_conn_success);
                 }
 
+                // Change the summary so it has our message.
+                mFormFields.put("summary", "[live] " + editText.getText().toString()); 
+
                 String before = "";
                 String after = "";
 

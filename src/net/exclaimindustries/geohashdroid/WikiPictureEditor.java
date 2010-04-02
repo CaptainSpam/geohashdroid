@@ -439,6 +439,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     addStatusAndNewline(R.string.wiki_conn_success);
                 }
 
+                // Add in our message...
+                formfields.put("summary", "[live picture] " + message);
+
                 String before = "";
                 String after = "";
 
