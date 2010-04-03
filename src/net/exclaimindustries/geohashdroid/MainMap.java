@@ -17,20 +17,23 @@ import net.exclaimindustries.tools.ZoomChangeOverlay;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
+import android.os.RemoteException;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
@@ -117,6 +120,75 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private int mNextNearbyY;
 
     private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
+    
+    // The last location we managed to get.
+    private Location mLastLoc;
+    
+    private GeohashServiceInterface mService;
+    
+    /**
+     * Callback!  We need a callback!
+     */
+    private GeohashServiceCallback.Stub mCallback = new GeohashServiceCallback.Stub() {
+
+        @Override
+        public void locationUpdate(Location location) throws RemoteException {
+            // Location!  Start updating everything that needs updating (the
+            // infobox and the indicator, mostly)
+            mLastLoc = location;
+        }
+
+        @Override
+        public void lostFix() throws RemoteException {
+            // No location!  Remove the updated stuff.
+            mLastLoc = null;
+        }
+
+        @Override
+        public void trackingStarted(Info info) throws RemoteException {
+            // Not quite sure how we'd get new info, but, well...
+            mInfo = info;
+            changeInfo(info);
+        }
+
+        @Override
+        public void trackingStopped() throws RemoteException {
+            // Since we're supposed to be the only ones stopping the activity,
+            // this should already be over.
+            if(!isFinishing()) finish();
+        }
+        
+        public String toString() {
+            return "MainMap service callback";
+        }
+    };
+    
+    /**
+     * And now, this word from our ServiceConnection.
+     */
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className,
+                IBinder service) {
+            mService = GeohashServiceInterface.Stub.asInterface(service);
+            
+            try {
+                // Get the most recent location and then start listening.
+                mInfo = mService.getInfo();
+                mLastLoc = mService.getLastLocation();
+                mService.registerCallback(mCallback);
+            } catch (RemoteException e) {
+
+            }
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has been
+            // unexpectedly disconnected.  All that means for us is that we
+            // throw up standby.
+            mService = null;
+            mLastLoc = null;
+        }
+    };    
 
     @Override
     protected void onCreate(Bundle icicle) {
@@ -232,6 +304,9 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // Release the wakelock.
         mWakeLock.release();
+        
+        // And release our binding.
+        unbindService(mConnection);
     }
 
     @Override
@@ -288,6 +363,9 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // As does the wakelock.
         mWakeLock.acquire();
+    
+        // And here comes the service binding...
+        bindService(new Intent(MainMap.this, GeohashService.class), mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -1009,10 +1087,14 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog,
                         int whichButton) {
-                	// TODO: Not sure, I might want to send this as a message,
-                    // not do it at the same time as the dialog.
                     dialog.dismiss();
-                    changeInfo(toSend);
+                    try {
+                        // Send it out to the service.  We'll get the callback.
+                        mService.changeInfo(toSend);
+                    } catch (RemoteException e) {
+                        // TODO: Report an error; this shouldn't ever happen.
+                        e.printStackTrace();
+                    }
                 }
             });
         
