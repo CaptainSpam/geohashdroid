@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import net.exclaimindustries.tools.DateTools;
+import net.exclaimindustries.tools.LocationTools;
 import net.exclaimindustries.tools.ZoomChangeOverlay;
 
 import android.app.AlertDialog;
@@ -135,18 +136,23 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         public void locationUpdate(Location location) throws RemoteException {
             // Location!  Start updating everything that needs updating (the
             // infobox and the indicator, mostly)
+            if (isAutoZoomOn() && !isZoomProper(location));
+                resetNormalView(LocationTools.makeGeoPointFromLocation(location));
+            
             mLastLoc = location;
+            populateInfoBox();
         }
 
         @Override
         public void lostFix() throws RemoteException {
             // No location!  Remove the updated stuff.
             mLastLoc = null;
+            populateInfoBox();
         }
 
         @Override
         public void trackingStarted(Info info) throws RemoteException {
-            // Not quite sure how we'd get new info, but, well...
+            // New info!  Probably means we changed it.
             mInfo = info;
             changeInfo(info);
         }
@@ -785,7 +791,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     }
 
     private boolean isZoomProper() {
-        return isZoomProper(mMyLocation.getMyLocation());
+        return isZoomProper(mLastLoc);
+    }
+    
+    private boolean isZoomProper(Location loc) {
+        return isZoomProper(LocationTools.makeGeoPointFromLocation(loc));
     }
 
     private boolean isZoomProper(GeoPoint point) {
@@ -884,6 +894,10 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         }
     }
 
+    public void resetNormalView(Location loc) {
+        resetNormalView(LocationTools.makeGeoPointFromLocation(loc));
+    }
+    
     /**
      * Reset the map to normal view. That is, ensuring both the current location
      * and the destination are visible and centered.
@@ -902,6 +916,10 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         resetNormalCenter(curLocation);
         resetNormalZoom(curLocation);
     }
+    
+    private void resetNormalZoom(Location loc) {
+        resetNormalZoom(LocationTools.makeGeoPointFromLocation(loc));
+    }
 
     private void resetNormalZoom(GeoPoint curLocation) {
         MapController mcontrol = mMapView.getController();
@@ -918,6 +936,10 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         mcontrol.zoomToSpan(latSpan, lonSpan);
     }
 
+    private void resetNormalCenter(Location loc) {
+        resetNormalCenter(LocationTools.makeGeoPointFromLocation(loc));
+    }
+    
     private void resetNormalCenter(GeoPoint curLocation) {
         MapController mcontrol = mMapView.getController();
 
@@ -944,9 +966,9 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
 
         if (setting.equals("Jumbo"))
-            infoboxbig.update(mInfo, mMyLocation.getLastFix());
+            infoboxbig.update(mInfo, mLastLoc);
         else if (setting.equals("Small"))
-            infobox.update(mInfo, mMyLocation.getLastFix());
+            infobox.update(mInfo, mLastLoc);
     }
 
     /**
@@ -989,15 +1011,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             // Check over the message type.
             switch (message.what) {
                 case AutoZoomingLocationOverlay.LOCATION_CHANGED:
-                    // We know that it's a GeoPoint.
-                    GeoPoint point = (GeoPoint)(message.obj);
-
-                    // And go right up to isZoomProper!
-                    if (isAutoZoomOn() && !isZoomProper(point))
-                        resetNormalView(point);
-
-                    populateInfoBox();
-
+                    // We'll get rid of this later.
                     break;
                 case AutoZoomingLocationOverlay.FIRST_FIX:
                 case AutoZoomingLocationOverlay.LOST_FIX:
