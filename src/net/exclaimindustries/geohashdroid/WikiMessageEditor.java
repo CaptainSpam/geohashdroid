@@ -204,7 +204,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
 
                 // Change the summary so it has our message.
-                mFormfields.put("summary", "[live] " + editText.getText().toString()); 
+                mFormfields.put("summary", getText(R.string.wiki_post_message_summary) + " " + editText.getText().toString()); 
 
                 String before = "";
                 String after = "";

@@ -440,7 +440,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
 
                 // Add in our message...
-                formfields.put("summary", "[live picture] " + message);
+                formfields.put("summary", getText(R.string.wiki_post_picture_summary) + " " + message);
 
                 String before = "";
                 String after = "";
