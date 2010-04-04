@@ -657,7 +657,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // The normal view entry needs to be disabled if we don't have a fix.
         // This is purely for looks; if the view reset is called with an
         // invalid location, it'll just return.
-        if (mMyLocation.getMyLocation() == null) {
+        if (mLastLoc == null) {
             mMenu.findItem(MENU_RECENTER_NORMALVIEW).setEnabled(false);
             mMenu.findItem(MENU_RECENTER_MYLOCATION).setEnabled(false);
         } else {
@@ -685,13 +685,12 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 // If this got selected but we don't have a location (rare in
                 // real-world situations, but possible), just bail out. We
                 // can't do anything with it.
-                GeoPoint point = mMyLocation.getMyLocation();
-                if (point == null)
+                if (mLastLoc == null)
                     return true;
                 
                 // The zoom overlay callback will take care of things past this.
-                resetNormalZoom(point);
-                resetNormalCenter(point);
+                resetNormalZoom(mLastLoc);
+                resetNormalCenter(mLastLoc);
                 
                 return true;
             }
@@ -720,10 +719,8 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 // a valid location yet, we bail out.
                 MapController mcontrol = mMapView.getController();
 
-                GeoPoint point = mMyLocation.getMyLocation();
-
-                if (point != null)
-                    mcontrol.animateTo(point);
+                if (mLastLoc != null)
+                    mcontrol.animateTo(LocationTools.makeGeoPointFromLocation(mLastLoc));
                 return true;
             }
             case MENU_MAP_MODE: {
@@ -1082,7 +1079,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         build.setIcon(android.R.drawable.ic_dialog_map);
         
         // The text is a question.
-        GeoPoint curGeo = mMyLocation.getMyLocation();
+        GeoPoint curGeo = LocationTools.makeGeoPointFromLocation(mLastLoc);
 
         if(curGeo == null) {
             // We don't know the location yet, so we go with the 
