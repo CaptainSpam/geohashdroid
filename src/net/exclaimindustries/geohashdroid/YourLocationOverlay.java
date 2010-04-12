@@ -41,6 +41,19 @@ public class YourLocationOverlay extends Overlay {
     
     /** The number of milliseconds between frames. */
     private static final long MILLIS_PER_FRAME = 100;
+
+    /**
+     * The colors for the fading accuracy meter.  Should go from fully clear
+     * up to 0x18 in ten steps (eleven frames).  Should also follow a 
+     * logarithmic (or kinda-sorta logarithmic, at least) progression so that it
+     * eases out slightly as it reaches the end (so, not a linear progression).
+     * Looks fancier that way.
+     *
+     * Also, we define these here because we know they'll always be the same
+     * values, meaning we're not forcing the phone to calculate logarithms
+     * on every frame needlessly.
+     */
+    private static final long[] ACCURACY_FRAMES = { 0x006666ff, 0x076666ff, 0x0b6666ff, 0x0e6666ff, 0x106666ff, 0x126666ff, 0x136666ff, 0x156666ff, 0x166666ff, 0x176666ff, 0x186666ff };
     
     public YourLocationOverlay() {
         // Initialize the first draw time.  Honestly, we don't really care when
@@ -64,20 +77,19 @@ public class YourLocationOverlay extends Overlay {
         if(shadow) return false;
         
         boolean mustRedraw = false;
-        long curFrame;
         
         // First off, check to see if we need an immediate redraw.  If what we
         // last drew and what we're about to draw are identical, we don't need
         // an immediate redraw.  If they're different, we do, as the user's
-        // moved and we need to update as soon as possible.
-        if(mLastDrawnLoc != null && mLastKnownLoc == null
+        // moved and we need to update as soon as possible.  The first compare
+        // is there to prevent NullPointerExceptions.
+        if(mLastDrawnLoc != null && mLastKnownLoc != null
+                && (mLastDrawnLoc != null && mLastKnownLoc == null
                 || mLastDrawnLoc == null && mLastKnownLoc != null
-                || !mLastDrawnLoc.equals(mLastKnownLoc)) {
+                || !mLastDrawnLoc.equals(mLastKnownLoc))) {
             mustRedraw = true;
         }
         
-        // Then, figure out what frame we're on.
-        curFrame = (when - mFirstDrawTime) / MILLIS_PER_FRAME;
         
         // Now, figure out what part of the animation cycle we're in.  We
         // basically need to determine when in the pulsing accuracy meter we
@@ -86,6 +98,39 @@ public class YourLocationOverlay extends Overlay {
         // we are (one second per state).  And, of course, we don't draw a thing
         // if the current location is null.
         if(mLastKnownLoc != null) {
+            long curFrame;
+            int curAccuracyFrame;
+            long curAccuracyFill;
+            boolean curIndicatorBlink;
+
+            // Figure out what frame we're on.  This'll only really fail us if
+            // we overflow a long, and even then it's a one-frame glitch.
+            curFrame = (when - mFirstDrawTime) / MILLIS_PER_FRAME;
+
+            // Frame 0: first fadein (0)
+            // Frames 0-9: fadein (0-9)
+            // Frame 10: fully in (10)
+            // Frames 10-19: hold (10)
+            // Frame 20: first fadeout (9)
+            // Frames 20-28: fadeout (9-1)
+            // Frame 29: fully out (0)
+            // Frames 29-39: hold (0)
+            curAccuracyFrame = curFrame % 40;
+            if(curAccuracyFrame < 10)
+                curAccuracyFill = ACCURACY_FRAMES[curAccuracyFrame];
+            else if(curAccuracyFrame >= 10 && curAccuracyFrame < 20)
+                curAccuracyFill = ACCURACY_FRAMES[10];
+            else if(curAccuracyFrame >= 20 && curAccuracyFrame < 30)
+                curAccuracyFill = ACCURACY_FRAMES[29 - curAccuracyFrame];
+            else
+                curAccuracyFill = ACCURACY_FRAMES[0];
+
+            // Frames 0-9: blink on
+            // Frames 10-19: blink off
+            if(curFrame % 20 < 10)
+                curIndicatorBlink = true;
+            else
+                curIndicatorBlink = false;
             
         }
         
