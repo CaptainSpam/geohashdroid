@@ -8,10 +8,13 @@
 package net.exclaimindustries.geohashdroid;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Paint.Style;
 import android.location.Location;
 
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
+import com.google.android.maps.Projection;
 
 /**
  * The <code>YourLocationOverlay</code> is an overlay that represents your
@@ -36,12 +39,12 @@ public class YourLocationOverlay extends Overlay {
     /** When this whole thing started. */
     private long mFirstDrawTime;
     
-    /** The last frame drawn. */
-    private long mLastDrawnFrame = 0;
-    
     /** The number of milliseconds between frames. */
     private static final long MILLIS_PER_FRAME = 100;
 
+    private static Paint mAccuracyFillPaint;
+    private static Paint mAccuracyStrokePaint;
+    
     /**
      * The colors for the fading accuracy meter.  Should go from fully clear
      * up to 0x18 in ten steps (eleven frames).  Should also follow a 
@@ -53,12 +56,27 @@ public class YourLocationOverlay extends Overlay {
      * values, meaning we're not forcing the phone to calculate logarithms
      * on every frame needlessly.
      */
-    private static final long[] ACCURACY_FRAMES = { 0x006666ff, 0x076666ff, 0x0b6666ff, 0x0e6666ff, 0x106666ff, 0x126666ff, 0x136666ff, 0x156666ff, 0x166666ff, 0x176666ff, 0x186666ff };
+    private static final int[] ACCURACY_FRAMES = { 0x006666ff, 0x076666ff, 0x0b6666ff, 0x0e6666ff, 0x106666ff, 0x126666ff, 0x136666ff, 0x156666ff, 0x166666ff, 0x176666ff, 0x186666ff };
     
     public YourLocationOverlay() {
         // Initialize the first draw time.  Honestly, we don't really care when
         // EXACTLY we started, we just need a baseline.
         mFirstDrawTime = System.currentTimeMillis();
+        
+        // Make our paints, too.
+        if(mAccuracyFillPaint == null) {
+            mAccuracyFillPaint = new Paint();
+            mAccuracyFillPaint.setAntiAlias(true);
+            mAccuracyFillPaint.setStyle(Style.FILL);
+            // Color gets reset on each frame.
+        }
+        
+        if(mAccuracyStrokePaint == null) {
+            mAccuracyStrokePaint = new Paint();
+            mAccuracyStrokePaint.setAntiAlias(true);
+            mAccuracyStrokePaint.setStyle(Style.STROKE);
+            mAccuracyStrokePaint.setColor(0xff6666ff);
+        }
     }
     
     /**
@@ -100,7 +118,6 @@ public class YourLocationOverlay extends Overlay {
         // if the current location is null.
         if(mLastKnownLoc != null) {
             int curAccuracyFrame;
-            long curAccuracyFill;
             boolean curIndicatorBlink;
 
             // Figure out what frame we're on.  This'll only really fail us if
@@ -117,13 +134,13 @@ public class YourLocationOverlay extends Overlay {
             // Frames 29-39: hold (0)
             curAccuracyFrame = (int)(curFrame % 40);
             if(curAccuracyFrame < 10)
-                curAccuracyFill = ACCURACY_FRAMES[curAccuracyFrame];
+                mAccuracyFillPaint.setColor(ACCURACY_FRAMES[curAccuracyFrame]);
             else if(curAccuracyFrame >= 10 && curAccuracyFrame < 20)
-                curAccuracyFill = ACCURACY_FRAMES[10];
+                mAccuracyFillPaint.setColor(ACCURACY_FRAMES[10]);
             else if(curAccuracyFrame >= 20 && curAccuracyFrame < 30)
-                curAccuracyFill = ACCURACY_FRAMES[29 - curAccuracyFrame];
+                mAccuracyFillPaint.setColor(ACCURACY_FRAMES[29 - curAccuracyFrame]);
             else
-                curAccuracyFill = ACCURACY_FRAMES[0];
+                mAccuracyFillPaint.setColor(ACCURACY_FRAMES[0]);
 
             // Frames 0-9: blink on
             // Frames 10-19: blink off
@@ -131,12 +148,28 @@ public class YourLocationOverlay extends Overlay {
                 curIndicatorBlink = true;
             else
                 curIndicatorBlink = false;
+         
+            // Next, figure out the radius of the circle.
+            Projection projection = mapView.getProjection();
+            double latitude = mLastKnownLoc.getLatitude();
+            double longitude = mLastKnownLoc.getLongitude();
+            float accuracy = mLastKnownLoc.getAccuracy();
+            
+            float[] result = new float[1];
+
+            // The distance that one degree represents under the current
+            // projection is the key to this whole mess.  We use that to
+            // determine how far a pixel is and use the location's accuracy
+            // field to determine how big a circle we need to draw.
+            Location.distanceBetween(latitude, longitude, latitude, longitude + 1, result);
+            float longitudeLineDistance = result[0];
+            
+            // And DRAW!
             
         }
         
         // Finally, set all our new values and return whatever needs to be returned.
         mLastDrawnLoc = mLastKnownLoc;
-//        mLastDrawnFrame = curFrame;
         return mustRedraw;
     }
 
