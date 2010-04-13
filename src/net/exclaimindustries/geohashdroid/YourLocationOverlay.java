@@ -77,6 +77,7 @@ public class YourLocationOverlay extends Overlay {
         if(shadow) return false;
         
         boolean mustRedraw = false;
+        long curFrame;
         
         // First off, check to see if we need an immediate redraw.  If what we
         // last drew and what we're about to draw are identical, we don't need
@@ -98,7 +99,6 @@ public class YourLocationOverlay extends Overlay {
         // we are (one second per state).  And, of course, we don't draw a thing
         // if the current location is null.
         if(mLastKnownLoc != null) {
-            long curFrame;
             int curAccuracyFrame;
             long curAccuracyFill;
             boolean curIndicatorBlink;
@@ -115,7 +115,7 @@ public class YourLocationOverlay extends Overlay {
             // Frames 20-28: fadeout (9-1)
             // Frame 29: fully out (0)
             // Frames 29-39: hold (0)
-            curAccuracyFrame = curFrame % 40;
+            curAccuracyFrame = (int)(curFrame % 40);
             if(curAccuracyFrame < 10)
                 curAccuracyFill = ACCURACY_FRAMES[curAccuracyFrame];
             else if(curAccuracyFrame >= 10 && curAccuracyFrame < 20)
@@ -136,7 +136,7 @@ public class YourLocationOverlay extends Overlay {
         
         // Finally, set all our new values and return whatever needs to be returned.
         mLastDrawnLoc = mLastKnownLoc;
-        mLastDrawnFrame = curFrame;
+//        mLastDrawnFrame = curFrame;
         return mustRedraw;
     }
 
