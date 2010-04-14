@@ -7,11 +7,15 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.tools.LocationTools;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Paint.Style;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 
+import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
@@ -42,8 +46,17 @@ public class YourLocationOverlay extends Overlay {
     /** The number of milliseconds between frames. */
     private static final long MILLIS_PER_FRAME = 100;
 
-    private static Paint mAccuracyFillPaint;
-    private static Paint mAccuracyStrokePaint;
+    // We want to hold on to all of these so we don't need to keep re-obtaining
+    // them over and over and over again.
+    private Paint mAccuracyFillPaint;
+    private Paint mAccuracyStrokePaint;
+    private Drawable mIndicator;
+    private int mIndicatorWidth;
+    private int mIndicatorHeight;
+    private Point mIndicatorLeft;
+    private Point mIndicatorCenter;
+    
+    private static final String DEBUG_TAG = "YourLocationOverlay";
     
     /**
      * The colors for the fading accuracy meter.  Should go from fully clear
@@ -61,22 +74,22 @@ public class YourLocationOverlay extends Overlay {
     public YourLocationOverlay() {
         // Initialize the first draw time.  Honestly, we don't really care when
         // EXACTLY we started, we just need a baseline.
-        mFirstDrawTime = System.currentTimeMillis();
+        mFirstDrawTime = -1;
         
         // Make our paints, too.
-        if(mAccuracyFillPaint == null) {
-            mAccuracyFillPaint = new Paint();
-            mAccuracyFillPaint.setAntiAlias(true);
-            mAccuracyFillPaint.setStyle(Style.FILL);
-            // Color gets reset on each frame.
-        }
-        
-        if(mAccuracyStrokePaint == null) {
-            mAccuracyStrokePaint = new Paint();
-            mAccuracyStrokePaint.setAntiAlias(true);
-            mAccuracyStrokePaint.setStyle(Style.STROKE);
-            mAccuracyStrokePaint.setColor(0xff6666ff);
-        }
+        mAccuracyFillPaint = new Paint();
+        mAccuracyFillPaint.setAntiAlias(true);
+        mAccuracyFillPaint.setStyle(Style.FILL);
+        // Color gets reset on each frame.
+    
+        mAccuracyStrokePaint = new Paint();
+        mAccuracyStrokePaint.setAntiAlias(true);
+        mAccuracyStrokePaint.setStyle(Style.STROKE);
+        mAccuracyStrokePaint.setStrokeWidth(2.0f);
+        mAccuracyStrokePaint.setColor(0xff6666ff);
+                
+        mIndicatorLeft = new Point();
+        mIndicatorCenter = new Point();
     }
     
     /**
@@ -93,6 +106,8 @@ public class YourLocationOverlay extends Overlay {
     public boolean draw(Canvas canvas, MapView mapView, boolean shadow, long when) {
         // We don't draw shadows.
         if(shadow) return false;
+        
+        if(mFirstDrawTime < 0) mFirstDrawTime = when;
         
         boolean mustRedraw = false;
         long curFrame;
@@ -153,7 +168,8 @@ public class YourLocationOverlay extends Overlay {
             Projection projection = mapView.getProjection();
             double latitude = mLastKnownLoc.getLatitude();
             double longitude = mLastKnownLoc.getLongitude();
-            float accuracy = mLastKnownLoc.getAccuracy();
+//            float accuracy = mLastKnownLoc.getAccuracy();
+            float accuracy = 100.0f;
             
             float[] result = new float[1];
 
@@ -164,8 +180,14 @@ public class YourLocationOverlay extends Overlay {
             Location.distanceBetween(latitude, longitude, latitude, longitude + 1, result);
             float longitudeLineDistance = result[0];
             
-            // And DRAW!
+            GeoPoint leftGeo = new GeoPoint((int)(latitude * 1e6), (int)((longitude - accuracy / longitudeLineDistance) * 1e6));
+            projection.toPixels(leftGeo, mIndicatorLeft);
+            projection.toPixels(LocationTools.makeGeoPointFromLocation(mLastKnownLoc), mIndicatorCenter);
+            int radius = mIndicatorCenter.x - mIndicatorLeft.x;
             
+            // And DRAW!
+            canvas.drawCircle(mIndicatorCenter.x, mIndicatorCenter.y, radius, mAccuracyFillPaint);
+            canvas.drawCircle(mIndicatorCenter.x, mIndicatorCenter.y, radius, mAccuracyStrokePaint);
         }
         
         // Finally, set all our new values and return whatever needs to be returned.
