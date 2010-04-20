@@ -379,6 +379,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // Do recycling NOW, just to make sure we've booted it out of
                 // memory as soon as possible.
                 bitmap.recycle();
+                System.gc();
 
                 addStatusAndNewline(R.string.wiki_conn_done);
 
