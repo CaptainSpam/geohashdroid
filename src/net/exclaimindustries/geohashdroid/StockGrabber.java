@@ -16,7 +16,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.Window;
-import android.view.WindowManager;
 import android.widget.TextView;
 
 /**
@@ -152,10 +151,6 @@ public class StockGrabber extends Activity {
         // Remove the title so it looks sorta right (the Dialog theme doesn't
         // *quite* get it right, so no title looks a lot better).
         requestWindowFeature(Window.FEATURE_NO_TITLE); 
-
-        // Blur the background.  This may change.
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
-                WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
         
         // Throw up content and away we go!
         setContentView(R.layout.genericbusydialog);
