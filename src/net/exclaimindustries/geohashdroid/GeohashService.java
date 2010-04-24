@@ -267,6 +267,10 @@ public class GeohashService extends Service implements LocationListener {
         // Updating the notification sets the distance, and that's it.  Changing
         // anything else requires a new Info bundle, which in turn cancels the
         // notification and starts a new one.
+        
+        // There's a really minor chance mInfo can be null here.  If it is, we
+        // SHOULD be shutting down anyway.
+        if(mInfo == null) return;
 
         // The destination output looks like an infobox.
         String contentTitle = getText(R.string.infobox_final)
