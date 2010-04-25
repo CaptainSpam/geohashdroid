@@ -85,6 +85,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private static final int MENU_MAP_MODE = 4;
     private static final int MENU_POST = 5;
     private static final int MENU_SEND_TO_MAPS = 6;
+    private static final int MENU_QUIT = 7;
 
     private static final int MENU_RECENTER_DESTINATION = 10;
     private static final int MENU_RECENTER_MYLOCATION = 11;
@@ -444,10 +445,19 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 R.string.menu_item_send_to_maps);
         item.setIcon(android.R.drawable.ic_menu_myplaces);
 
-        // Settings comes last!  Settings ALWAYS comes last.
+        // Settings comes almost last!
         item = menu.add(Menu.NONE, MENU_SETTINGS, 5,
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
+        
+        // Quit comes really last!  Yes, I know this pushes the menu into more
+        // than six options, meaning the icons for this and Settings won't show
+        // up, but it doesn't HURT anything, and besides, they might come up
+        // with some new mechanism in a later version of the API that DOES show
+        // the icons, so, y'know, plan ahead and all that.
+        item = menu.add(Menu.NONE, MENU_QUIT, 6,
+                R.string.menu_item_quit);
+        item.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
         
         mMenu = menu;
 
@@ -768,6 +778,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             case MENU_SEND_TO_MAPS: {
                 showDialog(DIALOG_SEND_TO_MAPS);
                 
+                return true;
+            }
+            case MENU_QUIT: {
+                // Just quit.  That is all.
+                finish();
                 return true;
             }
 
