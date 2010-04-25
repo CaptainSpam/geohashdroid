@@ -28,10 +28,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.util.Log;
@@ -136,7 +133,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         public void locationUpdate(Location location) throws RemoteException {
             // Location!  Start updating everything that needs updating (the
             // infobox and the indicator, mostly)
-            if (isAutoZoomOn() && !isZoomProper(location));
+            if (isAutoZoomOn() && !isZoomProper(location))
                 resetNormalView(LocationTools.makeGeoPointFromLocation(location));
             
             mLastLoc = location;
@@ -240,9 +237,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // Then, we figure out where we are and plot it.
         mMyLocation = new AutoZoomingLocationOverlay(this, mMapView);
-        // Set up the location handler for later use...
-        mMyLocation.setHandler(new AutoZoomingLocationOverlayHandler(Looper
-                .myLooper()));
+
         overlays.add(mMyLocation);
 
         // Enabling location and such are done in onStart. We pass through
@@ -946,7 +941,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 .getLatitudeE6()) / 2;
         int lonMid = (mDestination.getLongitudeE6() + curLocation
                 .getLongitudeE6()) / 2;
-
+        
         // Then, set us to that point.
         mcontrol.animateTo(new GeoPoint(latMid, lonMid));
     }
@@ -994,30 +989,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             // didn't, keep it however it was.
             if (mAutoZoom) {
                 resetNormalView(mMyLocation.getMyLocation());
-            }
-        }
-    }
-
-    private class AutoZoomingLocationOverlayHandler extends Handler {
-        public AutoZoomingLocationOverlayHandler(Looper looper) {
-            super(looper);
-        }
-
-        @Override
-        public void handleMessage(Message message) {
-            // Check over the message type.
-            switch (message.what) {
-                case AutoZoomingLocationOverlay.LOCATION_CHANGED:
-                    // We'll get rid of this later.
-                    break;
-                case AutoZoomingLocationOverlay.FIRST_FIX:
-                case AutoZoomingLocationOverlay.LOST_FIX:
-                    // On the first fix or a complete signal loss, we reset the
-                    // Normal View menu item and populate the info box. It works
-                    // for both.
-                    resetRecenterMenuItem();
-                    populateInfoBox();
-                    break;
             }
         }
     }
