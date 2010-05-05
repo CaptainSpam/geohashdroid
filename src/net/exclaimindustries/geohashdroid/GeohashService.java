@@ -149,6 +149,12 @@ public class GeohashService extends Service implements LocationListener {
 
         @Override
         public boolean isTracking() throws RemoteException {
+            if(mInfo == null)
+            {
+                // If mInfo is null at this check, we're not tracking.
+                mIsTracking = false;
+            }
+            
             return mIsTracking;
         }
 

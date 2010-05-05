@@ -176,12 +176,20 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             mService = GeohashServiceInterface.Stub.asInterface(service);
             
             try {
+                // If the service isn't tracking, we've got no reason to be
+                // here.
+                if(!mService.isTracking())
+                {
+                    Log.w(DEBUG_TAG, "I got a connection to the service, but it's not tracking?");
+                    finish();
+                }
+                
                 // Get the most recent location and then start listening.
                 mInfo = mService.getInfo();
                 mLastLoc = mService.getLastLocation();
                 mService.registerCallback(mCallback);
             } catch (RemoteException e) {
-
+                
             }
         }
 
