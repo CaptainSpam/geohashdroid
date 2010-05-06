@@ -171,6 +171,26 @@ public class GeohashDroid extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // This part is here to work around a bug in DatePicker.  Namely, it
+        // doesn't do its onRestoreInstanceState correctly and doesn't update
+        // the spinners immediately.  This will be removed if they ever fix it
+        // in the API itself (well, after I submit a patch for review).
+        try {
+            DatePicker date = (DatePicker)findViewById(R.id.Date);
+            
+            // This forces the spinners to update.
+            date.updateDate(date.getYear(), date.getMonth(), date.getDayOfMonth());
+        } catch (Exception ex) {
+            // If we throw an exception and can't cast, we're in the small
+            // display and thus don't need to work around the bug.
+        }
+    }
+
+    
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
 
