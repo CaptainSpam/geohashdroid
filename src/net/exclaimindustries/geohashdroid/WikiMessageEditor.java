@@ -215,6 +215,11 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     addStatusAndNewline(R.string.wiki_conn_success);
                 }
 
+                EditText editText = (EditText)findViewById(R.id.wikiedittext);
+                
+                // Change the summary so it has our message.
+                mFormfields.put("summary", getText(R.string.wiki_post_message_summary) + " " + editText.getText().toString());
+                
                 String before = "";
                 String after = "";
 
@@ -225,8 +230,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 } else {
                     before = page;
                 }
-
-                EditText editText = (EditText)findViewById(R.id.wikiedittext);
 
                 String localtime = sigDateFormat.format(new Date());
 
