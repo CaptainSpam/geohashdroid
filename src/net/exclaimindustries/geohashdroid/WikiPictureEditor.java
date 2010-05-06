@@ -57,8 +57,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
     /** Matches the gallery section. */
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
-    /** Matches a commented-out gallery section (like from the template). */
-    private static final Pattern RE_GALLERY_COMMENTED = Pattern.compile("^(.*)(<!--.*<gallery[^>]*>.*?</gallery>.*?-->)(.*)$",Pattern.DOTALL);
     /**
      * Matches the gallery section header.
      * TODO: Replace with API call to edit the section specifically?
@@ -452,12 +450,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
                 String before = "";
                 String after = "";
-
-                // Parse out the gallery comments.
-                Matcher commentq = RE_GALLERY_COMMENTED.matcher(page);
-                if(commentq.matches()) {
-                    page = commentq.group(1) + commentq.group(3);
-                }
                 
                 Matcher galleryq = RE_GALLERY.matcher(page);
                 if (galleryq.matches()) {
