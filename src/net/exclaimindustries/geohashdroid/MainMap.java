@@ -316,6 +316,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         mWakeLock.release();
         
         // And release our binding.
+        try {
+            mService.unregisterCallback(mCallback);
+        } catch (RemoteException e) {
+            // We don't do anything here.
+        }
         unbindService(mConnection);
     }
 
