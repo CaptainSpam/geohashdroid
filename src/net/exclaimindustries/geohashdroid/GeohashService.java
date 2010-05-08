@@ -108,6 +108,7 @@ public class GeohashService extends Service implements LocationListener {
     public void onDestroy() {
         super.onDestroy();
         
+        mCallbacks.kill();
         stopTrackingService();
     }
 
