@@ -350,7 +350,7 @@ public class GeohashService extends Service implements LocationListener {
             // Create and fire off our notification.  We'll populate it with
             // currently-known data, which should at first give the "Stand By"
             // message for distance.
-            mNotification = new Notification(android.R.drawable.stat_sys_warning, getText(R.string.notify_service_ticker), System.currentTimeMillis());
+            mNotification = new Notification(R.drawable.notification_service, getText(R.string.notify_service_ticker), System.currentTimeMillis());
             mNotification.flags = Notification.FLAG_ONGOING_EVENT;
             updateNotification();
             
