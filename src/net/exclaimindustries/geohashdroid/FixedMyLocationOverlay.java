@@ -1,5 +1,5 @@
 /**
- * AutoZoomingLocationOverlay.java
+ * FixedMyLocationOverlay.java
  * Copyright (C)2009 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
@@ -22,19 +22,14 @@ import com.google.android.maps.Projection;
 
 /**
  * <p>
- * An AutoZoomingLocationOverlay can take a Handler and notify it with updates
- * to the location of the phone and its current compass orientation. It won't,
- * however, send back the location on the first fix.
- * </p>
- * 
- * <p>
- * This is really really specialized to GeohashDroid, but if anyone else has a
- * need for it, well, that's why it's a separate class.
+ * FixedMyLocationOverlay is just a MyLocationOverlay with fixes in place for
+ * phones with dodgy firmware that don't properly implement the Google Maps API
+ * add-on, like the Motorola CLIQ.
  * </p>
  * 
  * @author Nicholas Killewald
  */
-public class AutoZoomingLocationOverlay extends MyLocationOverlay {
+public class FixedMyLocationOverlay extends MyLocationOverlay {
     // Gets set to true if an error occurs when drawing the point the normal
     // way.  This means we're using a Motorola CLIQ or any other device that
     // doesn't properly implement the MyLocationListener drawable.
@@ -49,14 +44,8 @@ public class AutoZoomingLocationOverlay extends MyLocationOverlay {
     private Point mIndicatorCenter;
     private Paint mIndicatorAccuracyPaint;
 
-    public AutoZoomingLocationOverlay(Context context, MapView mapView) {
+    public FixedMyLocationOverlay(Context context, MapView mapView) {
         super(context, mapView);
-    }
-
-    @Override
-    public synchronized void onSensorChanged(int sensor, float[] values) {
-        // TODO Auto-generated method stub
-        super.onSensorChanged(sensor, values);
     }
 
     @Override

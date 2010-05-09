@@ -53,7 +53,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     // Final destination
     private GeoPoint mDestination;
     // Our location, overlayed
-    private AutoZoomingLocationOverlay mMyLocation;
+    private FixedMyLocationOverlay mMyLocation;
     // The view
     private MapView mMapView;
     // The graticule of choice
@@ -306,7 +306,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         overlays.add(new ZoomChangeOverlay(this));
 
         // Then, we figure out where we are and plot it.
-        mMyLocation = new AutoZoomingLocationOverlay(this, mMapView);
+        mMyLocation = new FixedMyLocationOverlay(this, mMapView);
 
         overlays.add(mMyLocation);
 
