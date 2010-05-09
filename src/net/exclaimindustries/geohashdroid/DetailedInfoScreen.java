@@ -108,7 +108,14 @@ public class DetailedInfoScreen extends Activity {
                 IBinder service) {
             mService = GeohashServiceInterface.Stub.asInterface(service);
             
+            
             try {
+                if(!mService.isTracking()) {
+                    updateDisplay(null);
+                    finish();
+                    return;
+                }
+                
                 // Get the most recent location and then start listening.
                 mInfo = mService.getInfo();
                 mLastLoc = mService.getLastLocation();

@@ -51,6 +51,17 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         public void onServiceConnected(ComponentName className,
                 IBinder service) {
             mService = GeohashServiceInterface.Stub.asInterface(service);
+            
+            // If the service isn't tracking, we don't have any reason to be
+            // here.  Finish now.
+            try {
+                if(!mService.isTracking()) {
+                    finish();
+                    return;
+                }
+            } catch (RemoteException e) {
+
+            }
         }
 
         public void onServiceDisconnected(ComponentName className) {
