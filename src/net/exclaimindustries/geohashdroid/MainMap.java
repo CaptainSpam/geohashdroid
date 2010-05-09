@@ -125,6 +125,12 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     
     private GeohashServiceInterface mService;
     
+    // Whether or not we should do restarting actions when the service connects.
+    private boolean mCenterOnFirstFix = false;
+    
+    // Whether or not we should rezoom when the service connects.
+    private boolean mAutoZoomOnFirstFix = false;
+    
     /**
      * Callback!  We need a callback!
      */
@@ -134,8 +140,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         public void locationUpdate(Location location) throws RemoteException {
             // Location!  Start updating everything that needs updating (the
             // infobox and the indicator, mostly)
-            if (isAutoZoomOn() && !isZoomProper(location))
+            if ((isAutoZoomOn() && !isZoomProper(location)) || mAutoZoomOnFirstFix || mCenterOnFirstFix) {
                 resetNormalView(LocationTools.makeGeoPointFromLocation(location));
+                mAutoZoomOnFirstFix = false;
+                mCenterOnFirstFix = false;
+            }
             
             mLastLoc = location;
             populateInfoBox();
@@ -178,15 +187,44 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             try {
                 // If the service isn't tracking, we've got no reason to be
                 // here.
-                if(!mService.isTracking())
-                {
+                if(!mService.isTracking()) {
                     Log.w(DEBUG_TAG, "I got a connection to the service, but it's not tracking?");
                     finish();
+                    return;
                 }
                 
-                // Get the most recent location and then start listening.
+                // Get the most recent location and whether we know the location
+                // right away or not.
                 mInfo = mService.getInfo();
                 mLastLoc = mService.getLastLocation();
+                
+                // Now, since this is the first thing we do upon resuming, but
+                // AFTER onCreate time, we need to do the restarting mechanisms
+                // if need be.
+                if(mCenterOnFirstFix) {
+                    // If there's a fix right away, use it.  If there isn't,
+                    // wait until the first response from the service.
+                    if(mService.hasLocation()) {
+                        mCenterOnFirstFix = false;
+                        
+                        resetNormalView(mLastLoc);
+                    } else {
+                        Toast rye = Toast.makeText(MainMap.this, R.string.find_location,
+                                Toast.LENGTH_LONG);
+                        rye.show();
+                    }
+                } else if (mAutoZoomOnFirstFix) {
+                    if(mService.hasLocation()) {
+                        mAutoZoomOnFirstFix = false;
+                        
+                        resetNormalView(mLastLoc);
+                    } else {
+                        Toast rye = Toast.makeText(MainMap.this, R.string.find_location_again,
+                                Toast.LENGTH_SHORT);
+                        rye.show();
+                    }
+                }
+                
                 mService.registerCallback(mCallback);
             } catch (RemoteException e) {
                 
@@ -217,26 +255,49 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 | PowerManager.ON_AFTER_RELEASE, DEBUG_TAG);
         // The first call to onResume will acquire.
 
-        boolean restarting = false;
-
-        if (icicle != null && icicle.containsKey(AUTOZOOM)) {
-            // If our Bundle has an Autozoom boolean, we're coming back from
-            // elsewhere. We can rebuild from there.
-            mAutoZoom = icicle.getBoolean(AUTOZOOM);
-            restarting = true;
-        }
-        
         // The Intent stays constant, so we can always get the proper info from
         // it.  This is better than the store-with-icicle method I used earlier,
         // since that sometimes persisted when the Intent should've overridden.
         assignNewInfo((Info)getIntent().getParcelableExtra(GeohashDroid.INFO));
 
-        // Now, gather up our data and do anything we need to that's common to
-        // all cases.
+        // Layout!
         setContentView(R.layout.map);
 
         mMapView = (MapView)findViewById(R.id.Map);
         mMapView.setBuiltInZoomControls(true);
+        
+        MapController mcontrol = mMapView.getController();
+        
+        if (icicle != null && icicle.containsKey(AUTOZOOM)) {
+            try {
+                // If our Bundle has an Autozoom boolean, we're coming back from
+                // elsewhere. We can rebuild from there.
+                mAutoZoom = icicle.getBoolean(AUTOZOOM);
+                int lat = icicle.getInt(CENTERLAT);
+                int lon = icicle.getInt(CENTERLON);
+                int zoom = icicle.getInt(ZOOM);
+                          
+                mcontrol.setZoom(zoom);
+                mcontrol.setCenter(new GeoPoint(lat, lon));
+                
+                // And we need to make sure we let the user know if we're
+                // adjusting the view.
+                if(mAutoZoom)
+                    mAutoZoomOnFirstFix = true;
+            } catch (Exception e) {
+                // We failed to re-center (somehow the bundle was defined with
+                // the HashMaker but without centering data), so just center
+                // on the destination, zoom level 12.
+                mcontrol.setZoom(12);
+                mcontrol.setCenter(mDestination);
+            }
+        } else {
+            // Otherwise, we need to make sure we center on the first fix we get
+            // from the service.
+            mCenterOnFirstFix = true;
+            mcontrol.setZoom(12);
+            mcontrol.setCenter(mDestination);
+        }
 
         // Let's dance!  First, get the list of overlays.
         List<Overlay> overlays = mMapView.getOverlays();
@@ -254,54 +315,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // Now, add the final destination.
         addFinalDestination();
-        
-        // If we are restarting, we need to check if we were autozooming when
-        // we last left off. If we were, recenter the view on the next update
-        // (that is, the FIRST update). If we weren't, use the centering and
-        // zooming data from the bundle.
-        if (restarting) {
-            MapController mcontrol = mMapView.getController();
-
-            try {
-                // If any of this fails, we fall back to mDestination.
-                int lat = icicle.getInt(CENTERLAT);
-                int lon = icicle.getInt(CENTERLON);
-                int zoom = icicle.getInt(ZOOM);
-
-                mcontrol.setZoom(zoom);
-                mcontrol.setCenter(new GeoPoint(lat, lon));
-            } catch (Exception e) {
-                // We failed to re-center (somehow the bundle was defined with
-                // the HashMaker but without centering data), so just center
-                // on the destination, zoom level 12.
-                mcontrol.setZoom(12);
-                mcontrol.setCenter(mDestination);
-            }
-
-            // If autozoom was on, indicate that we're readjusting back to
-            // where we were.
-            if (mAutoZoom
-                    && !mMyLocation.runOnFirstFix(new InitialAutoZoomSetter())) {
-                Toast rye = Toast.makeText(this, R.string.find_location_again,
-                        Toast.LENGTH_SHORT);
-                rye.show();
-            }
-        } else {
-            // Otherwise, we center to the destination. Unless we already have
-            // a fix (somehow), then we center to where that ought to be.
-            if (!mMyLocation.runOnFirstFix(new InitialLocationAdjuster())) {
-                MapController mcontrol = mMapView.getController();
-                mcontrol.setZoom(12);
-                mcontrol.setCenter(mDestination);
-
-                Toast rye = Toast.makeText(this, R.string.find_location,
-                        Toast.LENGTH_LONG);
-                rye.show();
-            } else {
-                resetNormalView(mMyLocation.getMyLocation());
-            }
-        }
-
     }
 
     @Override
@@ -318,7 +331,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // And release our binding.
         try {
             mService.unregisterCallback(mCallback);
-        } catch (RemoteException e) {
+        } catch (Exception e) {
             // We don't do anything here.
         }
         unbindService(mConnection);
@@ -989,36 +1002,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             infoboxbig.update(mInfo, mLastLoc);
         else if (setting.equals("Small"))
             infobox.update(mInfo, mLastLoc);
-    }
-
-    /**
-     * This class handles the initial "move the map to see both the final
-     * destination and you" adjustment when the Activity is first created. If
-     * need be, it will also do the same job at any other time, too.
-     * 
-     * This is a separate internal class because it's otherwise really really
-     * ugly to define this entire thing in the space of an if statement.
-     */
-    protected class InitialLocationAdjuster implements Runnable {
-        public void run() {
-            resetNormalView(mMyLocation.getMyLocation());
-        }
-    }
-
-    /**
-     * This class comes into play if we're coming back from the Activity being
-     * paused or whatnot (and not immediately restored due to a config change).
-     * This just acts on autozoom. If we were autozooming, we want to zoom back
-     * where we were.
-     */
-    protected class InitialAutoZoomSetter implements Runnable {
-        public void run() {
-            // If we last left off with autozoom on, zoom right on in. If we
-            // didn't, keep it however it was.
-            if (mAutoZoom) {
-                resetNormalView(mMyLocation.getMyLocation());
-            }
-        }
     }
     
     @Override
