@@ -215,8 +215,6 @@ in a bit better grammatically (at least in English).
 <!-- Remember to enclose this in parentheses in-code! -->
 <string name="details_accuracy">Accurate to</string>
 
-<string name="notify_service_ticker">And away we go...</string>
-
 <string name="hint_lat">Lat</string>
 <string name="hint_lon">Lon</string>
 <string name="hint_message">Message</string>
