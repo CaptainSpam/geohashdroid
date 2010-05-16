@@ -307,11 +307,9 @@ public class DetailedInfoScreen extends Activity {
             tv.setText(UnitConverter.makeDistanceString(this, DIST_FORMAT,
                     mInfo.getDistanceInMeters(loc)));
             tv = (TextView)findViewById(R.id.Accuracy);
-            tv.setText("("
-                    + getResources().getString(R.string.details_accuracy)
-                    + " "
-                    + UnitConverter.makeDistanceString(this,
-                            ACCURACY_FORMAT, loc.getAccuracy()) + ")");
+            tv.setText(getResources().getString(R.string.details_accuracy,
+                    UnitConverter.makeDistanceString(this,
+                            ACCURACY_FORMAT, loc.getAccuracy())));
         }
 
     }
