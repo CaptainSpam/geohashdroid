@@ -389,8 +389,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 String now = new SimpleDateFormat("HH-mm-ss-SSS")
                         .format(new Date());
                 Graticule grat = mInfo.getGraticule();
-                String lat = grat.getLatitudeString();
-                String lon = grat.getLongitudeString();
+                String lat = grat.getLatitudeString(true);
+                String lon = grat.getLongitudeString(true);
                 String expedition = date + "_" + lat + "_" + lon;
 
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);

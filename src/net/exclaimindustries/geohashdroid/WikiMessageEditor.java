@@ -150,8 +150,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo
                         .getCalendar().getTime());
                 Graticule grat = mInfo.getGraticule();
-                String lat = grat.getLatitudeString();
-                String lon = grat.getLongitudeString();
+                String lat = grat.getLatitudeString(true);
+                String lon = grat.getLongitudeString(true);
                 String expedition = date + "_" + lat + "_" + lon;
 
                 String locationTag = "";

@@ -536,8 +536,8 @@ public class GeohashDroid extends Activity {
                     SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                             0);
                     SharedPreferences.Editor editor = prefs.edit();
-                    editor.putString(GHDConstants.PREF_DEFAULT_LAT, g.getLatitudeString());
-                    editor.putString(GHDConstants.PREF_DEFAULT_LON, g.getLongitudeString());
+                    editor.putString(GHDConstants.PREF_DEFAULT_LAT, g.getLatitudeString(true));
+                    editor.putString(GHDConstants.PREF_DEFAULT_LON, g.getLongitudeString(true));
                     editor.commit();
                 }
                 break;
@@ -617,9 +617,9 @@ public class GeohashDroid extends Activity {
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(GHDConstants.PREF_DEFAULT_LAT, info.getGraticule()
-                .getLatitudeString());
+                .getLatitudeString(true));
         editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
-                .getLongitudeString());
+                .getLongitudeString(true));
         editor.commit();
         
         Intent starter = new Intent(GeohashDroid.this, GeohashService.class);
