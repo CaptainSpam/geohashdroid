@@ -26,6 +26,7 @@ import android.os.IBinder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 /**
  * The GeohashService is a background Service that keeps watching GPS for
@@ -75,7 +76,7 @@ public class GeohashService extends Service implements LocationListener {
     private static final int LOCATION_VALID_TIME = 120000;
     
     /** The decimal format for distances. */
-    private static final DecimalFormat mDistFormat = new DecimalFormat("###.####");
+    private static final DecimalFormat mDistFormat = new DecimalFormat("###.##");
     
     final RemoteCallbackList<GeohashServiceCallback> mCallbacks = new RemoteCallbackList<GeohashServiceCallback>();
     
@@ -270,40 +271,55 @@ public class GeohashService extends Service implements LocationListener {
         }
     }
     
+    private void updateNotificationDestination() {
+        // This might get called if the coordinate format changes.
+        if(mNotification != null) {
+            mNotification.contentView.setTextViewText(R.id.Destination, getText(R.string.infobox_final)
+                    + " " + UnitConverter.makeLatitudeCoordinateString(this, mInfo.getLatitude(), false, UnitConverter.OUTPUT_SHORT)
+                    + " " + UnitConverter.makeLongitudeCoordinateString(this, mInfo.getLongitude(), false, UnitConverter.OUTPUT_SHORT));
+        }
+    }
+    
     private void updateNotification() {
         // Updating the notification sets the distance, and that's it.  Changing
         // anything else requires a new Info bundle, which in turn cancels the
         // notification and starts a new one.
         
         // There's a really minor chance mInfo can be null here.  If it is, we
-        // SHOULD be shutting down anyway.
-        if(mInfo == null) return;
+        // SHOULD be shutting down anyway.  Also, if the notification's null,
+        // we should also ignore it.
+        if(mInfo == null || mNotification == null) return;
 
         // The destination output looks like an infobox.
-        String contentTitle = getText(R.string.infobox_final)
+        mNotification.contentView.setTextViewText(R.id.YourLocation, getText(R.string.infobox_you)
             + " "
-            + UnitConverter.makeLatitudeCoordinateString(this, mInfo.getLatitude(), false, UnitConverter.OUTPUT_LONG)
-            + " "
-            + UnitConverter.makeLongitudeCoordinateString(this, mInfo.getLongitude(), false, UnitConverter.OUTPUT_LONG);
+            + (mLastLocation != null
+                    ? (UnitConverter.makeLatitudeCoordinateString(this, mLastLocation.getLatitude(), false, UnitConverter.OUTPUT_SHORT)
+                            + " "
+                            + UnitConverter.makeLongitudeCoordinateString(this, mLastLocation.getLongitude(), false, UnitConverter.OUTPUT_SHORT))
+                    : this.getString(R.string.standby_title)));
         
-        // As does the distance.
-        String contentText = this.getString(R.string.details_dist)
+        // Update the distance AND accuracy (if need be)...
+        mNotification.contentView.setTextViewText(R.id.Distance, this.getString(R.string.details_dist)
             + " "
             + (mLastLocation != null
                     ? (UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(mLastLocation)))
-                    : this.getString(R.string.standby_title));
- 
-        // We want to start the MainMap activity to put the user directly in the
-        // middle of the action.
-        Intent go = new Intent(this, MainMap.class);
-        go.putExtra(GeohashDroid.INFO, mInfo);
-        go.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, go, PendingIntent.FLAG_CANCEL_CURRENT);
+                    : this.getString(R.string.standby_title)));
         
-        // Then, update the notification...
-        mNotification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);
+        if (mLastLocation == null) {
+            mNotification.contentView.setTextViewText(R.id.Accuracy, "");
+        } else {
+            float accuracy = mLastLocation.getAccuracy();
+            if (accuracy >= GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD) {
+                mNotification.contentView.setTextViewText(R.id.Accuracy, getString(R.string.infobox_accuracy_really_low));
+            } else if (accuracy >= GHDConstants.LOW_ACCURACY_THRESHOLD) {
+                mNotification.contentView.setTextViewText(R.id.Accuracy, getString(R.string.infobox_accuracy_low));
+            } else {
+                mNotification.contentView.setTextViewText(R.id.Accuracy, "");
+            }
+        }
         
-        // ...and fire!
+        // Now, fire!
         mNotificationManager.notify(NOTIFICATION_ID, mNotification);
     }
 
@@ -350,9 +366,25 @@ public class GeohashService extends Service implements LocationListener {
             
             // Create and fire off our notification.  We'll populate it with
             // currently-known data, which should at first give the "Stand By"
-            // message for distance.
+            // message for distance.  Assign any constant data here.
             mNotification = new Notification(R.drawable.notification_service, null, System.currentTimeMillis());
             mNotification.flags = Notification.FLAG_ONGOING_EVENT;
+            
+            RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_service_layout);
+            views.setImageViewResource(R.id.Icon, R.drawable.notification_service);
+            mNotification.contentView = views;
+            
+            // Final destination line!
+            updateNotificationDestination();
+            
+            // We want to start the MainMap activity to put the user directly in the
+            // middle of the action.
+            Intent go = new Intent(this, MainMap.class);
+            go.putExtra(GeohashDroid.INFO, mInfo);
+            go.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, go, PendingIntent.FLAG_CANCEL_CURRENT);
+            
+            mNotification.contentIntent = contentIntent;
             updateNotification();
             
             // There!  Let's go!

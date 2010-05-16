@@ -118,10 +118,10 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
             accuracyLine = "";
         } else {
             float accuracy = loc.getAccuracy();
-            if (accuracy > REALLY_LOW_ACCURACY_THRESHOLD) {
+            if (accuracy > GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD) {
                 accuracyLine = "\n"
                         + c.getString(R.string.infobox_accuracy_really_low);
-            } else if (accuracy > LOW_ACCURACY_THRESHOLD) {
+            } else if (accuracy > GHDConstants.LOW_ACCURACY_THRESHOLD) {
                 accuracyLine = "\n"
                         + c.getString(R.string.infobox_accuracy_low);
             } else {

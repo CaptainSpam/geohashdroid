@@ -54,4 +54,9 @@ public final class GHDConstants {
      * could take its place if someone else writes a better graticule picker.
      */
     public static final String PICK_GRATICULE = "net.exclaimindustries.geohashdroid.PICK_GRATICULE";
+
+    /** Threshold for the "Accuracy Low" warning (currently 64m). **/
+    public static final int LOW_ACCURACY_THRESHOLD = 64;
+    /** Threshold for the "Accuracy Really Low" warning (currently 200m). **/
+    public static final int REALLY_LOW_ACCURACY_THRESHOLD = 200;
 }
