@@ -17,6 +17,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -80,6 +81,17 @@ public class GeohashService extends Service implements LocationListener {
     
     final RemoteCallbackList<GeohashServiceCallback> mCallbacks = new RemoteCallbackList<GeohashServiceCallback>();
     
+    private final SharedPreferences.OnSharedPreferenceChangeListener prefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+                String key) {
+            if(key.equals(GHDConstants.PREF_COORD_UNITS) || key.equals(GHDConstants.PREF_DIST_UNITS)) {
+                updateNotification();
+            }
+        }
+    };
+    
     /* (non-Javadoc)
      * @see android.app.Service#onBind(android.content.Intent)
      */
@@ -96,6 +108,10 @@ public class GeohashService extends Service implements LocationListener {
         // We've got stuff, it needs setting up.
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        
+        // We also need to listen for preference changes.
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        prefs.registerOnSharedPreferenceChangeListener(prefListener);
     }
 
     @Override
@@ -108,6 +124,8 @@ public class GeohashService extends Service implements LocationListener {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        prefs.unregisterOnSharedPreferenceChangeListener(prefListener);
         
         mCallbacks.kill();
         stopTrackingService();
@@ -281,15 +299,15 @@ public class GeohashService extends Service implements LocationListener {
     }
     
     private void updateNotification() {
-        // Updating the notification sets the distance, and that's it.  Changing
-        // anything else requires a new Info bundle, which in turn cancels the
-        // notification and starts a new one.
+        // This redraws the whole notification.  Including the destination.
         
         // There's a really minor chance mInfo can be null here.  If it is, we
         // SHOULD be shutting down anyway.  Also, if the notification's null,
         // we should also ignore it.
         if(mInfo == null || mNotification == null) return;
 
+        updateNotificationDestination();
+        
         // The destination output looks like an infobox.
         mNotification.contentView.setTextViewText(R.id.YourLocation, getText(R.string.infobox_you)
             + " "
@@ -364,18 +382,13 @@ public class GeohashService extends Service implements LocationListener {
             if(tempLocation != null && System.currentTimeMillis() - tempLocation.getTime() < LOCATION_VALID_TIME)
                 mLastLocation = tempLocation;       
             
-            // Create and fire off our notification.  We'll populate it with
-            // currently-known data, which should at first give the "Stand By"
-            // message for distance.  Assign any constant data here.
+            // Create and fire off our notification.
             mNotification = new Notification(R.drawable.notification_service, null, System.currentTimeMillis());
             mNotification.flags = Notification.FLAG_ONGOING_EVENT;
             
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_service_layout);
             views.setImageViewResource(R.id.Icon, R.drawable.notification_service);
             mNotification.contentView = views;
-            
-            // Final destination line!
-            updateNotificationDestination();
             
             // We want to start the MainMap activity to put the user directly in the
             // middle of the action.
