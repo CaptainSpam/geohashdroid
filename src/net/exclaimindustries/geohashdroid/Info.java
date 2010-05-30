@@ -37,6 +37,7 @@ import com.google.android.maps.GeoPoint;
  * 
  */
 public class Info implements Parcelable {
+    /** The earliest date at which the 30W Rule is used. */
     private static final Calendar LIMIT_30W = new GregorianCalendar(2008, Calendar.MAY, 26);
 
     private double mLatitude;
@@ -95,22 +96,30 @@ public class Info implements Parcelable {
 
     /**
      * Gets the fractional part of the latitude of the final destination.  That
-     * is, the part determined by the hash.
+     * is, the part determined by the hash.  If this is a globalhash, this will
+     * return the complete latitude.
      *
      * @return the fractional part of the latitude
      */
     public double getLatitudeHash() {
-        return Math.abs(mLatitude) - mGraticule.getLatitude();
+        if(mGraticule != null)
+            return Math.abs(mLatitude) - mGraticule.getLatitude();
+        else
+            return mLatitude;
     }
 
     /**
      * Gets the fractional part of the longitude of the final destination.  That
-     * is, the part determined by the hash.
+     * is, the part determined by the hash.  If this is a globalhash, this will
+     * return the complete latitude.
      *
      * @return the fractional part of the longitude
      */
     public double getLongitudeHash() {
-        return Math.abs(mLongitude) - mGraticule.getLongitude();
+        if(mGraticule != null)
+            return Math.abs(mLongitude) - mGraticule.getLongitude();
+        else
+            return mLongitude;
     }
 
     /**
@@ -141,7 +150,7 @@ public class Info implements Parcelable {
     }
 
     /**
-     * Gets the graticule.
+     * Gets the graticule.  This will be null if this is a globalhash.
      * 
      * @return the graticule
      */
@@ -206,11 +215,11 @@ public class Info implements Parcelable {
     /**
      * Returns a calendar representing the date from which the stock price was
      * pulled from a given date/graticule pair.  That is, back a day for the 30W
-     * Rule and rewinding to Friday if it falls on a weekend.
+     * Rule or globalhashes and rewinding to Friday if it falls on a weekend.
      * 
      * @param c date to adjust
      * @param g Graticule to use to determine if the 30W Rule is in effect (if
-     *          null, assumes it isn't and no adjustments are needed for it)
+     *          null, assumes this is a globalhash which is always back a day)
      * @return a new adjusted Calendar
      */
     public static Calendar makeAdjustedCalendar(Calendar c, Graticule g) {
@@ -223,11 +232,11 @@ public class Info implements Parcelable {
         // original for various reasons.
         Calendar cal = (Calendar)(c.clone());
         
-        // Second, 30W Rule hackery.  If g is null, assume we're not in 30W
-        // territory (that is, no adjustment is needed).  If the date is May
-        // 26, 2008 or earlier, ignore it anyway (the 30W Rule only applies
-        // AFTER it was created).
-        if(cal.after(LIMIT_30W) && g != null && g.uses30WRule())
+        // Second, 30W Rule hackery.  If g is null, assume we're in a globalhash
+        // (that is, adjustment is needed).  If the date is May 26, 2008 or
+        // earlier (and this isn't a globalhash), ignore it anyway (the 30W Rule
+        // only applies to non-globalhashes AFTER it was created).
+        if((cal.after(LIMIT_30W) && g.uses30WRule()) || g == null)
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.
