@@ -172,12 +172,12 @@ public class StockStoreDatabase {
             ContentValues toGo = new ContentValues();
             Calendar cal = i.getCalendar();
             toGo.put(KEY_HASHES_DATE, DateTools.getDateString(cal));
-            toGo.put(KEY_HASHES_30W, i.getGraticule().uses30WRule());
+            toGo.put(KEY_HASHES_30W, i.uses30WRule());
             toGo.put(KEY_HASHES_LATHASH, i.getLatitudeHash());
             toGo.put(KEY_HASHES_LONHASH, i.getLongitudeHash());
             
             Log.d(DEBUG_TAG, "NOW STORING TO HASHES " + DateTools.getDateString(cal)
-                    + (i.getGraticule().uses30WRule() ? " (30W)" : "") + " : "
+                    + (i.uses30WRule() ? " (30W)" : "") + " : "
                     + i.getLatitudeHash() + "," + i.getLongitudeHash());
             
             return mDatabase.insert(TABLE_HASHES, null, toGo);
@@ -234,7 +234,7 @@ public class StockStoreDatabase {
             // Now, to the database!
             Cursor cursor = mDatabase.query(TABLE_HASHES, new String[] {KEY_HASHES_LATHASH, KEY_HASHES_LONHASH},
                     KEY_HASHES_DATE + " = " + DateTools.getDateString(c) + " AND " + KEY_HASHES_30W + " = "
-                    + (g.uses30WRule() ? "1" : "0"),
+                    + ((g == null || g.uses30WRule()) ? "1" : "0"),
                     null, null, null, null);
             
             if(cursor == null) {
@@ -254,10 +254,14 @@ public class StockStoreDatabase {
                 Log.d(DEBUG_TAG, "Info found -- Today's lucky numbers are " + latHash + "," + lonHash);
                 
                 // Get the destination set...
-                double lat = (g.getLatitude() + latHash) * (g.isSouth() ? -1 : 1);
-                double lon = (g.getLongitude() + lonHash) * (g.isWest() ? -1 : 1);
-                
-                toReturn = new Info(lat, lon, g, c);
+                if(g != null) {
+                    double lat = (g.getLatitude() + latHash) * (g.isSouth() ? -1 : 1);
+                    double lon = (g.getLongitude() + lonHash) * (g.isWest() ? -1 : 1);
+                    
+                    toReturn = new Info(lat, lon, g, c);
+                } else {
+                    toReturn = new Info(latHash, lonHash, g, c);
+                }
             }
             
             cursor.close();

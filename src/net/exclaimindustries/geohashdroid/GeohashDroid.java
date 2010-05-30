@@ -611,16 +611,19 @@ public class GeohashDroid extends Activity {
     
     private void dispatchMapIntent(Info info) {
         // Stash the Graticule away in preferences. We always want to remember
-        // the last one we used, even if we blank it out next time around.
+        // the last one we used, even if we blank it out next time around.  But,
+        // we don't write anything if we're globalhashing.
         // TODO: Actually, what we REALLY want is a "home graticule" option that
         // WON'T get overwritten by an option.
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(GHDConstants.PREF_DEFAULT_LAT, info.getGraticule()
-                .getLatitudeString(true));
-        editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
-                .getLongitudeString(true));
-        editor.commit();
+        if(!info.isGlobalHash()) {
+            SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString(GHDConstants.PREF_DEFAULT_LAT, info.getGraticule()
+                    .getLatitudeString(true));
+            editor.putString(GHDConstants.PREF_DEFAULT_LON, info.getGraticule()
+                    .getLongitudeString(true));
+            editor.commit();
+        }
         
         Intent starter = new Intent(GeohashDroid.this, GeohashService.class);
         starter.putExtra(INFO, info);

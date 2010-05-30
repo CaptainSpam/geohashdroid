@@ -46,7 +46,11 @@ public class Info implements Parcelable {
     private Calendar mDate;
 
     /**
-     * Creates an Info object with the given data. That's it.
+     * Creates an Info object with the given data. That's it.  If making a
+     * globalhash, give the latitude and longitude as the hash, not the full
+     * coordinates (and make sure the graticule is null).
+     * 
+     * TODO: I've really got to find a better way to do globalhashes...
      * 
      * @param latitude
      *            the destination's latitude, as a double
@@ -82,7 +86,10 @@ public class Info implements Parcelable {
      * @return the latitude
      */
     public double getLatitude() {
-        return mLatitude;
+        if(mGraticule != null)
+            return mLatitude;
+        else
+            return mLatitude * 180 - 90;
     }
 
     /**
@@ -91,13 +98,15 @@ public class Info implements Parcelable {
      * @return the longitude
      */
     public double getLongitude() {
-        return mLongitude;
+        if(mGraticule != null)
+            return mLongitude;
+        else
+            return mLongitude * 360 - 180;
     }
 
     /**
      * Gets the fractional part of the latitude of the final destination.  That
-     * is, the part determined by the hash.  If this is a globalhash, this will
-     * return the complete latitude.
+     * is, the part determined by the hash.
      *
      * @return the fractional part of the latitude
      */
@@ -110,8 +119,7 @@ public class Info implements Parcelable {
 
     /**
      * Gets the fractional part of the longitude of the final destination.  That
-     * is, the part determined by the hash.  If this is a globalhash, this will
-     * return the complete latitude.
+     * is, the part determined by the hash.
      *
      * @return the fractional part of the longitude
      */
@@ -236,7 +244,7 @@ public class Info implements Parcelable {
         // (that is, adjustment is needed).  If the date is May 26, 2008 or
         // earlier (and this isn't a globalhash), ignore it anyway (the 30W Rule
         // only applies to non-globalhashes AFTER it was created).
-        if((cal.after(LIMIT_30W) && g.uses30WRule()) || g == null)
+        if(g == null || (cal.after(LIMIT_30W) && g.uses30WRule()))
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.
@@ -261,6 +269,30 @@ public class Info implements Parcelable {
         loc.setLongitude((float)(point.getLongitudeE6() / 1000000.0f));
 
         return loc;
+    }
+    
+    /**
+     * Determines if this Info represents a point whose date follows the 30W
+     * Rule.  Note that globalhashes always follow the 30W Rule.
+     * 
+     * @return true if 30W or global, false if not
+     */
+    public boolean uses30WRule() {
+        // If mGraticule is null, this is always 30W.
+        if(mGraticule == null) return true;
+        
+        // Otherwise, just forward it to the graticule itself.
+        return mDate.after(LIMIT_30W) && mGraticule.uses30WRule();
+    }
+    
+    /**
+     * Determines if this Info represents a globalhash (and thus doesn't have
+     * any sort of valid Graticule data).
+     * 
+     * @return true if global, false if not
+     */
+    public boolean isGlobalHash() {
+        return mGraticule == null;
     }
     
     public static final Parcelable.Creator<Info> CREATOR = new Parcelable.Creator<Info>() {

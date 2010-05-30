@@ -441,11 +441,13 @@ public class HashBuilder {
 //    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
 
         // If it's in the quick cache, use it.
-        Log.d(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c) + (g.uses30WRule() ? " with 30W rule" : " without 30W rule"));
+        Log.d(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c)
+                + ((g == null || g.uses30WRule()) ? " with 30W rule" : " without 30W rule"));
         Info result = getQuickCache(c, g);
         if(result != null) {
             Log.d(DEBUG_TAG, "Data found in quickcache!");
-            return cloneInfo(result, g);
+            if(result.isGlobalHash()) return result;
+            else return cloneInfo(result, g);
         }
     	
         // Otherwise, check the stock cache.
@@ -568,14 +570,23 @@ public class HashBuilder {
      * because that would require a trip back to the internet, and by this
      * point, we should know that we don't need to do so.
      * 
+     * Also note that you can't do any cloning actions on a globalhash, since
+     * that doesn't make any sense.
+     * 
      * @param i old Info object to clone
      * @param g new Graticule to apply
-     * @throws InvalidParameterException the Info and Graticule do not lie on the same side of the 30W line.
+     * @throws InvalidParameterException the Info and Graticule do not lie on
+     *                                   the same side of the 30W line, or one
+     *                                   of the Graticules in question (either
+     *                                   from the Info being cloned or the new
+     *                                   one) indicates a globalhash.
      * @return
      */
     protected static Info cloneInfo(Info i, Graticule g) {
         // This sort of requires the 30W-itude of both to match.
-        if(i.getGraticule().uses30WRule() != g.uses30WRule())
+        if(i.isGlobalHash() || g == null)
+            throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
+        if(i.uses30WRule() != g.uses30WRule())
             throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line; this should not have happened.");
         
         // Get the destination set...
@@ -620,16 +631,20 @@ public class HashBuilder {
     private static Info getQuickCache(Calendar sCal, Graticule g) {
     	// We don't use Calendar.equals here, as that checks all properties,
     	// including potentially some we don't really care about.
+        boolean is30W = (g == null || g.uses30WRule());
         
         // At any rate, first off, the most recent date/30W combo.  Then, the
         // second-most.  Failing THAT, return null.
+        Log.d(DEBUG_TAG, "Checking quickcache for data...");
         if(mLastInfo != null) {
             Calendar stored = mLastInfo.getCalendar();
-            
+
             if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
                     && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
                     && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
-                    && mLastInfo.getGraticule().uses30WRule() == g.uses30WRule()) {
+                    && ((mLastInfo.getGraticule() == null && g == null)
+                            || (mLastInfo.getGraticule() != null && g != null))
+                    && mLastInfo.uses30WRule() == is30W) {
                 Log.d(DEBUG_TAG, "Hash data is in quick cache (mLastInfo): " + mLastInfo.getLatitudeHash() + ", " + mLastInfo.getLongitudeHash());
                 return mLastInfo;
             }
@@ -641,11 +656,14 @@ public class HashBuilder {
             if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
                     && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
                     && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
-                    && mTwoInfosAgo.getGraticule().uses30WRule() == g.uses30WRule()) {
+                    && ((mTwoInfosAgo.getGraticule() == null && g == null)
+                            || (mTwoInfosAgo.getGraticule () != null && g != null))
+                    && mTwoInfosAgo.uses30WRule() == is30W) {
                 Log.d(DEBUG_TAG, "Hash data is in quick cache (mTwoInfosAgo): " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
                 return mTwoInfosAgo;
             }
         }
+        Log.d(DEBUG_TAG, "Data wasn't in quickcache.");
         
         return null;
     }
@@ -673,20 +691,31 @@ public class HashBuilder {
     }
 
     private static double getLatitude(Graticule g, String hash) {
-        int lat = g.getLatitude();
-        if (g.isSouth()) {
-            return (lat + getLatitudeHash(hash)) * -1;
+        // If the Graticule's not null, this is a normal hash.  If it is, it's a
+        // globalhash, and has to be treated differently.
+        if(g != null) {
+            int lat = g.getLatitude();
+            if (g.isSouth()) {
+                return (lat + getLatitudeHash(hash)) * -1;
+            } else {
+                return lat + getLatitudeHash(hash);
+            }
         } else {
-            return lat + getLatitudeHash(hash);
+            return getLatitudeHash(hash);
         }
     }
 
     private static double getLongitude(Graticule g, String hash) {
-        int lon = g.getLongitude();
-        if (g.isWest()) {
-            return (lon + getLongitudeHash(hash)) * -1;
+        // Same deal as with getLatitude.
+        if(g != null) {
+            int lon = g.getLongitude();
+            if (g.isWest()) {
+                return (lon + getLongitudeHash(hash)) * -1;
+            } else {
+                return lon + getLongitudeHash(hash);
+            }
         } else {
-            return lon + getLongitudeHash(hash);
+            return getLongitudeHash(hash);
         }
     }
 
