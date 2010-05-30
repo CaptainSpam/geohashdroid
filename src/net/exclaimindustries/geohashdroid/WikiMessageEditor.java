@@ -147,12 +147,12 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     addStatusAndNewline(R.string.wiki_conn_anon_warning);
                 }
 
-                String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo
-                        .getCalendar().getTime());
-                Graticule grat = mInfo.getGraticule();
-                String lat = grat.getLatitudeString(true);
-                String lon = grat.getLongitudeString(true);
-                String expedition = date + "_" + lat + "_" + lon;
+//                String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo
+//                        .getCalendar().getTime());
+//                Graticule grat = mInfo.getGraticule();
+//                String lat = grat.getLatitudeString(true);
+//                String lon = grat.getLongitudeString(true);
+                String expedition = WikiUtils.getWikiPageName(mInfo);
 
                 String locationTag = "";
 
@@ -188,8 +188,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     // ok, let's create some.
                     addStatus(R.string.wiki_conn_expedition_creating);
                     WikiUtils.putWikiPage(httpclient, expedition,
-                            "{{subst:Expedition|lat=" + lat + "|lon=" + lon
-                                    + "|date=" + date + "}}", mFormfields);
+                            WikiUtils.getWikiExpeditionTemplate(mInfo),
+                            mFormfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
 
                     addStatus(R.string.wiki_conn_expedition_reretrieving);

@@ -28,6 +28,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -421,6 +422,80 @@ public class WikiUtils {
           return DOMUtil.getSimpleAttributeText(error, "code");
       } catch (Exception ex) {
           return "UnknownError";
+      }
+  }
+  
+  /**
+   * Retrieves the wiki page name for the given data.  This accounts for
+   * globalhashes, too.
+   * 
+   * @param info Info from which a page name will be derived
+   * @return said pagename
+   */
+  public static String getWikiPageName(Info info) {
+      String date = new SimpleDateFormat("yyyy-MM-dd").format(info
+              .getCalendar().getTime());
+      
+      if(info.isGlobalHash()) {
+          return date + "_global";
+      } else {
+          Graticule grat = info.getGraticule();
+          String lat = grat.getLatitudeString(true);
+          String lon = grat.getLongitudeString(true);
+          
+          return date + "_" + lat + "_" + lon;
+      }
+  }
+  
+  /**
+   * Retrieves the text for the Expedition template appropriate for the given
+   * Info.
+   * 
+   * TODO: The wiki doesn't appear to have an Expedition template for
+   * globalhashing yet.
+   * 
+   * @param info Info from which an Expedition template will be generated
+   * @return said template
+   */
+  public static String getWikiExpeditionTemplate(Info info) {
+      String date = new SimpleDateFormat("yyyy-MM-dd").format(info
+              .getCalendar().getTime());
+      
+      if(info.isGlobalHash()) {
+          // TODO: Replace this with actual data once we've got a template.
+          return "<!-- GLOBALHASH TEMPLATE GOES HERE ONCE WE HAVE ONE -->\n\n"
+              + getWikiCategories(info);
+      } else {
+          Graticule grat = info.getGraticule();
+          String lat = grat.getLatitudeString(true);
+          String lon = grat.getLongitudeString(true);
+          
+          return "{{subst:Expedition|lat=" + lat + "|lon=" + lon + "|date=" + date + "}}";
+      }
+  }
+  
+  /**
+   * Retrieves the text for the categories to put on the wiki for pictures.
+   * 
+   * @param info Info from which categories will be generated
+   * @return said categories
+   */
+  public static String getWikiCategories(Info info) {
+      String date = new SimpleDateFormat("yyyy-MM-dd").format(info
+              .getCalendar().getTime());
+      
+      String toReturn = "[[Category:Meetup on "
+          + date + "]]\n";
+      
+      if(info.isGlobalHash()) {
+          return toReturn + "[[Category:Globalhash]]";
+      } else {
+          Graticule grat = info.getGraticule();
+          String lat = grat.getLatitudeString(true);
+          String lon = grat.getLongitudeString(true);
+          
+          return toReturn + "[[Category:Meetup in " + lat + " "
+              + lon + "]]";
       }
   }
 }

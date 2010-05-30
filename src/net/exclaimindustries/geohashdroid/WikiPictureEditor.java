@@ -384,14 +384,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 addStatusAndNewline(R.string.wiki_conn_done);
 
                 addStatus(R.string.wiki_conn_upload_image);
-                String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo
-                        .getCalendar().getTime());
+
                 String now = new SimpleDateFormat("HH-mm-ss-SSS")
                         .format(new Date());
-                Graticule grat = mInfo.getGraticule();
-                String lat = grat.getLatitudeString(true);
-                String lon = grat.getLongitudeString(true);
-                String expedition = date + "_" + lat + "_" + lon;
+
+                String expedition = WikiUtils.getWikiPageName(mInfo);
 
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
 
@@ -399,9 +396,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         + locationTag;
 
                 String filename = expedition + "_" + now + ".jpg";
-                String description = message + "\n\n" + "[[Category:Meetup on "
-                        + date + "]]\n" + "[[Category:Meetup in " + lat + " "
-                        + lon + "]]";
+                String description = message + "\n\n" + WikiUtils.getWikiCategories(mInfo);
                 
                 HashMap<String, String> formfields = new HashMap<String, String>();
                 
@@ -429,8 +424,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     // ok, let's create some.
                     addStatus(R.string.wiki_conn_expedition_creating);
                     WikiUtils.putWikiPage(httpclient, expedition,
-                            "{{subst:Expedition|lat=" + lat + "|lon=" + lon
-                                    + "|date=" + date + "}}", formfields);
+                            WikiUtils.getWikiExpeditionTemplate(mInfo),
+                            formfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
                     addStatus(R.string.wiki_conn_expedition_reretrieving);
                     page = WikiUtils.getWikiPage(httpclient, expedition,
