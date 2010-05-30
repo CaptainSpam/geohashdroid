@@ -285,7 +285,7 @@ public class GeohashService extends Service implements LocationListener {
             // enabled.
             onProviderDisabled(provider);
         } else {
-            onProviderDisabled(provider);
+            onProviderEnabled(provider);
         }
     }
     
