@@ -19,6 +19,7 @@
 <string name="gratmap_go_label">Use this one</string>
 <string name="backtomap_label">Back to the map</string>
 <string name="closest_label">Use Closest</string>
+<string name="globalhash_label">Globalhash!</string>
 <string name="gratmap_label">Pick From Map</string>
 
 <string name="cancel_label">Cancel</string>
@@ -131,6 +132,8 @@
 <string name="menu_item_post_wiki">View graticule page</string>
 <string name="menu_item_send_to_maps">Send to Maps</string>
 <string name="menu_item_quit">Quit</string>
+<string name="menu_item_globalhash">Globalhash mode</string>
+<string name="menu_item_geohash">Geohash mode</string>
 
 <string name="wiki_editor_activity_title">Enter Message</string>
 <string name="wiki_picture_activity_title">Upload Picture</string>
