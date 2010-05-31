@@ -10,6 +10,7 @@
 package net.exclaimindustries.geohashdroid;
 
 import net.exclaimindustries.tools.DOMUtil;
+import net.exclaimindustries.tools.DateTools;
 
 import org.apache.commons.httpclient.methods.multipart.ByteArrayPartSource;
 import org.apache.commons.httpclient.methods.multipart.FilePart;
@@ -28,7 +29,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -433,8 +433,7 @@ public class WikiUtils {
    * @return said pagename
    */
   public static String getWikiPageName(Info info) {
-      String date = new SimpleDateFormat("yyyy-MM-dd").format(info
-              .getCalendar().getTime());
+      String date = DateTools.getHyphenatedDateString(info.getCalendar());
       
       if(info.isGlobalHash()) {
           return date + "_global";
@@ -458,8 +457,7 @@ public class WikiUtils {
    * @return said template
    */
   public static String getWikiExpeditionTemplate(Info info) {
-      String date = new SimpleDateFormat("yyyy-MM-dd").format(info
-              .getCalendar().getTime());
+      String date = DateTools.getHyphenatedDateString(info.getCalendar());
       
       if(info.isGlobalHash()) {
           // TODO: Replace this with actual data once we've got a template.
@@ -481,8 +479,7 @@ public class WikiUtils {
    * @return said categories
    */
   public static String getWikiCategories(Info info) {
-      String date = new SimpleDateFormat("yyyy-MM-dd").format(info
-              .getCalendar().getTime());
+      String date = DateTools.getHyphenatedDateString(info.getCalendar());
       
       String toReturn = "[[Category:Meetup on "
           + date + "]]\n";
