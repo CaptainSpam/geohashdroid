@@ -24,6 +24,8 @@ public final class GHDConstants {
     public static final String PREF_DEFAULT_LAT = "DefaultLatitude";
     /** Prefs key where the last longitude is stored. */
     public static final String PREF_DEFAULT_LON = "DefaultLongitude";
+    /** Prefs key where we keep track of whether we were in globalhash mode. */
+    public static final String PREF_GLOBALHASH_MODE = "GlobalhashMode";
     /** Prefs key specifying coordinate units. */
     public static final String PREF_COORD_UNITS = "CoordUnits";
     /** Prefs key specifying distance units. */

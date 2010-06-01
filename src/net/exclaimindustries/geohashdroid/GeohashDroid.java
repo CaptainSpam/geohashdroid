@@ -32,6 +32,8 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 
 /**
@@ -59,8 +61,10 @@ public class GeohashDroid extends Activity {
 
     private static final int ALL_OKAY = -1;
 
-    private static final int MENU_SETTINGS = 0;
-    private static final int MENU_ABOUT = 1;
+    private static final int MENU_GLOBALHASH = 0;
+    private static final int MENU_SETTINGS = 1;
+    private static final int MENU_ABOUT = 2;
+    
 
     private static final int REQUEST_PICK_GRATICULE = 0;
     private static final int REQUEST_STOCK = 1;
@@ -71,6 +75,8 @@ public class GeohashDroid extends Activity {
     private EditText mLongitude;
     private Button mGoButton;
     private CheckBox mAutoBox;
+    
+    private boolean mGlobalhash;
 
     private static int mLastDialog = ALL_OKAY;
 
@@ -159,6 +165,9 @@ public class GeohashDroid extends Activity {
         } else {
             mAutoBox.setChecked(false);
         }
+        
+        // Set globalhash mode if need be.
+        setGlobalhashMode(prefs.getBoolean(GHDConstants.PREF_GLOBALHASH_MODE, false));
 
         // Rebuild the dialogs if any were around when we left.
         if (mLastDialog != ALL_OKAY) {
@@ -195,14 +204,37 @@ public class GeohashDroid extends Activity {
 
         MenuItem item;
 
-        // Build us up a menu. Of only one setting for now.
-        item = menu.add(Menu.NONE, MENU_SETTINGS, 0,
+        // The globalhash option will be set up whenever the menu is called.
+        // We'll just set it in "switch to globalhash" mode for now.
+        item = menu.add(Menu.NONE, MENU_GLOBALHASH, 0,
+                R.string.menu_item_globalhash);
+        item.setIcon(android.R.drawable.ic_menu_compass);
+        
+        item = menu.add(Menu.NONE, MENU_SETTINGS, 1,
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
 
-        item = menu.add(Menu.NONE, MENU_ABOUT, 1, R.string.menu_item_about);
+        item = menu.add(Menu.NONE, MENU_ABOUT, 2, R.string.menu_item_about);
         item.setIcon(android.R.drawable.ic_menu_info_details);
 
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        
+        MenuItem item = menu.findItem(MENU_GLOBALHASH);
+        
+        // Reset the globalhash option as need be.
+        if(mGlobalhash) {
+            item.setTitle(R.string.menu_item_geohash);
+            item.setIcon(android.R.drawable.ic_menu_mapmode);
+        } else {
+            item.setTitle(R.string.menu_item_globalhash);
+            item.setIcon(android.R.drawable.ic_menu_compass);
+        }
+        
         return true;
     }
 
@@ -217,6 +249,23 @@ public class GeohashDroid extends Activity {
                 return true;
             case MENU_ABOUT:
                 showDialog(DIALOG_ABOUT);
+                return true;
+            case MENU_GLOBALHASH:
+                // Toggle globalhash mode.
+                if(mGlobalhash)
+                    mGlobalhash = false;
+                else
+                    mGlobalhash = true;
+
+                setGlobalhashMode(mGlobalhash);
+                
+                // Finally, set the preference.
+                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+                SharedPreferences.Editor editor = prefs.edit();
+                
+                editor.putBoolean(GHDConstants.PREF_GLOBALHASH_MODE, mGlobalhash);
+                editor.commit();
+
                 return true;
         }
 
@@ -368,7 +417,7 @@ public class GeohashDroid extends Activity {
             return;
         
         // Check over the checkbox.  If it's ticked on, turn on the go button.
-        if (mAutoBox != null && mAutoBox.isChecked()) {
+        if ((mAutoBox != null && mAutoBox.isChecked()) || mGlobalhash) {
             mGoButton.setEnabled(true);
             return;
         }
@@ -384,6 +433,23 @@ public class GeohashDroid extends Activity {
         } catch (Exception e) {
             // Otherwise, we're boned.
             mGoButton.setEnabled(false);
+        }
+    }
+    
+    private void resetGraticuleBoxes() {
+        // Resets the graticule boxes and the map button.
+        Button mapButton = (Button)findViewById(R.id.MapButton);
+        
+        // They're all disabled if the autobox is checked OR we're in globalhash
+        // mode.
+        if(!mAutoBox.isChecked() && !mGlobalhash) {
+            mLatitude.setEnabled(true);
+            mLongitude.setEnabled(true);
+            mapButton.setEnabled(true);
+        } else {
+            mLatitude.setEnabled(false);
+            mLongitude.setEnabled(false);
+            mapButton.setEnabled(false);                
         }
     }
 
@@ -434,10 +500,7 @@ public class GeohashDroid extends Activity {
             public void onCheckedChanged(CompoundButton buttonView,
                     boolean isChecked) {
                 // Disable or enable the interesting stuff as need be.
-                mLatitude.setEnabled(!isChecked);
-                mLongitude.setEnabled(!isChecked);
-                Button mapButton = (Button)findViewById(R.id.MapButton);
-                mapButton.setEnabled(!isChecked);
+                resetGraticuleBoxes();
                 resetGoButton();
                 
                 SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
@@ -455,7 +518,15 @@ public class GeohashDroid extends Activity {
         mGoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(!mAutoBox.isChecked()) {
+                if(mGlobalhash) {
+                    // Hey, we're in globalhash mode!  We can get started right
+                    // away!
+                    Calendar cal = getActiveCalendar();
+                    Intent i = new Intent(GeohashDroid.this, StockGrabber.class);
+                    i.putExtra(GRATICULE, (Graticule)null);
+                    i.putExtra(CALENDAR, cal);
+                    startActivityForResult(i, REQUEST_STOCK);
+                } else if(!mAutoBox.isChecked()) {
                     // Without the auto-checker, go straight to whatever was
                     // input into the graticule boxen.
                     Calendar cal = getActiveCalendar();
@@ -731,5 +802,34 @@ public class GeohashDroid extends Activity {
         }
         
         return cal;
+    }
+    
+    private void setGlobalhashMode(boolean flag) {
+        // Sets things up for globalhash mode.  That is to say, turns off stuff
+        // that shouldn't be on and sets up the boolean.
+        LinearLayout gratlayout = (LinearLayout)findViewById(R.id.GraticuleRow);
+        TextView globallabel = (TextView)findViewById(R.id.GlobalhashLabel);
+        
+        if(flag) {
+            // Turn stuff off!
+            mGlobalhash = true;
+            
+            mAutoBox.setEnabled(false);
+            gratlayout.setVisibility(View.GONE);
+            globallabel.setVisibility(View.VISIBLE);
+        } else {
+            // Turn stuff back on!
+            mGlobalhash = false;
+            
+            mAutoBox.setEnabled(true);
+            gratlayout.setVisibility(View.VISIBLE);
+            globallabel.setVisibility(View.GONE); 
+        }
+        
+        // Reset the graticule boxes and the go button...
+        resetGraticuleBoxes();        
+        resetGoButton();
+        
+        // And we're done!
     }
 }
