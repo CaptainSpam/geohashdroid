@@ -33,11 +33,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import android.content.Context;
 import android.util.Log;
 
 /** Various stateless utility methods to query a mediawiki server
@@ -454,12 +456,19 @@ public class WikiUtils {
    * globalhashing yet.
    * 
    * @param info Info from which an Expedition template will be generated
+   * @param c Context so we can grab the globalhash template if we need it
    * @return said template
    */
-  public static String getWikiExpeditionTemplate(Info info) {
+  public static String getWikiExpeditionTemplate(Info info, Context c) {
       String date = DateTools.getHyphenatedDateString(info.getCalendar());
       
       if(info.isGlobalHash()) {
+          // Until a proper template can be made in the wiki itself, we'll have
+          // to settle for this...
+          InputStream is = c.getResources().openRawResource(R.raw.globalhash_template);
+          InputStreamReader isr = new InputStreamReader(is);
+          BufferedReader br = new BufferedReader(isr);
+          
           // TODO: Replace this with actual data once we've got a template.
           return "<!-- GLOBALHASH TEMPLATE GOES HERE ONCE WE HAVE ONE -->\n\n"
               + getWikiCategories(info);

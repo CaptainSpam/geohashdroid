@@ -188,7 +188,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     // ok, let's create some.
                     addStatus(R.string.wiki_conn_expedition_creating);
                     WikiUtils.putWikiPage(httpclient, expedition,
-                            WikiUtils.getWikiExpeditionTemplate(mInfo),
+                            WikiUtils.getWikiExpeditionTemplate(mInfo, WikiMessageEditor.this),
                             mFormfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
 

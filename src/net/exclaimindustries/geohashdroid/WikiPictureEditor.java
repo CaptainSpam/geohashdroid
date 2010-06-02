@@ -424,7 +424,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     // ok, let's create some.
                     addStatus(R.string.wiki_conn_expedition_creating);
                     WikiUtils.putWikiPage(httpclient, expedition,
-                            WikiUtils.getWikiExpeditionTemplate(mInfo),
+                            WikiUtils.getWikiExpeditionTemplate(mInfo, WikiPictureEditor.this),
                             formfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
                     addStatus(R.string.wiki_conn_expedition_reretrieving);
