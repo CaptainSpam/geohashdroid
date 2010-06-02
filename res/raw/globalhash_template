@@ -9,7 +9,7 @@ And DON'T FORGET to add your expedition and the best photo you took to the galle
 <td colspan="3" style="text-align: center;">
 <p>[[%%DATENUMERIC%%|%%DATESHORT%%]] Globalhash:<br />
 '''%%LATITUDE%%, %%LONGITUDE%%'''<br />
-[http://www.drwilco.net/globalhash/map.html?date=%%DATENUMERIC%%&zoom=8&abs=1 drwilco] [http://maps.google.com/maps?f=q&amp;hl=en&amp;q=%%LATITUDE%%,+%%LONGITUDE%%+%28Globalhash+for+%%DATEGOOGLE%%%29&amp;ie=UTF8&amp;t=h google] [http://www.openstreetmap.org/?mlat=%%LATITUDE%%&amp;mlon=%%LONGITUDE%%&amp;zoom=16&amp;layers=B000FTF osm]
+[http://www.drwilco.net/globalhash/map.html?date=%%DATENUMERIC%%&zoom=8&abs=1 drwilco] [http://maps.google.com/maps?f=q&amp;hl=en&amp;q=%%LATITUDEURL%%,+%%LONGITUDEURL%%+%28Globalhash+for+%%DATEGOOGLE%%%29&amp;ie=UTF8&amp;t=h google] [http://www.openstreetmap.org/?mlat=%%LATITUDEURL%%&amp;mlon=%%LONGITUDEURL%%&amp;zoom=16&amp;layers=B000FTF osm]
 </p>
 </td>
 </tr>

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
@@ -40,6 +41,7 @@ import java.net.URLEncoder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import android.content.Context;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 /** Various stateless utility methods to query a mediawiki server
@@ -469,9 +471,25 @@ public class WikiUtils {
           InputStreamReader isr = new InputStreamReader(is);
           BufferedReader br = new BufferedReader(isr);
           
-          // TODO: Replace this with actual data once we've got a template.
-          return "<!-- GLOBALHASH TEMPLATE GOES HERE ONCE WE HAVE ONE -->\n\n"
-              + getWikiCategories(info);
+          // Now, read in each line and do all substitutions on it.
+          String input;
+          StringBuffer toReturn = new StringBuffer();
+          try {
+              while((input = br.readLine()) != null) {
+                  input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));
+                  input = input.replaceAll("%%LONGITUDE%%", UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), true, UnitConverter.OUTPUT_DETAILED));
+                  input = input.replaceAll("%%LATITUDEURL%%", new Double(info.getLatitude()).toString());
+                  input = input.replaceAll("%%LONGITUDEURL%%", new Double(info.getLongitude()).toString());
+                  input = input.replaceAll("%%DATENUMERIC%%", date);
+                  input = input.replaceAll("%%DATESHORT%%", DateFormat.format("E MMM d yyyy", info.getCalendar()).toString());
+                  input = input.replaceAll("%%DATEGOOGLE%%", DateFormat.format("d+MMM+yyyy", info.getCalendar()).toString());
+                  toReturn.append(input).append("\n");
+              }
+          } catch (IOException e) {
+              // Don't do anything; just assume we're done.
+          }
+          
+          return toReturn.toString() + getWikiCategories(info);
       } else {
           Graticule grat = info.getGraticule();
           String lat = grat.getLatitudeString(true);
