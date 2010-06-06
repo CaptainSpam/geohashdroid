@@ -227,6 +227,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 WikiUtils.putWikiPage(httpclient, expedition, before + message
                         + after, mFormfields);
                 addStatusAndNewline(R.string.wiki_conn_done);
+                
+                finishDialog();
 
                 dismiss();
             } catch (WikiException ex) {

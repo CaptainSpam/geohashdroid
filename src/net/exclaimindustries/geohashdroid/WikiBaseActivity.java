@@ -79,6 +79,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
     
     // NOT the same as WikiConnectionRunner.DIALOG_ERROR, confusingly...
     private static final int DIALOG_ERROR = 0;
+    private static final int DIALOG_SUCCESS = 1;
     
     // We need to define this here, as we've got no other way of passing the
     // string into the dialog.
@@ -115,6 +116,11 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
                         showDialog(DIALOG_ERROR);
                     }
                     break;
+                }
+                case WikiConnectionRunner.DIALOG_SUCCESS:
+                {
+                    mProgress.dismiss();
+                    showDialog(DIALOG_SUCCESS);
                 }
                 default:
                     break;
@@ -171,7 +177,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         switch(id) {
             case DIALOG_ERROR: {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
-                build.setMessage(R.string.error_search_failed);
+                build.setMessage("ERROR!");
                 build.setTitle(R.string.error_title);
                 build.setIcon(android.R.drawable.ic_dialog_alert);
                 build.setNegativeButton(R.string.darn_label,
@@ -180,6 +186,21 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
                                 int whichButton) {
                             WikiBaseActivity.this
                                 .dismissDialog(DIALOG_ERROR);
+                    }
+                });
+                return build.create();
+            }
+            case DIALOG_SUCCESS: {
+                AlertDialog.Builder build = new AlertDialog.Builder(this);
+                build.setMessage(R.string.wiki_conn_finished);
+                build.setTitle(R.string.wiki_conn_finished_title);
+                build.setIcon(android.R.drawable.ic_dialog_info);
+                build.setNegativeButton(R.string.ok_label,
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,
+                                int whichButton) {
+                            WikiBaseActivity.this
+                                .dismissDialog(DIALOG_SUCCESS);
                     }
                 });
                 return build.create();
