@@ -68,6 +68,8 @@ public class GeohashService extends Service implements LocationListener {
     // problems are related to living in the state of Kentucky.
     private boolean mHaveGPSFix = false;
     
+    private boolean mForeground = false;
+    
     private static final int NOTIFICATION_ID = 1;
     
     private static final String DEBUG_TAG = "GeohashService";
@@ -194,7 +196,11 @@ public class GeohashService extends Service implements LocationListener {
                 throws RemoteException {
             // In you go!
             Log.d(DEBUG_TAG, "New callback: " + callback);
-            if(callback != null) mCallbacks.register(callback);
+            if(callback != null) {
+                mCallbacks.register(callback);
+                // A new callback automatically means we're in foreground mode.
+                setMode(true);
+            }
         }
 
         @Override
@@ -370,8 +376,7 @@ public class GeohashService extends Service implements LocationListener {
                 mEnabledProviders.put(s, mLocationManager.isProviderEnabled(s));
             
             // Then, register for responses and get ready for fun!
-            for(String s : providers)
-                mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
+            setMode(true);
             
             // Just for kicks, get the last known location.  This is allowed to
             // be null (it's treated as "don't have a fix yet").
@@ -411,40 +416,68 @@ public class GeohashService extends Service implements LocationListener {
     private void notifyTrackingStarted() {
         // Let all the registered callbacks know we've started tracking.
         final int N = mCallbacks.beginBroadcast();
+        
+        boolean isAnyoneOutThere = false;
         for (int i=0; i<N; i++) {
             try {
                 mCallbacks.getBroadcastItem(i).trackingStarted(mInfo);
+                
+                // If we survived to this point, the remote is alive.
+                isAnyoneOutThere = true;
             } catch (RemoteException e) {
 
             }
         }
         mCallbacks.finishBroadcast();
+        
+        // Now, set foreground/background appropriately.  If there were any
+        // listeners, we're in foreground mode.  If not, only the notification
+        // bar is listening.
+        setMode(isAnyoneOutThere);
     }
     
     private void notifyTrackingStopped() {
         // Hey!  We stopped!
         final int N = mCallbacks.beginBroadcast();
+        
+        boolean isAnyoneOutThere = false;
         for (int i=0; i<N; i++) {
             try {
                 mCallbacks.getBroadcastItem(i).trackingStopped();
+                
+                // If we survived to this point, the remote is alive.
+                isAnyoneOutThere = true;
             } catch (RemoteException e) {
 
             }
         }
         mCallbacks.finishBroadcast();
+        
+        // We shouldn't need to do this, since tracking stopped sets mIsTracking
+        // to be false, which makes setMode do nothing.  But still, best to make
+        // sure and all.
+        setMode(isAnyoneOutThere);
     }
     
     private void notifyLocation() {
         // New location update!
+        Log.d(DEBUG_TAG, "Location update!");
         final int N = mCallbacks.beginBroadcast();
+        
+        boolean isAnyoneOutThere = false;
         for (int i=0; i<N; i++) {
             try {
                 mCallbacks.getBroadcastItem(i).locationUpdate(mLastLocation);
+                
+                // If we survived to this point, the remote is alive.
+                isAnyoneOutThere = true;
             } catch (RemoteException e) {
 
             }
         }
         mCallbacks.finishBroadcast();
+        
+        setMode(isAnyoneOutThere);
     }
     
     private void notifyLostFix() {
@@ -467,5 +500,27 @@ public class GeohashService extends Service implements LocationListener {
         mNotificationManager.cancel(NOTIFICATION_ID);
         notifyTrackingStopped();
         mInfo = null;
+    }
+    
+    private void setMode(boolean foreground) {
+        // This sets whether we're in foreground or background mode.  If we're
+        // not changing anything, though, don't do anything.
+        if(foreground == mForeground || !mIsTracking) return;
+        
+        // Set the current mode...
+        mForeground = foreground;
+        
+        // ...and switch!
+        if(mForeground) {
+            // Foreground mode means we go full tilt.
+            Log.i(DEBUG_TAG, "Switching to foregroud mode...");
+            for(String s : mEnabledProviders.keySet())
+                mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
+        } else {
+            // Background mode means we slow down.  Like, say, 30 seconds.
+            Log.i(DEBUG_TAG, "No listeners heard that last broadcast, switching to background mode...");
+            for(String s : mEnabledProviders.keySet())
+                mLocationManager.requestLocationUpdates(s, 30000, 0, GeohashService.this);
+        }
     }
 }
