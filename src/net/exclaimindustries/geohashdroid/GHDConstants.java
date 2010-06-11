@@ -48,6 +48,8 @@ public final class GHDConstants {
     public static final String PREF_WIKI_PASS = "WikiPassword";
     /** Prefs key specifying to use the phone's time, not the wiki's */
     public static final String PREF_WIKI_PHONE_TIME = "WikiUsePhoneTime";
+    /** Prefs key specifying to go to power saver mode in the background */
+    public static final String PREF_POWER_SAVER = "PowerSaver";
     
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to

@@ -90,6 +90,15 @@ public class GeohashService extends Service implements LocationListener {
                 String key) {
             if(key.equals(GHDConstants.PREF_COORD_UNITS) || key.equals(GHDConstants.PREF_DIST_UNITS)) {
                 updateNotification();
+            } else if(key.equals(GHDConstants.PREF_POWER_SAVER)) {
+                // If the power saver option got flipped, we're clearly in
+                // background mode already (the preferences screen doesn't
+                // listen for updates).  We want to update the state of the
+                // tracker.  Forcibly, if need be.
+                if(!mForeground) {
+                    mForeground = !mForeground;
+                    setMode(!mForeground);
+                }
             }
         }
     };
@@ -510,15 +519,18 @@ public class GeohashService extends Service implements LocationListener {
         // Set the current mode...
         mForeground = foreground;
         
-        // ...and switch!
-        if(mForeground) {
+        // ...and switch!  If we're supposed to.  Since I still can't get this
+        // working right on the Droid (which seems to be a hardware-specific
+        // issue), I'll have to have a preference for now.
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        if(mForeground || !prefs.getBoolean(GHDConstants.PREF_POWER_SAVER, false)) {
             // Foreground mode means we go full tilt.
             Log.i(DEBUG_TAG, "Switching to foregroud mode...");
             for(String s : mEnabledProviders.keySet())
                 mLocationManager.requestLocationUpdates(s, 0, 0, GeohashService.this);
         } else {
             // Background mode means we slow down.  Like, say, 30 seconds.
-            Log.i(DEBUG_TAG, "No listeners heard that last broadcast, switching to background mode...");
+            Log.i(DEBUG_TAG, "Switching to background mode...");
             for(String s : mEnabledProviders.keySet())
                 mLocationManager.requestLocationUpdates(s, 30000, 0, GeohashService.this);
         }

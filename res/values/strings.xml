@@ -101,8 +101,14 @@
 <string name="pref_wikiphonetime_on">Use the time on the phone instead of the wiki\'s time for wiki posts</string>
 <string name="pref_wikiphonetime_off">Use the standard wiki time signature for wiki posts</string>
 
+<string name="pref_powersaver_title">Save power</string>
+<string name="pref_powersaver_on">Slow down the GPS tracker in the background</string>
+<string name="pref_powersaver_off">Keep the GPS tracker running full tilt in the background</string>
+
 <string name="pref_stockwipe_title">Clear stock cache</string>
 <string name="pref_stockwipe_dialog_text">Are you sure you want to clear all stock cache data?</string>
+<string name="pref_powersaver_dialog_title">Experimental feature</string>
+<string name="pref_powersaver_dialog_text">Some phones may have a slight incompatibility with power saver mode.  It might work perfectly, but if it seems like Geohash Droid won\'t come out of power saver mode when returning to the map, try disabling this option and starting over.</string>
 <string name="pref_cat_map">Map options</string>
 <string name="pref_cat_other">Other options</string>
 <string name="pref_cat_wiki">Wiki options</string>
