@@ -44,6 +44,7 @@ public class Info implements Parcelable {
     private double mLongitude;
     private Graticule mGraticule;
     private Calendar mDate;
+    private boolean mRetroHash;
 
     /**
      * Creates an Info object with the given data. That's it.  If making a
@@ -66,7 +67,7 @@ public class Info implements Parcelable {
         mLatitude = latitude;
         mLongitude = longitude;
         mGraticule = graticule;
-        mDate = date;
+        setDate(date);
     }
 
     /**
@@ -295,6 +296,18 @@ public class Info implements Parcelable {
         return mGraticule == null;
     }
     
+    /**
+     * Determines if this Info represents a retrohash; that is, a geohash or
+     * globalhash from a date in the past.  Note that this will return false for
+     * geohashes from the future (i.e. a weekend when we already have the stock
+     * values).
+     * 
+     * @return true if a retrohash, false if a current hash
+     */
+    public boolean isRetroHash() {
+        return mRetroHash;
+    }
+    
     public static final Parcelable.Creator<Info> CREATOR = new Parcelable.Creator<Info>() {
         public Info createFromParcel(Parcel in) {
             return new Info(in);
@@ -323,6 +336,7 @@ public class Info implements Parcelable {
         outgoing.putDouble(GeohashDroid.LONGITUDE, mLongitude);
         outgoing.putSerializable(GeohashDroid.GRATICULE, mGraticule);
         outgoing.putSerializable(GeohashDroid.CALENDAR, mDate);
+        outgoing.putBoolean(GeohashDroid.RETROHASH, mRetroHash);
         
         dest.writeBundle(outgoing);
     }
@@ -340,6 +354,30 @@ public class Info implements Parcelable {
         mLatitude = incoming.getDouble(GeohashDroid.LATITUDE);
         mLongitude = incoming.getDouble(GeohashDroid.LONGITUDE);
         mGraticule = (Graticule)(incoming.getSerializable(GeohashDroid.GRATICULE));
+        
+        // We're reading from a parcel, so we directly set mDate and mRetroHash.
         mDate = (Calendar)(incoming.getSerializable(GeohashDroid.CALENDAR));
+        mRetroHash = incoming.getBoolean(GeohashDroid.RETROHASH);
+    }
+    
+    private void setDate(Calendar cal) {
+        // First, actually set the date.
+        mDate = cal;
+        
+        // Then, determine if this is before or after today's date.  Since a
+        // straight comparison also takes time into account, we need to force
+        // today's date to midnight.
+        Calendar today = Calendar.getInstance();
+        
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        
+        // Yes, this means that if the hash is in the future, mRetroHash will
+        // be false.  The only way that can happen is if this is a weekend hash
+        // and we're checking on Friday or something.
+        if(cal.before(today))
+            mRetroHash = true;
+        else
+            mRetroHash = false;
     }
 }
