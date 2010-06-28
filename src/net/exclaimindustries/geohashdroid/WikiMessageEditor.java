@@ -204,7 +204,16 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
 
                 // Change the summary so it has our message.
-                mFormfields.put("summary", getText(R.string.wiki_post_message_summary) + " " + editText.getText().toString()); 
+                String summaryPrefix;
+                
+                // We shouldn't say this is live, per se, if this is a
+                // retrohash.
+                if(mInfo.isRetroHash())
+                    summaryPrefix = getText(R.string.wiki_post_message_summary_retro).toString();
+                else
+                    summaryPrefix = getText(R.string.wiki_post_message_summary).toString();
+                
+                mFormfields.put("summary", summaryPrefix + " " + editText.getText().toString()); 
 
                 String before = "";
                 String after = "";

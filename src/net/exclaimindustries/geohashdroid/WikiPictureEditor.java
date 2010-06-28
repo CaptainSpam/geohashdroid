@@ -435,8 +435,14 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     addStatusAndNewline(R.string.wiki_conn_success);
                 }
 
-                // Add in our message...
-                formfields.put("summary", getText(R.string.wiki_post_picture_summary) + " " + message);
+                // Add in our message (same caveat as in WikiMessageEditor)...
+                String summaryPrefix;
+                if(mInfo.isRetroHash())
+                    summaryPrefix = getText(R.string.wiki_post_picture_summary_retro).toString();
+                else
+                    summaryPrefix = getText(R.string.wiki_post_picture_summary).toString();
+                
+                formfields.put("summary", summaryPrefix + " " + message);
 
                 String before = "";
                 String after = "";

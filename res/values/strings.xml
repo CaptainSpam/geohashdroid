@@ -149,6 +149,8 @@
 
 <string name="wiki_post_message_summary">[live]</string>
 <string name="wiki_post_picture_summary">[live picture]</string>
+<string name="wiki_post_message_summary_retro">[retro]</string>
+<string name="wiki_post_picture_summary_retro">[retro picture]</string>
 
 <string name="wiki_conn_failure">failed.</string>
 <string name="wiki_conn_success">okay.</string>
