@@ -11,6 +11,7 @@ import java.text.DecimalFormat;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.util.Log;
 
 /**
  * This is a simple utility class which converts a distance output (in meters)
@@ -34,6 +35,11 @@ public class UnitConverter {
     protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("###.000");
     protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.00000");
     protected static final DecimalFormat DETAIL_FORMAT = new DecimalFormat("###.00000000");
+    
+    protected static final DecimalFormat SHORT_SECONDS_FORMAT = new DecimalFormat("###.00");
+    protected static final DecimalFormat LONG_SECONDS_FORMAT = new DecimalFormat("###.0000");
+    
+    private static final String DEBUG_TAG = "UnitConverter";
 
     /**
      * Perform a distance conversion. This will attempt to get whatever
@@ -187,44 +193,56 @@ public class UnitConverter {
     
     private static String makeCoordinateString(String units, double coord, int format) {
         // Just does the generic coordinate conversion stuff for coordinates.
-        if(units.equals("Degrees")) {
-            // Easy case: Use the result Location gives us, modified by the
-            // longForm boolean.
-            switch(format) {
-                case OUTPUT_SHORT:
-                    return SHORT_FORMAT.format(coord) + "\u00b0";
-                case OUTPUT_LONG:
-                    return LONG_FORMAT.format(coord) + "\u00b0";
-                default:
-                    return DETAIL_FORMAT.format(coord) + "\u00b0";
+        try {
+            if(units.equals("Degrees")) {
+                // Easy case: Use the result Location gives us, modified by the
+                // longForm boolean.
+                switch(format) {
+                    case OUTPUT_SHORT:
+                        return SHORT_FORMAT.format(coord) + "\u00b0";
+                    case OUTPUT_LONG:
+                        return LONG_FORMAT.format(coord) + "\u00b0";
+                    default:
+                        return DETAIL_FORMAT.format(coord) + "\u00b0";
+                }
+            } else if(units.equals("Minutes")) {
+                // Harder case 1: Minutes.
+                String temp = Location.convert(coord, Location.FORMAT_MINUTES);
+                String[] split = temp.split(":");
+                
+                // Get the double form of the minutes...
+                double minutes = new Double(split[1]).doubleValue();
+                
+                switch(format) {
+                    case OUTPUT_SHORT:
+                        return split[0] + "\u00b0" + SHORT_SECONDS_FORMAT.format(minutes) + "\u2032";
+                    case OUTPUT_LONG:
+                        return split[0] + "\u00b0" + LONG_SECONDS_FORMAT.format(minutes) + "\u2032";
+                    default:
+                        return split[0] + "\u00b0" + split[1]+ "\u2032";
+                }
+            } else if(units.equals("Seconds")) {
+                // Harder case 2: Seconds.
+                String temp = Location.convert(coord, Location.FORMAT_SECONDS);
+                String[] split = temp.split(":");
+                
+                // Get the double form of the seconds...
+                double seconds = new Double(split[2]).doubleValue();
+                
+                switch(format) {
+                    case OUTPUT_SHORT:
+                        return split[0] + "\u00b0" + split[1] + "\u2032" + SHORT_SECONDS_FORMAT.format(seconds) + "\u2033";
+                    case OUTPUT_LONG:
+                        return split[0] + "\u00b0" + split[1] + "\u2032" + LONG_SECONDS_FORMAT.format(seconds) + "\u2033";
+                    default:
+                        return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
+                }
+            } else {
+                return "???";
             }
-        } else if(units.equals("Minutes")) {
-            // Harder case 1: Minutes.
-            String temp = Location.convert(coord, Location.FORMAT_MINUTES);
-            String[] split = temp.split(":");
-            
-            switch(format) {
-                case OUTPUT_SHORT:
-                    return split[0] + "\u00b0" + split[1].substring(0, 5) + "\u2032";
-                case OUTPUT_LONG:
-                    return split[0] + "\u00b0" + split[1].substring(0, 7) + "\u2032";
-                default:
-                    return split[0] + "\u00b0" + split[1]+ "\u2032";
-            }
-        } else if(units.equals("Seconds")) {
-            // Harder case 2: Seconds.
-            String temp = Location.convert(coord, Location.FORMAT_SECONDS);
-            String[] split = temp.split(":");
-            
-            switch(format) {
-                case OUTPUT_SHORT:
-                    return split[0] + "\u00b0" + split[1] + "\u2032" + split[2].substring(0, 5) + "\u2033";
-                case OUTPUT_LONG:
-                    return split[0] + "\u00b0" + split[1] + "\u2032" + split[2].substring(0, 7) + "\u2033";
-                default:
-                    return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
-            }
-        } else {
+        } catch (Exception ex) {
+            Log.e(DEBUG_TAG, "Exception thrown during coordinate conversion: " + ex.toString());
+            ex.printStackTrace();
             return "???";
         }
     }
