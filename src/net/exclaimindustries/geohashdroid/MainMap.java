@@ -1007,13 +1007,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         if(curGeo == null) {
             // We don't know the location yet, so we go with the 
             // message without any indication of distance.
-            build.setMessage(R.string.dialog_switch_graticule_text3_unknown);
+            build.setMessage(R.string.dialog_switch_graticule_unknown);
         } else {
             // We DO know the location, and thus we need the distance.
             String distance = UnitConverter.makeDistanceString(this, mDistFormat, i.getDistanceInMeters(curGeo));
-            build.setMessage(getString(R.string.dialog_switch_graticule_text1) + " "
-                    + distance + " " + getString(R.string.dialog_switch_graticule_text2)
-                    + "  " + getString(R.string.dialog_switch_graticule_text3_known));
+            build.setMessage(getString(R.string.dialog_switch_graticule_text, distance));
         }
         
         // The okay button has to be able to send the Info bundle.
