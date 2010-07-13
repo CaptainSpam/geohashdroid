@@ -87,9 +87,9 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
 
         // Get us some info!
         if (icicle != null && icicle.containsKey(INFO)) {
-            mInfo = (Info)icicle.getSerializable(INFO);
+            mInfo = (Info)icicle.getParcelable(INFO);
         } else {
-            mInfo = (Info)getIntent().getSerializableExtra(GeohashDroid.INFO);
+            mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
         }
 
         // Lay out the initial info. The rest remains on standby for now.
@@ -177,7 +177,7 @@ public class DetailedInfoScreen extends Activity implements LocationListener {
         super.onSaveInstanceState(outState);
 
         // All we need to do is store the info object. Simple!
-        outState.putSerializable(INFO, mInfo);
+        outState.putParcelable(INFO, mInfo);
     }
 
     /*

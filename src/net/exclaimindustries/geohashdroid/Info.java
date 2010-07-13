@@ -7,11 +7,14 @@
  */
 package net.exclaimindustries.geohashdroid;
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import android.location.Location;
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import com.google.android.maps.GeoPoint;
 
@@ -33,18 +36,22 @@ import com.google.android.maps.GeoPoint;
  * @author Nicholas Killewald
  * 
  */
-public class Info implements Serializable {
-    private static final long serialVersionUID = 3L;
-    
-    private static Calendar LIMIT_30W;
+public class Info implements Parcelable {
+    /** The earliest date at which the 30W Rule is used. */
+    private static final Calendar LIMIT_30W = new GregorianCalendar(2008, Calendar.MAY, 26);
 
     private double mLatitude;
     private double mLongitude;
     private Graticule mGraticule;
     private Calendar mDate;
+    private boolean mRetroHash;
 
     /**
-     * Creates an Info object with the given data. That's it.
+     * Creates an Info object with the given data. That's it.  If making a
+     * globalhash, give the latitude and longitude as the hash, not the full
+     * coordinates (and make sure the graticule is null).
+     * 
+     * TODO: I've really got to find a better way to do globalhashes...
      * 
      * @param latitude
      *            the destination's latitude, as a double
@@ -60,8 +67,19 @@ public class Info implements Serializable {
         mLatitude = latitude;
         mLongitude = longitude;
         mGraticule = graticule;
-        mDate = date;
+        setDate(date);
     }
+
+    /**
+     * Deparcelizes an Info object.  Obviously, this is used internally when we
+     * need to rebuild Info from a Parcel, such as during Service operations.
+     * 
+     * @param in the parcel to deparcelize
+     */
+    private Info(Parcel in) {
+        readFromParcel(in);
+    }
+
 
     /**
      * Gets the latitude of the final destination.
@@ -69,7 +87,10 @@ public class Info implements Serializable {
      * @return the latitude
      */
     public double getLatitude() {
-        return mLatitude;
+        if(mGraticule != null)
+            return mLatitude;
+        else
+            return mLatitude * 180 - 90;
     }
 
     /**
@@ -78,7 +99,10 @@ public class Info implements Serializable {
      * @return the longitude
      */
     public double getLongitude() {
-        return mLongitude;
+        if(mGraticule != null)
+            return mLongitude;
+        else
+            return mLongitude * 360 - 180;
     }
 
     /**
@@ -88,7 +112,10 @@ public class Info implements Serializable {
      * @return the fractional part of the latitude
      */
     public double getLatitudeHash() {
-        return Math.abs(mLatitude) - mGraticule.getLatitude();
+        if(mGraticule != null)
+            return Math.abs(mLatitude) - mGraticule.getLatitude();
+        else
+            return mLatitude;
     }
 
     /**
@@ -98,7 +125,10 @@ public class Info implements Serializable {
      * @return the fractional part of the longitude
      */
     public double getLongitudeHash() {
-        return Math.abs(mLongitude) - mGraticule.getLongitude();
+        if(mGraticule != null)
+            return Math.abs(mLongitude) - mGraticule.getLongitude();
+        else
+            return mLongitude;
     }
 
     /**
@@ -106,7 +136,7 @@ public class Info implements Serializable {
      * unbelievably handy when plotting this on a map, given that uses GeoPoints
      * and not doubles.
      * 
-     * @return a new GeoPoint based on the data obtained from the connection
+     * @return a GeoPoint based on the data obtained from the connection
      */
     public GeoPoint getFinalDestination() {
         return new GeoPoint((int)(getLatitude() * 1000000),
@@ -114,11 +144,10 @@ public class Info implements Serializable {
     }
 
     /**
-     * Returns the final destination as a new Location object, which isn't quite
-     * as useful as a GeoPoint object, but you never know, it could come in
-     * handy.
+     * Returns the final destination as a Location object, which isn't quite as
+     * useful as a GeoPoint object, but you never know, it could come in handy.
      * 
-     * @return a new providerless Location based on the data obtained from the
+     * @return a providerless Location based on the data obtained from the
      *         connection
      */
     public Location getFinalLocation() {
@@ -130,7 +159,7 @@ public class Info implements Serializable {
     }
 
     /**
-     * Gets the graticule.
+     * Gets the graticule.  This will be null if this is a globalhash.
      * 
      * @return the graticule
      */
@@ -195,11 +224,11 @@ public class Info implements Serializable {
     /**
      * Returns a calendar representing the date from which the stock price was
      * pulled from a given date/graticule pair.  That is, back a day for the 30W
-     * Rule and rewinding to Friday if it falls on a weekend.
+     * Rule or globalhashes and rewinding to Friday if it falls on a weekend.
      * 
      * @param c date to adjust
      * @param g Graticule to use to determine if the 30W Rule is in effect (if
-     *          null, assumes it isn't and no adjustments are needed for it)
+     *          null, assumes this is a globalhash which is always back a day)
      * @return a new adjusted Calendar
      */
     public static Calendar makeAdjustedCalendar(Calendar c, Graticule g) {
@@ -212,19 +241,11 @@ public class Info implements Serializable {
         // original for various reasons.
         Calendar cal = (Calendar)(c.clone());
         
-        // This is the last date when the 30W rule doesn't apply.
-        if(LIMIT_30W == null) {
-            LIMIT_30W = Calendar.getInstance();
-            LIMIT_30W.set(Calendar.YEAR, 2008);
-            LIMIT_30W.set(Calendar.MONTH, Calendar.MAY);
-            LIMIT_30W.set(Calendar.DAY_OF_MONTH, 26);
-        }
-        
-        // Second, 30W Rule hackery.  If g is null, assume we're not in 30W
-        // territory (that is, no adjustment is needed).  If the date is May
-        // 26, 2008 or earlier, ignore it anyway (the 30W Rule only applies
-        // AFTER it was created).
-        if(cal.after(LIMIT_30W) && g != null && g.uses30WRule())
+        // Second, 30W Rule hackery.  If g is null, assume we're in a globalhash
+        // (that is, adjustment is needed).  If the date is May 26, 2008 or
+        // earlier (and this isn't a globalhash), ignore it anyway (the 30W Rule
+        // only applies to non-globalhashes AFTER it was created).
+        if(g == null || (cal.after(LIMIT_30W) && g.uses30WRule()))
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.
@@ -249,5 +270,114 @@ public class Info implements Serializable {
         loc.setLongitude((float)(point.getLongitudeE6() / 1000000.0f));
 
         return loc;
+    }
+    
+    /**
+     * Determines if this Info represents a point whose date follows the 30W
+     * Rule.  Note that globalhashes always follow the 30W Rule.
+     * 
+     * @return true if 30W or global, false if not
+     */
+    public boolean uses30WRule() {
+        // If mGraticule is null, this is always 30W.
+        if(mGraticule == null) return true;
+        
+        // Otherwise, just forward it to the graticule itself.
+        return mDate.after(LIMIT_30W) && mGraticule.uses30WRule();
+    }
+    
+    /**
+     * Determines if this Info represents a globalhash (and thus doesn't have
+     * any sort of valid Graticule data).
+     * 
+     * @return true if global, false if not
+     */
+    public boolean isGlobalHash() {
+        return mGraticule == null;
+    }
+    
+    /**
+     * Determines if this Info represents a retrohash; that is, a geohash or
+     * globalhash from a date in the past.  Note that this will return false for
+     * geohashes from the future (i.e. a weekend when we already have the stock
+     * values).
+     * 
+     * @return true if a retrohash, false if a current hash
+     */
+    public boolean isRetroHash() {
+        return mRetroHash;
+    }
+    
+    public static final Parcelable.Creator<Info> CREATOR = new Parcelable.Creator<Info>() {
+        public Info createFromParcel(Parcel in) {
+            return new Info(in);
+        }
+
+        public Info[] newArray(int size) {
+            return new Info[size];
+        }
+    };
+
+    
+    @Override
+    public int describeContents() {
+        // We don't do anything special with this.
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        // Fortunately, everything we have is serializable.  Meaning, of course,
+        // we can shove this all in a Bundle, which makes parcelizing a lot
+        // easier.
+        Bundle outgoing = new Bundle();
+        
+        outgoing.putDouble(GeohashDroid.LATITUDE, mLatitude);
+        outgoing.putDouble(GeohashDroid.LONGITUDE, mLongitude);
+        outgoing.putSerializable(GeohashDroid.GRATICULE, mGraticule);
+        outgoing.putSerializable(GeohashDroid.CALENDAR, mDate);
+        outgoing.putBoolean(GeohashDroid.RETROHASH, mRetroHash);
+        
+        dest.writeBundle(outgoing);
+    }
+    
+    /**
+     * Reads an incoming Parcel and deparcelizes it.  I'm going to keep using
+     * the term "deparcelize" and its most logical forms until it catches on.
+     * 
+     * @param in parcel to deparcelize
+     */
+    public void readFromParcel(Parcel in) {
+        // Go!
+        Bundle incoming = in.readBundle();
+        
+        mLatitude = incoming.getDouble(GeohashDroid.LATITUDE);
+        mLongitude = incoming.getDouble(GeohashDroid.LONGITUDE);
+        mGraticule = (Graticule)(incoming.getSerializable(GeohashDroid.GRATICULE));
+        
+        // We're reading from a parcel, so we directly set mDate and mRetroHash.
+        mDate = (Calendar)(incoming.getSerializable(GeohashDroid.CALENDAR));
+        mRetroHash = incoming.getBoolean(GeohashDroid.RETROHASH);
+    }
+    
+    private void setDate(Calendar cal) {
+        // First, actually set the date.
+        mDate = cal;
+        
+        // Then, determine if this is before or after today's date.  Since a
+        // straight comparison also takes time into account, we need to force
+        // today's date to midnight.
+        Calendar today = Calendar.getInstance();
+        
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        
+        // Yes, this means that if the hash is in the future, mRetroHash will
+        // be false.  The only way that can happen is if this is a weekend hash
+        // and we're checking on Friday or something.
+        if(cal.before(today))
+            mRetroHash = true;
+        else
+            mRetroHash = false;
     }
 }
