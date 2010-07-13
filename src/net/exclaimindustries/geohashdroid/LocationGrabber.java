@@ -19,7 +19,6 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.view.Window;
-import android.view.WindowManager;
 import android.widget.TextView;
 
 /**
@@ -93,10 +92,6 @@ public class LocationGrabber extends Activity implements LocationListener {
         // Remove the title so it looks sorta right (the Dialog theme doesn't
         // *quite* get it right, so no title looks a lot better).
         requestWindowFeature(Window.FEATURE_NO_TITLE); 
-
-        // Blur the background.  This may change.
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
-                WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
         
         // Throw up content and away we go!
         setContentView(R.layout.genericbusydialog);
