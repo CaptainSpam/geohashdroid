@@ -19,17 +19,16 @@
 						android:layout_gravity="center_horizontal" android:src="@drawable/icon_small"></ImageView>
 					<TextView android:layout_width="wrap_content"
 						android:layout_height="wrap_content" android:id="@+id/Title"
-						android:text="@string/app_name" android:textSize="14pt"
-						android:padding="5px" android:layout_gravity="center_horizontal"></TextView>
+						android:text="@string/app_name" android:padding="5px" android:layout_gravity="center_horizontal" android:textSize="@dimen/about_title"></TextView>
 					<TextView android:layout_width="wrap_content"
 						android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
 						android:text="@string/about_version" android:id="@+id/Version"
-						android:typeface="serif" android:textStyle="italic"></TextView>
+						android:typeface="serif" android:textStyle="italic" android:textSize="@dimen/about_version_date"></TextView>
 					<TextView android:layout_width="wrap_content"
 						android:layout_height="wrap_content" android:id="@+id/Date"
 						android:textStyle="italic" android:typeface="serif"
 						android:gravity="center" android:layout_gravity="center_horizontal"
-						android:text="@string/about_date"></TextView>
+						android:text="@string/about_date" android:textSize="@dimen/about_version_date"></TextView>
 				</LinearLayout>
 				<LinearLayout android:layout_width="wrap_content"
 					android:layout_height="wrap_content" android:id="@+id/RightSide"
@@ -37,28 +36,28 @@
 					<TextView android:layout_width="wrap_content"
 						android:layout_height="wrap_content" android:id="@+id/Author"
 						android:text="@string/about_by" android:layout_gravity="center_horizontal"
-						android:textSize="8pt" android:padding="10px" android:gravity="center"></TextView>
+						android:padding="10px" android:gravity="center" android:textSize="@dimen/about_names"></TextView>
 					<TextView android:layout_width="wrap_content"
 						android:layout_height="wrap_content" android:id="@+id/AuthorWiki"
 						android:text="@string/about_wiki_features" android:layout_gravity="center_horizontal"
-						android:textSize="8pt" android:padding="10px" android:gravity="center"></TextView>
+						android:padding="10px" android:gravity="center" android:textSize="@dimen/about_names"></TextView>
 					<TextView android:layout_height="wrap_content" android:id="@+id/BasedOn"
 						android:text="@string/about_based_on" android:layout_gravity="center_horizontal"
-						android:textSize="8pt" android:layout_width="wrap_content"
-						android:gravity="center" android:padding="10px"></TextView>
+						android:layout_width="wrap_content"
+						android:gravity="center" android:padding="10px" android:textSize="@dimen/about_names"></TextView>
 				</LinearLayout>
 			</LinearLayout>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:text="@string/url_project"
 				android:layout_gravity="center_horizontal" android:id="@+id/ProjectLink"
-				android:autoLink="web"></TextView>
+				android:autoLink="web" android:textSize="@dimen/about_urls"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/GeohashLink"
 				android:layout_gravity="center_horizontal" android:text="@string/url_geohash"
-				android:autoLink="web"></TextView>
-            <TextView android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:id="@+id/GeohashDisclaimer"
-                android:layout_gravity="center_horizontal" android:text="@string/about_disclaimer"></TextView>
+				android:autoLink="web" android:textSize="@dimen/about_urls"></TextView>
+			<TextView android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:id="@+id/GeohashDisclaimer"
+				android:layout_gravity="center_horizontal" android:text="@string/about_disclaimer" android:textSize="@dimen/about_version_date"></TextView>
 		</LinearLayout>
 	</ScrollView>
 </LinearLayout>

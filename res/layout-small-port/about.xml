@@ -13,45 +13,44 @@
 				android:layout_gravity="center_horizontal" android:src="@drawable/icon_small"></ImageView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/Title"
-				android:text="@string/app_name" android:textSize="14pt"
-				android:padding="5px" android:layout_gravity="center_horizontal" android:gravity="center"></TextView>
+				android:text="@string/app_name" android:padding="5px" android:layout_gravity="center_horizontal" android:gravity="center" android:textSize="@dimen/about_title"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
 				android:text="@string/about_version" android:id="@+id/Version"
-				android:typeface="serif" android:textStyle="italic" android:gravity="center"></TextView>
+				android:typeface="serif" android:textStyle="italic" android:gravity="center" android:textSize="@dimen/about_version_date"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/Date"
 				android:gravity="center" android:layout_gravity="center_horizontal"
-				android:textStyle="italic" android:typeface="serif" android:text="@string/about_date"></TextView>
+				android:textStyle="italic" android:typeface="serif" android:text="@string/about_date" android:textSize="@dimen/about_version_date"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/Author"
 				android:text="@string/about_by" android:layout_gravity="center_horizontal"
-				android:textSize="8pt" android:paddingLeft="10px"
+				android:paddingLeft="10px"
 				android:paddingRight="10px" android:paddingBottom="5px"
-				android:paddingTop="10px" android:gravity="center"></TextView>
+				android:paddingTop="10px" android:gravity="center" android:textSize="@dimen/about_names"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/AuthorWiki"
 				android:text="@string/about_wiki_features" android:layout_gravity="center_horizontal"
-				android:textSize="8pt" android:paddingLeft="10px"
+				android:paddingLeft="10px"
 				android:paddingRight="10px" android:paddingBottom="5px"
-				android:paddingTop="10px" android:gravity="center"></TextView>
+				android:paddingTop="10px" android:gravity="center" android:textSize="@dimen/about_names"></TextView>
 			<TextView android:layout_height="wrap_content" android:id="@+id/BasedOn"
 				android:text="@string/about_based_on" android:layout_gravity="center_horizontal"
-				android:textSize="8pt" android:layout_width="wrap_content"
+				android:layout_width="wrap_content"
 				android:gravity="center" android:paddingLeft="10px"
 				android:paddingRight="10px" android:paddingTop="5px"
-				android:paddingBottom="10px"></TextView>
+				android:paddingBottom="10px" android:textSize="@dimen/about_names"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:text="@string/url_project"
 				android:layout_gravity="center_horizontal" android:autoLink="web"
-				android:id="@+id/ProjectLink" android:gravity="center"></TextView>
+				android:id="@+id/ProjectLink" android:gravity="center" android:textSize="@dimen/about_urls"></TextView>
 			<TextView android:layout_width="wrap_content"
 				android:layout_height="wrap_content" android:id="@+id/GeohashLink"
 				android:layout_gravity="center_horizontal" android:autoLink="web"
-				android:text="@string/url_geohash" android:gravity="center"></TextView>
+				android:text="@string/url_geohash" android:gravity="center" android:textSize="@dimen/about_urls"></TextView>
 			<TextView android:layout_width="wrap_content"
-		         android:layout_height="wrap_content" android:id="@+id/GeohashDisclaimer"
-		         android:layout_gravity="center_horizontal" android:text="@string/about_disclaimer"></TextView>
+				android:layout_height="wrap_content" android:id="@+id/GeohashDisclaimer"
+				android:layout_gravity="center_horizontal" android:text="@string/about_disclaimer" android:textSize="@dimen/about_version_date"></TextView>
 		</LinearLayout>
 	</ScrollView>
 </LinearLayout>

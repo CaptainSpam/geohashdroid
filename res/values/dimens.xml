@@ -36,6 +36,9 @@
 	<dimen name="dialog_font_size">18sp</dimen>
 	<dimen name="dialog_padding">10dp</dimen>
 
-
+	<dimen name="about_title">36dip</dimen>
+	<dimen name="about_names">18dip</dimen>
+	<dimen name="about_version_date">14dip</dimen>
+	<dimen name="about_urls">20dip</dimen>
 
 </resources>
