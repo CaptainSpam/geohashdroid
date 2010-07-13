@@ -65,8 +65,9 @@ public class StockGrabber extends Activity {
             // Granted, we still need to know if the pieces are null or not.
             mCal = (Calendar)intent.getSerializableExtra(GeohashDroid.CALENDAR);
             mGrat = (Graticule)intent.getSerializableExtra(GeohashDroid.GRATICULE);
-            if(mCal == null || mGrat == null) {
-                // FAILURE!  We're missing some data!
+            if(mCal == null) {
+                // FAILURE!  We're missing some data!  Note that if we're
+                // missing the graticule, we assume it to be a globalhash.
                 failure(RESULT_SERVER_FAILURE);
                 return;
             }

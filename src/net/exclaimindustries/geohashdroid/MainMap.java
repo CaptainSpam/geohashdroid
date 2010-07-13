@@ -268,18 +268,23 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // them.  Only do either if it changed since last time we saw them.
         boolean nearbyOn = prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
         
-        if(mResumeFlags && nearbyOn)
+        if(!mInfo.isGlobalHash())
         {
-            // If we're coming back from stock grabbing, plant 'em.
-            mResumeFlags = false;
-            resumeNearbyPoints();
-        } else if(nearbyOn != mNearbyOn) {
-            // Otherwise, if the preference changed, alter the map.
-            if(nearbyOn)
-                addNearbyPoints();
-            else
-                removeNearbyPoints();
-            mNearbyOn = nearbyOn;
+            if(mResumeFlags && nearbyOn)
+            {
+                // If we're coming back from stock grabbing, plant 'em.
+                mResumeFlags = false;
+                resumeNearbyPoints();
+            } else if(nearbyOn != mNearbyOn) {
+                // Otherwise, if the preference changed, alter the map.
+                if(nearbyOn)
+                    addNearbyPoints();
+                else
+                    removeNearbyPoints();
+                mNearbyOn = nearbyOn;
+            }
+        } else {
+            removeNearbyPoints();
         }
 
         // MyLocationOverlay comes right back on.
@@ -692,8 +697,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 
                 // We attach "index.php" to the end of it just to be absolutely
                 // safe.
-                String page = DateTools.getHyphenatedDateString(mInfo.getCalendar())
-                 + " " + mGraticule.getLatitudeString(true) + " " + mGraticule.getLongitudeString(true);
+                String page = WikiUtils.getWikiPageName(mInfo);
                 
                 i.setData(Uri
                         .parse(WikiUtils.getWikiBaseUrl() + "index.php?title=" + page));

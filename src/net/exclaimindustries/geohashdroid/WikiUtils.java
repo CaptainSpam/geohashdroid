@@ -10,6 +10,7 @@
 package net.exclaimindustries.geohashdroid;
 
 import net.exclaimindustries.tools.DOMUtil;
+import net.exclaimindustries.tools.DateTools;
 
 import org.apache.commons.httpclient.methods.multipart.ByteArrayPartSource;
 import org.apache.commons.httpclient.methods.multipart.FilePart;
@@ -32,11 +33,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import android.content.Context;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 /** Various stateless utility methods to query a mediawiki server
@@ -423,4 +428,100 @@ public class WikiUtils {
           return "UnknownError";
       }
   }
+  
+  /**
+   * Retrieves the wiki page name for the given data.  This accounts for
+   * globalhashes, too.
+   * 
+   * @param info Info from which a page name will be derived
+   * @return said pagename
+   */
+  public static String getWikiPageName(Info info) {
+      String date = DateTools.getHyphenatedDateString(info.getCalendar());
+      
+      if(info.isGlobalHash()) {
+          return date + "_global";
+      } else {
+          Graticule grat = info.getGraticule();
+          String lat = grat.getLatitudeString(true);
+          String lon = grat.getLongitudeString(true);
+          
+          return date + "_" + lat + "_" + lon;
+      }
+  }
+  
+  /**
+   * Retrieves the text for the Expedition template appropriate for the given
+   * Info.
+   * 
+   * TODO: The wiki doesn't appear to have an Expedition template for
+   * globalhashing yet.
+   * 
+   * @param info Info from which an Expedition template will be generated
+   * @param c Context so we can grab the globalhash template if we need it
+   * @return said template
+   */
+  public static String getWikiExpeditionTemplate(Info info, Context c) {
+      String date = DateTools.getHyphenatedDateString(info.getCalendar());
+      
+      if(info.isGlobalHash()) {
+          // Until a proper template can be made in the wiki itself, we'll have
+          // to settle for this...
+          InputStream is = c.getResources().openRawResource(R.raw.globalhash_template);
+          InputStreamReader isr = new InputStreamReader(is);
+          BufferedReader br = new BufferedReader(isr);
+          
+          // Now, read in each line and do all substitutions on it.
+          String input;
+          StringBuffer toReturn = new StringBuffer();
+          try {
+              while((input = br.readLine()) != null) {
+                  input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));
+                  input = input.replaceAll("%%LONGITUDE%%", UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), true, UnitConverter.OUTPUT_DETAILED));
+                  input = input.replaceAll("%%LATITUDEURL%%", new Double(info.getLatitude()).toString());
+                  input = input.replaceAll("%%LONGITUDEURL%%", new Double(info.getLongitude()).toString());
+                  input = input.replaceAll("%%DATENUMERIC%%", date);
+                  input = input.replaceAll("%%DATESHORT%%", DateFormat.format("E MMM d yyyy", info.getCalendar()).toString());
+                  input = input.replaceAll("%%DATEGOOGLE%%", DateFormat.format("d+MMM+yyyy", info.getCalendar()).toString());
+                  toReturn.append(input).append("\n");
+              }
+          } catch (IOException e) {
+              // Don't do anything; just assume we're done.
+          }
+          
+          return toReturn.toString() + getWikiCategories(info);
+
+      } else {
+          Graticule grat = info.getGraticule();
+          String lat = grat.getLatitudeString(true);
+          String lon = grat.getLongitudeString(true);
+          
+          return "{{subst:Expedition|lat=" + lat + "|lon=" + lon + "|date=" + date + "}}";
+      }
+  }
+  
+  /**
+   * Retrieves the text for the categories to put on the wiki for pictures.
+   * 
+   * @param info Info from which categories will be generated
+   * @return said categories
+   */
+  public static String getWikiCategories(Info info) {
+      String date = DateTools.getHyphenatedDateString(info.getCalendar());
+      
+      String toReturn = "[[Category:Meetup on "
+          + date + "]]\n";
+      
+      if(info.isGlobalHash()) {
+          return toReturn + "[[Category:Globalhash]]";
+      } else {
+          Graticule grat = info.getGraticule();
+          String lat = grat.getLatitudeString(true);
+          String lon = grat.getLongitudeString(true);
+          
+          return toReturn + "[[Category:Meetup in " + lat + " "
+              + lon + "]]";
+      }
+  }
+
 }
