@@ -284,17 +284,25 @@ public class Graticule implements Serializable {
     /**
      * Returns the current latitude as a String to account for negative zero
      * graticule wackiness.
-     * 
+     * @param useNegativeValues true to return values as negative for south and positive for north, false to return values with N and S indicators
      * @return the current latitude as a String
      */
-    public String getLatitudeString() {
+    public String getLatitudeString(boolean useNegativeValues) {
         if (mSouth) {
-            return "-" + mLatitude;
+            if(useNegativeValues) {
+                return "-" + mLatitude;                
+            } else {
+                return mLatitude + "S";
+            }
         } else {
-            return new Integer(mLatitude).toString();
+            if(useNegativeValues) {
+                return new Integer(mLatitude).toString();                
+            } else {
+                return mLatitude + "N";
+            }
         }
     }
-
+    
     private void setLongitude(int longitude) {
         // Clamp!  Clamp!  Clamp!
         if (longitude > 179)
@@ -317,13 +325,22 @@ public class Graticule implements Serializable {
      * Returns the current longitude as a String to account for negative zero
      * graticule madness.
      * 
+     * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
      * @return the current longitude as a String
      */
-    public String getLongitudeString() {
+    public String getLongitudeString(boolean useNegativeValues) {
         if (mWest) {
-            return "-" + mLongitude;
+            if(useNegativeValues) {
+                return "-" + mLongitude;
+            } else {
+                return mLongitude + "W";
+            }
         } else {
-            return new Integer(mLongitude).toString();
+            if(useNegativeValues) {
+                return new Integer(mLongitude).toString();
+            } else {
+                return mLongitude + "E";
+            }
         }
     }
 

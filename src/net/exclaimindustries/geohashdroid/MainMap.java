@@ -693,7 +693,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 // We attach "index.php" to the end of it just to be absolutely
                 // safe.
                 String page = DateTools.getHyphenatedDateString(mInfo.getCalendar())
-                 + " " + mGraticule.getLatitudeString() + " " + mGraticule.getLongitudeString();
+                 + " " + mGraticule.getLatitudeString(true) + " " + mGraticule.getLongitudeString(true);
                 
                 i.setData(Uri
                         .parse(WikiUtils.getWikiBaseUrl() + "index.php?title=" + page));
