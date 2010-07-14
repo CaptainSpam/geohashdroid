@@ -237,6 +237,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
                         + after, mFormfields);
                 addStatusAndNewline(R.string.wiki_conn_done);
 
+                finishDialog();
+                
                 dismiss();
             } catch (WikiException ex) {
                 String error = (String)getText(ex.getErrorTextId());

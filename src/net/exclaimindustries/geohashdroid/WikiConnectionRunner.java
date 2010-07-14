@@ -27,6 +27,8 @@ public abstract class WikiConnectionRunner implements Runnable {
     static public final int DIALOG_DISMISS = 2;
     /** Dismiss the current dialog and pop up a new one with an error. */
     static public final int DIALOG_ERROR = 3;
+    /** Replace the current message with a success, wait, and then dismiss. */
+    static public final int DIALOG_SUCCESS = 4;
     
     private Handler mHandler;
     private Context mContext;
@@ -122,5 +124,13 @@ public abstract class WikiConnectionRunner implements Runnable {
         Message msg = mHandler.obtainMessage(DIALOG_DISMISS);
         mHandler.sendMessage(msg);
     } 
+
+    /**
+     * Tells the handler we're done.
+     */
+    protected void finishDialog() {
+        Message msg = mHandler.obtainMessage(DIALOG_SUCCESS);
+        mHandler.sendMessage(msg);
+    }
 
 }

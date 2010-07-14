@@ -144,6 +144,8 @@
 
 <string name="wiki_conn_failure">failed.</string>
 <string name="wiki_conn_success">okay.</string>
+<string name="wiki_conn_finished_title">Success!</string>
+<string name="wiki_conn_finished">Successfully posted!</string>
 <string name="wiki_conn_done">Done!</string>
 <string name="wiki_conn_login">Attempting login...</string>
 <string name="wiki_conn_connection_failed">Connection failed.</string>
