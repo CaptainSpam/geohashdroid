@@ -172,7 +172,7 @@ public class WikiUtils {
     
     if(formfields != null) {
         // If we have a formfields hash ready, populate it with a couple values.
-        formfields.put("summary", "a live expedition message sent via geohashdroid for android.");
+        formfields.put("summary", "An expedition message sent via Geohash Droid for Android.");
         if(pageElem.hasAttribute("edittoken"))
             formfields.put("token", DOMUtil.getSimpleAttributeText(pageElem, "edittoken"));
         if(pageElem.hasAttribute("touched"))
