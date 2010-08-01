@@ -1,34 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="vertical"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-  <Gallery xmlns:android="http://schemas.android.com/apk/res/android" 
-        android:id="@+id/gallery"
-        android:layout_width="fill_parent"
-        android:layout_height="140sp"/>
-  <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-    <EditText android:id="@+id/wikiedittext"
-        android:layout_width="250sp"
-        android:layout_height="fill_parent" android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine"/>
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="vertical"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-      <CheckBox android:id="@+id/includelocation"
-          android:layout_width="wrap_content"
-          android:layout_height="36sp"
-          android:checked="true" android:text="@string/wiki_dialog_append_coordinates"/>
-      
-      <Button android:id="@+id/wikieditbutton"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture"/>
-      <TextView android:id="@+id/warningmessage"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" android:text="@string/wiki_picture_not_logged_in" android:visibility="gone"/>
-    </LinearLayout>
-  </LinearLayout>
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="horizontal" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:id="@+id/PictureRow"
+		android:layout_gravity="center_horizontal">
+		<ImageView android:id="@+id/DisplayedImage"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:visibility="gone"></ImageView>
+		<ImageButton android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_gallery"
+			android:id="@+id/GalleryButton" />
+	</LinearLayout>
+	<Gallery xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/gallery" android:layout_width="fill_parent"
+		android:layout_height="140sp" />
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="horizontal" android:layout_width="fill_parent"
+		android:layout_height="fill_parent">
+		<EditText android:id="@+id/wikiedittext"
+			android:layout_width="250sp" android:layout_height="fill_parent"
+			android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine" />
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			android:orientation="vertical" android:layout_width="fill_parent"
+			android:layout_height="fill_parent">
+			<CheckBox android:id="@+id/includelocation"
+				android:layout_width="wrap_content" android:layout_height="36sp"
+				android:checked="true" android:text="@string/wiki_dialog_append_coordinates" />
+
+			<Button android:id="@+id/wikieditbutton" android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture" />
+			<TextView android:id="@+id/warningmessage"
+				android:layout_width="fill_parent" android:layout_height="fill_parent"
+				android:text="@string/wiki_picture_not_logged_in"
+				android:visibility="gone" />
+		</LinearLayout>
+	</LinearLayout>
 </LinearLayout>
