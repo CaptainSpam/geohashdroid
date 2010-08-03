@@ -16,22 +16,27 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.Gallery;
 import android.widget.BaseAdapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.TypedArray;
 
 import android.provider.MediaStore;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.location.Location;
+
+import net.exclaimindustries.tools.BitmapTools;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -68,10 +73,18 @@ public class WikiPictureEditor extends WikiBaseActivity {
     /** This gets declared at create time to save some calculation later. */
     private static int THUMB_DIMEN;
     
+    private static final int REQUEST_PICTURE = 0;
+    
     private Cursor mCursor;
 
     private Info mInfo;
     private Location mLocation;
+    
+    /** The currently-displayed file. */
+    private String mCurrentFile;
+    
+    /** The currently-displayed thumbnail. */
+    private Bitmap mThumbnail;
 
     private static final String DEBUG_TAG = "WikiPictureEditor";
     
@@ -120,10 +133,23 @@ public class WikiPictureEditor extends WikiBaseActivity {
             + MediaStore.Images.Media.DATE_ADDED + " DESC";
         mCursor = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, proj, null, null, order);
 
-        Gallery gallery = (Gallery)findViewById(R.id.gallery);
+//        Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
+        ImageButton galleryButton = (ImageButton)findViewById(R.id.GalleryButton);
+        
+        galleryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Fire off the Gallery!
+                startActivityForResult(
+                        new Intent(
+                                Intent.ACTION_PICK,
+                                android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI),
+                        REQUEST_PICTURE);
+            }
+        });
 
-        gallery.setAdapter(new ImageAdapter(this));
+//        gallery.setAdapter(new ImageAdapter(this));
 
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -139,6 +165,17 @@ public class WikiPictureEditor extends WikiBaseActivity {
               mWikiConnectionThread.start();
             }
           });
+        
+        // We can set the background on the thumbnail view right away, even if
+        // it's not actually visible.
+        ImageView thumbView = (ImageView)findViewById(R.id.ThumbnailImage);
+        thumbView.setBackgroundResource(R.drawable.gallery_selected_default);
+//        TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
+//        thumbView.setBackgroundResource(a.getResourceId(
+//                R.styleable.Gallery1_android_galleryItemBackground, 0));
+//        a.recycle();
+        
+        thumbView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         
         // Now, let's see if we have anything retained...
         try {
@@ -201,10 +238,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
         public ImageAdapter(Context c) {
             mContext = c;
-            TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
-            mGalleryItemBackground = a.getResourceId(
-                    R.styleable.Gallery1_android_galleryItemBackground, 0);
-            a.recycle();
+//            TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
+//            mGalleryItemBackground = a.getResourceId(
+//                    R.styleable.Gallery1_android_galleryItemBackground, 0);
+//            a.recycle();
         }
 
         public int getCount() {
@@ -269,14 +306,23 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
                 // Before we do anything, grab the image from the mCursor. If we
                 // get a configuration change, that mCursor will be invalid.
-                Gallery gallery = (Gallery)findViewById(R.id.gallery);
-                int position = gallery.getSelectedItemPosition();
-                mCursor.moveToPosition(position);
-                int id = mCursor
-                        .getInt(mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+//                Gallery gallery = (Gallery)findViewById(R.id.gallery);
+//                int position = gallery.getSelectedItemPosition();
+//                mCursor.moveToPosition(position);
+//                int id = mCursor
+//                        .getInt(mCursor
+//                                .getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+//                uri = Uri.withAppendedPath(
+//                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
+                int id = -1;
                 uri = Uri.withAppendedPath(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + -1);
+                if(id == -1)
+                {
+                    error("You can't send images yet.");
+                    return;
+                }
+                
                 Log.d(DEBUG_TAG, "URI: " + uri.toString());
 
                 HttpClient httpclient = new DefaultHttpClient();
@@ -289,7 +335,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
                             GHDConstants.PREF_WIKI_PASS, "");
                     WikiUtils.login(httpclient, wpName, wpPassword);
                 } else {
-                    addStatusAndNewline(R.string.wiki_conn_anon_pic_error);
+                    // This shouldn't happen.
+                    error((String)getText(R.string.wiki_conn_anon_pic_error));
                     return;
                 }
 
@@ -525,4 +572,62 @@ public class WikiPictureEditor extends WikiBaseActivity {
         public WikiConnectionRunner handler;
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if(requestCode == REQUEST_PICTURE) {
+            if(data == null) return;
+            
+            Uri uri = data.getData();
+            
+            // If the uri's null, we failed.  Don't change anything.
+            if(uri != null) {
+                Cursor cursor;
+                cursor = getContentResolver().query(uri, new String[] 
+                     { android.provider.MediaStore.Images.ImageColumns.DATA }, 
+                     null, null, null); 
+                cursor.moveToFirst(); 
+                mCurrentFile = cursor.getString(0); 
+                cursor.close();
+
+                // We have the filename.  However, we're not guaranteed to have
+                // a thumbnail generated yet, and we're not guaranteed to have
+                // the API level required to force the thumbnail to be
+                // generated.  So, let's make our own.
+                Bitmap bitmap = BitmapFactory.decodeFile(mCurrentFile);
+                
+                // If the bitmap wound up null, we're sunk.
+                if(bitmap == null) return;
+                
+                // Scale the bitmap for thumbnail size, if needed.
+                Bitmap thumbie = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);
+                
+                if(thumbie != null)
+                    mThumbnail = thumbie;
+                else
+                    mThumbnail = bitmap;
+                
+                setThumbnail();
+                
+                // We'll decode the bitmap at upload time so as not to keep a
+                // potentially big chunky Bitmap around at all times.
+            }
+        }
+    }
+
+    private void setThumbnail() {
+        // SET!
+        ImageView thumbView = (ImageView)findViewById(R.id.ThumbnailImage);
+        
+        if(mThumbnail != null) {
+            // If we have a thumbnail, by all means, put it in!
+            thumbView.setImageBitmap(mThumbnail);
+            thumbView.setVisibility(View.VISIBLE);
+        } else {
+            // Otherwise, make it vanish entirely.  This is handy for, say,
+            // clearing the thumbnail after an upload.
+            thumbView.setVisibility(View.GONE);
+        }
+    }
 }

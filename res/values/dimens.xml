@@ -35,6 +35,7 @@
 	<dimen name="main_padding">5dp</dimen>
 	<dimen name="dialog_font_size">18sp</dimen>
 	<dimen name="dialog_padding">10dp</dimen>
+	<dimen name="gallery_button_padding">10dp</dimen>
 
 	<dimen name="about_title">32dip</dimen>
 	<dimen name="about_names">18dip</dimen>

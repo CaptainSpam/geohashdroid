@@ -6,16 +6,13 @@
 		android:orientation="horizontal" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:id="@+id/PictureRow"
 		android:layout_gravity="center_horizontal">
-		<ImageView android:id="@+id/DisplayedImage"
+		<ImageView android:id="@+id/ThumbnailImage"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:visibility="gone"></ImageView>
+			android:visibility="gone" android:scaleType="centerInside"></ImageView>
 		<ImageButton android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_gallery"
-			android:id="@+id/GalleryButton" />
+			android:id="@+id/GalleryButton" android:layout_margin="@dimen/gallery_button_padding" android:layout_gravity="center_vertical"/>
 	</LinearLayout>
-	<Gallery xmlns:android="http://schemas.android.com/apk/res/android"
-		android:id="@+id/gallery" android:layout_width="fill_parent"
-		android:layout_height="140sp" />
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="horizontal" android:layout_width="fill_parent"
 		android:layout_height="fill_parent">
