@@ -119,21 +119,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
         setContentView(R.layout.pictureselect);
 
-        String [] proj = {MediaStore.Images.Media.MINI_THUMB_MAGIC,
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.LATITUDE,
-                MediaStore.Images.Media.LONGITUDE};
-        // This is not-equals because that returns zero if it IS from Camera,
-        // which sorts it BEFORE everything else, which returns one.
-        // TODO: Does this work across all languages?  That is, if we're using
-        // a German phone, will this show up as "Kamera"?
-        String order = MediaStore.Images.Media.BUCKET_DISPLAY_NAME + " != 'Camera', "
-            + MediaStore.Images.Media.BUCKET_ID + ","
-            + MediaStore.Images.Media.DATE_TAKEN + " DESC,"
-            + MediaStore.Images.Media.DATE_ADDED + " DESC";
-        mCursor = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, proj, null, null, order);
-
-//        Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
         ImageButton galleryButton = (ImageButton)findViewById(R.id.GalleryButton);
         
@@ -148,8 +133,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         REQUEST_PICTURE);
             }
         });
-
-//        gallery.setAdapter(new ImageAdapter(this));
 
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -190,8 +173,16 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     mConnectionHandler.resetHandler(mProgressHandler);
                     mWikiConnectionThread = retain.thread;
                 }
+                
+                // And in any event, put the thumbnail/file back up.
+                mCurrentFile = retain.currentFile;
+                mThumbnail = retain.thumbnail;
             }
         } catch (Exception ex) {}
+        
+        // Rebuild the thumbnail and display it as need be.
+        buildThumbnail();
+        setThumbnail();
     }
     
     @Override
@@ -219,75 +210,20 @@ public class WikiPictureEditor extends WikiBaseActivity {
     @Override
     public Object onRetainNonConfigurationInstance() {
         // If the configuration changes (i.e. orientation shift), we want to
-        // keep track of the thread we used to have.  That'll be used to
-        // populate the new popup next time around, if need be.
+        // keep track of the thread we used to have, as well as the file and its
+        // thumbnail.
+        RetainedThings retain = new RetainedThings();
+        
         if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
             mDontStopTheThread  = true;
-            RetainedThings retain = new RetainedThings();
             retain.handler = mConnectionHandler;
             retain.thread = mWikiConnectionThread;
-            return retain;
-        } else {
-            return null;
         }
-    }
+        
+        retain.currentFile = mCurrentFile;
+        retain.thumbnail = mThumbnail;
 
-    private class ImageAdapter extends BaseAdapter {
-        private int mGalleryItemBackground;
-        private Context mContext;
-
-        public ImageAdapter(Context c) {
-            mContext = c;
-//            TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
-//            mGalleryItemBackground = a.getResourceId(
-//                    R.styleable.Gallery1_android_galleryItemBackground, 0);
-//            a.recycle();
-        }
-
-        public int getCount() {
-          return mCursor==null ? 0 : mCursor.getCount();
-        }
-
-        public Object getItem(int position) {
-            return position;
-        }
-
-        public long getItemId(int position) {
-            mCursor.moveToPosition(position);
-            return mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-        }
-
-        public View getView(int position, View convertView, ViewGroup parent) {
-            Log.d(DEBUG_TAG, "getView for " + position);
-          ImageView i = new ImageView(mContext);
-          if (convertView == null) {
-               mCursor.moveToPosition(position);
-               // TODO: There HAS to be a better way to do this.
-               // With the image ID in hand, we should be able to query the
-               // thumbnail provider for the thumbnail ID, which we can then
-               // retrieve.
-               int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID));
-               
-               String proj[] = {MediaStore.Images.Thumbnails._ID};
-               String where = MediaStore.Images.Thumbnails.IMAGE_ID + " = " + id
-                   + " AND " + MediaStore.Images.Thumbnails.KIND + " = " + MediaStore.Images.Thumbnails.MINI_KIND;
-               Cursor thumber = managedQuery(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, where, null, null);
-               
-               if(!thumber.moveToFirst())
-                   Log.w(DEBUG_TAG, "Couldn't find thumbnail for image " + id);
-               else {
-                   int thumbid = thumber.getInt(thumber.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID));
-                   
-                    i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+thumbid));
-                    i.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    i.setLayoutParams(new Gallery.LayoutParams(THUMB_DIMEN, THUMB_DIMEN));
-                    // The preferred Gallery item background
-                    i.setBackgroundResource(mGalleryItemBackground);
-               }
-               thumber.close();
-          }
-          return i;
-        }
+        return retain;
     }
     
     private class PictureConnectionRunner extends WikiConnectionRunner {
@@ -570,6 +506,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private class RetainedThings {
         public Thread thread;
         public WikiConnectionRunner handler;
+        public String currentFile;
+        public Bitmap thumbnail;
     }
 
     @Override
@@ -591,22 +529,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 mCurrentFile = cursor.getString(0); 
                 cursor.close();
 
-                // We have the filename.  However, we're not guaranteed to have
-                // a thumbnail generated yet, and we're not guaranteed to have
-                // the API level required to force the thumbnail to be
-                // generated.  So, let's make our own.
-                Bitmap bitmap = BitmapFactory.decodeFile(mCurrentFile);
-                
-                // If the bitmap wound up null, we're sunk.
-                if(bitmap == null) return;
-                
-                // Scale the bitmap for thumbnail size, if needed.
-                Bitmap thumbie = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);
-                
-                if(thumbie != null)
-                    mThumbnail = thumbie;
-                else
-                    mThumbnail = bitmap;
+                buildThumbnail();
                 
                 setThumbnail();
                 
@@ -614,6 +537,34 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // potentially big chunky Bitmap around at all times.
             }
         }
+    }
+    
+    private void buildThumbnail() {
+        // First things first, clear out the old thumbnail.
+        mThumbnail = null;
+        
+        if(mCurrentFile == null) {
+            return;
+        }
+        
+        // We have the filename.  However, we're not guaranteed to have
+        // a thumbnail generated yet, and we're not guaranteed to have
+        // the API level required to force the thumbnail to be
+        // generated.  So, let's make our own.
+        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentFile);
+        
+        // If the bitmap wound up null, we're sunk.
+        if(bitmap == null) {
+            return;
+        }
+        
+        // Scale the bitmap for thumbnail size, if needed.
+        Bitmap thumbie = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);
+        
+        if(thumbie != null)
+            mThumbnail = thumbie;
+        else
+            mThumbnail = bitmap;
     }
 
     private void setThumbnail() {
