@@ -12,20 +12,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.app.ProgressDialog;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.ImageView;
-import android.widget.Gallery;
-import android.widget.BaseAdapter;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.TypedArray;
 
 import android.provider.MediaStore;
 import android.database.Cursor;
@@ -67,6 +63,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
      * TODO: Replace with API call to edit the section specifically?
      */
     private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
+    
+    private static final String STORED_FILE = "StoredFile";
+    private static final String STORED_LATITUDE = "StoredLatitude";
+    private static final String STORED_LONGITUDE = "StoredLongitude";
 
     /** The medium-density thumbnail dimensions.  This gets scaled. */
     private static final int NOMINAL_THUMB_DIMEN = 140;
@@ -84,7 +84,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private String mCurrentFile;
     
     /** The currently-displayed thumbnail. */
-    private Bitmap mThumbnail;
+    private Bitmap mCurrentThumbnail;
+    
+    /** The current latitude and longitude. */
+    private String mCurrentLatitude;
+    private String mCurrentLongitude;
 
     private static final String DEBUG_TAG = "WikiPictureEditor";
     
@@ -153,11 +157,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
         // it's not actually visible.
         ImageView thumbView = (ImageView)findViewById(R.id.ThumbnailImage);
         thumbView.setBackgroundResource(R.drawable.gallery_selected_default);
-//        TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
-//        thumbView.setBackgroundResource(a.getResourceId(
-//                R.styleable.Gallery1_android_galleryItemBackground, 0));
-//        a.recycle();
-        
         thumbView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         
         // Now, let's see if we have anything retained...
@@ -174,37 +173,42 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     mWikiConnectionThread = retain.thread;
                 }
                 
-                // And in any event, put the thumbnail/file back up.
+                // And in any event, put the image info back up.
                 mCurrentFile = retain.currentFile;
-                mThumbnail = retain.thumbnail;
+                mCurrentThumbnail = retain.thumbnail;
+                mCurrentLatitude = retain.latitude;
+                mCurrentLongitude = retain.longitude;
+                
+                setThumbnail();
+            } else {
+                // If there was nothing to retain, maybe we've got a bundle.
+                if(icicle != null) {
+                    if(icicle.containsKey(STORED_FILE)) mCurrentFile = icicle.getString(STORED_FILE);
+                    if(icicle.containsKey(STORED_LATITUDE)) mCurrentLatitude = icicle.getString(STORED_LATITUDE);
+                    if(icicle.containsKey(STORED_LONGITUDE)) mCurrentLongitude = icicle.getString(STORED_LONGITUDE);
+                    
+                }
+                
+                // Rebuild it all in any event.
+                buildThumbnail();
+                setThumbnail();
             }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+            // If we got an exception, reset the thumbnail info with whatever
+            // we have handy.
+            buildThumbnail();
+            setThumbnail();
+        }
         
         // Rebuild the thumbnail and display it as need be.
-        buildThumbnail();
-        setThumbnail();
+
     }
     
     @Override
     protected void onResume() {
         super.onResume();
         
-        // Check for username/password here.  That way, when we get back from
-        // the settings screen, it'll update the message accordingly.
-        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
-
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        TextView warning  = (TextView)findViewById(R.id.warningmessage);
-        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if ((wpName==null) || (wpName.trim().length() == 0)) {
-            submitButton.setEnabled(false);
-            submitButton.setVisibility(View.GONE);
-            warning.setVisibility(View.VISIBLE);
-        } else {
-            submitButton.setEnabled(true);
-            submitButton.setVisibility(View.VISIBLE);
-            warning.setVisibility(View.GONE);
-        }
+        resetSubmitButton();
     }
 
     @Override
@@ -221,11 +225,22 @@ public class WikiPictureEditor extends WikiBaseActivity {
         }
         
         retain.currentFile = mCurrentFile;
-        retain.thumbnail = mThumbnail;
+        retain.thumbnail = mCurrentThumbnail;
+        retain.latitude = mCurrentLatitude;
+        retain.longitude = mCurrentLongitude;
 
         return retain;
     }
     
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        
+        outState.putString(STORED_FILE, mCurrentFile);
+        outState.putString(STORED_LATITUDE, mCurrentLatitude);
+        outState.putString(STORED_LONGITUDE, mCurrentLongitude);
+    }
+
     private class PictureConnectionRunner extends WikiConnectionRunner {
       
         public PictureConnectionRunner(Handler h, Context c) {
@@ -508,6 +523,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
         public WikiConnectionRunner handler;
         public String currentFile;
         public Bitmap thumbnail;
+        public String latitude;
+        public String longitude;
     }
 
     @Override
@@ -515,33 +532,41 @@ public class WikiPictureEditor extends WikiBaseActivity {
         super.onActivityResult(requestCode, resultCode, data);
         
         if(requestCode == REQUEST_PICTURE) {
-            if(data == null) return;
+            if(data != null) {
             
-            Uri uri = data.getData();
-            
-            // If the uri's null, we failed.  Don't change anything.
-            if(uri != null) {
-                Cursor cursor;
-                cursor = getContentResolver().query(uri, new String[] 
-                     { android.provider.MediaStore.Images.ImageColumns.DATA }, 
-                     null, null, null); 
-                cursor.moveToFirst(); 
-                mCurrentFile = cursor.getString(0); 
-                cursor.close();
-
-                buildThumbnail();
+                Uri uri = data.getData();
                 
-                setThumbnail();
-                
-                // We'll decode the bitmap at upload time so as not to keep a
-                // potentially big chunky Bitmap around at all times.
+                // If the uri's null, we failed.  Don't change anything.
+                if(uri != null) {
+                    Cursor cursor;
+                    cursor = getContentResolver().query(uri, new String[] 
+                         { MediaStore.Images.ImageColumns.DATA,
+                            MediaStore.Images.ImageColumns.LATITUDE,
+                            MediaStore.Images.ImageColumns.LONGITUDE }, 
+                         null, null, null); 
+                    cursor.moveToFirst(); 
+                    mCurrentFile = cursor.getString(0);
+                    // These two could very well be null or empty.  Nothing
+                    // wrong with that.
+                    mCurrentLatitude = cursor.getString(1);
+                    mCurrentLongitude = cursor.getString(2);
+                    cursor.close();
+                }
             }
+
+            // Always rebuild the thumbnail and reset submit, just in case.
+            buildThumbnail();
+            setThumbnail();
+            resetSubmitButton();
+            
+            // We'll decode the bitmap at upload time so as not to keep a
+            // potentially big chunky Bitmap around at all times.
         }
     }
     
     private void buildThumbnail() {
         // First things first, clear out the old thumbnail.
-        mThumbnail = null;
+        mCurrentThumbnail = null;
         
         if(mCurrentFile == null) {
             return;
@@ -555,6 +580,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
         
         // If the bitmap wound up null, we're sunk.
         if(bitmap == null) {
+            // Reset this to null at this point!  It's entirely possible that we
+            // got here from the user restoring the activity after leaving it,
+            // during which time the file could have been deleted.
+            mCurrentFile = null;
             return;
         }
         
@@ -562,23 +591,56 @@ public class WikiPictureEditor extends WikiBaseActivity {
         Bitmap thumbie = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);
         
         if(thumbie != null)
-            mThumbnail = thumbie;
+            mCurrentThumbnail = thumbie;
         else
-            mThumbnail = bitmap;
+            mCurrentThumbnail = bitmap;
     }
 
     private void setThumbnail() {
         // SET!
         ImageView thumbView = (ImageView)findViewById(R.id.ThumbnailImage);
         
-        if(mThumbnail != null) {
+        if(mCurrentThumbnail != null) {
             // If we have a thumbnail, by all means, put it in!
-            thumbView.setImageBitmap(mThumbnail);
+            thumbView.setImageBitmap(mCurrentThumbnail);
             thumbView.setVisibility(View.VISIBLE);
         } else {
             // Otherwise, make it vanish entirely.  This is handy for, say,
             // clearing the thumbnail after an upload.
             thumbView.setVisibility(View.GONE);
+        }
+    }
+    
+    private void resetSubmitButton() {
+        // Resets the submit button to whatever state and visibility it ought to
+        // be.
+        
+        // First, check for username/password here.  That way, when we get back
+        // from the settings screen, it'll update the message accordingly.
+        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
+        TextView warning  = (TextView)findViewById(R.id.warningmessage);
+
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        
+        
+        if ((wpName==null) || (wpName.trim().length() == 0)) {
+            // If there's no username or password, the button is gone and the
+            // warning goes up.
+            submitButton.setEnabled(false);
+            submitButton.setVisibility(View.GONE);
+            warning.setVisibility(View.VISIBLE);
+        } else if(mCurrentFile == null || mCurrentFile.trim().length() == 0) {
+            // If there IS a username or password, but there's no currently
+            // selected image, the button is visible but disabled.
+            submitButton.setEnabled(false);
+            submitButton.setVisibility(View.VISIBLE);
+            warning.setVisibility(View.GONE);
+        } else {
+            // Otherwise, the button is visible and enabled.
+            submitButton.setEnabled(true);
+            submitButton.setVisibility(View.VISIBLE);
+            warning.setVisibility(View.GONE);
         }
     }
 }
