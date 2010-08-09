@@ -20,12 +20,12 @@ public class BitmapTools {
      * Creates a new Bitmap that's a scaled version of the given Bitmap, but
      * with the aspect ratio preserved.  Note that this will only scale down; if
      * the image is already smaller than the given dimensions, this will return
-     * null.
+     * the same bitmap that was given to it.
      *  
      * @param bitmap Bitmap to scale
      * @param maxWidth max width of new Bitmap, in pixels
      * @param maxHeight max height of new Bitmap, in pixels
-     * @return a new, scaled Bitmap, or null if no scaling is taking place
+     * @return a new, scaled Bitmap, or the old bitmap if no scaling took place
      */
     public static Bitmap createRatioPreservedDownScaledBitmap(Bitmap bitmap, int maxWidth, int maxHeight) {
         if (bitmap.getHeight() > maxHeight || bitmap.getWidth() > maxWidth) {
@@ -54,9 +54,8 @@ public class BitmapTools {
             // original Bitmap.
             return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
         } else {
-            // If it's too small already, just return null.  The caller might
-            // try to delete the old Bitmap otherwise, which would be Bad(tm).
-            return null;
+            // If it's too small already, just return what came in.
+            return bitmap;
         }
     }
 }

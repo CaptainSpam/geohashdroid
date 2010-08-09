@@ -187,6 +187,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
                 }
                 case WikiConnectionRunner.DIALOG_DISMISS:
                     mProgress.dismiss();
+                    doDismiss();
                     break;
                 case WikiConnectionRunner.DIALOG_ERROR:
                 {
@@ -364,5 +365,13 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         item.setIcon(android.R.drawable.ic_menu_preferences);
         
         return true;
+    }
+    
+    /**
+     * Do whatever needs to be done when the dialog is dismissed on success.
+     * The base method does nothing.
+     */
+    protected void doDismiss() {
+        
     }
 }

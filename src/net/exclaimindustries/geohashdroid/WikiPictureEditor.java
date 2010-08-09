@@ -72,11 +72,13 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private static final int NOMINAL_THUMB_DIMEN = 140;
     /** This gets declared at create time to save some calculation later. */
     private static int THUMB_DIMEN;
+    /** The largest width we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_WIDTH = 800;
+    /** The largest height we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_HEIGHT = 600;
     
     private static final int REQUEST_PICTURE = 0;
     
-    private Cursor mCursor;
-
     private Info mInfo;
     private Location mLocation;
     
@@ -250,32 +252,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
         public void run() {
             SharedPreferences prefs = getSharedPreferences(
                     GHDConstants.PREFS_BASE, 0);
-            Uri uri;
             byte[] data = null;
 
             try {
-
-                // Before we do anything, grab the image from the mCursor. If we
-                // get a configuration change, that mCursor will be invalid.
-//                Gallery gallery = (Gallery)findViewById(R.id.gallery);
-//                int position = gallery.getSelectedItemPosition();
-//                mCursor.moveToPosition(position);
-//                int id = mCursor
-//                        .getInt(mCursor
-//                                .getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-//                uri = Uri.withAppendedPath(
-//                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
-                int id = -1;
-                uri = Uri.withAppendedPath(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + -1);
-                if(id == -1)
-                {
-                    error("You can't send images yet.");
-                    return;
-                }
-                
-                Log.d(DEBUG_TAG, "URI: " + uri.toString());
-
                 HttpClient httpclient = new DefaultHttpClient();
 
                 String wpName = prefs
@@ -292,27 +271,20 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
 
                 String locationTag = "";
-
+                
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 if (includelocation.isChecked()) {
                     try {
-                        // First, see if the picture itself has location data.
-                        int latcol = mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE);
-                        int loncol = mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE);
-                        // Check these just to make sure.
-                        String rawLat = mCursor.getString(latcol);
-                        String rawLon = mCursor.getString(loncol);
-                        
-                        if(rawLat == null || rawLon == null)
+                        if(mCurrentLatitude == null || mCurrentLongitude == null
+                                || mCurrentLatitude.trim().length() == 0
+                                || mCurrentLongitude.trim().length() == 0)
                             throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
                         
                         // Parse the following out, first to a double, then
                         // back to a String using the formatter, just to make
                         // sure it doesn't get too long on us.
-                        String lat = mLatLonFormat.format(Double.parseDouble(rawLat));
-                        String lon = mLatLonFormat.format(Double.parseDouble(rawLon));
+                        String lat = mLatLonFormat.format(Double.parseDouble(mCurrentLatitude));
+                        String lon = mLatLonFormat.format(Double.parseDouble(mCurrentLongitude));
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + lat + "&lon=" + lon
@@ -346,41 +318,16 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // and upload time. The Geohashing wiki tends to frown upon
                 // images over 150k, so scaling and compressing are the way to
                 // go.
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(
-                        getContentResolver(), uri);
+                Bitmap bitmap = BitmapFactory.decodeFile(mCurrentFile);
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-
-                // The max we'll allow is 800x600, which should REALLY help with
-                // the filesize (TODO: tweak this). If both dimensions are
-                // smaller than that, we can let it go.
-                if (bitmap.getHeight() > 600 || bitmap.getWidth() > 800) {
-                    // So, we determine how we're going to scale this, mostly
-                    // because there's no method in Bitmap to maintain aspect
-                    // ratio for us. It's either going to wind up with a width
-                    // of 800 or a height of 600 (or both).
-                    double scaledByWidthRatio = 800.0 / bitmap.getWidth();
-                    double scaledByHeightRatio = 600.0 / bitmap.getHeight();
-
-                    int newWidth = bitmap.getWidth();
-                    int newHeight = bitmap.getHeight();
-
-                    if (bitmap.getHeight() * scaledByWidthRatio <= 600) {
-                        // Scale it by making the width 800, as scaling the
-                        // height by the same amount makes it less than or equal
-                        // to 600.
-                        newWidth = 800;
-                        newHeight = (int)(bitmap.getHeight() * scaledByWidthRatio);
-                    } else {
-                        // Otherwise, go by making the height 600.
-                        newWidth = (int)(bitmap.getWidth() * scaledByHeightRatio);
-                        newHeight = 600;
-                    }
-
-                    // Now, do the scaling! GC will take care of the bitmap
-                    // we're about to replace. I hope.
-                    bitmap = Bitmap.createScaledBitmap(bitmap, newWidth,
-                            newHeight, true);
+                
+                if(bitmap == null) {
+                    error((String)getText(R.string.wiki_conn_pic_load_error));
+                    return;
                 }
+                
+                // There!  Now, scale it accordingly...
+                bitmap = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT);
 
                 // Now, compress it!
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
@@ -588,12 +535,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         }
         
         // Scale the bitmap for thumbnail size, if needed.
-        Bitmap thumbie = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);
-        
-        if(thumbie != null)
-            mCurrentThumbnail = thumbie;
-        else
-            mCurrentThumbnail = bitmap;
+        mCurrentThumbnail = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);        
     }
 
     private void setThumbnail() {
@@ -642,5 +584,19 @@ public class WikiPictureEditor extends WikiBaseActivity {
             submitButton.setVisibility(View.VISIBLE);
             warning.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    protected void doDismiss() {
+        super.doDismiss();
+        
+        // On success, we want to clear out the current selection.  So,
+        // let's do just that.
+        mCurrentThumbnail = null;
+        mCurrentFile = null;
+        mCurrentLongitude = null;
+        mCurrentLatitude = null;
+        setThumbnail();
+        resetSubmitButton();
     }
 }

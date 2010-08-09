@@ -155,6 +155,7 @@
 <string name="wiki_conn_login_no_reply">No reply to login request.</string>
 <string name="wiki_conn_anon_warning">WARNING: Posting anonymously.</string>
 <string name="wiki_conn_anon_pic_error">You can\'t upload pictures anonymously.  You must specify a username and password in Preferences first.</string>
+<string name="wiki_conn_pic_load_error">Error loading that picture.</string>
 <string name="wiki_conn_current_location">Current location:</string>
 <string name="wiki_conn_current_location_unknown">Current location unknown.</string>
 <string name="wiki_conn_picture_location_unknown">Picture location unknown, using current location...</string>
