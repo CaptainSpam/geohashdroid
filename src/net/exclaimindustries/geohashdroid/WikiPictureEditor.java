@@ -327,7 +327,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
                 
                 // There!  Now, scale it accordingly...
-                bitmap = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT);
+                bitmap = BitmapTools.createRatioPreservedDownscaledBitmap(bitmap, MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT);
 
                 // Now, compress it!
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
@@ -535,7 +535,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         }
         
         // Scale the bitmap for thumbnail size, if needed.
-        mCurrentThumbnail = BitmapTools.createRatioPreservedDownScaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);        
+        mCurrentThumbnail = BitmapTools.createRatioPreservedDownscaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);        
     }
 
     private void setThumbnail() {
