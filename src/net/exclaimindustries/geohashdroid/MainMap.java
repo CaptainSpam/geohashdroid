@@ -12,9 +12,7 @@ import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.ZoomChangeOverlay;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -38,8 +36,8 @@ import android.widget.Toast;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
-import com.google.android.maps.MapView;
 import com.google.android.maps.MapController;
+import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 
 /**
@@ -70,7 +68,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private static final String CENTERLON = "centerLongitude";
     private static final String LATSPAN = "latitudeSpan";
     private static final String LONSPAN = "longitudeSpan";
-    private static final String INFO = "info";
+//    private static final String INFO = "info";
 //    private static final String LOCATION = "location";
     private static final String ORIENTATION = "orientation";
     private static final String ZOOM = "zoomLevel";
@@ -93,7 +91,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private static final int MENU_POST_WIKI = 22;
     
     static final int DIALOG_SEND_TO_MAPS = 1;
-    private static final int DIALOG_SWITCH_GRATICULE = 2;
+//    private static final int DIALOG_SWITCH_GRATICULE = 2;
     
     // Activity request constants
     private static final int REQUEST_STOCK = 1;
