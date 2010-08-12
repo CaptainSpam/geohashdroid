@@ -9,6 +9,7 @@ package net.exclaimindustries.tools;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 /**
  * BitmapTools are, as you probably guessed, tools for Bitmap manipulation.
@@ -17,6 +18,8 @@ import android.graphics.BitmapFactory;
  * @author Nicholas Killewald
  */
 public class BitmapTools {
+    private static final String DEBUG_TAG = "BitmapTools";
+    
     /**
      * Creates a new Bitmap that's a scaled version of the given Bitmap, but
      * with the aspect ratio preserved.  Note that this will only scale down; if
@@ -55,9 +58,11 @@ public class BitmapTools {
 
             // Now, do the scaling!  The caller must take care of GCing the
             // original Bitmap.
+            Log.d(DEBUG_TAG, "Scaling file down to " + newWidth + "x" + newHeight + "...");
             return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
         } else {
             // If it's too small already, just return what came in.
+            Log.d(DEBUG_TAG, "File is already small enough (" + bitmap.getWidth() + "x" + bitmap.getHeight() + ")");
             return bitmap;
         }
     }
@@ -83,9 +88,11 @@ public class BitmapTools {
         BitmapFactory.decodeFile(filename, opts);
 
         // If the height or width are -1 in opts, we failed.
-        if(opts.outHeight < 0 || opts.outWidth < 0)
+        if(opts.outHeight < 0 || opts.outWidth < 0) {
+            Log.e(DEBUG_TAG, "Error opening file " + filename);
             return null;
-
+        }
+        
         // Now, determine the best power-of-two to downsample by.
         int tempWidth = opts.outWidth;
         int tempHeight = opts.outHeight;
@@ -97,6 +104,8 @@ public class BitmapTools {
             tempHeight /= 2;
             sampleFactor *= 2;
         }
+        
+        Log.d(DEBUG_TAG, "Downsampling file to " + tempWidth + "x" + tempHeight + "...");
 
         // Good!  Now, let's pop it open and scale it the rest of the way.
         opts.inJustDecodeBounds = false;
