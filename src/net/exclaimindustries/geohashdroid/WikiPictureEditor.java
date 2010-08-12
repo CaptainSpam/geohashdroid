@@ -26,7 +26,6 @@ import android.content.SharedPreferences;
 import android.provider.MediaStore;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -318,7 +317,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // and upload time. The Geohashing wiki tends to frown upon
                 // images over 150k, so scaling and compressing are the way to
                 // go.
-                Bitmap bitmap = BitmapFactory.decodeFile(mCurrentFile);
+                Bitmap bitmap = BitmapTools
+                        .createRatioPreservedDownscaledBitmapFromFile(
+                                mCurrentFile, MAX_UPLOAD_WIDTH,
+                                MAX_UPLOAD_HEIGHT);
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 
                 if(bitmap == null) {
@@ -326,9 +328,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     return;
                 }
                 
-                // There!  Now, scale it accordingly...
-                bitmap = BitmapTools.createRatioPreservedDownscaledBitmap(bitmap, MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT);
-
                 // Now, compress it!
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
                 data = bytes.toByteArray();
@@ -519,11 +518,13 @@ public class WikiPictureEditor extends WikiBaseActivity {
             return;
         }
         
-        // We have the filename.  However, we're not guaranteed to have
-        // a thumbnail generated yet, and we're not guaranteed to have
-        // the API level required to force the thumbnail to be
-        // generated.  So, let's make our own.
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentFile);
+        // We have the filename.  However, we're not guaranteed to have a
+        // thumbnail generated yet, and we're not guaranteed to have the API
+        // level required to force the thumbnail to be generated.  So, let's
+        // make our own.
+        Bitmap bitmap = BitmapTools
+                .createRatioPreservedDownscaledBitmapFromFile(mCurrentFile,
+                        THUMB_DIMEN, THUMB_DIMEN); 
         
         // If the bitmap wound up null, we're sunk.
         if(bitmap == null) {
@@ -531,11 +532,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
             // got here from the user restoring the activity after leaving it,
             // during which time the file could have been deleted.
             mCurrentFile = null;
-            return;
+        } else {
+            mCurrentThumbnail = bitmap;
         }
-        
-        // Scale the bitmap for thumbnail size, if needed.
-        mCurrentThumbnail = BitmapTools.createRatioPreservedDownscaledBitmap(bitmap, THUMB_DIMEN, THUMB_DIMEN);        
     }
 
     private void setThumbnail() {

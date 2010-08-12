@@ -77,7 +77,7 @@ public class BitmapTools {
      */
     public static Bitmap createRatioPreservedDownscaledBitmapFromFile(String filename, int maxWidth, int maxHeight) {
         // First up, open the Bitmap ONLY for its size, if we can.
-        BitmapFactory.Options opts = new BitmapFactory.Options;
+        BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inJustDecodeBounds = true;
         // This will always return null thanks to inJustDecodeBounds.
         BitmapFactory.decodeFile(filename, opts);
