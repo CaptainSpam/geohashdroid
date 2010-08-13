@@ -29,10 +29,22 @@ public class BitmapTools {
      * @param bitmap Bitmap to scale
      * @param maxWidth max width of new Bitmap, in pixels
      * @param maxHeight max height of new Bitmap, in pixels
+     * @param reversible whether or not the ratio should be treated as
+     *                   reversible; that is, if the maxWidth and maxHeight are
+     *                   given as 800x600, but the image is 600x800, it will
+     *                   leave the image as 600x800 instead of reduce it to 
+     *                   450x600
      * @return a new, scaled Bitmap, or the old bitmap if no scaling took place, or null if it failed entirely
      */
-    public static Bitmap createRatioPreservedDownscaledBitmap(Bitmap bitmap, int maxWidth, int maxHeight) {
+    public static Bitmap createRatioPreservedDownscaledBitmap(Bitmap bitmap, int maxWidth, int maxHeight, boolean reversible) {
         if(bitmap == null) return null;
+
+        // Make sure the width and height are properly reversed, if needed.
+        if(reversible && shouldBeReversed(maxWidth, maxHeight, bitmap.getWidth(), bitmap.getHeight()) {
+            int t = maxWidth;
+            maxWidth = maxHeight;
+            maxHeight = t;
+        }
 
         if(bitmap.getHeight() > maxHeight || bitmap.getWidth() > maxWidth) {
             // So, we determine how we're going to scale this, mostly
@@ -78,9 +90,14 @@ public class BitmapTools {
      * @param filename location of bitmap to open
      * @param maxWidth max width of new Bitmap, in pixels
      * @param maxHeight max height of new Bitmap, in pixels
+     * @param reversible whether or not the ratio should be treated as
+     *                   reversible; that is, if the maxWidth and maxHeight are
+     *                   given as 800x600, but the image is 600x800, it will
+     *                   leave the image as 600x800 instead of reduce it to 
+     *                   450x600
      * @return a new, appropriately scaled Bitmap, or null if it failed entirely
      */
-    public static Bitmap createRatioPreservedDownscaledBitmapFromFile(String filename, int maxWidth, int maxHeight) {
+    public static Bitmap createRatioPreservedDownscaledBitmapFromFile(String filename, int maxWidth, int maxHeight, boolean reversible) {
         // First up, open the Bitmap ONLY for its size, if we can.
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inJustDecodeBounds = true;
@@ -93,6 +110,13 @@ public class BitmapTools {
             return null;
         }
         
+        // Make sure the width and height are properly reversed, if needed.
+        if(reversible && shouldBeReversed(maxWidth, maxHeight, opts.outWidth, opts.outHeight) {
+            int t = maxWidth;
+            maxWidth = maxHeight;
+            maxHeight = t;
+        }
+
         // Now, determine the best power-of-two to downsample by.
         int tempWidth = opts.outWidth;
         int tempHeight = opts.outHeight;
@@ -110,6 +134,21 @@ public class BitmapTools {
         // Good!  Now, let's pop it open and scale it the rest of the way.
         opts.inJustDecodeBounds = false;
         opts.inSampleSize = sampleFactor;
-        return createRatioPreservedDownscaledBitmap(BitmapFactory.decodeFile(filename, opts), maxWidth, maxHeight);
+
+        // The reversible flag is always false here, as we've already applied
+        // it beforehand.
+        return createRatioPreservedDownscaledBitmap(BitmapFactory.decodeFile(filename, opts), maxWidth, maxHeight, false);
+    }
+
+    private static shouldBeReversed(int inWidth, int inHeight, int outWidth, int outHeight) {
+        // If this ratio is 1.0, we never need to reverse it.
+        if(inWidth == inHeight) return false;
+
+        // If the original is more wide than tall but the second isn't, we can
+        // reverse it.  Same with the other way around.
+        if((inWidth < inHeight && outWidth > outHeight) || (inWidth > inHeight && outWidth < outHeight))
+            return true;
+        else
+            return false;
     }
 }

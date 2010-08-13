@@ -320,7 +320,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 Bitmap bitmap = BitmapTools
                         .createRatioPreservedDownscaledBitmapFromFile(
                                 mCurrentFile, MAX_UPLOAD_WIDTH,
-                                MAX_UPLOAD_HEIGHT);
+                                MAX_UPLOAD_HEIGHT, true);
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 
                 if(bitmap == null) {
@@ -524,7 +524,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         // make our own.
         Bitmap bitmap = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromFile(mCurrentFile,
-                        THUMB_DIMEN, THUMB_DIMEN); 
+                        THUMB_DIMEN, THUMB_DIMEN, false);
         
         // If the bitmap wound up null, we're sunk.
         if(bitmap == null) {
