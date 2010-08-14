@@ -39,6 +39,8 @@ public class BitmapTools {
     public static Bitmap createRatioPreservedDownscaledBitmap(Bitmap bitmap, int maxWidth, int maxHeight, boolean reversible) {
         if(bitmap == null) return null;
 
+        Log.d(DEBUG_TAG, "Incoming bitmap is " + bitmap.getWidth() + "x" + bitmap.getHeight());
+        
         // Make sure the width and height are properly reversed, if needed.
         if(reversible && shouldBeReversed(maxWidth, maxHeight, bitmap.getWidth(), bitmap.getHeight())) {
             int t = maxWidth;
@@ -50,8 +52,8 @@ public class BitmapTools {
             // So, we determine how we're going to scale this, mostly
             // because there's no method in Bitmap to maintain aspect
             // ratio for us.
-            double scaledByWidthRatio = ((float)maxWidth) / bitmap.getWidth();
-            double scaledByHeightRatio = ((float)maxHeight) / bitmap.getHeight();
+            double scaledByWidthRatio = ((double)maxWidth) / (double)bitmap.getWidth();
+            double scaledByHeightRatio = ((double)maxHeight) / (double)bitmap.getHeight();
 
             int newWidth = bitmap.getWidth();
             int newHeight = bitmap.getHeight();
@@ -61,10 +63,10 @@ public class BitmapTools {
                 // height by the same amount makes it less than or equal
                 // to the max height.
                 newWidth = maxWidth;
-                newHeight = (int)(bitmap.getHeight() * scaledByWidthRatio);
+                newHeight = (int)Math.round(bitmap.getHeight() * scaledByWidthRatio);
             } else {
                 // Otherwise, go by making the height its own max.
-                newWidth = (int)(bitmap.getWidth() * scaledByHeightRatio);
+                newWidth = (int)Math.round(bitmap.getWidth() * scaledByHeightRatio);
                 newHeight = maxHeight;
             }
 
