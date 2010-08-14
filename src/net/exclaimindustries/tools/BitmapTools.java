@@ -117,7 +117,13 @@ public class BitmapTools {
             maxHeight = t;
         }
 
-        // Now, determine the best power-of-two to downsample by.
+        // Now, determine the best power-of-two to downsample by.  We
+        // intentionally want it one level LOWER than the target; subsampling
+        // doesn't do any sort of filtering or interpolation at all, meaning if
+        // we wind up where it's a clean power-of-two to reduce it, the result
+        // will be grainy and blocky.  This way, we wind up scaling it later
+        // WITH filtering but with far less memory being used, which is a fair
+        // tradeoff.
         int tempWidth = opts.outWidth;
         int tempHeight = opts.outHeight;
         int sampleFactor = 1;
