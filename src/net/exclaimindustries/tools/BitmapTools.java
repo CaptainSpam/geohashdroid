@@ -39,8 +39,6 @@ public class BitmapTools {
     public static Bitmap createRatioPreservedDownscaledBitmap(Bitmap bitmap, int maxWidth, int maxHeight, boolean reversible) {
         if(bitmap == null) return null;
 
-        Log.d(DEBUG_TAG, "Incoming bitmap is " + bitmap.getWidth() + "x" + bitmap.getHeight());
-        
         // Make sure the width and height are properly reversed, if needed.
         if(reversible && shouldBeReversed(maxWidth, maxHeight, bitmap.getWidth(), bitmap.getHeight())) {
             int t = maxWidth;
