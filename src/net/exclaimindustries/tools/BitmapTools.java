@@ -40,7 +40,7 @@ public class BitmapTools {
         if(bitmap == null) return null;
 
         // Make sure the width and height are properly reversed, if needed.
-        if(reversible && shouldBeReversed(maxWidth, maxHeight, bitmap.getWidth(), bitmap.getHeight()) {
+        if(reversible && shouldBeReversed(maxWidth, maxHeight, bitmap.getWidth(), bitmap.getHeight())) {
             int t = maxWidth;
             maxWidth = maxHeight;
             maxHeight = t;
@@ -111,7 +111,7 @@ public class BitmapTools {
         }
         
         // Make sure the width and height are properly reversed, if needed.
-        if(reversible && shouldBeReversed(maxWidth, maxHeight, opts.outWidth, opts.outHeight) {
+        if(reversible && shouldBeReversed(maxWidth, maxHeight, opts.outWidth, opts.outHeight)) {
             int t = maxWidth;
             maxWidth = maxHeight;
             maxHeight = t;
@@ -140,7 +140,7 @@ public class BitmapTools {
         return createRatioPreservedDownscaledBitmap(BitmapFactory.decodeFile(filename, opts), maxWidth, maxHeight, false);
     }
 
-    private static shouldBeReversed(int inWidth, int inHeight, int outWidth, int outHeight) {
+    private static boolean shouldBeReversed(int inWidth, int inHeight, int outWidth, int outHeight) {
         // If this ratio is 1.0, we never need to reverse it.
         if(inWidth == inHeight) return false;
 
