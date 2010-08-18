@@ -92,14 +92,9 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
         else
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
                 
-        // Get the final destination. We'll translate it to N/S and E/W
+        // Get your current destination. We'll translate it to N/S and E/W
         // instead of positive/negative. We'll also narrow it down to three
         // decimal points.
-
-        // The final destination coordinates
-        String finalLine = c.getString(R.string.infobox_final) + " "
-                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, format) + " "
-                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, format);
 
         // Your current location coordinates
         String youLine;
@@ -111,6 +106,13 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
             youLine = c.getString(R.string.infobox_you) + " "
                     + c.getString(R.string.standby_title);
         }
+
+        // The distance to the final destination (as the crow flies)
+        String distanceLine = c.getString(R.string.infobox_dist)
+                + " "
+                + (loc != null ? (UnitConverter.makeDistanceString(c,
+                        mDistFormat, info.getDistanceInMeters(loc))) : c
+                        .getString(R.string.standby_title));
 
         // Whether or not this is at all accurate.
         String accuracyLine;
@@ -129,6 +131,6 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
             }
         }
 
-        setText(finalLine + "\n" + youLine + accuracyLine);
+        setText(youLine + "\n" + distanceLine + accuracyLine);
     }
 }
