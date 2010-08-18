@@ -25,9 +25,9 @@ import android.view.View;
  * 
  * <p>
  * This displays the coordinates to a higher degree of accuracy than junior, and
- * does NOT display distance to save some screen real estate. Also, as jumbo is
- * intended to fully stretch across the top of the screen, the compass should be
- * disabled when this comes into play.
+ * does NOT display the final destination to save some screen real estate. Also,
+ * as jumbo is intended to fully stretch across the top of the screen, the
+ * compass should be disabled when this comes into play.
  * </p>
  * 
  * @author Nicholas Killewald
