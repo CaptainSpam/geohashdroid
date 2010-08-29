@@ -109,6 +109,7 @@ public class HashBuilder {
     	private Handler mHandler;
     	private HttpGet mRequest;
     	private int mStatus;
+        private Object mLastObject;
     	
         // This may be expanded later to allow a user-definable list, hence why
         // it doesn't follow the usual naming conventions I use.  Of course, in
@@ -131,6 +132,8 @@ public class HashBuilder {
         public void run() {
         	Info toReturn;
         	String stock;
+        	
+        	mStatus = BUSY;
         	
             // First, we need to adjust the calendar in the event we're in the
             // range of the 30W rule.  To that end, sCal is for stock calendar.
@@ -199,6 +202,8 @@ public class HashBuilder {
         }
         
         private void sendMessage(Object toReturn) {
+            mLastObject = toReturn;
+            
             // If mHandler is null, either this wasn't set up right or we've
             // been told to abort and need to put the brakes on quick.
             if(mHandler != null)
@@ -206,6 +211,18 @@ public class HashBuilder {
                 Message m = Message.obtain(mHandler, mStatus, toReturn);
                 m.sendToTarget();
             }   
+        }
+        
+        /**
+         * Returns the last result object created from this StockRunner.  This
+         * is just in case the result comes when no handler is defined and it
+         * needs to be pulled out.  This may be null.  Always remember to check
+         * the status first and ONLY do this if an ALL_OKAY is returned.
+         * 
+         * @return the last object created from this StockRunner (may be null)
+         */
+        public Object getLastResultObject() {
+            return mLastObject;
         }
         
         private String fetchStock(Calendar sCal) throws FileNotFoundException, IOException {
