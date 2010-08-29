@@ -60,6 +60,30 @@ public class StockGrabber extends Activity {
         
         // As it stands, a stored configuration instance takes precedence.
         boolean configInstanceHandled = false;
+
+        // We ALWAYS need these rebuilt...
+        Intent intent = getIntent();
+        
+        if(intent != null && intent.hasExtra(GeohashDroid.CALENDAR)
+                && intent.hasExtra(GeohashDroid.GRATICULE)) {
+            // If we have all the data, store it in our private variables.
+            // Granted, we still need to know if the pieces are null or not.
+            mCal = (Calendar)intent.getSerializableExtra(GeohashDroid.CALENDAR);
+            mGrat = (Graticule)intent.getSerializableExtra(GeohashDroid.GRATICULE);
+            if(mCal == null) {
+                // FAILURE!  We're missing some data!  Note that if we're
+                // missing the graticule, we assume it to be a globalhash.
+                failure(RESULT_SERVER_FAILURE);
+                return;
+            }
+        } else {
+            // FAILURE!  The intent's missing data!
+            failure(RESULT_SERVER_FAILURE);
+            return;
+        }
+        
+        mLatitude = intent.getDoubleExtra(GeohashDroid.LATITUDE, 0.0);
+        mLongitude = intent.getDoubleExtra(GeohashDroid.LONGITUDE, 0.0);
         
         if(getLastNonConfigurationInstance() != null) {
             try {
@@ -120,36 +144,9 @@ public class StockGrabber extends Activity {
         // the Back button (and, in the event of an onDestroy without a config
         // change, we can just start over anyway).
         if(!configInstanceHandled) {
-            // The Intent should contain the request we need.  If not, return
-            // right away with an error.
-            Intent intent = getIntent();
-            
-            if(intent != null && intent.hasExtra(GeohashDroid.CALENDAR)
-                    && intent.hasExtra(GeohashDroid.GRATICULE)) {
-                // If we have all the data, store it in our private variables.
-                // Granted, we still need to know if the pieces are null or not.
-                mCal = (Calendar)intent.getSerializableExtra(GeohashDroid.CALENDAR);
-                mGrat = (Graticule)intent.getSerializableExtra(GeohashDroid.GRATICULE);
-                if(mCal == null) {
-                    // FAILURE!  We're missing some data!  Note that if we're
-                    // missing the graticule, we assume it to be a globalhash.
-                    failure(RESULT_SERVER_FAILURE);
-                    return;
-                }
-            } else {
-                // FAILURE!  The intent's missing data!
-                failure(RESULT_SERVER_FAILURE);
-                return;
-            }
-            
-            // Last call, figure out if we need to return the doubles containing
-            // location data...
-            mLatitude = intent.getDoubleExtra(GeohashDroid.LATITUDE, 0.0);
-            mLongitude = intent.getDoubleExtra(GeohashDroid.LONGITUDE, 0.0);
-            
-            // Good!  Data's retrieved, and we're ready to talk to HashBuilder!
-            // We want to do one check to the database right now, though, so
-            // that this activity can return immediately if the data's there.
+            // Now we're ready to talk to HashBuilder.  We want to do one check
+            // to the database right now, though, so that this activity can
+            // return immediately if the data's there.
             Info inf = HashBuilder.getStoredInfo(this, mCal, mGrat);
             if(inf != null) {
                 // We got info!  Woo!  Send it back right away.
@@ -165,8 +162,7 @@ public class StockGrabber extends Activity {
             mThread.start();
         }
         
-        // No data?  Well, all right, but we'll need to make ourselves
-        // presentable first...
+        // And then, display.
         displaySelf();
     }
     
