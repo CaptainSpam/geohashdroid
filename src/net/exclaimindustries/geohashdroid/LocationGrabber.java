@@ -18,6 +18,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Window;
 import android.widget.TextView;
 
@@ -35,56 +36,49 @@ public class LocationGrabber extends Activity implements LocationListener {
 	private LocationManager mManager;
 	
 	private HashMap<String, Boolean> mEnabledProviders;
-//    private final static String DEBUG_TAG = "LocationGrabber";
+    private final static String DEBUG_TAG = "LocationGrabber";
 	
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		
-		// Unlike the StockGrabber, the popup is ALWAYS displayed.  StockGrabber
-		// could find its stuff in the cache and thus be able to return almost
-		// immediately, but we have no reason to assume a near-instant result
-		// from the location.
-		displaySelf();
-		
-		// Now, grab a LocationManager.
-		mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-		
-		// Then, stand back and wait for onResume!
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Unlike the StockGrabber, the popup is ALWAYS displayed. StockGrabber
+        // could find its stuff in the cache and thus be able to return almost
+        // immediately, but we have no reason to assume a near-instant result
+        // from the location. Also unlike StockGrabber, we don't have an extra
+        // thread to worry about; everything happens with LocationManager.
+        displaySelf();
+
+        // Now, grab a LocationManager.
+        mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+
+        // Set up the hash of providers. Yes, there's only two.
+        List<String> providers = mManager.getProviders(false);
+        if (providers.isEmpty()) {
+            // FAIL! No providers are available!
+            failure(RESULT_FAIL);
+        }
+
+        mEnabledProviders = new HashMap<String, Boolean>();
+
+        // Stuff all the providers into the HashMap, along with their current,
+        // respective statuses.
+        for (String s : providers)
+            mEnabledProviders.put(s, mManager.isProviderEnabled(s));
+
+        // Then, register for responses and get ready for fun!
+        for (String s : providers)
+            mManager.requestLocationUpdates(s, 0, 0, this);
 	}
 
 	@Override
-    protected void onPause() {
-        super.onPause();
-	    // At pause time, stop everything and return a cancel.
-        failure(RESULT_CANCELED);
+    protected void onDestroy() {
+        super.onDestroy();
+	    // If we're being destroyed, shut down all the providers.  We'll come
+        // back here if this was a config change and restart the GPS search, or
+        // if we're done, we'll finish anyway.
+        mManager.removeUpdates(this);
 	    mEnabledProviders.clear();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // We want to do all this on every resume (if I ever decide to allow
-        // interruptions to LocationGrabber as opposed to complete stoppage on
-        // the onPause call), because we won't know the status of the providers
-        // between interruptions.
-        
-        // Set up the hash of providers.  Yes, there's only two.
-        List<String> providers = mManager.getProviders(false);
-        if(providers.isEmpty())
-            // FAIL!  No providers are available!
-            failure(RESULT_FAIL);
-        
-        mEnabledProviders = new HashMap<String, Boolean>();
-        
-        // Stuff all the providers into the HashMap, along with their current,
-        // respective statuses.
-        for(String s : providers)
-            mEnabledProviders.put(s, mManager.isProviderEnabled(s));
-        
-        // Then, register for responses and get ready for fun!
-        for(String s : providers)
-            mManager.requestLocationUpdates(s, 0, 0, this);
     }
 	
     private void displaySelf() {
@@ -102,6 +96,7 @@ public class LocationGrabber extends Activity implements LocationListener {
     
     private void failure(int resultCode)
     {
+        Log.i(DEBUG_TAG, "Couldn't get location");
         Intent i = new Intent();
         setResult(resultCode, i);
 		mManager.removeUpdates(this);
@@ -110,6 +105,14 @@ public class LocationGrabber extends Activity implements LocationListener {
     
     private void success(Location l)
     {
+        if(l != null)
+            Log.i(DEBUG_TAG, "Location appears to be " + l.getLatitude() + "," + l.getLongitude());
+        else
+        {
+            Log.e(DEBUG_TAG, "Location given to the success method is null!");
+            failure(RESULT_FAIL);
+            return;
+        }
     	Intent i = new Intent();
     	i.putExtra(GeohashDroid.LATITUDE, l.getLatitude());
     	i.putExtra(GeohashDroid.LONGITUDE, l.getLongitude());
