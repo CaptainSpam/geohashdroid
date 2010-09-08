@@ -3,8 +3,7 @@
 	<PreferenceCategory android:title="@string/pref_cat_map">
 		<CheckBoxPreference android:key="AutoZoom"
 			android:title="@string/pref_autozoom_title" android:defaultValue="true"
-			android:persistent="true" android:summaryOff="@string/pref_autozoom_off"
-			android:summaryOn="@string/pref_autozoom_on" />
+			android:persistent="true" android:summaryOff="@string/pref_autozoom_off" android:summaryOn="@string/pref_autozoom_on"/>
 		<ListPreference android:key="InfoBoxSize"
 			android:title="@string/pref_infobox_title" android:defaultValue="Small"
 			android:persistent="true" android:entries="@array/pref_infobox_entries"
@@ -20,8 +19,7 @@
 			android:dialogTitle="@string/pref_coordunits_dialogtitle" />
 		<CheckBoxPreference android:key="NearbyPoints"
 			android:title="@string/pref_nearbypoints_title" android:defaultValue="false"
-			android:persistent="true" android:summaryOff="@string/pref_nearbypoints_off"
-			android:summaryOn="@string/pref_nearbypoints_on" />
+			android:persistent="true" android:summaryOff="@string/pref_nearbypoints_off" android:summaryOn="@string/pref_nearbypoints_on"/>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_wiki">
 		<EditTextPreference android:key="WikiUserName"
@@ -31,23 +29,13 @@
 			android:summary="@string/pref_wikipassword_summary" android:title="@string/pref_wikipassword_title"
 			android:defaultValue="" android:persistent="true"
 			android:dialogTitle="@string/pref_wikipassword_dialogtitle" />
-
-		<CheckBoxPreference android:key="WikiUsePhoneTime"
-			android:title="@string/pref_wikiphonetime_title" android:summaryOff="@string/pref_wikiphonetime_off"
-			android:summaryOn="@string/pref_wikiphonetime_on"
-			android:defaultValue="false" android:persistent="true"></CheckBoxPreference>
-	</PreferenceCategory>
+	
+<CheckBoxPreference android:key="WikiUsePhoneTime" android:title="@string/pref_wikiphonetime_title" android:summaryOff="@string/pref_wikiphonetime_off" android:summaryOn="@string/pref_wikiphonetime_on" android:defaultValue="false" android:persistent="true"></CheckBoxPreference>
+</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_cat_other">
-		<CheckBoxPreference android:key="PowerSaver"
-			android:title="@string/pref_powersaver_title"
-			android:defaultValue="false" android:persistent="true"
-			android:summaryOff="@string/pref_powersaver_off"
-			android:summaryOn="@string/pref_powersaver_on" />
 		<CheckBoxPreference android:key="RememberGraticule"
 			android:title="@string/pref_remembergraticule_title"
-			android:defaultValue="true" android:persistent="true"
-			android:summaryOff="@string/pref_remembergraticule_off"
-			android:summaryOn="@string/pref_remembergraticule_on" />
+			android:defaultValue="true" android:persistent="true" android:summaryOff="@string/pref_remembergraticule_off" android:summaryOn="@string/pref_remembergraticule_on"/>
 		<ListPreference android:title="@string/pref_stockcachesize_title"
 			android:key="StockCacheSize" android:persistent="true"
 			android:entries="@array/pref_stockcachesize_entries"

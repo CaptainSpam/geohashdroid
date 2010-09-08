@@ -12,18 +12,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.app.ProgressDialog;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.ImageView;
-import android.widget.Gallery;
-import android.widget.BaseAdapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.TypedArray;
 
 import android.provider.MediaStore;
 import android.database.Cursor;
@@ -32,6 +30,8 @@ import android.graphics.Bitmap;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.location.Location;
+
+import net.exclaimindustries.tools.BitmapTools;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -57,21 +57,39 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
     /** Matches the gallery section. */
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
-
     /**
      * Matches the gallery section header.
      * TODO: Replace with API call to edit the section specifically?
      */
     private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
+    
+    private static final String STORED_FILE = "StoredFile";
+    private static final String STORED_LATITUDE = "StoredLatitude";
+    private static final String STORED_LONGITUDE = "StoredLongitude";
 
     /** The medium-density thumbnail dimensions.  This gets scaled. */
     private static final int NOMINAL_THUMB_DIMEN = 140;
     /** This gets declared at create time to save some calculation later. */
     private static int THUMB_DIMEN;
+    /** The largest width we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_WIDTH = 800;
+    /** The largest height we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_HEIGHT = 600;
     
-    private Cursor mCursor;
-
+    private static final int REQUEST_PICTURE = 0;
+    
     private Info mInfo;
+    private Location mLocation;
+    
+    /** The currently-displayed file. */
+    private String mCurrentFile;
+    
+    /** The currently-displayed thumbnail. */
+    private Bitmap mCurrentThumbnail;
+    
+    /** The current latitude and longitude. */
+    private String mCurrentLatitude;
+    private String mCurrentLongitude;
 
     private static final String DEBUG_TAG = "WikiPictureEditor";
     
@@ -90,27 +108,36 @@ public class WikiPictureEditor extends WikiBaseActivity {
         THUMB_DIMEN = (int)(NOMINAL_THUMB_DIMEN * metrics.density);
 
         mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
+        
+        double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
+        double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);
+        
+        // If either of those were invalid (that is, 200), we don't have a
+        // location.  If they're both valid, we do have one.
+        if(lat > 90 || lat < -90 || lon > 180 || lon < -180)
+            mLocation = null;
+        else {
+            mLocation = new Location((String)null);
+            mLocation.setLatitude(lat);
+            mLocation.setLongitude(lon);
+        }
 
         setContentView(R.layout.pictureselect);
 
-        String [] proj = {MediaStore.Images.Media.MINI_THUMB_MAGIC,
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.LATITUDE,
-                MediaStore.Images.Media.LONGITUDE};
-        // This is not-equals because that returns zero if it IS from Camera,
-        // which sorts it BEFORE everything else, which returns one.
-        // TODO: Does this work across all languages?  That is, if we're using
-        // a German phone, will this show up as "Kamera"?
-        String order = MediaStore.Images.Media.BUCKET_DISPLAY_NAME + " != 'Camera', "
-            + MediaStore.Images.Media.BUCKET_ID + ","
-            + MediaStore.Images.Media.DATE_TAKEN + " DESC,"
-            + MediaStore.Images.Media.DATE_ADDED + " DESC";
-        mCursor = managedQuery( MediaStore.Images.Media.EXTERNAL_CONTENT_URI, proj, null, null, order);
-
-        Gallery gallery = (Gallery)findViewById(R.id.gallery);
         Button submitButton = (Button)findViewById(R.id.wikieditbutton);
-
-        gallery.setAdapter(new ImageAdapter(this));
+        ImageButton galleryButton = (ImageButton)findViewById(R.id.GalleryButton);
+        
+        galleryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Fire off the Gallery!
+                startActivityForResult(
+                        new Intent(
+                                Intent.ACTION_PICK,
+                                android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI),
+                        REQUEST_PICTURE);
+            }
+        });
 
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -127,6 +154,12 @@ public class WikiPictureEditor extends WikiBaseActivity {
             }
           });
         
+        // We can set the background on the thumbnail view right away, even if
+        // it's not actually visible.
+        ImageView thumbView = (ImageView)findViewById(R.id.ThumbnailImage);
+        thumbView.setBackgroundResource(R.drawable.gallery_selected_default);
+        thumbView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        
         // Now, let's see if we have anything retained...
         try {
             RetainedThings retain = (RetainedThings)getLastNonConfigurationInstance();
@@ -140,106 +173,75 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     mConnectionHandler.resetHandler(mProgressHandler);
                     mWikiConnectionThread = retain.thread;
                 }
+                
+                // And in any event, put the image info back up.
+                mCurrentFile = retain.currentFile;
+                mCurrentThumbnail = retain.thumbnail;
+                mCurrentLatitude = retain.latitude;
+                mCurrentLongitude = retain.longitude;
+                
+                setThumbnail();
+            } else {
+                // If there was nothing to retain, maybe we've got a bundle.
+                if(icicle != null) {
+                    if(icicle.containsKey(STORED_FILE)) mCurrentFile = icicle.getString(STORED_FILE);
+                    if(icicle.containsKey(STORED_LATITUDE)) mCurrentLatitude = icicle.getString(STORED_LATITUDE);
+                    if(icicle.containsKey(STORED_LONGITUDE)) mCurrentLongitude = icicle.getString(STORED_LONGITUDE);
+                    
+                }
+                
+                // Rebuild it all in any event.
+                buildThumbnail();
+                setThumbnail();
             }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+            // If we got an exception, reset the thumbnail info with whatever
+            // we have handy.
+            buildThumbnail();
+            setThumbnail();
+        }
+        
+        // Rebuild the thumbnail and display it as need be.
+
     }
     
     @Override
     protected void onResume() {
         super.onResume();
         
-        // Check for username/password here.  That way, when we get back from
-        // the settings screen, it'll update the message accordingly.
-        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
-
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        TextView warning  = (TextView)findViewById(R.id.warningmessage);
-        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        if ((wpName==null) || (wpName.trim().length() == 0)) {
-            submitButton.setEnabled(false);
-            submitButton.setVisibility(View.GONE);
-            warning.setVisibility(View.VISIBLE);
-        } else {
-            submitButton.setEnabled(true);
-            submitButton.setVisibility(View.VISIBLE);
-            warning.setVisibility(View.GONE);
-        }
+        resetSubmitButton();
     }
 
     @Override
     public Object onRetainNonConfigurationInstance() {
         // If the configuration changes (i.e. orientation shift), we want to
-        // keep track of the thread we used to have.  That'll be used to
-        // populate the new popup next time around, if need be.
+        // keep track of the thread we used to have, as well as the file and its
+        // thumbnail.
+        RetainedThings retain = new RetainedThings();
+        
         if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
             mDontStopTheThread  = true;
-            RetainedThings retain = new RetainedThings();
             retain.handler = mConnectionHandler;
             retain.thread = mWikiConnectionThread;
-            return retain;
-        } else {
-            return null;
         }
-    }
+        
+        retain.currentFile = mCurrentFile;
+        retain.thumbnail = mCurrentThumbnail;
+        retain.latitude = mCurrentLatitude;
+        retain.longitude = mCurrentLongitude;
 
-    private class ImageAdapter extends BaseAdapter {
-        private int mGalleryItemBackground;
-        private Context mContext;
-
-        public ImageAdapter(Context c) {
-            mContext = c;
-            TypedArray a = obtainStyledAttributes(R.styleable.Gallery1);
-            mGalleryItemBackground = a.getResourceId(
-                    R.styleable.Gallery1_android_galleryItemBackground, 0);
-            a.recycle();
-        }
-
-        public int getCount() {
-          return mCursor==null ? 0 : mCursor.getCount();
-        }
-
-        public Object getItem(int position) {
-            return position;
-        }
-
-        public long getItemId(int position) {
-            mCursor.moveToPosition(position);
-            return mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-        }
-
-        public View getView(int position, View convertView, ViewGroup parent) {
-            Log.d(DEBUG_TAG, "getView for " + position);
-          ImageView i = new ImageView(mContext);
-          if (convertView == null) {
-               mCursor.moveToPosition(position);
-               // TODO: There HAS to be a better way to do this.
-               // With the image ID in hand, we should be able to query the
-               // thumbnail provider for the thumbnail ID, which we can then
-               // retrieve.
-               int id = mCursor.getInt(mCursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID));
-               
-               String proj[] = {MediaStore.Images.Thumbnails._ID};
-               String where = MediaStore.Images.Thumbnails.IMAGE_ID + " = " + id
-                   + " AND " + MediaStore.Images.Thumbnails.KIND + " = " + MediaStore.Images.Thumbnails.MINI_KIND;
-               Cursor thumber = managedQuery(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, proj, where, null, null);
-               
-               if(!thumber.moveToFirst())
-                   Log.w(DEBUG_TAG, "Couldn't find thumbnail for image " + id);
-               else {
-                   int thumbid = thumber.getInt(thumber.getColumnIndexOrThrow(MediaStore.Images.Thumbnails._ID));
-                   
-                    i.setImageURI(Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, ""+thumbid));
-                    i.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    i.setLayoutParams(new Gallery.LayoutParams(THUMB_DIMEN, THUMB_DIMEN));
-                    // The preferred Gallery item background
-                    i.setBackgroundResource(mGalleryItemBackground);
-               }
-               thumber.close();
-          }
-          return i;
-        }
+        return retain;
     }
     
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        
+        outState.putString(STORED_FILE, mCurrentFile);
+        outState.putString(STORED_LATITUDE, mCurrentLatitude);
+        outState.putString(STORED_LONGITUDE, mCurrentLongitude);
+    }
+
     private class PictureConnectionRunner extends WikiConnectionRunner {
       
         public PictureConnectionRunner(Handler h, Context c) {
@@ -249,23 +251,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
         public void run() {
             SharedPreferences prefs = getSharedPreferences(
                     GHDConstants.PREFS_BASE, 0);
-            Uri uri;
             byte[] data = null;
 
             try {
-
-                // Before we do anything, grab the image from the mCursor. If we
-                // get a configuration change, that mCursor will be invalid.
-                Gallery gallery = (Gallery)findViewById(R.id.gallery);
-                int position = gallery.getSelectedItemPosition();
-                mCursor.moveToPosition(position);
-                int id = mCursor
-                        .getInt(mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-                uri = Uri.withAppendedPath(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
-                Log.d(DEBUG_TAG, "URI: " + uri.toString());
-
                 HttpClient httpclient = new DefaultHttpClient();
 
                 String wpName = prefs
@@ -276,32 +264,26 @@ public class WikiPictureEditor extends WikiBaseActivity {
                             GHDConstants.PREF_WIKI_PASS, "");
                     WikiUtils.login(httpclient, wpName, wpPassword);
                 } else {
-                    addStatusAndNewline(R.string.wiki_conn_anon_pic_error);
+                    // This shouldn't happen.
+                    error((String)getText(R.string.wiki_conn_anon_pic_error));
                     return;
                 }
 
                 String locationTag = "";
-
+                
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 if (includelocation.isChecked()) {
                     try {
-                        // First, see if the picture itself has location data.
-                        int latcol = mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE);
-                        int loncol = mCursor
-                                .getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE);
-                        // Check these just to make sure.
-                        String rawLat = mCursor.getString(latcol);
-                        String rawLon = mCursor.getString(loncol);
-                        
-                        if(rawLat == null || rawLon == null)
+                        if(mCurrentLatitude == null || mCurrentLongitude == null
+                                || mCurrentLatitude.trim().length() == 0
+                                || mCurrentLongitude.trim().length() == 0)
                             throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
                         
                         // Parse the following out, first to a double, then
                         // back to a String using the formatter, just to make
                         // sure it doesn't get too long on us.
-                        String lat = mLatLonFormat.format(Double.parseDouble(rawLat));
-                        String lon = mLatLonFormat.format(Double.parseDouble(rawLon));
+                        String lat = mLatLonFormat.format(Double.parseDouble(mCurrentLatitude));
+                        String lon = mLatLonFormat.format(Double.parseDouble(mCurrentLongitude));
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + lat + "&lon=" + lon
@@ -312,16 +294,15 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         // it (that is, something threw an exception up there),
                         // go by the user's current location, if that's known.
                         addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
-                        Location loc = getCurrentLocation();
-                        if (loc != null) {
+                        if (mLocation != null) {
                             locationTag = " [http://www.openstreetmap.org/?lat="
-                                    + loc.getLatitude()
+                                    + mLocation.getLatitude()
                                     + "&lon="
-                                    + loc.getLongitude()
+                                    + mLocation.getLongitude()
                                     + "&zoom=16&layers=B000FTF @"
-                                    + mLatLonFormat.format(loc.getLatitude())
+                                    + mLatLonFormat.format(mLocation.getLatitude())
                                     + ","
-                                    + mLatLonFormat.format(loc.getLongitude())
+                                    + mLatLonFormat.format(mLocation.getLongitude())
                                     + "]";
                         } else {
                             // Otherwise, we don't use anything at all.
@@ -336,42 +317,17 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // and upload time. The Geohashing wiki tends to frown upon
                 // images over 150k, so scaling and compressing are the way to
                 // go.
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(
-                        getContentResolver(), uri);
+                Bitmap bitmap = BitmapTools
+                        .createRatioPreservedDownscaledBitmapFromFile(
+                                mCurrentFile, MAX_UPLOAD_WIDTH,
+                                MAX_UPLOAD_HEIGHT, true);
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-
-                // The max we'll allow is 800x600, which should REALLY help with
-                // the filesize (TODO: tweak this). If both dimensions are
-                // smaller than that, we can let it go.
-                if (bitmap.getHeight() > 600 || bitmap.getWidth() > 800) {
-                    // So, we determine how we're going to scale this, mostly
-                    // because there's no method in Bitmap to maintain aspect
-                    // ratio for us. It's either going to wind up with a width
-                    // of 800 or a height of 600 (or both).
-                    double scaledByWidthRatio = 800.0 / bitmap.getWidth();
-                    double scaledByHeightRatio = 600.0 / bitmap.getHeight();
-
-                    int newWidth = bitmap.getWidth();
-                    int newHeight = bitmap.getHeight();
-
-                    if (bitmap.getHeight() * scaledByWidthRatio <= 600) {
-                        // Scale it by making the width 800, as scaling the
-                        // height by the same amount makes it less than or equal
-                        // to 600.
-                        newWidth = 800;
-                        newHeight = (int)(bitmap.getHeight() * scaledByWidthRatio);
-                    } else {
-                        // Otherwise, go by making the height 600.
-                        newWidth = (int)(bitmap.getWidth() * scaledByHeightRatio);
-                        newHeight = 600;
-                    }
-
-                    // Now, do the scaling! GC will take care of the bitmap
-                    // we're about to replace. I hope.
-                    bitmap = Bitmap.createScaledBitmap(bitmap, newWidth,
-                            newHeight, true);
+                
+                if(bitmap == null) {
+                    error((String)getText(R.string.wiki_conn_pic_load_error));
+                    return;
                 }
-
+                
                 // Now, compress it!
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
                 data = bytes.toByteArray();
@@ -384,10 +340,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 addStatusAndNewline(R.string.wiki_conn_done);
 
                 addStatus(R.string.wiki_conn_upload_image);
-
                 String now = new SimpleDateFormat("HH-mm-ss-SSS")
                         .format(new Date());
-
                 String expedition = WikiUtils.getWikiPageName(mInfo);
 
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
@@ -444,9 +398,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 
                 formfields.put("summary", summaryPrefix + " " + message);
 
+                
                 String before = "";
                 String after = "";
-
+                
                 Matcher galleryq = RE_GALLERY.matcher(page);
                 if (galleryq.matches()) {
                     before = galleryq.group(1) + galleryq.group(2);
@@ -512,6 +467,135 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private class RetainedThings {
         public Thread thread;
         public WikiConnectionRunner handler;
+        public String currentFile;
+        public Bitmap thumbnail;
+        public String latitude;
+        public String longitude;
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if(requestCode == REQUEST_PICTURE) {
+            if(data != null) {
+            
+                Uri uri = data.getData();
+                
+                // If the uri's null, we failed.  Don't change anything.
+                if(uri != null) {
+                    Cursor cursor;
+                    cursor = getContentResolver().query(uri, new String[] 
+                         { MediaStore.Images.ImageColumns.DATA,
+                            MediaStore.Images.ImageColumns.LATITUDE,
+                            MediaStore.Images.ImageColumns.LONGITUDE }, 
+                         null, null, null); 
+                    cursor.moveToFirst(); 
+                    mCurrentFile = cursor.getString(0);
+                    // These two could very well be null or empty.  Nothing
+                    // wrong with that.
+                    mCurrentLatitude = cursor.getString(1);
+                    mCurrentLongitude = cursor.getString(2);
+                    cursor.close();
+                }
+            }
+
+            // Always rebuild the thumbnail and reset submit, just in case.
+            buildThumbnail();
+            setThumbnail();
+            resetSubmitButton();
+            
+            // We'll decode the bitmap at upload time so as not to keep a
+            // potentially big chunky Bitmap around at all times.
+        }
+    }
+    
+    private void buildThumbnail() {
+        // First things first, clear out the old thumbnail.
+        mCurrentThumbnail = null;
+        
+        if(mCurrentFile == null) {
+            return;
+        }
+        
+        // We have the filename.  However, we're not guaranteed to have a
+        // thumbnail generated yet, and we're not guaranteed to have the API
+        // level required to force the thumbnail to be generated.  So, let's
+        // make our own.
+        Bitmap bitmap = BitmapTools
+                .createRatioPreservedDownscaledBitmapFromFile(mCurrentFile,
+                        THUMB_DIMEN, THUMB_DIMEN, false);
+        
+        // If the bitmap wound up null, we're sunk.
+        if(bitmap == null) {
+            // Reset this to null at this point!  It's entirely possible that we
+            // got here from the user restoring the activity after leaving it,
+            // during which time the file could have been deleted.
+            mCurrentFile = null;
+        } else {
+            mCurrentThumbnail = bitmap;
+        }
+    }
+
+    private void setThumbnail() {
+        // SET!
+        ImageView thumbView = (ImageView)findViewById(R.id.ThumbnailImage);
+        
+        if(mCurrentThumbnail != null) {
+            // If we have a thumbnail, by all means, put it in!
+            thumbView.setImageBitmap(mCurrentThumbnail);
+            thumbView.setVisibility(View.VISIBLE);
+        } else {
+            // Otherwise, make it vanish entirely.  This is handy for, say,
+            // clearing the thumbnail after an upload.
+            thumbView.setVisibility(View.GONE);
+        }
+    }
+    
+    private void resetSubmitButton() {
+        // Resets the submit button to whatever state and visibility it ought to
+        // be.
+        
+        // First, check for username/password here.  That way, when we get back
+        // from the settings screen, it'll update the message accordingly.
+        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
+        TextView warning  = (TextView)findViewById(R.id.warningmessage);
+
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        String wpName = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        
+        
+        if ((wpName==null) || (wpName.trim().length() == 0)) {
+            // If there's no username or password, the button is gone and the
+            // warning goes up.
+            submitButton.setEnabled(false);
+            submitButton.setVisibility(View.GONE);
+            warning.setVisibility(View.VISIBLE);
+        } else if(mCurrentFile == null || mCurrentFile.trim().length() == 0) {
+            // If there IS a username or password, but there's no currently
+            // selected image, the button is visible but disabled.
+            submitButton.setEnabled(false);
+            submitButton.setVisibility(View.VISIBLE);
+            warning.setVisibility(View.GONE);
+        } else {
+            // Otherwise, the button is visible and enabled.
+            submitButton.setEnabled(true);
+            submitButton.setVisibility(View.VISIBLE);
+            warning.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    protected void doDismiss() {
+        super.doDismiss();
+        
+        // On success, we want to clear out the current selection.  So,
+        // let's do just that.
+        mCurrentThumbnail = null;
+        mCurrentFile = null;
+        mCurrentLongitude = null;
+        mCurrentLatitude = null;
+        setThumbnail();
+        resetSubmitButton();
+    }
 }

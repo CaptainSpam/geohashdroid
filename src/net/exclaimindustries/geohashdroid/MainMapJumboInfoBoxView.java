@@ -25,9 +25,9 @@ import android.view.View;
  * 
  * <p>
  * This displays the coordinates to a higher degree of accuracy than junior, and
- * does NOT display distance to save some screen real estate. Also, as jumbo is
- * intended to fully stretch across the top of the screen, the compass should be
- * disabled when this comes into play.
+ * does NOT display the final destination to save some screen real estate. Also,
+ * as jumbo is intended to fully stretch across the top of the screen, the
+ * compass should be disabled when this comes into play.
  * </p>
  * 
  * @author Nicholas Killewald
@@ -92,14 +92,9 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
         else
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
                 
-        // Get the final destination. We'll translate it to N/S and E/W
+        // Get your current destination. We'll translate it to N/S and E/W
         // instead of positive/negative. We'll also narrow it down to three
         // decimal points.
-
-        // The final destination coordinates
-        String finalLine = c.getString(R.string.infobox_final) + " "
-                    + UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), false, format) + " "
-                    + UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), false, format);
 
         // Your current location coordinates
         String youLine;
@@ -112,16 +107,23 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
                     + c.getString(R.string.standby_title);
         }
 
+        // The distance to the final destination (as the crow flies)
+        String distanceLine = c.getString(R.string.infobox_dist)
+                + " "
+                + (loc != null ? (UnitConverter.makeDistanceString(c,
+                        mDistFormat, info.getDistanceInMeters(loc))) : c
+                        .getString(R.string.standby_title));
+
         // Whether or not this is at all accurate.
         String accuracyLine;
         if (loc == null) {
             accuracyLine = "";
         } else {
             float accuracy = loc.getAccuracy();
-            if (accuracy > GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD) {
+            if (accuracy > REALLY_LOW_ACCURACY_THRESHOLD) {
                 accuracyLine = "\n"
                         + c.getString(R.string.infobox_accuracy_really_low);
-            } else if (accuracy > GHDConstants.LOW_ACCURACY_THRESHOLD) {
+            } else if (accuracy > LOW_ACCURACY_THRESHOLD) {
                 accuracyLine = "\n"
                         + c.getString(R.string.infobox_accuracy_low);
             } else {
@@ -129,6 +131,6 @@ public class MainMapJumboInfoBoxView extends MainMapInfoBoxView {
             }
         }
 
-        setText(finalLine + "\n" + youLine + accuracyLine);
+        setText(youLine + "\n" + distanceLine + accuracyLine);
     }
 }

@@ -7,6 +7,7 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -193,6 +194,8 @@ public class UnitConverter {
     
     private static String makeCoordinateString(String units, double coord, int format) {
         // Just does the generic coordinate conversion stuff for coordinates.
+        NumberFormat nf = NumberFormat.getInstance();
+
         try {
             if(units.equals("Degrees")) {
                 // Easy case: Use the result Location gives us, modified by the
@@ -211,7 +214,7 @@ public class UnitConverter {
                 String[] split = temp.split(":");
                 
                 // Get the double form of the minutes...
-                double minutes = new Double(split[1]).doubleValue();
+                double minutes = nf.parse(split[1]).doubleValue();
                 
                 switch(format) {
                     case OUTPUT_SHORT:
@@ -227,7 +230,7 @@ public class UnitConverter {
                 String[] split = temp.split(":");
                 
                 // Get the double form of the seconds...
-                double seconds = new Double(split[2]).doubleValue();
+                double seconds = nf.parse(split[2]).doubleValue();
                 
                 switch(format) {
                     case OUTPUT_SHORT:

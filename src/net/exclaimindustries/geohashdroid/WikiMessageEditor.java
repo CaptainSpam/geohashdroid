@@ -47,11 +47,26 @@ public class WikiMessageEditor extends WikiBaseActivity {
 
     private static final String DEBUG_TAG = "MessageEditor";
     
+    private Location mLocation;
+    
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         
         mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
+
+        double lat = getIntent().getDoubleExtra(GeohashDroid.LATITUDE, 200);
+        double lon = getIntent().getDoubleExtra(GeohashDroid.LONGITUDE, 200);
+        
+        // If either of those were invalid (that is, 200), we don't have a
+        // location.  If they're both valid, we do have one.
+        if(lat > 90 || lat < -90 || lon > 180 || lon < -180)
+            mLocation = null;
+        else {
+            mLocation = new Location((String)null);
+            mLocation.setLatitude(lat);
+            mLocation.setLongitude(lon);
+        }
 
         setContentView(R.layout.wikieditor);
 
@@ -147,11 +162,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     addStatusAndNewline(R.string.wiki_conn_anon_warning);
                 }
 
-//                String date = new SimpleDateFormat("yyyy-MM-dd").format(mInfo
-//                        .getCalendar().getTime());
-//                Graticule grat = mInfo.getGraticule();
-//                String lat = grat.getLatitudeString(true);
-//                String lon = grat.getLongitudeString(true);
                 String expedition = WikiUtils.getWikiPageName(mInfo);
 
                 String locationTag = "";
@@ -160,13 +170,12 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 // handy)?
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 if (includelocation.isChecked()) {
-                    Location loc = getCurrentLocation();
-                    if (loc != null) {
-                        String pos = mLatLonFormat.format(loc.getLatitude()) + ","
-                                + mLatLonFormat.format(loc.getLongitude());
+                    if (mLocation != null) {
+                        String pos = mLatLonFormat.format(mLocation.getLatitude()) + ","
+                                + mLatLonFormat.format(mLocation.getLongitude());
                         locationTag = " [http://www.openstreetmap.org/?lat="
-                                + loc.getLatitude() + "&lon="
-                                + loc.getLongitude()
+                                + mLocation.getLatitude() + "&lon="
+                                + mLocation.getLongitude()
                                 + "&zoom=16&layers=B000FTF @" + pos + "]";
                         addStatus(R.string.wiki_conn_current_location);
                         addStatus(" " + pos + "\n");
@@ -202,7 +211,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 }
 
                 EditText editText = (EditText)findViewById(R.id.wikiedittext);
-
+                
                 // Change the summary so it has our message.
                 String summaryPrefix;
                 
@@ -214,7 +223,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     summaryPrefix = getText(R.string.wiki_post_message_summary).toString();
                 
                 mFormfields.put("summary", summaryPrefix + " " + editText.getText().toString()); 
-
+                
                 String before = "";
                 String after = "";
 
@@ -236,9 +245,9 @@ public class WikiMessageEditor extends WikiBaseActivity {
                 WikiUtils.putWikiPage(httpclient, expedition, before + message
                         + after, mFormfields);
                 addStatusAndNewline(R.string.wiki_conn_done);
-                
-                finishDialog();
 
+                finishDialog();
+                
                 dismiss();
             } catch (WikiException ex) {
                 String error = (String)getText(ex.getErrorTextId());

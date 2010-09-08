@@ -16,7 +16,6 @@ import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.text.InputType;
 import android.widget.Toast;
@@ -31,7 +30,6 @@ import android.widget.Toast;
 public class PreferenceEditScreen extends PreferenceActivity {
     
     private final static int DIALOG_WIPESURE = 0;
-    private final static int DIALOG_POWERSAVER = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +63,6 @@ public class PreferenceEditScreen extends PreferenceActivity {
     public Dialog onCreateDialog(int id) {
         switch(id) {
             case DIALOG_WIPESURE:
-            {
                 // Pop up the "are you sure you want to wipe the stock cache?"
                 // dialog.  "Yes" wipes it (and Toasts).  "No" simply dismisses.
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
@@ -111,28 +108,6 @@ public class PreferenceEditScreen extends PreferenceActivity {
                         });
                 
                 return build.create();
-            }
-            case DIALOG_POWERSAVER:
-            {
-                // All we do here is throw up a dialog.
-                AlertDialog.Builder build = new AlertDialog.Builder(this);
-                
-                build.setMessage(R.string.pref_powersaver_dialog_text);
-                build.setTitle(R.string.pref_powersaver_dialog_title);
-                build.setIcon(android.R.drawable.ic_dialog_alert);
-                
-                build.setPositiveButton(R.string.ok_label,
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog,
-                                    int which) {
-                                // Just clears the dialog.
-                                PreferenceEditScreen.this.dismissDialog(DIALOG_POWERSAVER);
-                            }
-                        });
-                
-                return build.create();
-            }
         }
         
         return null;
@@ -316,19 +291,5 @@ public class PreferenceEditScreen extends PreferenceActivity {
         // This one only changes in that it gets disabled if there's no username
         // entered.
 
-    }
-
-    @Override
-    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
-            Preference preference) {
-        // If this is the power saver...
-        if(preference.getKey().equals(GHDConstants.PREF_POWER_SAVER)) {
-            // ...and this was off and is going on, throw up the dialog.
-            if(preference.getSharedPreferences().getBoolean(preference.getKey(), false)) {
-                showDialog(DIALOG_POWERSAVER);
-            }
-        }
-        
-        return super.onPreferenceTreeClick(preferenceScreen, preference);
     }
 }

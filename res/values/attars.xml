@@ -1,5 +1,0 @@
-<resources>    
-    <declare-styleable name="Gallery1">
-        <attr name="android:galleryItemBackground">
-    </attr></declare-styleable>
-</resources>

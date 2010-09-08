@@ -33,6 +33,11 @@ public class MainMapInfoBoxView extends TextView {
     /** The decimal format for distances. */
     protected DecimalFormat mDistFormat = new DecimalFormat("###.###");
 
+    /** Threshold for the "Accuracy Low" warning (currently 64m). **/
+    protected static final int LOW_ACCURACY_THRESHOLD = 64;
+    /** Threshold for the "Accuracy Really Low" warning (currently 200m). **/
+    protected static final int REALLY_LOW_ACCURACY_THRESHOLD = 200;
+
     public MainMapInfoBoxView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
@@ -114,10 +119,10 @@ public class MainMapInfoBoxView extends TextView {
             accuracyLine = "";
         } else {
             float accuracy = loc.getAccuracy();
-            if (accuracy >= GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD) {
+            if (accuracy >= REALLY_LOW_ACCURACY_THRESHOLD) {
                 accuracyLine = "\n"
                         + c.getString(R.string.infobox_accuracy_really_low);
-            } else if (accuracy >= GHDConstants.LOW_ACCURACY_THRESHOLD) {
+            } else if (accuracy >= LOW_ACCURACY_THRESHOLD) {
                 accuracyLine = "\n"
                         + c.getString(R.string.infobox_accuracy_low);
             } else {

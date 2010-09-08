@@ -65,7 +65,6 @@ public class GeohashDroid extends Activity {
     private static final int MENU_GLOBALHASH = 0;
     private static final int MENU_SETTINGS = 1;
     private static final int MENU_ABOUT = 2;
-    
 
     private static final int REQUEST_PICK_GRATICULE = 0;
     private static final int REQUEST_STOCK = 1;
@@ -199,6 +198,7 @@ public class GeohashDroid extends Activity {
         }
     }
 
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
@@ -220,7 +220,7 @@ public class GeohashDroid extends Activity {
 
         return true;
     }
-
+    
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
@@ -238,6 +238,7 @@ public class GeohashDroid extends Activity {
         
         return true;
     }
+
 
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
@@ -528,6 +529,7 @@ public class GeohashDroid extends Activity {
                     i.putExtra(CALENDAR, cal);
                     startActivityForResult(i, REQUEST_STOCK);
                 } else if(!mAutoBox.isChecked()) {
+
                     // Without the auto-checker, go straight to whatever was
                     // input into the graticule boxen.
                     Calendar cal = getActiveCalendar();
@@ -696,14 +698,6 @@ public class GeohashDroid extends Activity {
                     .getLongitudeString(true));
             editor.commit();
         }
-        
-        Intent starter = new Intent(GeohashDroid.this, GeohashService.class);
-        starter.putExtra(INFO, info);
-        // Stop the service if it was going, then kick it on fresh.  We want to
-        // make sure we're only servicing one set of data at a time.
-        // TODO: This is probably not needed.  More research, though, IS needed.
-        stopService(starter);
-        startService(starter);
 
         Intent i = new Intent(GeohashDroid.this, MainMap.class);
 
@@ -833,4 +827,5 @@ public class GeohashDroid extends Activity {
         
         // And we're done!
     }
+
 }

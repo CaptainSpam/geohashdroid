@@ -490,6 +490,7 @@ public class WikiUtils {
           }
           
           return toReturn.toString() + getWikiCategories(info);
+
       } else {
           Graticule grat = info.getGraticule();
           String lat = grat.getLatitudeString(true);
@@ -522,4 +523,5 @@ public class WikiUtils {
               + lon + "]]";
       }
   }
+
 }

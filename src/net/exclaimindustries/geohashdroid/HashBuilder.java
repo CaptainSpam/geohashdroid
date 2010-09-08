@@ -109,14 +109,16 @@ public class HashBuilder {
     	private Handler mHandler;
     	private HttpGet mRequest;
     	private int mStatus;
-
+        private Object mLastObject;
+    	
         // This may be expanded later to allow a user-definable list, hence why
-    	// it doesn't follow the usual naming conventions I use.  Of course, in
-    	// THAT case, we'd need to make it not be a raw array.  The general form
-    	// is that %Y is the four-digit year, %m is the zero-padded month, and
-    	// %d is (wait for it...) the zero-padded date.
+        // it doesn't follow the usual naming conventions I use.  Of course, in
+        // THAT case, we'd need to make it not be a raw array.  The general form
+        // is that %Y is the four-digit year, %m is the zero-padded month, and
+        // %d is (wait for it...) the zero-padded date.
         private final static String[] mServers = { "http://geo.crox.net/djia/%Y/%m/%d",
             "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d"};
+
     	
     	private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
     	    mContext = con;
@@ -130,6 +132,8 @@ public class HashBuilder {
         public void run() {
         	Info toReturn;
         	String stock;
+        	
+        	mStatus = BUSY;
         	
             // First, we need to adjust the calendar in the event we're in the
             // range of the 30W rule.  To that end, sCal is for stock calendar.
@@ -159,10 +163,10 @@ public class HashBuilder {
             		mStatus = BUSY;
             		try {
             		    stock = fetchStock(sCal);
-            		    // If this didn't throw an exception AND it's not blank,
-            		    // stash it in the database.
-            		    if(stock.trim().length() != 0)
-            		        storeStock(mContext, sCal, stock);
+                        // If this didn't throw an exception AND it's not blank,
+                        // stash it in the database.
+                        if(stock.trim().length() != 0)
+                            storeStock(mContext, sCal, stock);
             		} catch (FileNotFoundException fnfe) {
             		    // If we got a 404, assume it's not posted yet.
             		    mStatus = ERROR_NOT_POSTED;
@@ -198,6 +202,8 @@ public class HashBuilder {
         }
         
         private void sendMessage(Object toReturn) {
+            mLastObject = toReturn;
+            
             // If mHandler is null, either this wasn't set up right or we've
             // been told to abort and need to put the brakes on quick.
             if(mHandler != null)
@@ -205,6 +211,18 @@ public class HashBuilder {
                 Message m = Message.obtain(mHandler, mStatus, toReturn);
                 m.sendToTarget();
             }   
+        }
+        
+        /**
+         * Returns the last result object created from this StockRunner.  This
+         * is just in case the result comes when no handler is defined and it
+         * needs to be pulled out.  This may be null.  Always remember to check
+         * the status first and ONLY do this if an ALL_OKAY is returned.
+         * 
+         * @return the last object created from this StockRunner (may be null)
+         */
+        public Object getLastResultObject() {
+            return mLastObject;
         }
         
         private String fetchStock(Calendar sCal) throws FileNotFoundException, IOException {
@@ -296,6 +314,8 @@ public class HashBuilder {
                 throw new FileNotFoundException();
             else if(curStatus == ERROR_SERVER)
                 throw new IOException();
+
+
 
             // If we finally, FINALLY got this far, we've got a successful stock!
             return result;
@@ -577,16 +597,16 @@ public class HashBuilder {
      * @param g new Graticule to apply
      * @throws InvalidParameterException the Info and Graticule do not lie on
      *                                   the same side of the 30W line, or one
-     *                                   of the Graticules in question (either
-     *                                   from the Info being cloned or the new
-     *                                   one) indicates a globalhash.
+     *                                   of the Graticules in question
+     *                                   represents a globalhash.
      * @return
      */
     protected static Info cloneInfo(Info i, Graticule g) {
-        // This sort of requires the 30W-itude of both to match.
         if(i.isGlobalHash() || g == null)
             throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
-        if(i.uses30WRule() != g.uses30WRule())
+        
+        // This sort of requires the 30W-itude of both to match.
+        if(i.getGraticule().uses30WRule() != g.uses30WRule())
             throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line; this should not have happened.");
         
         // Get the destination set...
@@ -638,7 +658,7 @@ public class HashBuilder {
         Log.d(DEBUG_TAG, "Checking quickcache for data...");
         if(mLastInfo != null) {
             Calendar stored = mLastInfo.getCalendar();
-
+            
             if(stored.get(Calendar.MONTH) ==  sCal.get(Calendar.MONTH)
                     && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
                     && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
@@ -657,12 +677,13 @@ public class HashBuilder {
                     && stored.get(Calendar.DAY_OF_MONTH) ==  sCal.get(Calendar.DAY_OF_MONTH)
                     && stored.get(Calendar.YEAR) ==  sCal.get(Calendar.YEAR)
                     && ((mTwoInfosAgo.getGraticule() == null && g == null)
-                            || (mTwoInfosAgo.getGraticule () != null && g != null))
+                            || (mTwoInfosAgo.getGraticule() != null && g != null))
                     && mTwoInfosAgo.uses30WRule() == is30W) {
                 Log.d(DEBUG_TAG, "Hash data is in quick cache (mTwoInfosAgo): " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
                 return mTwoInfosAgo;
             }
         }
+        
         Log.d(DEBUG_TAG, "Data wasn't in quickcache.");
         
         return null;
@@ -703,6 +724,7 @@ public class HashBuilder {
         } else {
             return getLatitudeHash(hash);
         }
+
     }
 
     private static double getLongitude(Graticule g, String hash) {

@@ -42,7 +42,6 @@
 <string name="map_activity_title">The Map</string>
 <string name="gratmap_activity_title">Tap your graticule</string>
 <string name="detail_activity_title">Details</string>
-<string name="geohash_service_title">Geohash Tracker</string>
 <string name="destination_label">Today\'s Point</string>
 
 <string name="find_location">Trying to determine your location...</string>
@@ -101,14 +100,8 @@
 <string name="pref_wikiphonetime_on">Use the time on the phone instead of the wiki\'s time for wiki posts</string>
 <string name="pref_wikiphonetime_off">Use the standard wiki time signature for wiki posts</string>
 
-<string name="pref_powersaver_title">Save power</string>
-<string name="pref_powersaver_on">Slow down the GPS tracker in the background</string>
-<string name="pref_powersaver_off">Keep the GPS tracker running full tilt in the background</string>
-
 <string name="pref_stockwipe_title">Clear stock cache</string>
 <string name="pref_stockwipe_dialog_text">Are you sure you want to clear all stock cache data?</string>
-<string name="pref_powersaver_dialog_title">Experimental feature</string>
-<string name="pref_powersaver_dialog_text">Some phones may have a slight incompatibility with power saver mode.  It might work perfectly, but if it seems like Geohash Droid won\'t come out of power saver mode when returning to the map, try disabling this option and starting over.</string>
 <string name="pref_cat_map">Map options</string>
 <string name="pref_cat_other">Other options</string>
 <string name="pref_cat_wiki">Wiki options</string>
@@ -137,7 +130,6 @@
 <string name="menu_item_post_picture">Upload picture</string>
 <string name="menu_item_post_wiki">View graticule page</string>
 <string name="menu_item_send_to_maps">Send to Maps</string>
-<string name="menu_item_quit">Quit</string>
 <string name="menu_item_globalhash">Globalhash</string>
 <string name="menu_item_geohash">Geohash</string>
 
@@ -163,6 +155,7 @@
 <string name="wiki_conn_login_no_reply">No reply to login request.</string>
 <string name="wiki_conn_anon_warning">WARNING: Posting anonymously.</string>
 <string name="wiki_conn_anon_pic_error">You can\'t upload pictures anonymously.  You must specify a username and password in Preferences first.</string>
+<string name="wiki_conn_pic_load_error">Error loading that picture.</string>
 <string name="wiki_conn_current_location">Current location:</string>
 <string name="wiki_conn_current_location_unknown">Current location unknown.</string>
 <string name="wiki_conn_picture_location_unknown">Picture location unknown, using current location...</string>

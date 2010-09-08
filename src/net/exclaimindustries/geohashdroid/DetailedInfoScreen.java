@@ -8,18 +8,18 @@ package net.exclaimindustries.geohashdroid;
 
 import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.util.List;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.PowerManager;
-import android.os.RemoteException;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -35,10 +35,18 @@ import android.widget.TextView;
  * 
  * @author Nicholas Killewald
  */
-public class DetailedInfoScreen extends Activity {
+public class DetailedInfoScreen extends Activity implements LocationListener {
+
+    // Two minutes (in milliseconds). If the last known check is older than
+    // that, we ignore it.
+    private static final int LOCATION_VALID_TIME = 120000;
+
     private static final String INFO = "info";
 
+    private boolean mIsGPSActive = false;
+
     private Info mInfo;
+    private LocationManager mManager;
 
     private PowerManager.WakeLock mWakeLock;
 
@@ -54,87 +62,13 @@ public class DetailedInfoScreen extends Activity {
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_SEND_TO_MAPS = 6;
     
-    private Location mLastLoc;
-    
-    private GeohashServiceInterface mService;
+    private Location lastLoc;
 
-    
-    /**
-     * What we need is a callback.  Yeah.  Riiiiiiiiight here.
+    /*
+     * (non-Javadoc)
+     * 
+     * @see android.app.Activity#onCreate(android.os.Bundle)
      */
-    private GeohashServiceCallback.Stub mCallback = new GeohashServiceCallback.Stub() {
-
-        @Override
-        public void locationUpdate(Location location) throws RemoteException {
-            // Location!
-            mLastLoc = location;
-            updateDisplay(location);
-        }
-
-        @Override
-        public void lostFix() throws RemoteException {
-            // Ack!  No location!
-            mLastLoc = null;
-            updateDisplay(null);
-            
-        }
-
-        @Override
-        public void trackingStarted(Info info) throws RemoteException {
-            // New info?  Weird.  Well, update it and redraw.
-            mInfo = info;
-            updateDest();
-            updateDisplay(mLastLoc);
-        }
-
-        @Override
-        public void trackingStopped() throws RemoteException {
-            // If tracking stopped explicitly, this Activity has no reason to
-            // stay running.
-            updateDisplay(null);
-            finish();
-        }
-        
-        public String toString() {
-            return "DetailedInfoScreen service callback";
-        }
-    };
-    
-    /**
-     * How about a little ServiceConnection, scarecrow?
-     */
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className,
-                IBinder service) {
-            mService = GeohashServiceInterface.Stub.asInterface(service);
-            
-            
-            try {
-                if(!mService.isTracking()) {
-                    updateDisplay(null);
-                    finish();
-                    return;
-                }
-                
-                // Get the most recent location and then start listening.
-                mInfo = mService.getInfo();
-                mLastLoc = mService.getLastLocation();
-                updateDisplay(mLastLoc);
-                mService.registerCallback(mCallback);
-            } catch (RemoteException e) {
-
-            }
-        }
-
-        public void onServiceDisconnected(ComponentName className) {
-            // This is called when the connection with the service has been
-            // unexpectedly disconnected.  All that means for us is that we
-            // throw up standby.
-            mService = null;
-            updateDisplay(null);
-        }
-    };
-    
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -165,6 +99,11 @@ public class DetailedInfoScreen extends Activity {
         tv.setText(DateFormat.getDateInstance(DateFormat.LONG).format(
                 mInfo.getCalendar().getTime()));
 
+        // Grab a LocationManager. None of this specialized one-shot nonsense
+        // like with the main GeohashDroid class. Nuh-uh. We're reading the
+        // whole shebang now.
+        mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+
         // The actual updates are requested at onResume.
 
         // And make sure we quit when told.
@@ -177,43 +116,6 @@ public class DetailedInfoScreen extends Activity {
             }
 
         });
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    
-        // Stop getting location updates.
-        try {
-            if(mService != null) mService.unregisterCallback(mCallback);
-        } catch (RemoteException e) {
-            
-        }
-        unbindService(mConnection);
-    
-        // SLEEEEEEEP!
-        mWakeLock.release();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-    
-        // Don't sleeeeeeep!
-        mWakeLock.acquire();
-        
-        updateDest();
-        
-        // Register with the service and let's get cracking!
-        bindService(new Intent(DetailedInfoScreen.this, GeohashService.class), mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-    
-        // All we need to do is store the info object. Simple!
-        outState.putParcelable(INFO, mInfo);
     }
 
     @Override
@@ -270,6 +172,112 @@ public class DetailedInfoScreen extends Activity {
         return false;
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // All we need to do is store the info object. Simple!
+        outState.putParcelable(INFO, mInfo);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see android.app.Activity#onPause()
+     */
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        // Stop getting location updates.
+        mManager.removeUpdates(this);
+
+        // SLEEEEEEEP!
+        mWakeLock.release();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see android.app.Activity#onResume()
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Don't sleeeeeeep!
+        mWakeLock.acquire();
+        
+        updateDest();
+
+        // Populate the location with the last known data, if it's no older
+        // than two minutes, GPS taking precedence.
+        Location lastKnownGPS = mManager
+                .getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location lastKnownTower = mManager
+                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+        if (lastKnownGPS != null
+                && System.currentTimeMillis() - lastKnownGPS.getTime() < LOCATION_VALID_TIME) {
+            updateInfo(lastKnownGPS);
+        } else if (lastKnownTower != null
+                && System.currentTimeMillis() - lastKnownTower.getTime() < LOCATION_VALID_TIME) {
+            updateInfo(lastKnownTower);
+        } else {
+            // If all else fails, just use whatever we last knew.  If that's
+            // null, well, so be it, we go to standby.
+            updateInfo(lastLoc);
+        }
+
+        // See what's open.
+        List<String> providers = mManager.getProviders(true);
+
+        // Now, register all providers and get us going!
+        for (String s : providers) {
+            mManager.requestLocationUpdates(s, 0, 0, this);
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if (location.getProvider() != null
+                && location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+            // If this was a GPS fix, flip on our handy boolean and update!
+            lastLoc = location;
+            mIsGPSActive = true;
+            updateInfo(location);
+        } else if (!mIsGPSActive) {
+            // If this wasn't a GPS fix, but last we knew, GPS wasn't active
+            // (or doesn't have a fix yet), update anyway.
+            lastLoc = location;
+            updateInfo(location);
+        }
+        // We don't update lastLoc otherwise.  If neither of those were true,
+        // that was an update from the cell towers when GPS was active, so we
+        // don't want to remember THAT.
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        // If GPS was disabled, go flip the boolean.
+        if (provider.equals(LocationManager.GPS_PROVIDER))
+            mIsGPSActive = false;
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        // This is blank; even if GPS comes back on from being off, we still
+        // want to wait for the first fix before we accept that it's on.
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        // If GPS goes down, flip our good friend, the boolean.
+        if (provider.equals(LocationManager.GPS_PROVIDER)
+                && status != LocationProvider.AVAILABLE)
+            mIsGPSActive = false;
+    }
+    
     private void updateDest() {
         // This is called during onResume, either on first run or when we get
         // back from the preferences screen, possibly with a new coordinate
@@ -284,7 +292,7 @@ public class DetailedInfoScreen extends Activity {
         tv.setText(UnitConverter.makeLongitudeCoordinateString(this, mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
     }
 
-    private void updateDisplay(Location loc) {
+    private void updateInfo(Location loc) {
         // This updates the current location and distance info. Unless loc is
         // null, in which case we use the standby label.
         if (loc == null) {

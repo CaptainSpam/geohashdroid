@@ -48,8 +48,6 @@ public final class GHDConstants {
     public static final String PREF_WIKI_PASS = "WikiPassword";
     /** Prefs key specifying to use the phone's time, not the wiki's */
     public static final String PREF_WIKI_PHONE_TIME = "WikiUsePhoneTime";
-    /** Prefs key specifying to go to power saver mode in the background */
-    public static final String PREF_POWER_SAVER = "PowerSaver";
     
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to
@@ -58,9 +56,4 @@ public final class GHDConstants {
      * could take its place if someone else writes a better graticule picker.
      */
     public static final String PICK_GRATICULE = "net.exclaimindustries.geohashdroid.PICK_GRATICULE";
-
-    /** Threshold for the "Accuracy Low" warning (currently 64m). **/
-    public static final int LOW_ACCURACY_THRESHOLD = 64;
-    /** Threshold for the "Accuracy Really Low" warning (currently 200m). **/
-    public static final int REALLY_LOW_ACCURACY_THRESHOLD = 200;
 }

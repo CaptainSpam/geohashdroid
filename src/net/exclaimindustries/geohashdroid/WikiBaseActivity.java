@@ -14,18 +14,13 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
-import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
-import android.os.RemoteException;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -36,41 +31,134 @@ import android.view.MenuItem;
  * @author Thomas Hirsch and Nicholas Killewald
  */
 public abstract class WikiBaseActivity extends Activity implements OnCancelListener {
+    /**
+     * WikiConnectionRunner is used by the wiki-manipulating classes.  It
+     * encompasses a group of methods common to everything they do.  All what you
+     * need to do is implement the run() method from Runnable, assign a Handler,
+     * and update it as need be.
+     *  
+     * @author Thomas Hirsch and Nicholas Killewald
+     */
+    protected abstract class WikiConnectionRunner implements Runnable {
+        /** New update for dialog text. */
+        static public final int DIALOG_UPDATE = 1;
+        /** Dismiss the current dialog. */
+        static public final int DIALOG_DISMISS = 2;
+        /** Dismiss the current dialog and pop up a new one with an error. */
+        static public final int DIALOG_ERROR = 3;
+        /** Replace the current message with a success, wait, and then dismiss. */
+        static public final int DIALOG_SUCCESS = 4;
+        
+        private Handler mHandler;
+        private Context mContext;
+        private String mOldStatus = "";
+        private boolean mWasAborted = false;
+        
+        public WikiConnectionRunner(Handler h, Context c) {
+          mHandler = h;
+          mContext = c;
+        }
+        
+        public void resetHandler(Handler h) {
+            this.mHandler = h;
+            setStatus(mOldStatus);
+        }
+        
+        public void abort() {
+            WikiUtils.abort();
+            mWasAborted = true;
+        }
+        
+        /**
+         * Tells the handler to dismiss the current dialog and then pop up a new one
+         * with the given error.
+         * 
+         * @param status error to report, without title
+         */
+        protected void error(String status) {
+            // If we were aborted, just dismiss.
+            if(mWasAborted)
+                dismiss();
+            else {
+                // First, display the fail text.  This uses the plain addStatus.
+                // This will, of course, be taken down right away, but it's best to
+                // put up at least the "failed" text.
+                addStatusAndNewline(R.string.wiki_conn_failure);
+                
+                // Second, add the specific error text.  This will add in the error
+                // flag.  This won't use the addStatus family of methods because we
+                // need that flag in there.
+                Message msg = mHandler.obtainMessage(DIALOG_ERROR, status);
+                mHandler.sendMessage(msg);
+            }
+        }
+
+        /**
+         * Sets the status to the given string.  Don't use this.  It's here in case
+         * you really really need it, but don't.  Use the addStatus family of
+         * methods, each of which eventually come here.
+         * 
+         * @param status the new status to use
+         */
+        protected void setStatus(String status) {
+            Message msg = mHandler.obtainMessage(DIALOG_UPDATE, status);
+            mHandler.sendMessage(msg);
+        } 
+        
+        /**
+         * Adds the given string to the status and update it.
+         * 
+         * @param status string to add to the current status
+         */
+        protected void addStatus(String status) {
+            mOldStatus = mOldStatus + status;
+            setStatus(mOldStatus);
+        }
+        
+        /**
+         * Adds the string referred to by the given resource ID to the status and
+         * update the dialog.
+         * 
+         * @param resId resource ID of string to add to the current status
+         */
+        protected void addStatus(int resId) {
+            addStatus(mContext.getText(resId).toString());
+        }
+        
+        /**
+         * Adds the string referred to by the given resource ID to the status, plus
+         * a newline, and update the dialog.
+         * 
+         * @param resId resource ID of string to add to the current status
+         */
+        protected void addStatusAndNewline(int resId) {
+            addStatus(resId);
+            addStatus("\n");
+        }
+        
+        /**
+         * Tells the handler to dismiss the current dialog.
+         */
+        protected void dismiss() {
+            Message msg = mHandler.obtainMessage(DIALOG_DISMISS);
+            mHandler.sendMessage(msg);
+        } 
+
+        /**
+         * Tells the handler we're done.
+         */
+        protected void finishDialog() {
+            Message msg = mHandler.obtainMessage(DIALOG_SUCCESS);
+            mHandler.sendMessage(msg);
+        }
+
+    }
+
     protected ProgressDialog mProgress;
     protected Thread mWikiConnectionThread;
     protected boolean mDontStopTheThread = false;
     
     protected WikiConnectionRunner mConnectionHandler;
-    
-    protected GeohashServiceInterface mService;
-    
-    /**
-     * Service!
-     */
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className,
-                IBinder service) {
-            mService = GeohashServiceInterface.Stub.asInterface(service);
-            
-            // If the service isn't tracking, we don't have any reason to be
-            // here.  Finish now.
-            try {
-                if(!mService.isTracking()) {
-                    finish();
-                    return;
-                }
-            } catch (RemoteException e) {
-
-            }
-        }
-
-        public void onServiceDisconnected(ComponentName className) {
-            // This is called when the connection with the service has been
-            // unexpectedly disconnected.  All that means for us is that we
-            // throw up standby.
-            mService = null;
-        }
-    };
     
     /** This format is used for all latitude/longitude texts in the wiki. */
     protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000");
@@ -99,6 +187,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
                 }
                 case WikiConnectionRunner.DIALOG_DISMISS:
                     mProgress.dismiss();
+                    doDismiss();
                     break;
                 case WikiConnectionRunner.DIALOG_ERROR:
                 {
@@ -122,6 +211,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
                     mProgress.dismiss();
                     showDialog(DIALOG_SUCCESS);
                 }
+
                 default:
                     break;
                 
@@ -146,20 +236,9 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         }
     }
     
-    @Override
-    protected void onResume() {
-        super.onResume();
-        
-        bindService(new Intent(WikiBaseActivity.this, GeohashService.class), mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        
-        unbindService(mConnection);
-    }
-
+    /* (non-Javadoc)
+     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
+     */
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -169,6 +248,9 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         outState.putString(LAST_ERROR, mLastErrorText);
     }
     
+    /* (non-Javadoc)
+     * @see android.app.Activity#onCreateDialog(int)
+     */
     @Override
     protected Dialog onCreateDialog(int id) {
         // Here, we create the error dialog.  In onPrepareDialog, we actually
@@ -177,7 +259,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         switch(id) {
             case DIALOG_ERROR: {
                 AlertDialog.Builder build = new AlertDialog.Builder(this);
-                build.setMessage("ERROR!");
+                build.setMessage(R.string.error_search_failed);
                 build.setTitle(R.string.error_title);
                 build.setIcon(android.R.drawable.ic_dialog_alert);
                 build.setNegativeButton(R.string.darn_label,
@@ -205,6 +287,7 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
                 });
                 return build.create();
             }
+
         }
         return null;
     }
@@ -284,18 +367,11 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
         return true;
     }
     
-    protected Location getCurrentLocation() {
-        // We're perfectly allowed to return null here.  In fact, that's how we
-        // let the caller know there is no location.  We just wrap it up here
-        // to catch the mService == null condition.
-        if(mService != null) {
-            try {
-                return mService.getLastLocation();
-            } catch (RemoteException e) {
-                return null;
-            }
-        } else {
-            return null;
-        }
+    /**
+     * Do whatever needs to be done when the dialog is dismissed on success.
+     * The base method does nothing.
+     */
+    protected void doDismiss() {
+        
     }
 }

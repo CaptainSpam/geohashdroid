@@ -33,10 +33,11 @@
 			android:maxLength="4" android:textSize="@dimen/input_graticule_fontsize"
 			android:inputType="numberSigned" android:digits="0123456789-"></EditText>
 	</LinearLayout>
-	<TextView android:layout_width="wrap_content"
-		android:layout_height="wrap_content" android:textSize="@dimen/input_graticule_fontsize"
-		android:layout_gravity="center_horizontal" android:text="@string/globalhash_label"
-		android:visibility="gone" android:id="@+id/GlobalhashLabel"></TextView>
+        <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="@dimen/input_graticule_fontsize"
+                android:layout_gravity="center_horizontal" android:text="@string/globalhash_label"
+                android:visibility="gone" android:id="@+id/GlobalhashLabel"></TextView>
+
 	<LinearLayout android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
 		android:id="@+id/ButtonRow" android:orientation="horizontal"
