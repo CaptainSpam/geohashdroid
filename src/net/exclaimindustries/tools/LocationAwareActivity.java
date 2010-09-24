@@ -7,9 +7,14 @@
  */
 package net.exclaimindustries.tools;
 
+import java.util.List;
+
 import android.app.Activity;
+import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.Bundle;
 
 /**
@@ -17,16 +22,51 @@ import android.os.Bundle;
  * listening for location updates and will stop doing so at pause time.
  * Everything else, like wakelocking and such, is up to you.
  * 
+ * The manner by which this will listen for locations is to pick up both network
+ * AND GPS signals, preferring GPS (that is to say, it will behave the same way
+ * Geohash Droid does).
+ * 
  * @author Nicholas Killewald
  *
  */
 public abstract class LocationAwareActivity extends Activity implements LocationListener {
 
     private Location mLastLocation;
+    private boolean mIsGPSActive = false;
+    private LocationManager mManager;
     
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        // Summon a LocationManager from the mists of Android!
+        mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        
+        // Stop getting location updates.
+        mManager.removeUpdates(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // See what's open.
+        List<String> providers = mManager.getProviders(true);
+
+        // Now, register all providers and get us going!
+        for (String s : providers) {
+            mManager.requestLocationUpdates(s, 0, 0, this);
+        }
+    }
+
     /**
      * Returns the last Location this Activity has seen.  Note that this can be
-     * null if nothing has been seen yet, and no attempt is made to get
+     * null if nothing has been seen yet, and no attempt will be made to get
      * LocationManager's last known Location.
      * 
      * @return the last Location this Activity has seen
@@ -52,9 +92,22 @@ public abstract class LocationAwareActivity extends Activity implements Location
      * @see android.location.LocationListener#onLocationChanged(android.location.Location)
      */
     @Override
-    public void onLocationChanged(Location arg0) {
-        // TODO Auto-generated method stub
-
+    public void onLocationChanged(Location loc) {
+        if (loc.getProvider() != null
+                && loc.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+            // If this was a GPS fix, flip on our handy boolean and update!
+            mLastLocation = loc;
+            mIsGPSActive = true;
+            locationUpdated();
+        } else if (!mIsGPSActive) {
+            // If this wasn't a GPS fix, but last we knew, GPS wasn't active
+            // (or doesn't have a fix yet), update anyway.
+            mLastLocation = loc;
+            locationUpdated();
+        }
+        // We don't update mLastLocation otherwise.  If neither of those were
+        // true, that was an update from the cell towers when GPS was active, so
+        // we don't want to remember THAT.
     }
 
     /* (non-Javadoc)
@@ -62,8 +115,9 @@ public abstract class LocationAwareActivity extends Activity implements Location
      */
     @Override
     public void onProviderDisabled(String provider) {
-        // TODO Auto-generated method stub
-
+        // If GPS was disabled, go flip the boolean.
+        if (provider.equals(LocationManager.GPS_PROVIDER))
+            mIsGPSActive = false;
     }
 
     /* (non-Javadoc)
@@ -71,8 +125,8 @@ public abstract class LocationAwareActivity extends Activity implements Location
      */
     @Override
     public void onProviderEnabled(String provider) {
-        // TODO Auto-generated method stub
-
+        // This is blank; even if GPS comes back on from being off, we still
+        // want to wait for the first fix before we accept that it's on.
     }
 
     /* (non-Javadoc)
@@ -80,8 +134,15 @@ public abstract class LocationAwareActivity extends Activity implements Location
      */
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        // TODO Auto-generated method stub
-
+        // If GPS goes down, flip our good friend, the boolean.
+        if (provider.equals(LocationManager.GPS_PROVIDER)
+                && status != LocationProvider.AVAILABLE)
+            mIsGPSActive = false;
     }
 
+    /**
+     * Called whenever the location ACTUALLY updates.  That is, this won't be
+     * called when a network update comes in but we think GPS is active.
+     */
+    abstract protected void locationUpdated();
 }
