@@ -39,6 +39,7 @@ public abstract class LocationAwareActivity extends Activity implements Location
      * Determines whether or not the last Location this Activity has seen was
      * obtained within the time frame specified, in milliseconds.
      * 
+     * @param age maximum age, in milliseconds
      * @return true if new enough, false if not
      */
     protected boolean isLastLocationNewEnough(long age) {
