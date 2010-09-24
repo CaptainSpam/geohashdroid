@@ -55,6 +55,23 @@ public abstract class LocationAwareActivity extends Activity implements Location
     protected void onResume() {
         super.onResume();
         
+        // Populate the location with the last known data, GPS taking
+        // precedence.  We don't care how old it is; the implementation will
+        // take care of that.
+        Location lastKnownGPS = mManager
+                .getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Location lastKnownTower = mManager
+                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+        if (lastKnownGPS != null) {
+            mLastLocation = lastKnownGPS;
+        } else if (lastKnownTower != null) {
+            mLastLocation = lastKnownTower;
+        } else {
+            // If all else fails, throw a null.
+            mLastLocation = null;
+        }
+        
         // See what's open.
         List<String> providers = mManager.getProviders(true);
 
@@ -66,8 +83,8 @@ public abstract class LocationAwareActivity extends Activity implements Location
 
     /**
      * Returns the last Location this Activity has seen.  Note that this can be
-     * null if nothing has been seen yet, and no attempt will be made to get
-     * LocationManager's last known Location.
+     * null if nothing has been seen yet.  Also, this will be pre-populated with
+     * LocationManager's last-seen fix, GPS taking precedence.
      * 
      * @return the last Location this Activity has seen
      */
@@ -86,6 +103,15 @@ public abstract class LocationAwareActivity extends Activity implements Location
         if(mLastLocation == null) return false;
         
         return System.currentTimeMillis() - mLastLocation.getTime() < age;
+    }
+    
+    /**
+     * Gets the active LocationManager.
+     * 
+     * @return the active LocationManager.
+     */
+    protected LocationManager getLocationManager() {
+        return mManager;
     }
     
     /* (non-Javadoc)
