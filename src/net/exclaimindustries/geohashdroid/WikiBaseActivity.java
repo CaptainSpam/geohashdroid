@@ -10,7 +10,8 @@ package net.exclaimindustries.geohashdroid;
 
 import java.text.DecimalFormat;
 
-import android.app.Activity;
+import net.exclaimindustries.tools.LocationAwareActivity;
+
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -18,6 +19,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.DialogInterface.OnCancelListener;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -30,7 +32,7 @@ import android.view.MenuItem;
  * 
  * @author Thomas Hirsch and Nicholas Killewald
  */
-public abstract class WikiBaseActivity extends Activity implements OnCancelListener {
+public abstract class WikiBaseActivity extends LocationAwareActivity implements OnCancelListener {
     /**
      * WikiConnectionRunner is used by the wiki-manipulating classes.  It
      * encompasses a group of methods common to everything they do.  All what you
@@ -374,4 +376,10 @@ public abstract class WikiBaseActivity extends Activity implements OnCancelListe
     protected void doDismiss() {
         
     }
+
+    @Override
+    protected void locationUpdated() {
+        // Don't need to do anything with this, the stored Location will do.
+    }
+
 }
