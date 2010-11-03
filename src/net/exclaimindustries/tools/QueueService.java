@@ -17,10 +17,10 @@ import android.os.IBinder;
 /**
  * <p>
  * A <code>QueueService</code> is similar in theory to an
- * <code>IntentService</code>, with the exception that a part of the
- * <code>Intent</code> is stored in a queue and dealt with that way.  This also
- * means the queue can be observed and iterated as need be to, for instance, get
- * a list of currently-waiting things to process.
+ * <code>IntentService</code>, with the exception that the <code>Intent</code>
+ * is stored in a queue and dealt with that way.  This also means the queue can
+ * be observed and iterated as need be to, for instance, get a list of
+ * currently-waiting things to process.
  * </p>
  * 
  * <p>
@@ -74,15 +74,37 @@ public abstract class QueueService extends Service {
      */
     @Override
     public IBinder onBind(Intent arg0) {
-        // TODO Auto-generated method stub
         return null;
+    }
+    
+    private class QueueThread implements Runnable {
+
+        @Override
+        public void run() {
+            // Now!  Loop through the queue!
+            Intent i;
+            
+            while(!mQueue.isEmpty()) {
+                i = mQueue.remove();
+                
+                ReturnCode r = onHandleIntent(i);
+                
+                // If the return code we got instructed us to stop entirely,
+                // bail out of the thread.
+                if(r == ReturnCode.STOP) break; 
+            }
+            
+            // Queue's done!  Thread can terminate now.
+        }
+        
     }
 
     /**
      * Subclasses call this every time something from the queue comes in to be
      * processed.  This will not be called on the main thread.
      * 
+     * @param i Intent to be processed
      * @return a ReturnCode indicating what the queue should do next
      */
-    protected abstract ReturnCode onHandleIntent();
+    protected abstract ReturnCode onHandleIntent(Intent i);
 }
