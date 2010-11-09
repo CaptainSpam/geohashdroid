@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- The name element is an internal reference.  We want to display the string
+     referenced by the title element.  So, y'know, they can be one-worders. -->
+
+<achievements>
+    <achievement>
+        <name>LandGeohash</name>
+        <template>Land_geohash</template>
+        <title>achievement_land_geohash_title</title>
+        <description>achievement_land_geohash_desc</description>
+        <icon>achievement_land_geohash_icon</icon>
+        <options />
+        <category>BasicLocations</category>
+    </achievement>
+</achievements>
