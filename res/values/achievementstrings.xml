@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Achievement categories! -->
+    <string name="achievement_category_basic_locations_title">Basic Locations</string>
+    <string name="achievement_category_lucky_locations_title">Lucky Locations</string>
+    <string name="achievement_category_getting_there_title">Getting There</string>
+    <string name="achievement_category_fun_and_games_title">Fun and Games</string>
+    <string name="achievement_category_single_challenge_title">Single Geohash Challenges</string>
+    <string name="achievement_category_multiple_challenge_title">Multiple Geohash Challenges</string>
+    <string name="achievement_category_interaction_title">Interaction-Based</string>
+    <string name="achievement_category_timing_title">Timing-Based</string>
+    <string name="achievement_category_superiority_title">\"I\'m Better Than You\" Achievements</string>
+    <string name="achievement_category_consolation_title">Consolation Prizes</string>
+</resources>

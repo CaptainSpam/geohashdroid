@@ -5,4 +5,40 @@
         <name>BasicLocations</name>
         <title>achievement_category_basic_locations_title</title>
     </category>
+    <category>
+        <name>LuckyLocations</name>
+        <title>achievement_category_lucky_locations_title</title>
+    </category>
+    <category>
+        <name>GettingThere</name>
+        <title>achievement_category_getting_there_title</title>
+    </category>
+    <category>
+        <name>FunAndGames</name>
+        <title>achievement_category_fun_and_games_title</title>
+    </category>
+    <category>
+        <name>SingleChallenge</name>
+        <title>achievement_category_single_challenge_title</title>
+    </category>
+    <category>
+        <name>MultipleChallenge</name>
+        <title>achievement_category_multiple_challenge_title</title>
+    </category>
+    <category>
+        <name>Interaction</name>
+        <title>achievement_category_interaction_title</title>
+    </category>
+    <category>
+        <name>Timing</name>
+        <title>achievement_category_timing_title</title>
+    </category>
+    <category>
+        <name>Superiority</name>
+        <title>achievement_category_superiority_title</title>
+    </category>
+    <category>
+        <name>Consolation</name>
+        <title>achievement_category_consolation_title</title>
+    </category>
 </categories>
