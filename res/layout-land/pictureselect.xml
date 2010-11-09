@@ -26,8 +26,7 @@
 				android:layout_width="wrap_content" android:layout_height="36sp"
 				android:checked="true" android:text="@string/wiki_dialog_append_coordinates" />
 
-			<Button android:id="@+id/wikieditbutton" android:layout_width="wrap_content"
-				android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture" />
+			<Button android:id="@+id/wikieditbutton" android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture" android:layout_width="fill_parent"/>
 			<TextView android:id="@+id/warningmessage"
 				android:layout_width="fill_parent" android:layout_height="fill_parent"
 				android:text="@string/wiki_picture_not_logged_in"
