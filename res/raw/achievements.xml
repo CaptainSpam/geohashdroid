@@ -4,13 +4,9 @@
      referenced by the title element.  So, y'know, they can be one-worders. -->
 
 <achievements>
-    <achievement>
-        <name>LandGeohash</name>
-        <template>Land_geohash</template>
-        <title>achievement_land_geohash_title</title>
-        <description>achievement_land_geohash_desc</description>
-        <icon>achievement_land_geohash_icon</icon>
+    <achievement name="LandGeohash" template="Land_geohash" title="achievement_land_geohash_title"
+    	description="achievement_land_geohash_desc" icon="achievement_land_geohash_icon"
+    	category="BasicLocations">
         <options />
-        <category>BasicLocations</category>
     </achievement>
 </achievements>

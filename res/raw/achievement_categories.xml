@@ -1,44 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <categories>
-    <category>
-        <name>BasicLocations</name>
-        <title>achievement_category_basic_locations_title</title>
-    </category>
-    <category>
-        <name>LuckyLocations</name>
-        <title>achievement_category_lucky_locations_title</title>
-    </category>
-    <category>
-        <name>GettingThere</name>
-        <title>achievement_category_getting_there_title</title>
-    </category>
-    <category>
-        <name>FunAndGames</name>
-        <title>achievement_category_fun_and_games_title</title>
-    </category>
-    <category>
-        <name>SingleChallenge</name>
-        <title>achievement_category_single_challenge_title</title>
-    </category>
-    <category>
-        <name>MultipleChallenge</name>
-        <title>achievement_category_multiple_challenge_title</title>
-    </category>
-    <category>
-        <name>Interaction</name>
-        <title>achievement_category_interaction_title</title>
-    </category>
-    <category>
-        <name>Timing</name>
-        <title>achievement_category_timing_title</title>
-    </category>
-    <category>
-        <name>Superiority</name>
-        <title>achievement_category_superiority_title</title>
-    </category>
-    <category>
-        <name>Consolation</name>
-        <title>achievement_category_consolation_title</title>
-    </category>
+    <category name="BasicLocations" title="achievement_category_basic_locations_title" />
+    <category name="LuckyLocations" title="achievement_category_lucky_locations_title" />
+    <category name="GettingThere" title="achievement_category_getting_there_title" />
+    <category name="FunAndGames" title="achievement_category_fun_and_games_title" />
+    <category name="SingleChallenge" title="achievement_category_single_challenge_title" />
+    <category name="MultipleChallenge" title="achievement_category_multiple_challenge_title" />
+    <category name="Interaction" title="achievement_category_interaction_title" />
+    <category name="Timing" title="achievement_category_timing_title" />
+    <category name="Superiority" title="achievement_category_superiority_title" />
+    <category name="Consolation" title="achievement_category_consolation_title" />
 </categories>
