@@ -15,7 +15,17 @@
     
     <!--  Achievement titles! -->
     <string name="achievement_land_geohash_title">Land Geohash</string>
+    <string name="achievement_air_geohash_title">Air Geohash</string>
+    <string name="achievement_underground_geohash_title">Underground Geohash</string>
+    <string name="achievement_water_geohash_title">Water Geohash</string>
+    <string name="achievement_underwater_geohash_title">Underwater Geohash</string>
+    <string name="achievement_onwater_geohash_title">Walking on Water Geohash</string>
     
     <!--  Achievement descriptions! -->
     <string name="achievement_land_geohash_desc">Get to a geohash on land.</string>
+    <string name="achievement_air_geohash_desc">Get to a geohash while in the air.</string>
+    <string name="achievement_underground_geohash_desc">Get to a geohash while underground.</string>
+    <string name="achievement_water_geohash_desc">Get to a geohash on water.</string>
+    <string name="achievement_underwater_geohash_desc">Get to a geohash while underwater.</string>
+    <string name="achievement_onwater_geohash_desc">Get to a geohash on the surface of water, on foot.</string>
 </resources>

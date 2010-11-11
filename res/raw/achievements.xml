@@ -9,4 +9,29 @@
     	category="BasicLocations">
         <options />
     </achievement>
+    <achievement name="AirGeohash" template="Air_geohash" title="achievement_air_geohash_title"
+    	description="achievement_air_geohash_desc" icon="achievement_air_geohash_icon"
+        category="BasicLocations">
+        <options />
+    </achievement>
+    <achievement name="UndergroundGeohash" template="Goingdeep_geohash" title="achievement_underground_geohash_title"
+    	description="achievement_underground_geohash_desc" icon="achievement_underground_geohash_icon"
+        category="BasicLocations">
+        <options />
+    </achievement>
+    <achievement name="WaterGeohash" template="Water_geohash" title="achievement_water_geohash_title"
+    	description="achievement_water_geohash_desc" icon="achievement_water_geohash_icon"
+        category="BasicLocations">
+        <options />
+    </achievement>
+    <achievement name="UnderwaterGeohash" template="Underwater_geohash" title="achievement_underwater_geohash_title"
+    	description="achievement_underwater_geohash_desc" icon="achievement_underwater_geohash_icon"
+        category="BasicLocations">
+        <options />
+    </achievement>
+    <achievement name="WalkingOnWaterGeohash" template="Walking_on_water_geohash_achievement" title="achievement_onwater_geohash_title"
+    	description="achievement_onwater_geohash_desc" icon="achievement_onwater_geohash_icon"
+        category="BasicLocations">
+        <options />
+    </achievement>
 </achievements>
