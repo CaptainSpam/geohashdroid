@@ -257,40 +257,49 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
 
                 String locationTag = "";
+                // Hold on to whatever location we're going with.  This could
+                // be useful later.
+                Location sentLoc;
                 
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
-                if (includelocation.isChecked()) {
-                    try {
-                        if(mCurrentLatitude == null || mCurrentLongitude == null
-                                || mCurrentLatitude.trim().length() == 0
-                                || mCurrentLongitude.trim().length() == 0)
-                            throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
+                try {
+                    if(mCurrentLatitude == null || mCurrentLongitude == null
+                            || mCurrentLatitude.trim().length() == 0
+                            || mCurrentLongitude.trim().length() == 0)
+                        throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
+
+                    // Get a location from the strings.  If any of this fails,
+                    // fall to the exception handler.
+                    sentLoc = new Location(Double.parseDouble(mCurrentLatitude), Double.parseDouble(mCurrentLongitude));
                         
+                    if(includelocation.isChecked()) {
                         // Parse the following out, first to a double, then
                         // back to a String using the formatter, just to make
                         // sure it doesn't get too long on us.
-                        String lat = mLatLonFormat.format(Double.parseDouble(mCurrentLatitude));
-                        String lon = mLatLonFormat.format(Double.parseDouble(mCurrentLongitude));
+                        String lat = mLatLonFormat.format(sentLoc.getLatitude());
+                        String lon = mLatLonFormat.format(sentLoc.getLongitude());
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
                                 + lat + "&lon=" + lon
                                 + "&zoom=16&layers=B000FTF @" + lat + "," + lon
                                 + "]";
-                    } catch (Exception ex) {
-                        // If the picture itself doesn't have location data on
-                        // it (that is, something threw an exception up there),
-                        // go by the user's current location, if that's known.
-                        addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
-                        Location lastLoc = getLastLocation();
-                        if (lastLoc != null) {
+                    }
+                } catch (Exception ex) {
+                    // If the picture itself doesn't have location data on it
+                    // (that is, something threw an exception up there), go by
+                    // the user's current location, if that's known.
+                    addStatusAndNewline(R.string.wiki_conn_picture_location_unknown);
+                    sentLoc = getLastLocation();
+                    if(includelocation.isChecked()) {
+                        if (sentLoc != null) {
                             locationTag = " [http://www.openstreetmap.org/?lat="
-                                    + lastLoc.getLatitude()
+                                    + sentLoc.getLatitude()
                                     + "&lon="
-                                    + lastLoc.getLongitude()
+                                    + sentLoc.getLongitude()
                                     + "&zoom=16&layers=B000FTF @"
-                                    + mLatLonFormat.format(lastLoc.getLatitude())
+                                    + mLatLonFormat.format(sentLoc.getLatitude())
                                     + ","
-                                    + mLatLonFormat.format(lastLoc.getLongitude())
+                                    + mLatLonFormat.format(sentLoc.getLongitude())
                                     + "]";
                         } else {
                             // Otherwise, we don't use anything at all.
