@@ -12,4 +12,10 @@
     <string name="achievement_category_timing_title">Timing-Based</string>
     <string name="achievement_category_superiority_title">\"I\'m Better Than You\" Achievements</string>
     <string name="achievement_category_consolation_title">Consolation Prizes</string>
+    
+    <!--  Achievement titles! -->
+    <string name="achievement_land_geohash_title">Land Geohash</string>
+    
+    <!--  Achievement descriptions! -->
+    <string name="achievement_land_geohash_desc">Get to a geohash on land.</string>
 </resources>
