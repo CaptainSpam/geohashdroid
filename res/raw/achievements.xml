@@ -3,6 +3,10 @@
 <!-- The name element is an internal reference.  We want to display the string
      referenced by the title element.  So, y'know, they can be one-worders. -->
 
+<!-- Options require a type (string, number, date), a param (where this option
+     will be fed into the template), and a title (what will be displayed as a
+     description of the option, a string ID). -->
+
 <achievements>
     <achievement name="LandGeohash" template="Land_geohash" title="achievement_land_geohash_title"
     	description="achievement_land_geohash_desc" icon="achievement_land_geohash_icon"
@@ -32,6 +36,24 @@
     <achievement name="WalkingOnWaterGeohash" template="Walking_on_water_geohash_achievement" title="achievement_onwater_geohash_title"
     	description="achievement_onwater_geohash_desc" icon="achievement_onwater_geohash_icon"
         category="BasicLocations">
+        <options />
+    </achievement>
+
+    <achievement name="AdmitOne" template="Admit_One_template" title="achievement_admitone_title"
+        description="achievement_admitone_desc" icon="achievement_admitone_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="CoffinPotato" template="Coffin_potato" title="achievement_coffin_potato_title"
+        description="achievement_coffinpotato_desc" icon="achievement_coffinpotato_icon"
+        category="LuckyLocations">
+        <options>
+            <option type="string" param="deceased" title="achievement_option_coffin_potato_deceased" />
+        </options>
+    </achievement>
+    <achievement name="CouchPotato" template="Couch_potato_achievement" title="achievement_couch_potato_title"
+        description="achievement_couch_potato_desc" icon="achievement_couch_potato_icon"
+        category="LuckyLocations">
         <options />
     </achievement>
 </achievements>

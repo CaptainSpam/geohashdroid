@@ -20,6 +20,9 @@
     <string name="achievement_water_geohash_title">Water Geohash</string>
     <string name="achievement_underwater_geohash_title">Underwater Geohash</string>
     <string name="achievement_onwater_geohash_title">Walking on Water Geohash</string>
+    <string name="achievement_admitone_title">Admit One Geohash</string>
+    <string name="achievement_coffin_potato_title">Coffin Potato</string>
+    <string name="achievement_couch_potato_title">Couch Potato</string>
     
     <!--  Achievement descriptions! -->
     <string name="achievement_land_geohash_desc">Get to a geohash on land.</string>
@@ -28,4 +31,10 @@
     <string name="achievement_water_geohash_desc">Get to a geohash on water.</string>
     <string name="achievement_underwater_geohash_desc">Get to a geohash while underwater.</string>
     <string name="achievement_onwater_geohash_desc">Get to a geohash on the surface of water, on foot.</string>
+    <string name="achievement_admitone_desc">Pay a required admission fee to access the geohash.</string>
+    <string name="achievement_coffin_potato_desc">Your coffin is located at the geohash.</string>
+    <string name="achievement_couch_potato_desc">You live at the geohash.</string>
+
+    <!-- Achievement option titles! -->
+    <string name="achievement_option_coffin_potato_deceased">The dearly departed:</string>
 </resources>
