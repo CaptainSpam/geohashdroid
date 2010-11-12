@@ -270,7 +270,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
                     // Get a location from the strings.  If any of this fails,
                     // fall to the exception handler.
-                    sentLoc = new Location(Double.parseDouble(mCurrentLatitude), Double.parseDouble(mCurrentLongitude));
+                    double llat = Double.parseDouble(mCurrentLatitude);
+                    double llon = Double.parseDouble(mCurrentLongitude);
+                    sentLoc = new Location("");
+                    sentLoc.setLatitude(llat);
+                    sentLoc.setLongitude(llon);
                         
                     if(includelocation.isChecked()) {
                         // Parse the following out, first to a double, then
