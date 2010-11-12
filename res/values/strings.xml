@@ -188,7 +188,8 @@
 <string name="wiki_error_too_big">What you sent was too big for the wiki.</string>
 <string name="wiki_error_conflict">An edit conflict happened.  Someone might be right nearby, trying to edit that same page.</string>
 
-<string name="wiki_dialog_append_coordinates">Append coordinates</string>
+<string name="wiki_dialog_append_coordinates">Append coordinates to message</string>
+<string name="wiki_dialog_stamp_image">Put coordinates on image</string>
 <string name="wiki_dialog_append_time">Append local timestamp</string>
 <string name="wiki_dialog_submit_message">Submit message</string>
 <string name="wiki_dialog_submit_picture">Submit to gallery</string>
