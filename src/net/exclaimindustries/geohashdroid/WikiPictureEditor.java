@@ -26,6 +26,10 @@ import android.content.SharedPreferences;
 import android.provider.MediaStore;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Paint.Style;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -45,6 +49,7 @@ import java.io.ByteArrayOutputStream;
 import android.net.Uri;
 
 import java.util.Date;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
 /**
@@ -78,6 +83,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
     
     private static final int REQUEST_PICTURE = 0;
     
+    private static final int INFOBOX_MARGIN = 16;
+    private static final int INFOBOX_PADDING = 8;
+    
     private Info mInfo;
 //    private Location mLocation;
     
@@ -90,6 +98,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
     /** The current latitude and longitude. */
     private String mCurrentLatitude;
     private String mCurrentLongitude;
+    
+    private DecimalFormat mDistFormat = new DecimalFormat("###.######");
+    
+    private static Paint mBackgroundPaint;
+    private static Paint mTextPaint;
 
     private static final String DEBUG_TAG = "WikiPictureEditor";
     
@@ -328,6 +341,13 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     error((String)getText(R.string.wiki_conn_pic_load_error));
                     return;
                 }
+                
+                // Then, if need be, put an infobox on it.
+//                if(stamplocation.isChecked()) {
+                    // Since we just got here from BitmapTools, this should be a
+                    // read/write bitmap.
+                    drawInfobox(bitmap, sentLoc);
+//                }
                 
                 // Now, compress it!
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
@@ -598,5 +618,62 @@ public class WikiPictureEditor extends WikiBaseActivity {
         mCurrentLatitude = null;
         setThumbnail();
         resetSubmitButton();
+    }
+    
+    private void drawInfobox(Bitmap bm, Location loc) {
+        // First, we need to draw something.  Get a Canvas.
+        Canvas c = new Canvas(bm);
+        
+        // Now, draw!  We want to use the same colors as the Infobox uses.
+        makePaints();
+        
+        if(loc != null) {
+            // Assemble all our data.  Our four strings will be the final
+            // destination, our current location, and the distance.
+            String infoTo = getString(R.string.infobox_final) + " " + UnitConverter.makeFullCoordinateString(this, mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            String infoYou = getString(R.string.infobox_you) + " " + UnitConverter.makeFullCoordinateString(this, loc, false, UnitConverter.OUTPUT_LONG);
+            String infoDist = getString(R.string.infobox_dist) + " " + UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(loc));
+            
+            // Now, render all three and get their respective widths.  And
+            // heights, too, actually.
+            Rect textBounds = new Rect();
+            int totalHeight = 0;
+            int longestWidth = 0;
+            
+            mTextPaint.getTextBounds(infoTo, 0, infoTo.length(), textBounds);
+            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
+            totalHeight += textBounds.height();
+            
+            mTextPaint.getTextBounds(infoYou, 0, infoYou.length(), textBounds);
+            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
+            totalHeight += textBounds.height();
+            
+            mTextPaint.getTextBounds(infoDist, 0, infoDist.length(), textBounds);
+            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
+            totalHeight += textBounds.height();
+            
+            // Good!  Now we know what to render.
+            c.drawRect(c.getWidth() - longestWidth - (INFOBOX_MARGIN * 2),
+                    0,
+                    c.getWidth(),
+                    totalHeight + (INFOBOX_MARGIN * 2),
+                    mBackgroundPaint);
+        }
+    }
+    
+    private void makePaints() {
+        // These are for efficiency's sake so we don't rebuild paints uselessly.
+        if(mBackgroundPaint == null) {
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setStyle(Style.FILL);
+            mBackgroundPaint.setColor(getResources().getColor(R.color.infobox_background));
+        }
+        
+        if(mTextPaint == null) {
+            mTextPaint = new Paint();
+            mTextPaint.setColor(getResources().getColor(R.color.infobox_text));
+            mTextPaint.setTextSize(getResources().getDimension(R.dimen.infobox_jumbo_fontsize));
+            mTextPaint.setAntiAlias(true);
+        }
     }
 }

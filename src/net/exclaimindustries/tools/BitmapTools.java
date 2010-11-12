@@ -75,7 +75,10 @@ public class BitmapTools {
         } else {
             // If it's too small already, just return what came in.
             Log.d(DEBUG_TAG, "File is already small enough (" + bitmap.getWidth() + "x" + bitmap.getHeight() + ")");
-            return bitmap;
+            if(bitmap.isMutable())
+                return bitmap;
+            else
+                return bitmap.copy(bitmap.getConfig(), true);
         }
     }
 
