@@ -672,7 +672,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         if(mTextPaint == null) {
             mTextPaint = new Paint();
             mTextPaint.setColor(getResources().getColor(R.color.infobox_text));
-            mTextPaint.setTextSize(getResources().getDimension(R.dimen.infobox_jumbo_fontsize));
+            mTextPaint.setTextSize(getResources().getDimension(R.dimen.infobox_fontsize));
             mTextPaint.setAntiAlias(true);
         }
     }

@@ -9,6 +9,7 @@
 
 	<dimen name="input_graticule_width">85dp</dimen>
 	<dimen name="input_graticule_fontsize">30sp</dimen>
+	<dimen name="infobox_fontsize">16dp</dimen>
 	<dimen name="infobox_jumbo_fontsize">22dp</dimen>
 	<dimen name="infobox_jumbo_fontsize_portrait">18dp</dimen>
 	<dimen name="details_title_fontsize">34sp</dimen>
