@@ -635,44 +635,13 @@ public class WikiPictureEditor extends WikiBaseActivity {
             String infoYou = getString(R.string.infobox_you) + " " + UnitConverter.makeFullCoordinateString(this, loc, false, UnitConverter.OUTPUT_LONG);
             String infoDist = getString(R.string.infobox_dist) + " " + UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(loc));
             
-            // Now, render all three and get their respective widths.  And
-            // heights, too, actually.
-            
-            // FIXME: The math here is ugly and blunt and probably not too
-            // efficient or flexible.  It might even fail.  This needs to be
-            // fixed and made less-ugly later.
-            Rect textBounds = new Rect();
-            int totalHeight = 0;
-            int longestWidth = 0;
-            
-            mTextPaint.getTextBounds(infoTo, 0, infoTo.length(), textBounds);
-            int toHeight = textBounds.height();
-            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
-            totalHeight += textBounds.height();
-            
-            mTextPaint.getTextBounds(infoYou, 0, infoYou.length(), textBounds);
-            int youHeight = textBounds.height();
-            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
-            totalHeight += textBounds.height();
-            
-            mTextPaint.getTextBounds(infoDist, 0, infoDist.length(), textBounds);
-//            int distHeight = textBounds.height();
-            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
-            totalHeight += textBounds.height();
-            
-            // Good!  Now we know what to render.
-            c.drawRect(c.getWidth() - longestWidth - (INFOBOX_MARGIN * 2),
-                    0,
-                    c.getWidth(),
-                    totalHeight + (INFOBOX_MARGIN * 2),
-                    mBackgroundPaint);
-            
-            // Moving right along, let's place the text down.  They should all
-            // be left-justified to the infobox area.
-            int leftEdge = c.getWidth() - longestWidth - INFOBOX_MARGIN;
-            c.drawText(infoTo, leftEdge, INFOBOX_MARGIN + INFOBOX_PADDING, mTextPaint);
-            c.drawText(infoYou, leftEdge, INFOBOX_MARGIN + (INFOBOX_PADDING * 2) + toHeight, mTextPaint);
-            c.drawText(infoDist, leftEdge, INFOBOX_MARGIN + (INFOBOX_PADDING * 3) + toHeight + youHeight, mTextPaint);
+            // Then, to the render method!
+            String[] strings = {infoTo, infoYou, infoDist};
+            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+        } else {
+            // Otherwise, just throw up an unknown.
+            String[] strings = {getString(R.string.location_unknown)};
+            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
         }
     }
     
@@ -689,6 +658,51 @@ public class WikiPictureEditor extends WikiBaseActivity {
             mTextPaint.setColor(getResources().getColor(R.color.infobox_text));
             mTextPaint.setTextSize(getResources().getDimension(R.dimen.infobox_fontsize));
             mTextPaint.setAntiAlias(true);
+        }
+    }
+    
+    private void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint)
+    {
+        // FIXME: The math here is ugly and blunt and probably not too
+        // efficient or flexible.  It might even fail.  This needs to be
+        // fixed and made less-ugly later.
+        
+        // We need SOME strings.  If we've got nothing, bail out.
+        if(strings.length < 1) return;
+        
+        // First, init our variables.  This is as good a place as any to do so.
+        Rect textBounds = new Rect();
+        int[] heights = new int[strings.length];
+        int totalHeight = INFOBOX_MARGIN * 2;
+        int longestWidth = 0;
+        
+        // Now, loop through the strings, adding to the height and keeping track
+        // of the longest width.
+        int i = 0;
+        for(String s : strings) {
+            textPaint.getTextBounds(s, 0, s.length(), textBounds);
+            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
+            totalHeight += textBounds.height();
+            heights[i] = textBounds.height();
+            i++;
+        }
+        
+        // Now, we have us a rectangle.  Draw that.
+        Rect drawBounds =  new Rect(c.getWidth() - longestWidth - (INFOBOX_MARGIN * 2),
+                0,
+                c.getWidth(),
+                totalHeight);
+        
+        c.drawRect(drawBounds, backgroundPaint);
+        
+        // Now, place each of the strings.  We'll assume the topmost one is in
+        // index 0.  They should all be left-justified, too.
+        i = 0;
+        int curHeight = 0;
+        for(String s : strings) {
+            c.drawText(s, drawBounds.left + INFOBOX_MARGIN, INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight, textPaint);
+            curHeight += heights[i];
+            i++;
         }
     }
 }
