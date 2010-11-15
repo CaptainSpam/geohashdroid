@@ -18,7 +18,8 @@
 		android:inputType="textCapSentences|textMultiLine" />
 	<CheckBox android:id="@+id/includelocation"
 		android:layout_width="fill_parent" android:layout_height="wrap_content"
-		android:checked="true" android:text="@string/wiki_dialog_append_coordinates" />
+		android:checked="true" android:text="@string/wiki_dialog_append_coordinates" /><CheckBox android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:checked="true" android:id="@+id/stamplocation" android:text="@string/wiki_dialog_stamp_image"/>
 
 	<Button android:id="@+id/wikieditbutton" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture" />

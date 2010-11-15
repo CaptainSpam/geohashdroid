@@ -275,6 +275,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 Location sentLoc;
                 
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+                CheckBox stamplocation = (CheckBox)findViewById(R.id.stamplocation);
                 try {
                     if(mCurrentLatitude == null || mCurrentLongitude == null
                             || mCurrentLatitude.trim().length() == 0
@@ -343,11 +344,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
                 
                 // Then, if need be, put an infobox on it.
-//                if(stamplocation.isChecked()) {
+                if(stamplocation.isChecked()) {
                     // Since we just got here from BitmapTools, this should be a
                     // read/write bitmap.
                     drawInfobox(bitmap, sentLoc);
-//                }
+                }
                 
                 // Now, compress it!
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
