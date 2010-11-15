@@ -636,19 +636,26 @@ public class WikiPictureEditor extends WikiBaseActivity {
             
             // Now, render all three and get their respective widths.  And
             // heights, too, actually.
+            
+            // FIXME: The math here is ugly and blunt and probably not too
+            // efficient or flexible.  It might even fail.  This needs to be
+            // fixed and made less-ugly later.
             Rect textBounds = new Rect();
             int totalHeight = 0;
             int longestWidth = 0;
             
             mTextPaint.getTextBounds(infoTo, 0, infoTo.length(), textBounds);
+            int toHeight = textBounds.height();
             if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
             totalHeight += textBounds.height();
             
             mTextPaint.getTextBounds(infoYou, 0, infoYou.length(), textBounds);
+            int youHeight = textBounds.height();
             if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
             totalHeight += textBounds.height();
             
             mTextPaint.getTextBounds(infoDist, 0, infoDist.length(), textBounds);
+//            int distHeight = textBounds.height();
             if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
             totalHeight += textBounds.height();
             
@@ -658,6 +665,13 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     c.getWidth(),
                     totalHeight + (INFOBOX_MARGIN * 2),
                     mBackgroundPaint);
+            
+            // Moving right along, let's place the text down.  They should all
+            // be left-justified to the infobox area.
+            int leftEdge = c.getWidth() - longestWidth - INFOBOX_MARGIN;
+            c.drawText(infoTo, leftEdge, INFOBOX_MARGIN + INFOBOX_PADDING, mTextPaint);
+            c.drawText(infoYou, leftEdge, INFOBOX_MARGIN + (INFOBOX_PADDING * 2) + toHeight, mTextPaint);
+            c.drawText(infoDist, leftEdge, INFOBOX_MARGIN + (INFOBOX_PADDING * 3) + toHeight + youHeight, mTextPaint);
         }
     }
     
