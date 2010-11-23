@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="wiki_dialog_append_coordinates">Append coordinates</string>
+<string name="wiki_dialog_stamp_image">Stamp infobox</string>
+</resources>

@@ -11,15 +11,18 @@
 			android:visibility="gone" android:scaleType="centerInside"></ImageView>
 		<ImageButton android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_gallery"
-			android:id="@+id/GalleryButton" android:layout_margin="@dimen/gallery_button_padding" android:layout_gravity="center_vertical"/>
+			android:id="@+id/GalleryButton" android:layout_margin="@dimen/gallery_button_padding"
+			android:layout_gravity="center_vertical" />
 	</LinearLayout>
 	<EditText android:id="@+id/wikiedittext" android:layout_width="fill_parent"
 		android:layout_height="80sp" android:hint="@string/hint_message"
 		android:inputType="textCapSentences|textMultiLine" />
 	<CheckBox android:id="@+id/includelocation"
 		android:layout_width="fill_parent" android:layout_height="wrap_content"
-		android:checked="true" android:text="@string/wiki_dialog_append_coordinates" /><CheckBox android:layout_width="fill_parent" android:layout_height="wrap_content"
-		android:checked="true" android:id="@+id/stamplocation" android:text="@string/wiki_dialog_stamp_image"/>
+		android:checked="true" android:text="@string/wiki_dialog_append_coordinates" />
+	<CheckBox android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:checked="true"
+		android:id="@+id/stamplocation" android:text="@string/wiki_dialog_stamp_image" />
 
 	<Button android:id="@+id/wikieditbutton" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_picture" />
