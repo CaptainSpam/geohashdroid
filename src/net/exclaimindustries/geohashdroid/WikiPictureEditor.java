@@ -72,8 +72,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private static final String STORED_LATITUDE = "StoredLatitude";
     private static final String STORED_LONGITUDE = "StoredLongitude";
 
-    /** The medium-density thumbnail dimensions.  This gets scaled. */
-    private static final int NOMINAL_THUMB_DIMEN = 140;
     /** This gets declared at create time to save some calculation later. */
     private static int THUMB_DIMEN;
     /** The largest width we'll allow to be uploaded. */
@@ -118,7 +116,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
         // Android phone.
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        THUMB_DIMEN = (int)(NOMINAL_THUMB_DIMEN * metrics.density);
+        THUMB_DIMEN = (int)(getResources().getDimensionPixelSize(R.dimen.nominal_icon_size) * metrics.density);
+        
+        Log.d(DEBUG_TAG, "Thumbnail dimensions: " + THUMB_DIMEN);
 
         mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
 

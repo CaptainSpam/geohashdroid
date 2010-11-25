@@ -2,4 +2,5 @@
 <resources>
 <string name="wiki_dialog_append_coordinates">Append coordinates to message</string>
 <string name="wiki_dialog_stamp_image">Put infobox on image</string>
+<string name="wiki_picture_not_logged_in">Posting images anonymously is not allowed, and you haven\'t specified a username in Preferences.  Please enter one first.</string>
 </resources>
