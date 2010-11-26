@@ -56,4 +56,51 @@
         category="LuckyLocations">
         <options />
     </achievement>
+    <achievement name="CrossBridge" template="Cross_that_bridge" title="achievement_cross_bridge_title"
+        description="achievement_cross_bridge_desc" icon="achievement_cross_bridge_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="Cubicle" template="Cubicle_geohash" title="achievement_cubicle_title"
+        description="achievement_cubicle_desc" icon="achievement_cubicle_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <!-- Missing: GeoSquishy (requires more variants than I know what to do with) -->
+    <achievement name="Golf" template="Golf_geohash" title="achievement_golf_title"
+        description="achievement_golf_desc" icon="achievement_golf_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="HashCollision" template="Hash_collision" title="achievement_hash_collision_title"
+        description="achievement_hash_collision_desc" icon="achievement_hash_collision_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="HolyHash" template="Holy_hash" title="achievement_holy_hash_title"
+        description="achievement_holy_hash_desc" icon="achievement_holy_hash_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="Phonebooth" template="Phonebooth_stuffing" title="achievement_phonebooth_title"
+        description="achievement_phonebooth_desc" icon="achievement_phonebooth_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="Pub" template="Pub_geohash" title="achievement_pub_title"
+        description="achievement_pub_desc" icon="achievement_pub_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="RestrictedArea" template="Restricted_area" title="achievement_restricted_area_title"
+        description="achievement_restricted_area_desc" icon="achievement_restricted_area_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <achievement name="SpeedRacer" template="Speed_racer_geohash" title="achievement_speed_racer_title"
+        description="achievement_speed_racer_desc" icon="achievement_speed_racer_icon"
+        category="LuckyLocations">
+        <options />
+    </achievement>
+    <!-- Missing: A Tale Of Two Hashes (requires two parts, not sure how to handle that yet) -->
 </achievements>

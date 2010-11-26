@@ -23,6 +23,15 @@
     <string name="achievement_admitone_title">Admit One Geohash</string>
     <string name="achievement_coffin_potato_title">Coffin Potato</string>
     <string name="achievement_couch_potato_title">Couch Potato</string>
+    <string name="achievement_cross_bridge_title">Cross That Bridge</string>
+    <string name="achievement_cubicle_title">Cubicle Geohash</string>
+    <string name="achievement_golf_title">Golf Geohash</string>
+    <string name="achievement_hash_collision_title">Hash Collision</string>
+    <string name="achievement_holy_hash_title">Holy Hash</string>
+    <string name="achievement_phonebooth_title">Phonebooth Stuffer</string>
+    <string name="achievement_pub_title">Pub Geohash</string>
+    <string name="achievement_restricted_area_title">Restricted Area</string>
+    <string name="achievement_speed_racer_title">Speed Racer</string>
     
     <!--  Achievement descriptions! -->
     <string name="achievement_land_geohash_desc">Get to a geohash on land.</string>
@@ -34,7 +43,16 @@
     <string name="achievement_admitone_desc">Pay a required admission fee to access the geohash.</string>
     <string name="achievement_coffin_potato_desc">Your coffin is located at the geohash.</string>
     <string name="achievement_couch_potato_desc">You live at the geohash.</string>
-
+    <string name="achievement_cross_bridge_desc">Use a bridge to get to a geohash.</string>
+    <string name="achievement_cubicle_desc">Get to a geohash at your office.</string>
+    <string name="achievement_golf_desc">Get yourself and a golf ball to a geohash at a golf course.</string>
+    <string name="achievement_hash_collision_desc">Find a geocache at a geohash.</string>
+    <string name="achievement_holy_hash_desc">The geohash is at a sacred place.</string>
+    <string name="achievement_phonebooth_desc">Stuff as many geohashers into a phone booth as you can at the geohash.</string>
+    <string name="achievement_pub_desc">Get a drink at a pub at the geohash.</string>
+    <string name="achievement_restricted_area_desc">Get to a geohash requiring special clearance.</string>
+    <string name="achievement_speed_racer_desc">Drive through a geohash at maximum legal speed.</string>
+    
     <!-- Achievement option titles! -->
     <string name="achievement_option_coffin_potato_deceased">The dearly departed:</string>
 </resources>
