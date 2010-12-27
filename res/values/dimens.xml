@@ -42,5 +42,10 @@
 	<dimen name="about_names">18dip</dimen>
 	<dimen name="about_version_date">14dip</dimen>
 	<dimen name="about_urls">20dip</dimen>
+	
+	<!-- This one really really doesn't depend on dpi or whatnot, as this is
+	     directly going into an image that'll always be a fairly similar size
+	     no matter what happens. -->
+	<dimen name="infobox_picture_fontsize">6pt</dimen>
 
 </resources>

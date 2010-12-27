@@ -656,7 +656,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         if(mTextPaint == null) {
             mTextPaint = new Paint();
             mTextPaint.setColor(getResources().getColor(R.color.infobox_text));
-            mTextPaint.setTextSize(getResources().getDimension(R.dimen.infobox_fontsize));
+            mTextPaint.setTextSize(getResources().getDimension(R.dimen.infobox_picture_fontsize));
             mTextPaint.setAntiAlias(true);
         }
     }
@@ -700,6 +700,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         i = 0;
         int curHeight = 0;
         for(String s : strings) {
+            Log.d(DEBUG_TAG, "Drawing " + s + " at " + (drawBounds.left + INFOBOX_MARGIN) + "," + (INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight));
             c.drawText(s, drawBounds.left + INFOBOX_MARGIN, INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight, textPaint);
             curHeight += heights[i];
             i++;
