@@ -9,6 +9,7 @@ package net.exclaimindustries.tools;
 
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.app.Service;
 import android.content.Intent;
@@ -33,7 +34,6 @@ import android.os.IBinder;
  *
  */
 public abstract class QueueService extends Service {
-
     /**
      * Codes returned from onHandleIntent that tells the queue what to do next.
      */
@@ -50,6 +50,14 @@ public abstract class QueueService extends Service {
     }
     
     private Queue<Intent> mQueue;
+    private Thread mThread;
+    
+    public QueueService() {
+        super();
+        
+        // Give us a queue!
+        mQueue = new ConcurrentLinkedQueue<Intent>();
+    }
     
     /**
      * Gets an iterator to the current queue.
