@@ -95,7 +95,7 @@ public class GraticuleMap extends MapActivity implements
             Intent i = getIntent();
 
             if (i.hasExtra(GeohashDroid.GRATICULE)) {
-                mGraticule = (Graticule)i.getSerializableExtra(GeohashDroid.GRATICULE);
+                mGraticule = (Graticule)i.getParcelableExtra(GeohashDroid.GRATICULE);
             } else {
                 mGraticule = null;
             }
@@ -206,7 +206,7 @@ public class GraticuleMap extends MapActivity implements
         outState.putInt(CENTERLON, center.getLongitudeE6());
         outState.putInt(ZOOM, mapView.getZoomLevel());
 
-        outState.putSerializable(GeohashDroid.GRATICULE, mGraticule);
+        outState.putParcelable(GeohashDroid.GRATICULE, mGraticule);
 
     }
 

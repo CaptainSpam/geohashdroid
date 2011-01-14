@@ -12,7 +12,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import android.location.Location;
-import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -327,18 +326,12 @@ public class Info implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        // Fortunately, everything we have is serializable.  Meaning, of course,
-        // we can shove this all in a Bundle, which makes parcelizing a lot
-        // easier.
-        Bundle outgoing = new Bundle();
-        
-        outgoing.putDouble(GeohashDroid.LATITUDE, mLatitude);
-        outgoing.putDouble(GeohashDroid.LONGITUDE, mLongitude);
-        outgoing.putSerializable(GeohashDroid.GRATICULE, mGraticule);
-        outgoing.putSerializable(GeohashDroid.CALENDAR, mDate);
-        outgoing.putBoolean(GeohashDroid.RETROHASH, mRetroHash);
-        
-        dest.writeBundle(outgoing);
+        // Let's make us a parcel.  Order is important, remember!
+        dest.writeDouble(mLatitude);
+        dest.writeDouble(mLongitude);
+        dest.writeParcelable(mGraticule, 0);
+        dest.writeSerializable(mDate);
+        dest.writeInt(mRetroHash ? 1 : 0);
     }
     
     /**
@@ -348,16 +341,12 @@ public class Info implements Parcelable {
      * @param in parcel to deparcelize
      */
     public void readFromParcel(Parcel in) {
-        // Go!
-        Bundle incoming = in.readBundle();
-        
-        mLatitude = incoming.getDouble(GeohashDroid.LATITUDE);
-        mLongitude = incoming.getDouble(GeohashDroid.LONGITUDE);
-        mGraticule = (Graticule)(incoming.getSerializable(GeohashDroid.GRATICULE));
-        
-        // We're reading from a parcel, so we directly set mDate and mRetroHash.
-        mDate = (Calendar)(incoming.getSerializable(GeohashDroid.CALENDAR));
-        mRetroHash = incoming.getBoolean(GeohashDroid.RETROHASH);
+        // Same order!  Go!
+        mLatitude = in.readDouble();
+        mLongitude = in.readDouble();
+        mGraticule = (Graticule)(in.readParcelable(Graticule.class.getClassLoader()));
+        mDate = (Calendar)(in.readSerializable());
+        mRetroHash = (in.readInt() == 1);
     }
     
     private void setDate(Calendar cal) {

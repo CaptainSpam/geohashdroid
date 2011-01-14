@@ -7,11 +7,11 @@
  */
 package net.exclaimindustries.geohashdroid;
 
-import java.io.Serializable;
-
 import com.google.android.maps.GeoPoint;
 
 import android.location.Location;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 /**
  * <p>
@@ -22,20 +22,23 @@ import android.location.Location;
  * </p>
  * 
  * <p>
+ * Note that Graticules are immutable.
+ * </p>
+ * 
+ * <p>
  * *: Well, maybe not the heart. At least the kidneys for sure.
  * </p>
  * 
  * @author Nicholas Killewald
  */
-public class Graticule implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class Graticule implements Parcelable {
     private int mLatitude;
     private int mLongitude;
 
     // These are to account for the "negative zero" graticules.
     private boolean mSouth = false;
     private boolean mWest = false;
-
+    
     /**
      * Constructs a new Graticule with the given Location object. This seems
      * like it's most likely what you want, but in the current version of this,
@@ -249,6 +252,83 @@ public class Graticule implements Serializable {
         // Now make the new Graticule object and return it.
         return new Graticule(finalLat, finalSouth, finalLon, finalWest);
     }
+    
+    /**
+     * Deparcelizinate a Graticule.
+     * 
+     * @param in the parcel to deparcelize
+     */
+    private Graticule(Parcel in) {
+        readFromParcel(in);
+    }
+    
+    public static final Parcelable.Creator<Graticule> CREATOR = new Parcelable.Creator<Graticule>() {
+        public Graticule createFromParcel(Parcel in) {
+            return new Graticule(in);
+        }
+
+        public Graticule[] newArray(int size) {
+            return new Graticule[size];
+        }
+    };
+    
+    /**
+     * Deparcel.  Read from parcel.  Deparcelize.  This constructs a Graticule
+     * from a Parcel.
+     * 
+     * @param in parcel to deparcelize
+     */
+    public void readFromParcel(Parcel in) {
+        // For the sake of efficiency, we store exactly two things in the
+        // parcel.  Specifically, the latitude and longitude, represented from
+        // 0-179 and 0-356, respectively, going from 89 south to 89 north and
+        // 179 west to 179 east (both including a negative zero).  We can
+        // determine mSouth and mWest from there.
+        int absLat = in.readInt();
+        int absLon = in.readInt();
+        
+        // I swear, if these wind up not being valid, I reserve the right to
+        // dope slap you.
+        if(absLat < 90) {
+            mSouth = true;
+            setLatitude(89 - absLat);
+        } else {
+            mSouth = false;
+            setLatitude(absLat - 90);
+        }
+        
+        if(absLon < 180) {
+            mWest = true;
+            setLongitude(179 - absLon);
+        } else {
+            mWest = false;
+            setLongitude(absLon - 180);
+        }
+    }
+    
+    @Override
+    public int describeContents() {
+        // BLAH BLAH BLAH
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        // Hey!  We've got a parcel to write out!  To compress this down a bit
+        // further, we want to only store two ints (instead of two ints and two
+        // booleans).  See the comments in readFromParcel for details.  To wit:
+        
+        // Latitude!
+        if(mSouth)
+            dest.writeInt(Math.abs(mLatitude - 89));
+        else
+            dest.writeInt(mLatitude + 90);
+        
+        if(mWest)
+            dest.writeInt(Math.abs(mLongitude - 179));
+        else
+            dest.writeInt(mLongitude + 180);
+    }
 
     /**
      * Returns true if the 30W Rule is in effect. Which is to say, anything east
@@ -458,5 +538,4 @@ public class Graticule implements Serializable {
         else
             return true;
     }
-
 }

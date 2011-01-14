@@ -602,7 +602,7 @@ public class GeohashDroid extends Activity {
                 // Graticule, assuming it wasn't canceled.
                 if (resultCode == RESULT_OK) {
                     Graticule g = (Graticule)data
-                            .getSerializableExtra(GRATICULE);
+                            .getParcelableExtra(GRATICULE);
                     updateGraticule(g);
 
                     // If we have an update like this, update the preferences,

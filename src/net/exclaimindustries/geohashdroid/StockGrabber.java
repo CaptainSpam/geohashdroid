@@ -69,7 +69,7 @@ public class StockGrabber extends Activity {
             // If we have all the data, store it in our private variables.
             // Granted, we still need to know if the pieces are null or not.
             mCal = (Calendar)intent.getSerializableExtra(GeohashDroid.CALENDAR);
-            mGrat = (Graticule)intent.getSerializableExtra(GeohashDroid.GRATICULE);
+            mGrat = (Graticule)intent.getParcelableExtra(GeohashDroid.GRATICULE);
             if(mCal == null) {
                 // FAILURE!  We're missing some data!  Note that if we're
                 // missing the graticule, we assume it to be a globalhash.
