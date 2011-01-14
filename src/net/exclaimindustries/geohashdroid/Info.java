@@ -330,7 +330,9 @@ public class Info implements Parcelable {
         dest.writeDouble(mLatitude);
         dest.writeDouble(mLongitude);
         dest.writeParcelable(mGraticule, 0);
-        dest.writeSerializable(mDate);
+        dest.writeInt(mDate.get(Calendar.YEAR));
+        dest.writeInt(mDate.get(Calendar.MONTH));
+        dest.writeInt(mDate.get(Calendar.DAY_OF_MONTH));
         dest.writeInt(mRetroHash ? 1 : 0);
     }
     
@@ -345,7 +347,12 @@ public class Info implements Parcelable {
         mLatitude = in.readDouble();
         mLongitude = in.readDouble();
         mGraticule = (Graticule)(in.readParcelable(Graticule.class.getClassLoader()));
-        mDate = (Calendar)(in.readSerializable());
+
+        mDate = Calendar.getInstance();
+
+        // In order, this better be year, month, day-of-month.
+        cal.set(in.readInt(), in.readInt(), in.readInt());
+
         mRetroHash = (in.readInt() == 1);
     }
     
