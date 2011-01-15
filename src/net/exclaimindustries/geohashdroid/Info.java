@@ -351,7 +351,7 @@ public class Info implements Parcelable {
         mDate = Calendar.getInstance();
 
         // In order, this better be year, month, day-of-month.
-        cal.set(in.readInt(), in.readInt(), in.readInt());
+        mDate.set(in.readInt(), in.readInt(), in.readInt());
 
         mRetroHash = (in.readInt() == 1);
     }
