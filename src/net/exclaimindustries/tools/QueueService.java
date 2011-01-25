@@ -157,6 +157,7 @@ public abstract class QueueService extends Service {
                 Log.d(DEBUG_TAG, "Emptying out the queue (removing " + mQueue.size() + " Intents)...");
                 onQueueEmpty(false);
                 mQueue.clear();
+                stopSelf();
             }
         } else {
             // If this isn't a control message, add the intent to the queue.
@@ -216,6 +217,7 @@ public abstract class QueueService extends Service {
                     Log.d(DEBUG_TAG, "Return said to stop, stopping now and abandoning " + mQueue.size() + " Intents.");
                     onQueueEmpty(false);
                     mQueue.clear();
+                    stopSelf();
                     return;
                 } else if(r == ReturnCode.CONTINUE) {
                     // CONTINUE means processing was a success, so we can yoink
@@ -235,6 +237,7 @@ public abstract class QueueService extends Service {
             // If we got here, then hey!  The thread's done!
             Log.d(DEBUG_TAG, "Processing complete.");
             onQueueEmpty(true);
+            stopSelf();
         }
     }
     
