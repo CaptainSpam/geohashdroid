@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.tools;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
@@ -93,6 +95,86 @@ public abstract class QueueService extends Service {
         mIsPaused = false;
     }
     
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        
+        // To recreate, we want to go through everything we have in storage in
+        // the same order we wrote it out.
+        String files[] = fileList();
+        
+        // But the only files we're interested in are Queue# files.
+        int count = 0;
+        
+        for(String s : files) {
+            if(s.startsWith("Queue"))
+                count++;
+        }
+        
+        if(count >= 1) {
+            // Now, open each one in order and have the deserializer deserialize
+            // them.  And because we're being paranoid today, make sure we
+            // account for gaps in the numbering.
+            int processed = 0;
+            
+            int i = 0;
+            
+            while(processed < count) {
+                try {
+                    // All the queue files are named Queue#.  We know there are
+                    // as many as the count variable.  We don't know if all
+                    // those digits exist, though, so track how many files we
+                    // deserialized and stop when we run out.  I really hope we
+                    // don't wind up in an infinite loop here.
+                    InputStream is = openFileInput("Queue" + i);
+                    
+                    Intent intent = deserializeFromDisk(is);
+                    if(intent != null) mQueue.add(intent);
+                    
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        // Ignore this.
+                    }
+                    
+                    deleteFile("Queue" + i);
+                    processed++;
+                } catch (FileNotFoundException e) {
+                    // If we get here, we're apparently out of order.
+                    Log.w(DEBUG_TAG, "Couldn't find Queue" + i + ", apparently we missed a number when writing...");
+                }
+                
+                i++;
+            }
+            
+            // Finally, attempt to start the thread again if there was something
+            // serialized in the queue.  We'll pause if we need to.
+            mThread = new Thread(new QueueThread());
+            mThread.run();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        // Before destruction, serialize!  Make it snappy!
+        int i = 0;
+        
+        if(mQueue != null) {
+            for(Intent in : mQueue) {
+                try {
+                    serializeToDisk(in, openFileOutput("Queue" + i, MODE_PRIVATE));
+                } catch (FileNotFoundException e) {
+                    // If we get an exception, complain about it and just move
+                    // on.
+                    Log.e(DEBUG_TAG, "Couldn't write queue entry to persistant storage!  Stack trace follows...");
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        super.onDestroy();
+    }
+
     /**
      * Gets an iterator to the current queue.
      * 
