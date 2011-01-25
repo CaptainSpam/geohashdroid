@@ -57,6 +57,12 @@ public abstract class QueueService extends Service {
     }
     
     /**
+     * Internal prefix of serialized intent data.  Don't change this unless you
+     * know you'll be running multiple QueueServices.
+     */
+    protected String INTERNAL_QUEUE_FILE_PREFIX = "Queue";
+    
+    /**
      * Send an Intent with this extra data in it, set to one of the command
      * statics, to send a command.
      */
@@ -107,7 +113,7 @@ public abstract class QueueService extends Service {
         int count = 0;
         
         for(String s : files) {
-            if(s.startsWith("Queue"))
+            if(s.startsWith(INTERNAL_QUEUE_FILE_PREFIX))
                 count++;
         }
         
@@ -126,7 +132,7 @@ public abstract class QueueService extends Service {
                     // those digits exist, though, so track how many files we
                     // deserialized and stop when we run out.  I really hope we
                     // don't wind up in an infinite loop here.
-                    InputStream is = openFileInput("Queue" + i);
+                    InputStream is = openFileInput(INTERNAL_QUEUE_FILE_PREFIX + i);
                     
                     Intent intent = deserializeFromDisk(is);
                     if(intent != null) mQueue.add(intent);
@@ -137,11 +143,11 @@ public abstract class QueueService extends Service {
                         // Ignore this.
                     }
                     
-                    deleteFile("Queue" + i);
+                    deleteFile(INTERNAL_QUEUE_FILE_PREFIX + i);
                     processed++;
                 } catch (FileNotFoundException e) {
                     // If we get here, we're apparently out of order.
-                    Log.w(DEBUG_TAG, "Couldn't find Queue" + i + ", apparently we missed a number when writing...");
+                    Log.w(DEBUG_TAG, "Couldn't find " + INTERNAL_QUEUE_FILE_PREFIX + i + ", apparently we missed a number when writing...");
                 }
                 
                 i++;
@@ -162,7 +168,7 @@ public abstract class QueueService extends Service {
         if(mQueue != null) {
             for(Intent in : mQueue) {
                 try {
-                    serializeToDisk(in, openFileOutput("Queue" + i, MODE_PRIVATE));
+                    serializeToDisk(in, openFileOutput(INTERNAL_QUEUE_FILE_PREFIX + i, MODE_PRIVATE));
                 } catch (FileNotFoundException e) {
                     // If we get an exception, complain about it and just move
                     // on.
