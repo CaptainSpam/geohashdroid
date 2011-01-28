@@ -212,11 +212,13 @@ public abstract class QueueService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return handleCommand(intent);
+        handleCommand(intent);
+        
+        // We'll always return sticky.  We'll stop when we need to.
+        return Service.START_STICKY;
     }
     
-    public int handleCommand(Intent intent) {
-        Log.d(DEBUG_TAG, "handleCommand!");
+    public void handleCommand(Intent intent) {
         // First, check if this is a command message.
         if(intent.hasExtra(COMMAND_EXTRA)) {
             // If so, take command.  Make sure it's a valid command.
@@ -224,18 +226,18 @@ public abstract class QueueService extends Service {
             
             if(!isPaused()) {
                 Log.w(DEBUG_TAG, "The queue isn't paused!  You can't send a command NOW!");
-                return Service.START_NOT_STICKY;
+                return;
             }
             
             if(command == -1) {
                 // INVALID!
                 Log.w(DEBUG_TAG, "Command Intent didn't have a valid command in it!");
-                return Service.START_NOT_STICKY;
+                return;
             }
             
             if(command != COMMAND_RESUME && command != COMMAND_ABORT && command != COMMAND_RESUME_SKIP_FIRST) {
                 Log.w(DEBUG_TAG, "I don't know what sort of command " + command + " is supposed to be, ignoring...");
-                return Service.START_NOT_STICKY;
+                return;
             }
 
             // The thread should NOT be active right now!  If it is, we're in
