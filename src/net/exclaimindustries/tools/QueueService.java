@@ -293,7 +293,7 @@ public abstract class QueueService extends Service {
                 // it left off.
                 Log.d(DEBUG_TAG, "Restarting the thread now...");
                 mThread = new Thread(new QueueThread(), "QueueService Runner");
-                mThread.run();
+                mThread.start();
             } else if(command == COMMAND_RESUME_SKIP_FIRST) {
                 Log.d(DEBUG_TAG, "Restarting the thread now, skipping the first Intent...");
                 if(mQueue.isEmpty()) {
@@ -302,7 +302,7 @@ public abstract class QueueService extends Service {
                     mQueue.remove();
                 }
                 mThread = new Thread(new QueueThread(), "QueueService Runner");
-                mThread.run();
+                mThread.start();
             } else if(command == COMMAND_ABORT) {
                 // Simply empty the queue (but call the callback first).
                 Log.d(DEBUG_TAG, "Emptying out the queue (removing " + mQueue.size() + " Intents)...");
@@ -330,11 +330,11 @@ public abstract class QueueService extends Service {
                 mIsPaused = false;
                 Log.d(DEBUG_TAG, "Starting the thread...");
                 mThread = new Thread(new QueueThread(), "QueueService Runner");
-                mThread.run();
+                mThread.start();
             } else if(!isPaused() && (mThread == null || !mThread.isAlive())) {
                 Log.d(DEBUG_TAG, "Starting the thread fresh...");
                 mThread = new Thread(new QueueThread(), "QueueService Runner");
-                mThread.run();
+                mThread.start();
             }
         }
         
