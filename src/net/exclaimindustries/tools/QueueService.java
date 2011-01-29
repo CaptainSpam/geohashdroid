@@ -211,6 +211,7 @@ public abstract class QueueService extends Service {
                     Log.e(DEBUG_TAG, "Couldn't write queue entry to persistant storage!  Stack trace follows...");
                     e.printStackTrace();
                 }
+                i++;
             }
         }
         
