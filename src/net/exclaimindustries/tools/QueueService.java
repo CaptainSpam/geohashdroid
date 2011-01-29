@@ -1,6 +1,6 @@
 /**
  * QueueService.java
- * Copyright (C)2010 Nicholas Killewald
+ * Copyright (C)2011 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
@@ -17,7 +17,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 
 /**
@@ -40,6 +44,24 @@ import android.util.Log;
  */
 public abstract class QueueService extends Service {
     private static final String DEBUG_TAG = "QueueService";
+
+    private volatile Looper mServiceLooper;
+    private volatile ServiceHandler mServiceHandler;
+
+    private final class ServiceHandler extends Handler {
+        public ServiceHandler(Looper looper) {
+            // WE'RE IN A THREAD NOW!
+            super(looper);
+        }
+
+        public void handleMessage(Message msg) {
+            // Quick!  Hand this off to handleCommand!  It might start ANOTHER
+            // thread to deal with this.
+            Log.d(DEBUG_TAG, "handleMessage!");
+            handleCommand((Intent)msg.obj);
+            Log.d(DEBUG_TAG, "Done with handleMessage!");
+        }
+    }
     
     /**
      * Codes returned from onHandleIntent that tells the queue what to do next.
@@ -110,6 +132,8 @@ public abstract class QueueService extends Service {
     public void onCreate() {
         super.onCreate();
         
+        Log.d(DEBUG_TAG, "onCreate!");
+        
         // To recreate, we want to go through everything we have in storage in
         // the same order we wrote it out.
         String files[] = fileList();
@@ -158,12 +182,18 @@ public abstract class QueueService extends Service {
                 i++;
             }
             
-            // Finally, attempt to start the thread again if there was something
-            // serialized in the queue.  We'll pause if we need to.
-            Log.i(DEBUG_TAG, "Restarting QueueThread...");
-            mThread = new Thread(new QueueThread(), "QueueService Thread");
-            mThread.run();
+            // Always assume that a non-empty queue involved a pause somewhere.
+            mIsPaused = true;
         }
+        
+        // Finally, restart the HandlerThread.  We'll wait for further
+        // instructions.
+        Log.d(DEBUG_TAG, "Starting the QueueService Handler thread...");
+        HandlerThread thread = new HandlerThread("QueueService Handler");
+        thread.start();
+
+        mServiceLooper = thread.getLooper();
+        mServiceHandler = new ServiceHandler(mServiceLooper);
     }
 
     @Override
@@ -183,6 +213,9 @@ public abstract class QueueService extends Service {
                 }
             }
         }
+        
+        Log.d(DEBUG_TAG, "Killing the service looper...");
+        mServiceLooper.quit();
         
         super.onDestroy();
     }
@@ -207,18 +240,22 @@ public abstract class QueueService extends Service {
     
     @Override
     public void onStart(Intent intent, int startId) {
-        handleCommand(intent);
+        // Here's a trick I picked up from IntentService...
+        Message msg = mServiceHandler.obtainMessage();
+        msg.arg1 = startId;
+        msg.obj = intent;
+        mServiceHandler.sendMessage(msg);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        handleCommand(intent);
+        onStart(intent, startId);
         
         // We'll always return sticky.  We'll stop when we need to.
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
     }
     
-    public void handleCommand(Intent intent) {
+    private void handleCommand(Intent intent) {
         // First, check if this is a command message.
         if(intent.hasExtra(COMMAND_EXTRA)) {
             // If so, take command.  Make sure it's a valid command.
@@ -255,12 +292,16 @@ public abstract class QueueService extends Service {
                 // Simply restart the thread.  The queue will start from where
                 // it left off.
                 Log.d(DEBUG_TAG, "Restarting the thread now...");
-                mThread = new Thread(new QueueThread(), "QueueService Thread");
+                mThread = new Thread(new QueueThread(), "QueueService Runner");
                 mThread.run();
             } else if(command == COMMAND_RESUME_SKIP_FIRST) {
                 Log.d(DEBUG_TAG, "Restarting the thread now, skipping the first Intent...");
-                mQueue.remove();
-                mThread = new Thread(new QueueThread(), "QueueService Thread");
+                if(mQueue.isEmpty()) {
+                    Log.w(DEBUG_TAG, "The queue is empty!  There's nothing to skip!");
+                } else {
+                    mQueue.remove();
+                }
+                mThread = new Thread(new QueueThread(), "QueueService Runner");
                 mThread.run();
             } else if(command == COMMAND_ABORT) {
                 // Simply empty the queue (but call the callback first).
@@ -288,14 +329,17 @@ public abstract class QueueService extends Service {
                 
                 mIsPaused = false;
                 Log.d(DEBUG_TAG, "Starting the thread...");
-                mThread = new Thread(new QueueThread(), "QueueService Thread");
+                mThread = new Thread(new QueueThread(), "QueueService Runner");
                 mThread.run();
             } else if(!isPaused() && (mThread == null || !mThread.isAlive())) {
                 Log.d(DEBUG_TAG, "Starting the thread fresh...");
-                mThread = new Thread(new QueueThread(), "QueueService Thread");
+                mThread = new Thread(new QueueThread(), "QueueService Runner");
                 mThread.run();
             }
         }
+        
+        Log.d(DEBUG_TAG, "At the end of handleCommand, returning now...");
+        return;
     }
 
     /* (non-Javadoc)
@@ -343,6 +387,7 @@ public abstract class QueueService extends Service {
 
                     mIsPaused = true;
                     onQueuePause(i);
+                    stopSelf();
                     return;
                 }
             }
