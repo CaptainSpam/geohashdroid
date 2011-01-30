@@ -247,7 +247,7 @@ public abstract class QueueService extends Service {
         onStart(intent, startId);
         
         // We're not sticky.  We don't want intents re-sent and we call stopSelf
-        // whenever the queue thread stops.
+        // whenever we want to stop entirely.
         return Service.START_NOT_STICKY;
     }
     
@@ -381,7 +381,6 @@ public abstract class QueueService extends Service {
 
                     mIsPaused = true;
                     onQueuePause(i);
-                    stopSelf();
                     return;
                 }
             }
