@@ -57,9 +57,7 @@ public abstract class QueueService extends Service {
         public void handleMessage(Message msg) {
             // Quick!  Hand this off to handleCommand!  It might start ANOTHER
             // thread to deal with this.
-            Log.d(DEBUG_TAG, "handleMessage!");
             handleCommand((Intent)msg.obj);
-            Log.d(DEBUG_TAG, "Done with handleMessage!");
         }
     }
     
@@ -132,8 +130,6 @@ public abstract class QueueService extends Service {
     public void onCreate() {
         super.onCreate();
         
-        Log.d(DEBUG_TAG, "onCreate!");
-        
         // To recreate, we want to go through everything we have in storage in
         // the same order we wrote it out.
         String files[] = fileList();
@@ -188,7 +184,6 @@ public abstract class QueueService extends Service {
         
         // Finally, restart the HandlerThread.  We'll wait for further
         // instructions.
-        Log.d(DEBUG_TAG, "Starting the QueueService Handler thread...");
         HandlerThread thread = new HandlerThread("QueueService Handler");
         thread.start();
 
@@ -215,7 +210,6 @@ public abstract class QueueService extends Service {
             }
         }
         
-        Log.d(DEBUG_TAG, "Killing the service looper...");
         mServiceLooper.quit();
         
         super.onDestroy();
@@ -252,7 +246,8 @@ public abstract class QueueService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         onStart(intent, startId);
         
-        // We'll always return sticky.  We'll stop when we need to.
+        // We're not sticky.  We don't want intents re-sent and we call stopSelf
+        // whenever the queue thread stops.
         return Service.START_NOT_STICKY;
     }
     
@@ -329,7 +324,6 @@ public abstract class QueueService extends Service {
                 }
                 
                 mIsPaused = false;
-                Log.d(DEBUG_TAG, "Starting the thread...");
                 mThread = new Thread(new QueueThread(), "QueueService Runner");
                 mThread.start();
             } else if(!isPaused() && (mThread == null || !mThread.isAlive())) {
@@ -339,7 +333,6 @@ public abstract class QueueService extends Service {
             }
         }
         
-        Log.d(DEBUG_TAG, "At the end of handleCommand, returning now...");
         return;
     }
 
@@ -417,7 +410,7 @@ public abstract class QueueService extends Service {
      * 
      * @param flag true to auto-restart, false to not (default is false)
      */
-    protected void setResumeOnNewIntent(boolean flag) {
+    public void setResumeOnNewIntent(boolean flag) {
         mResumeOnNewIntent = flag;
     }
 
@@ -469,6 +462,10 @@ public abstract class QueueService extends Service {
      * so that they can be recreated at onCreate time to persist the Service's
      * state (there doesn't appear to be an onSaveInstanceState like you'd get
      * with Activities).
+     * 
+     * Note that no checking is done to ensure you actually wrote anything to
+     * the stream.  If the result is a zero-byte file, that's your
+     * responsibility to handle it at deserialize time.
      * 
      * @param i the Intent to serialize
      * @param os what you'll be writing to
