@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import net.exclaimindustries.tools.QueueService;
 
 /**
@@ -28,11 +29,13 @@ public class WikiPostService extends QueueService {
      * Listens for connection Intents.  And, as appropriate, informs the main
      * service to any also-appropriate changes to said connection. 
      */
-    private static class ConnectivityListener extends BroadcastReceiver {
+    public static class ConnectivityListener extends BroadcastReceiver {
 
+        private static final String DEBUG_TAG = "WikiPostService.ConnectivityListener";
+        
         @Override
         public void onReceive(Context arg0, Intent arg1) {
-            // TODO Auto-generated method stub
+            Log.d(DEBUG_TAG, "INTENT HAS BEEN RECEIVIFIED");
             
         }
         
