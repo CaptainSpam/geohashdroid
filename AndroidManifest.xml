@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="net.exclaimindustries.geohashdroid" android:installLocation="auto" android:versionName="0.7.9" android:versionCode="686">
-	<uses-sdk android:targetSdkVersion="4" android:minSdkVersion="3"/>
+	package="net.exclaimindustries.geohashdroid" android:installLocation="auto"
+	android:versionName="0.7.9" android:versionCode="686">
+	<uses-sdk android:targetSdkVersion="4" android:minSdkVersion="3" />
 	<application android:icon="@drawable/icon" android:label="@string/app_name"
-		android:description="@string/app_description" android:theme="@style/Theme.GeohashDroid" android:allowClearUserData="true" android:debuggable="true">
+		android:description="@string/app_description" android:theme="@style/Theme.GeohashDroid"
+		android:allowClearUserData="true" android:debuggable="true">
 		<uses-library android:name="com.google.android.maps" />
 		<activity android:label="@string/app_name" android:name=".GeohashDroid">
 			<intent-filter>
@@ -33,14 +35,21 @@
 
 		<activity android:label="@string/standby_title" android:name="LocationGrabber"
 			android:theme="@android:style/Theme.Dialog"></activity>
+		<receiver android:name="WikiPostService$ConnectivityListener">
+			<intent-filter>
+				<action android:name="android.net.conn.CONNECTIVITY_CHANGE"></action>
+			</intent-filter>
+		</receiver>
+		<service android:description="@string/wiki_post_service_desc"
+			android:label="@string/wiki_post_service_title" android:name="WikiPostService"></service>
 	</application>
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"></uses-permission>
 	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
 
-
-
-<supports-screens android:smallScreens="true" android:largeScreens="true" android:normalScreens="true" android:resizeable="true" android:anyDensity="true"></supports-screens>
+	<supports-screens android:smallScreens="true"
+		android:largeScreens="true" android:normalScreens="true"
+		android:resizeable="true" android:anyDensity="true"></supports-screens>
 
 </manifest> 

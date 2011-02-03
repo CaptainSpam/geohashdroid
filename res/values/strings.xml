@@ -43,6 +43,8 @@
 <string name="map_activity_title">The Map</string>
 <string name="gratmap_activity_title">Tap your graticule</string>
 <string name="detail_activity_title">Details</string>
+<string name="wiki_post_service_title">Geohash Wiki Postamajig</string>
+<string name="wiki_post_service_desc">Service which sends posts to the Geohash Wiki</string>
 <string name="destination_label">Today\'s Point</string>
 
 <string name="find_location">Trying to determine your location...</string>
