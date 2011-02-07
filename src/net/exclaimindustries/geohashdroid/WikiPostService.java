@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
 import net.exclaimindustries.tools.QueueService;
 
@@ -40,6 +42,40 @@ public class WikiPostService extends QueueService {
         }
         
     };
+
+    // This is used when we get a connectivity change.  This will be checked to
+    // see if it actually DID change, and thus if we need to send the resume
+    // command.  This starts off with whatever ConnectivityManager says for the
+    // currently-active network.
+    private boolean mIsConnected;
+
+    // A temporary pause is one where we should try again immediately once we
+    // get a connection.  That is, if the pause was due to things that WON'T be
+    // solved via the connection coming back up (i.e. bad password), this will
+    // be false, meaning a connection won't send a resume command.
+    private boolean mTemporaryPause;
+
+    public WikiPostService() {
+        super();
+
+        // Get a ConnectivityManager.
+        ConnectivityManager connMan = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // Get a NetworkInfo.
+        NetworkInfo netInfo = connMan.getActiveNetworkInfo();
+
+        // Get funky.
+        if(netInfo != null && netInfo.isConnected()) {
+            mIsConnected = true;
+        } else {
+            mIsConnected = false;
+        }
+
+        // mTemporaryPause should default to true at construction time.  If we
+        // just came back from being destroyed somehow, we can just try again
+        // and get the same error.
+        mTemporaryPause = true;
+    }
 
     /* (non-Javadoc)
      * @see net.exclaimindustries.tools.QueueService#deserializeFromDisk(java.io.InputStream)
