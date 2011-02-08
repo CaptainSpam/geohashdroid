@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
+
 import net.exclaimindustries.tools.QueueService;
 
 /**
@@ -36,12 +37,85 @@ public class WikiPostService extends QueueService {
         private static final String DEBUG_TAG = "WikiPostService.ConnectivityListener";
         
         @Override
-        public void onReceive(Context arg0, Intent arg1) {
+        public void onReceive(Context context, Intent intent) {
             Log.d(DEBUG_TAG, "INTENT HAS BEEN RECEIVIFIED");
             
         }
         
     };
+
+    /**
+     * The Info object for a post.  The post page will be determined from here.
+     *
+     * This should be an Info parcelable.
+     */
+    public static final String EXTRA_INFO = "Info";
+    /**
+     * The latitude the user is at for a post.  If this or the longitude are not
+     * defined, location is assumed to be unknown.  Note that if posting a
+     * picture, the picture's stored location will NOT be consulted; retrieve it
+     * beforehand and add it in before sending the Intent.
+     *
+     * This should be a double.
+     */
+    public static final String EXTRA_LATITUDE = "Latitude";
+    /**
+     * The longitude the user is at for a post.  If this or the latitude are not
+     * defined, location is assumed to be unknown.  Note that if posting a
+     * picture, the picture's stored location will NOT be consulted; retrieve it
+     * beforehand and add it in before sending the Intent.
+     *
+     * This should be a double.
+     */
+    public static final String EXTRA_LONGITUDE = "Longitude";
+    /**
+     * The text for a post.
+     *
+     * This should be a string.
+     */
+    public static final String EXTRA_POST_TEXT = "PostText";
+    /**
+     * The post's time, as a measure of milliseconds past the epoch.  If this is
+     * not defined, the post will be made with a standard MediaWiki signature,
+     * meaning it will be stamped with the time it gets sent, NOT neccessarily
+     * the time it was made.  That is, get this sorted out BEFORE sending off
+     * the Intent.
+     *
+     * This should be a long.
+     */
+    public static final String EXTRA_TIMESTAMP = "Timestamp";
+    /**
+     * The location of a picture to post.  If this is defined AND is not an
+     * empty or all-whitespace string, it is assumed this will be
+     * picture-posting mode, and thus an Intent with an invalid picture WILL
+     * fail.
+     *
+     * This should be a string.
+     */
+    public static final String EXTRA_PICTURE_LOCATION = "PicLocation";
+    /**
+     * Whether or not an infobox will be stamped onto a picture.  This is only
+     * consulted if EXTRA_PICTURE_LOCATION is defined.  If this is not defined,
+     * it will default to false.
+     *
+     * This should be a boolean.
+     */
+    public static final String EXTRA_OPTION_PICTURE_STAMP = "PicStamp";
+    /**
+     * Whether or not coordinates will be included with a post.  If true, the
+     * coordinates given in EXTRA_LATITUDE and EXTRA_LONGITUDE will be appended
+     * to the post with a link to a map.  If false, this won't be appended.
+     * If not defined, this defaults to true.
+     *
+     * Note carefully, simply including a latitude and longitude will NOT imply
+     * this is true.  Similarly, NOT including a latitude or longitude will NOT
+     * imply this is false; in that case, "location unknown" will be sent
+     * instead.  This option also has no bearing on EXTRA_OPTION_PICTURE_STAMP;
+     * that will be posted anyway if its option is set.
+     *
+     * This should be a boolean.
+     */
+    public static final String EXTRA_OPTION_COORDS = "IncludeCoords";
 
     // This is used when we get a connectivity change.  This will be checked to
     // see if it actually DID change, and thus if we need to send the resume
@@ -75,15 +149,6 @@ public class WikiPostService extends QueueService {
         // just came back from being destroyed somehow, we can just try again
         // and get the same error.
         mTemporaryPause = true;
-    }
-
-    /* (non-Javadoc)
-     * @see net.exclaimindustries.tools.QueueService#deserializeFromDisk(java.io.InputStream)
-     */
-    @Override
-    protected Intent deserializeFromDisk(InputStream is) {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     /* (non-Javadoc)
@@ -122,4 +187,12 @@ public class WikiPostService extends QueueService {
 
     }
 
+    /* (non-Javadoc)
+     * @see net.exclaimindustries.tools.QueueService#deserializeFromDisk(java.io.InputStream)
+     */
+    @Override
+    protected Intent deserializeFromDisk(InputStream is) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
