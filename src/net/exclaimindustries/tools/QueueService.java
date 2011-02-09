@@ -251,7 +251,14 @@ public abstract class QueueService extends Service {
         return Service.START_NOT_STICKY;
     }
     
-    private void handleCommand(Intent intent) {
+    /**
+     * Handles the Intent sent in.  This gets called on a separate thread from
+     * the rest of the GUI.  You can override it if you need to handle Intents
+     * other than the normal QueueService stuff.
+     * 
+     * @param intent
+     */
+    protected void handleCommand(Intent intent) {
         // First, check if this is a command message.
         if(intent.hasExtra(COMMAND_EXTRA)) {
             // If so, take command.  Make sure it's a valid command.
