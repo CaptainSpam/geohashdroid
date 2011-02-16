@@ -252,11 +252,23 @@ public abstract class QueueService extends Service {
     }
     
     /**
-     * Handles the Intent sent in.  This gets called on a separate thread from
-     * the rest of the GUI.  You can override it if you need to handle Intents
-     * other than the normal QueueService stuff.
+     * Handles the Intent sent in.  Specifically, this looks at the Intent,
+     * decides if it's a command or a work unit, and then either acts on the
+     * command or shoves the Intent into the queue to be processed, starting the
+     * queue-working thread if need be.  This gets called on a separate thread
+     * from the rest of the GUI (AND a separate thread from the queue worker).
      * 
-     * @param intent
+     * Note very carefully, this is NOT what should process the queue itself.
+     * That is, you don't override this as your main workhorse.  You only
+     * override this if you have some other special command Intents to handle
+     * other than the basic QueueService stuff.
+     * 
+     * In general, you don't override this.  If you do, make absolutely sure you
+     * call back up to the superclass if you're not handling the Intent, and
+     * make sure you do so AFTER your own processing, else it'll go in the queue
+     * regardless of what you do.
+     * 
+     * @param intent the incoming Intent
      */
     protected void handleCommand(Intent intent) {
         // First, check if this is a command message.

@@ -42,7 +42,22 @@ public class WikiPostService extends QueueService {
             
         }
         
-    };
+    }
+    
+    /**
+     * Classes extending WikiPostHandler can handle various types of wiki posts.
+     * WikiPostService will decide which one to instantiate as it runs through
+     * the queue. 
+     */
+    public abstract class WikiPostHandler {
+        /**
+         * Handles the given post.  That is, posts it.
+         * 
+         * @todo Need a return code here!
+         * @param intent the Intent containing all the post information
+         */
+        public abstract void handlePost(Intent intent);
+    }
 
     /**
      * The Info object for a post.  The post page will be determined from here.
@@ -77,7 +92,7 @@ public class WikiPostService extends QueueService {
     /**
      * The post's time, as a measure of milliseconds past the epoch.  If this is
      * not defined, the post will be made with a standard MediaWiki signature,
-     * meaning it will be stamped with the time it gets sent, NOT neccessarily
+     * meaning it will be stamped with the time it gets sent, NOT necessarily
      * the time it was made.  That is, get this sorted out BEFORE sending off
      * the Intent.
      *
@@ -85,14 +100,14 @@ public class WikiPostService extends QueueService {
      */
     public static final String EXTRA_TIMESTAMP = "Timestamp";
     /**
-     * The location of a picture to post.  If this is defined AND is not an
-     * empty or all-whitespace string, it is assumed this will be
+     * The on-filesystem location of a picture to post.  If this is defined AND
+     * is not an empty or all-whitespace string, it is assumed this will be
      * picture-posting mode, and thus an Intent with an invalid picture WILL
      * fail.
      *
      * This should be a string.
      */
-    public static final String EXTRA_PICTURE_LOCATION = "PicLocation";
+    public static final String EXTRA_PICTURE_FILE = "PicFile";
     /**
      * Whether or not an infobox will be stamped onto a picture.  This is only
      * consulted if EXTRA_PICTURE_LOCATION is defined.  If this is not defined,
