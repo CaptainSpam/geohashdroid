@@ -37,7 +37,7 @@ public class WikiMessageHandler implements WikiPostHandler {
         Info info = null;
         Location loc = null;
         String text = null;
-        long timestamp = 0;
+        long timestamp = -1;
         boolean include_coords = true;
         
         // Info MUST exist and MUST be an Info object.
