@@ -27,7 +27,7 @@ public class WikiMessageHandler implements WikiPostHandler {
      * @see net.exclaimindustries.geohashdroid.WikiPostService.WikiPostHandler#handlePost(android.content.Intent)
      */
     @Override
-    public String handlePost(Intent intent) {
+    public String handlePost(Context context, Intent intent) {
         /*
          * PART ONE: Validating data and reading it into local variables.
          */
