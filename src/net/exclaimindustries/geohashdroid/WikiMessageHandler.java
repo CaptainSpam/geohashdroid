@@ -7,6 +7,7 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.util.Log;
