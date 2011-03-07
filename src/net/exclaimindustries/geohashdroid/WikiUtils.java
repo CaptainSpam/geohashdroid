@@ -154,7 +154,8 @@ public class WikiUtils {
     
     // Error check!
     if(doesResponseHaveError(root)) {
-        throw new WikiException(getErrorTextId(findErrorCode(root)));
+        String code = findErrorCode(root);
+        throw new WikiException(getErrorTextId(code), code);
     }
     
     Element pageElem;
@@ -229,7 +230,8 @@ public class WikiUtils {
     
     // First, check for errors.
     if(doesResponseHaveError(root)) {
-        throw new WikiException(getErrorTextId(findErrorCode(root)));
+        String code = findErrorCode(root);
+        throw new WikiException(getErrorTextId(code), code);
     }
     
     // And really, that's it.  We're done!
@@ -343,7 +345,7 @@ public class WikiUtils {
     if(result.equals("Success"))
         return;
     else {
-        throw new WikiException(getErrorTextId(result));
+        throw new WikiException(getErrorTextId(result), result);
     }
   }
   
