@@ -9,6 +9,7 @@ package net.exclaimindustries.geohashdroid;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.util.Log;
 import net.exclaimindustries.geohashdroid.WikiPostService.WikiPostHandler;
@@ -29,17 +30,24 @@ public class WikiMessageHandler implements WikiPostHandler {
      */
     @Override
     public String handlePost(Context context, Intent intent) {
+        // We'll be dealing with all this in juuuuuust a few lines...
+        Info info = null;
+        Location loc = null;
+        String text = null;
+        long timestamp = -1;
+        boolean include_coords = true;
+        
+        boolean phoneTime = false;
+        String username = "";
+        String password = "";
+        
         /*
          * PART ONE: Validating data and reading it into local variables.
          */
         
         // INCOMING INTENT!  Grab some data.  If any of it is invalid, log an
         // error and return success so we can skip this one.
-        Info info = null;
-        Location loc = null;
-        String text = null;
-        long timestamp = -1;
-        boolean include_coords = true;
+
         
         // Info MUST exist and MUST be an Info object.
         if(!intent.hasExtra(WikiPostService.EXTRA_INFO)) {
@@ -82,10 +90,32 @@ public class WikiMessageHandler implements WikiPostHandler {
         include_coords = intent.getBooleanExtra(WikiPostService.EXTRA_OPTION_COORDS, true);
         
         /*
-         * PART TWO: Actually doing the post.
+         * PART TWO: Digging up and validating the prefs.
+         */
+        SharedPreferences prefs = context.getSharedPreferences(
+                GHDConstants.PREFS_BASE, 0);
+        
+        // TODO: Probably want a different way to go about this.
+        phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
+        
+        // These CAN be blank (text-only posts can be anonymous).  They do,
+        // however, both need to be defined if we're going to log in at all.
+        username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
+        
+        /*
+         * PART THREE: That whole business of actually posting something.
          */
         
-        return null;
+        // First, it's a try block.  Exceptions at the end will just return the
+        // appropriate response.
+//        try {
+//            
+//        } catch(WikiException wex) {
+//            
+//        }
+        
+        return "Success";
     }
 
 }
