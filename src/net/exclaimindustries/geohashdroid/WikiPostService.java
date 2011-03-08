@@ -45,33 +45,6 @@ public class WikiPostService extends QueueService {
     }
     
     /**
-     * Classes implementing WikiPostHandler can handle various types of wiki
-     * posts.  WikiPostService will decide which one to instantiate as it runs
-     * through the queue. 
-     */
-    public interface WikiPostHandler {
-        /**
-         * Handles the given post.  That is, posts it.
-         * 
-         * The return string is whatever the server gave us.  In effect, if this
-         * is anything other than "Success", we stop the queue.  If it's
-         * "Retry", we wait until there's a change in network connectivity and
-         * try again then.
-         * 
-         * Also note that "Success" only means "keep the queue going".  It may
-         * very well be returned if the Intent has invalid data and must be
-         * skipped over.
-         *
-         * @param context the Context from which things like shared settings can
-         *                be read
-         * @param intent the Intent containing all the post information
-         * @return the error code from the server (or "Success" if nothing is
-         *         wrong, or "Retry" if we need to wait and try again)
-         */
-        public abstract String handlePost(Context context, Intent intent);
-    }
-
-    /**
      * The Info object for a post.  The post page will be determined from here.
      *
      * This should be an Info parcelable.
@@ -135,10 +108,10 @@ public class WikiPostService extends QueueService {
      * If not defined, this defaults to true.
      *
      * Note carefully, simply including a latitude and longitude will NOT imply
-     * this is true.  Similarly, NOT including a latitude or longitude will NOT
-     * imply this is false; in that case, "location unknown" will be sent
-     * instead.  This option also has no bearing on EXTRA_OPTION_PICTURE_STAMP;
-     * that will be posted anyway if its option is set.
+     * this is true.  However, NOT including a latitude or longitude WILL imply
+     * this is false;  This option also has no bearing on
+     * EXTRA_OPTION_PICTURE_STAMP; that will be posted anyway if its option is
+     * set.
      *
      * This should be a boolean.
      */

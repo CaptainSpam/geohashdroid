@@ -7,12 +7,20 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.util.Log;
-import net.exclaimindustries.geohashdroid.WikiPostService.WikiPostHandler;
 
 /**
  * This is the handler for posting a wiki post.
@@ -22,7 +30,10 @@ import net.exclaimindustries.geohashdroid.WikiPostService.WikiPostHandler;
  * @author Nicholas Killewald
  *
  */
-public class WikiMessageHandler implements WikiPostHandler {
+public class WikiMessageHandler extends WikiServiceHandler {
+    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
+    private static final SimpleDateFormat SIG_DATE_FORMAT = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
+    
     private static final String DEBUG_TAG = "WikiMessageHandler";
 
     /* (non-Javadoc)
@@ -59,6 +70,7 @@ public class WikiMessageHandler implements WikiPostHandler {
             info = (Info)(intent.getParcelableExtra(WikiPostService.EXTRA_INFO));
         } catch(Exception ex) {
             Log.e(DEBUG_TAG, "Couldn't deparcelize an Info from the intent!");
+            ex.printStackTrace();
             return "Success";
         }
         
@@ -95,12 +107,11 @@ public class WikiMessageHandler implements WikiPostHandler {
         SharedPreferences prefs = context.getSharedPreferences(
                 GHDConstants.PREFS_BASE, 0);
         
-        // TODO: Probably want a different way to go about this.
         phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
         
         // These CAN be blank (text-only posts can be anonymous).  They do,
         // however, both need to be defined if we're going to log in at all.
-        username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        username = prefs.getString(GHDConstants.PREF_WIKI_USER, "").trim();
         password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
         
         /*
@@ -109,13 +120,108 @@ public class WikiMessageHandler implements WikiPostHandler {
         
         // First, it's a try block.  Exceptions at the end will just return the
         // appropriate response.
-//        try {
-//            
-//        } catch(WikiException wex) {
-//            
-//        }
+        try {
+            HttpClient httpclient = new DefaultHttpClient();
+
+            // Right!  Log in first, if we need to.  If we're anon, forget
+            // it.
+            if(username.length() > 0) {
+                WikiUtils.login(httpclient, username, password);
+            }
+            
+            // Get the name of the expedition's wiki page.
+            String expedition = WikiUtils.getWikiPageName(info);
+
+            String locationTag = "";
+            
+            // Location check!  If the location isn't null, we've got something
+            // to add to the post.
+            if (include_coords && loc != null) {
+                String pos = mLatLonFormat.format(loc.getLatitude()) + ","
+                        + mLatLonFormat.format(loc.getLongitude());
+                locationTag = " [http://www.openstreetmap.org/?lat="
+                        + loc.getLatitude() + "&lon="
+                        + loc.getLongitude()
+                        + "&zoom=16&layers=B000FTF @" + pos + "]";
+            }
+            
+            // Moving along, here's where the page kicks in.
+            String page;
+
+            // These fields get fed in to WikiUtils once we're all set.
+            HashMap<String, String> formFields = new HashMap<String, String>();
+            
+            // Get the page as it stands.  We'll have to edit it from there.
+            page = WikiUtils.getWikiPage(httpclient, expedition,
+                    formFields);
+            if ((page == null) || (page.trim().length() == 0)) {
+                // If it didn't exist, we're making this page anew!
+                WikiUtils.putWikiPage(httpclient, expedition,
+                        WikiUtils.getWikiExpeditionTemplate(info, context),
+                        formFields);
+                
+                // Good!  Template is in place, so THAT'S our page.
+                page = WikiUtils.getWikiPage(httpclient, expedition,
+                        formFields);
+            }
+
+            // Change the summary so it has our message.
+            String summaryPrefix;
+            
+            // We shouldn't say this is live, per se, if this is a retrohash.
+            if(info.isRetroHash())
+                summaryPrefix = context.getText(R.string.wiki_post_message_summary_retro).toString();
+            else
+                summaryPrefix = context.getText(R.string.wiki_post_message_summary).toString();
+
+            // Now we have our summary!
+            formFields.put("summary", summaryPrefix + " " + text); 
+            
+            String before = "";
+            String after = "";
+
+            // Next, break the current page apart as per our expedition regex.
+            Matcher expeditionq = RE_EXPEDITION.matcher(page);
+            if (expeditionq.matches()) {
+                before = expeditionq.group(1) + expeditionq.group(2);
+                after = expeditionq.group(3);
+            } else {
+                before = page;
+            }
+
+            // Next, determine what manner of date we'll use.  If we got one
+            // with the Intent, use that.  If not, and the pref is set to use
+            // the phone's time, use that.  If not, use five tildes and go with
+            // whatever the wiki says.
+            String localtime;
+            if(timestamp >= 0) {
+                localtime = SIG_DATE_FORMAT.format(new Date(timestamp));
+            } else if(phoneTime) {
+                localtime = SIG_DATE_FORMAT.format(new Date());
+            } else {
+                localtime = "~~~~~";
+            }
+
+            // Now, put that all together into our message!
+            String message = "\n*" + text.trim() + "  -- ~~~" + locationTag
+                    + " " + localtime + "\n";
+
+            // Throw 'er up!
+            WikiUtils.putWikiPage(httpclient, expedition, before + message
+                    + after, formFields);
+            
+            // Done!
+            return "Success";
+        } catch(WikiException wex) {
+            // Problem!
+            // TODO: Really gotta rethink this part.
+            return wex.getErrorCode();
+        } catch (Exception e) {
+            // Big problem!
+            // TODO: Really REALLY gotta rethink this part.
+            return "UNKNOWN";
+        }
         
-        return "Success";
     }
 
 }
