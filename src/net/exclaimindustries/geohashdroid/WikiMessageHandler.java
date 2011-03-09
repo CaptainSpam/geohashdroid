@@ -37,7 +37,7 @@ public class WikiMessageHandler extends WikiServiceHandler {
     private static final String DEBUG_TAG = "WikiMessageHandler";
 
     /* (non-Javadoc)
-     * @see net.exclaimindustries.geohashdroid.WikiPostService.WikiPostHandler#handlePost(android.content.Intent)
+     * @see net.exclaimindustries.geohashdroid.WikiServiceHandler#handlePost(android.content.Context, android.content.Intent)
      */
     @Override
     public void handlePost(Context context, Intent intent) throws TemporaryWikiException, PausingWikiException, FatalWikiException {
@@ -58,7 +58,6 @@ public class WikiMessageHandler extends WikiServiceHandler {
         
         // INCOMING INTENT!  Grab some data.  If any of it is invalid, log an
         // error and return success so we can skip this one.
-
         
         // Info MUST exist and MUST be an Info object.
         if(!intent.hasExtra(WikiPostService.EXTRA_INFO)) {
