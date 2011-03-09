@@ -13,13 +13,23 @@ package net.exclaimindustries.geohashdroid;
  * whatever.  This stores a text ID to be translated by the Activity that needs
  * to display it.
  * 
+ * It's probably not a good idea to catch this in the course of WikiPostService.
+ * Catch a subclass instead, as that explains what the service should do a bit
+ * better.
+ * 
  * @author Nicholas Killewald
  */
 public class WikiException extends Exception {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
-    private int mTextId;
-    private String mErrorCode;
+    protected int mTextId;
+    protected String mErrorCode;
+    
+    public WikiException() {
+        super();
+        mTextId = R.string.wiki_error_unknown;
+        mErrorCode = "UNKNOWN";
+    }
     
     /**
      * Makes a new WikiException with the given text ID and a default error code
