@@ -40,7 +40,7 @@ public class WikiMessageHandler extends WikiServiceHandler {
      * @see net.exclaimindustries.geohashdroid.WikiPostService.WikiPostHandler#handlePost(android.content.Intent)
      */
     @Override
-    public String handlePost(Context context, Intent intent) {
+    public void handlePost(Context context, Intent intent) throws TemporaryWikiException, PausingWikiException, FatalWikiException {
         // We'll be dealing with all this in juuuuuust a few lines...
         Info info = null;
         Location loc = null;
@@ -63,7 +63,7 @@ public class WikiMessageHandler extends WikiServiceHandler {
         // Info MUST exist and MUST be an Info object.
         if(!intent.hasExtra(WikiPostService.EXTRA_INFO)) {
             Log.e(DEBUG_TAG, "The Intent has no Info bundle!");
-            return "Success";
+            return;
         }
         
         try {
@@ -71,7 +71,7 @@ public class WikiMessageHandler extends WikiServiceHandler {
         } catch(Exception ex) {
             Log.e(DEBUG_TAG, "Couldn't deparcelize an Info from the intent!");
             ex.printStackTrace();
-            return "Success";
+            return;
         }
         
         // Latitude and Longitude MAY exist.  If either don't, the location is
@@ -93,7 +93,7 @@ public class WikiMessageHandler extends WikiServiceHandler {
         if(!intent.hasExtra(WikiPostService.EXTRA_POST_TEXT)
                 || intent.getStringExtra(WikiPostService.EXTRA_POST_TEXT).trim().length() == 0) {
             Log.e(DEBUG_TAG, "There's no text in this post!");
-            return "Success";
+            return;
         }
         
         text = intent.getStringExtra(WikiPostService.EXTRA_POST_TEXT);
@@ -211,15 +211,11 @@ public class WikiMessageHandler extends WikiServiceHandler {
                     + after, formFields);
             
             // Done!
-            return "Success";
-        } catch(WikiException wex) {
-            // Problem!
-            // TODO: Really gotta rethink this part.
-            return wex.getErrorCode();
+            return;
         } catch (Exception e) {
             // Big problem!
             // TODO: Really REALLY gotta rethink this part.
-            return "UNKNOWN";
+            return;
         }
         
     }
