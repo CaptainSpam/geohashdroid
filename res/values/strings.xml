@@ -172,6 +172,8 @@
 
 <string name="wiki_error_xml">Invalid XML sent from wiki.</string>
 <string name="wiki_error_unknown">An unknown error happened with the wiki.  Please try again.</string>
+<string name="wiki_error_internal_fatal">Something went really wrong internally.  Your posts will NOT been sent.  Sorry.</string>
+<string name="wiki_error_temporary">There appears to be a connection issue.  Waiting for it to clear up...</string>
 <string name="wiki_error_illegal_namespace">Pages in that namespace can\'t be edited.</string>
 <string name="wiki_error_protected">You\'re not allowed to edit that page.</string>
 <string name="wiki_error_email_confirm">Your email address isn\'t confirmed, and the wiki won\'t let you edit because of that.</string>

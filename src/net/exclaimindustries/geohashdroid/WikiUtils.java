@@ -28,6 +28,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpGet;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -83,26 +85,37 @@ public class WikiUtils {
      @param  httpreq    an HTTP request (GET or POST)
      @return            the body of the http reply
   */
-  private static String getHttpPage(HttpClient httpclient, HttpUriRequest httpreq) throws Exception {
-    // Remember the last request.  We might want to abort it later.
-    mLastRequest = httpreq;
-    
-    HttpResponse response = httpclient.execute(httpreq);
+  private static String getHttpPage(HttpClient httpclient, HttpUriRequest httpreq) throws WikiException {
+    try {
+        // Remember the last request.  We might want to abort it later.
+        mLastRequest = httpreq;
+        
+        HttpResponse response = httpclient.execute(httpreq);
    
-    HttpEntity entity = response.getEntity();
-          
-    if (entity!=null) {
-      BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
-      StringBuilder page = new StringBuilder();
-      while (true) {
-        String line = in.readLine();
-        if (line==null) break;
-        page.append(line + "\n");
-      }
-      in.close();
-      return page.toString();
-    } else {
-      return null;
+        HttpEntity entity = response.getEntity();
+              
+        if (entity!=null) {
+          BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
+          StringBuilder page = new StringBuilder();
+          while (true) {
+            String line = in.readLine();
+            if (line==null) break;
+            page.append(line + "\n");
+          }
+          in.close();
+          return page.toString();
+        } else {
+          return null;
+        }
+    } catch (IOException e) {
+        // If we got an IO exception, for the sake of simplicity, let's assume
+        // it's a temporary pause situation.
+        throw new WikiException(WikiException.Severity.TEMPORARY);
+    } catch (Exception e) {
+        // (IllegalStateException)
+        // Really bad.  We shouldn't ever get here.
+        e.printStackTrace();
+        throw new WikiException(WikiException.Severity.FATAL);
     }
   }
   
@@ -116,15 +129,31 @@ public class WikiUtils {
      * @return a Document containing the contents of the response
      */
     private static Document getHttpDocument(HttpClient httpclient,
-            HttpUriRequest httpreq) throws Exception {
-        // Remember the last request. We might want to abort it later.
-        mLastRequest = httpreq;
+            HttpUriRequest httpreq) throws WikiException {
+        try {
+            // Remember the last request. We might want to abort it later.
+            mLastRequest = httpreq;
 
-        HttpResponse response = httpclient.execute(httpreq);
+            HttpResponse response = httpclient.execute(httpreq);
 
-        HttpEntity entity = response.getEntity();
-        
-        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(entity.getContent());
+            HttpEntity entity = response.getEntity();
+            
+            return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(entity.getContent());
+        } catch (IOException e) {
+            // Presumably a temporary problem.
+            throw new WikiException(WikiException.Severity.TEMPORARY);
+        } catch (SAXException e) {
+            // The wiki returned bogus XML or some other XML parser happened.
+            // Usually, this is a temporary issue with the server going nuts.
+            // It could be really bad if our parser is the one having fits, but
+            // that probably won't happen often.
+            throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_error_xml, "XML");
+        } catch (Exception e) {
+            // (IllegalStateException, ParserConfigurationException)
+            // Bad bad bad.  Throw fatal.
+            e.printStackTrace();
+            throw new WikiException(WikiException.Severity.FATAL);
+        }
     }
 
   /**
@@ -136,15 +165,21 @@ public class WikiUtils {
    * @param  pagename   the name of the wiki page
    * @param  formfields if not null, this hashmap will be filled with the correct HTML form fields to resubmit the page.
    * @return            the raw code of the wiki page, or null if the page doesn't exist
-   * @throws WikiException problem with the wiki, translate the ID
-   * @throws Exception     anything else happened, use getMessage
+   * @throws WikiException something went wrong in general
    */
-  public static String getWikiPage(HttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
+  public static String getWikiPage(HttpClient httpclient, String pagename, HashMap<String, String> formfields) throws WikiException {
     // We can use a GET statement here.
-    HttpGet httpget = new HttpGet(WIKI_BASE_URL + "api.php?action=query&prop="
-            + URLEncoder.encode("info|revisions", "UTF-8")
-            + "&rvprop=content&format=xml&intoken=edit&titles="
-            + URLEncoder.encode(pagename, "UTF-8"));
+    HttpGet httpget;
+    try {
+        httpget = new HttpGet(WIKI_BASE_URL + "api.php?action=query&prop="
+                + URLEncoder.encode("info|revisions", "UTF-8")
+                + "&rvprop=content&format=xml&intoken=edit&titles="
+                + URLEncoder.encode(pagename, "UTF-8"));
+    } catch (UnsupportedEncodingException e1) {
+        // Bad!  Bad!
+        e1.printStackTrace();
+        throw new WikiException(WikiException.Severity.FATAL);
+    }
 
     String page;
     Document response = getHttpDocument(httpclient, httpget);
@@ -155,7 +190,7 @@ public class WikiUtils {
     // Error check!
     if(doesResponseHaveError(root)) {
         String code = findErrorCode(root);
-        throw new WikiException(getErrorTextId(code), code);
+        throw new WikiException(WikiException.Severity.PAUSING, getErrorTextId(code), code);
     }
     
     Element pageElem;
@@ -163,13 +198,13 @@ public class WikiUtils {
     try {
         pageElem = DOMUtil.getFirstElement(root, "page");
     } catch (Exception e) {
-        throw new WikiException(R.string.wiki_error_xml);
+        throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_error_xml, "xml");
     }
     
     // If we got an "invalid" attribute, the page not only doesn't exist, but it
     // CAN'T exist, and is therefore an error.
     if(pageElem.hasAttribute("invalid"))
-        throw new WikiException(R.string.wiki_error_invalid_page);
+        throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_error_invalid_page, "invalid");
     
     if(formfields != null) {
         // If we have a formfields hash ready, populate it with a couple values.
@@ -189,7 +224,7 @@ public class WikiUtils {
     try {
         text = DOMUtil.getFirstElement(pageElem, "rev");
     } catch (Exception e) {
-        throw new WikiException(R.string.wiki_error_xml);
+        throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_error_xml, "xml");
     }
     
     page = DOMUtil.getSimpleElementText(text);
@@ -202,13 +237,12 @@ public class WikiUtils {
      @param  pagename   the name of the wiki page
      @param  content    the new content of the wiki page to be submitted
      @param  formfields a hashmap with the fields needed (besides pagename and content; those will be filled in this method)
-     @throws WikiException problem with the wiki, translate the ID
-     @throws Exception     anything else happened, use getMessage
+     @throws WikiException something, anything went wrong
   */
-  public static void putWikiPage(HttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws Exception {
+  public static void putWikiPage(HttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws WikiException {
     // If there's no edit token in the hash map, we can't do anything.
     if(!formfields.containsKey("token")) {
-        throw new WikiException(R.string.wiki_error_protected);
+        throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_error_protected, "protected");
     }
 
     HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
@@ -222,7 +256,13 @@ public class WikiUtils {
         nvps.add(new BasicNameValuePair(s, formfields.get(s)));
     }
 
-    httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+    try {
+        httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+    } catch (UnsupportedEncodingException e) {
+        // FATALITY!
+        e.printStackTrace();
+        throw new WikiException(WikiException.Severity.FATAL);
+    }
         
     Document response = getHttpDocument(httpclient, httppost);
     
@@ -231,7 +271,7 @@ public class WikiUtils {
     // First, check for errors.
     if(doesResponseHaveError(root)) {
         String code = findErrorCode(root);
-        throw new WikiException(getErrorTextId(code), code);
+        throw new WikiException(WikiException.Severity.PAUSING, getErrorTextId(code), code);
     }
     
     // And really, that's it.  We're done!
@@ -243,7 +283,7 @@ public class WikiUtils {
     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
    */
-  public static void putWikiImage(HttpClient httpclient, String filename, String description, byte[] data) throws Exception {
+  public static void putWikiImage(HttpClient httpclient, String filename, String description, byte[] data) throws WikiException {
     HttpPost httppost = new HttpPost(WIKI_BASE_URL + "index.php?title=Special:Upload");
     //httppost.addHeader("Host", "wiki.xkcd.com"); shouldn't be necessary.
     //httppost.addHeader("Referer", "http://wiki.xkcd.com/geohashing/Special:Upload");
@@ -267,16 +307,16 @@ public class WikiUtils {
  * NOTE: The following works on a 1.16 wiki.  Problem being, the Geohashing
  * Wiki is a 1.15 wiki, so we need to use the manual method used above. 
  */
-//  /** Uploads an image to the wiki
-//     @param  httpclient  an active HTTP session, wiki login has to have happened before.
-//     @param  filename    the name of the new image file
-//     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
-//     @param  formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
-//     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
-//  */
-//  public static void putWikiImage(HttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
+  /** Uploads an image to the wiki
+     @param  httpclient  an active HTTP session, wiki login has to have happened before.
+     @param  filename    the name of the new image file
+     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
+     @param  formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
+     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
+  */
+//  public static void putWikiImage(HttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws WikiException {
 //    if(!formfields.containsKey("token")) {
-//      throw new WikiException(R.string.wiki_error_unknown);
+//      throw new PausingWikiException(R.string.wiki_error_unknown, "protected");
 //    }
 //      
 //    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
@@ -300,7 +340,7 @@ public class WikiUtils {
 //    
 //    // First, check for errors.
 //    if(doesResponseHaveError(root)) {
-//        throw new WikiException(getErrorTextId(findErrorCode(root)));
+//        throw new PausingWikiException(getErrorTextId(findErrorCode(root)), findErrorCode(root));
 //    }
 //  }
   
@@ -311,10 +351,9 @@ public class WikiUtils {
    * @param  httpclient  an active HTTP session.
    * @param  wpName      a wiki user name.
    * @param  wpPassword  the matching password to this user name.
-   * @throws WikiException problem with the wiki, translate the ID
-   * @throws Exception     anything else happened, use getMessage
+   * @throws WikiException something went wrong
    */
-  public static void login(HttpClient httpclient, String wpName, String wpPassword) throws Exception {
+  public static void login(HttpClient httpclient, String wpName, String wpPassword) throws WikiException {
     HttpPost httppost =  new HttpPost(WIKI_BASE_URL + "api.php");
 
     ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
@@ -323,7 +362,13 @@ public class WikiUtils {
     nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
     nvps.add(new BasicNameValuePair("format", "xml"));
                 
-    httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+    try {
+        httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+    } catch (UnsupportedEncodingException e1) {
+        // Oh no!
+        e1.printStackTrace();
+        throw new WikiException(WikiException.Severity.FATAL);
+    }
 
     Document response = getHttpDocument(httpclient, httppost);
 
@@ -337,7 +382,7 @@ public class WikiUtils {
         login = DOMUtil.getFirstElement(root, "login");
         result = DOMUtil.getSimpleAttributeText(login, "result");
     } catch (Exception e) {
-        throw new WikiException(R.string.wiki_error_xml);
+        throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_error_xml, "xml");
     }
     
     // Now, get the result.  If it was a success, cookies got added.  If it was
@@ -345,7 +390,7 @@ public class WikiUtils {
     if(result.equals("Success"))
         return;
     else {
-        throw new WikiException(getErrorTextId(result), result);
+        throw new WikiException(WikiException.Severity.PAUSING, getErrorTextId(result), result);
     }
   }
   

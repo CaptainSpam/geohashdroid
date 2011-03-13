@@ -26,12 +26,8 @@ public abstract class WikiServiceHandler {
      * @param context the Context from which things like shared settings can
      *                be read
      * @param intent the Intent containing all the post information
-     * @throws TemporaryWikiException the service should pause and wait for a
-     *                                data connection
-     * @throws PausingWikiException the service should pause and wait for user
-     *                              intervention
-     * @throws FatalWikiException the service should stop dead and empty the
-     *                            rest of the queue in a blind panic
+     * @throws WikiException something went kerflooey; the specific type can be
+     *                       caught to determine what to do
      */
-    public abstract void handlePost(Context context, Intent intent) throws TemporaryWikiException, PausingWikiException, FatalWikiException;
+    public abstract void handlePost(Context context, Intent intent) throws WikiException;
 }
