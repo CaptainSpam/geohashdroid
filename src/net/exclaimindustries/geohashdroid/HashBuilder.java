@@ -564,7 +564,7 @@ public class HashBuilder {
      * @param c date from which this hash comes
      * @param stockPrice effective stock price (already adjusted for the 30W Rule)
      * @param g the graticule in question
-     * @return
+     * @return a new Info object
      */
     protected static Info createInfo(Calendar c, String stockPrice, Graticule g) {
         // This creates the Info object that'll go right back to whatever was
@@ -599,7 +599,7 @@ public class HashBuilder {
      *                                   the same side of the 30W line, or one
      *                                   of the Graticules in question
      *                                   represents a globalhash.
-     * @return
+     * @return a new cloned Info
      */
     protected static Info cloneInfo(Info i, Graticule g) {
         if(i.isGlobalHash() || g == null)

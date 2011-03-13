@@ -24,6 +24,10 @@ public class WikiException extends Exception {
     private String mErrorCode;
     private Severity mSeverity;
 
+    /**
+     * An enum that declares the severity of this exception, and thus what ought
+     * to be done about it.
+     */
     public enum Severity {
         /**
          * TEMPORARY is thrown if the problem is one where waiting until the

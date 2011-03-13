@@ -54,8 +54,6 @@ public class WikiUtils {
 
   private static final String DEBUG_TAG = "WikiUtils";
   
-  public final static String LOGIN_GOOD = null;
-  
   // The most recent request issued by WikiUtils.  This allows the abort()
   // method to work.
   private static HttpUriRequest mLastRequest;

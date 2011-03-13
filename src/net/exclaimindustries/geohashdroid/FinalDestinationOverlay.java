@@ -33,7 +33,7 @@ public class FinalDestinationOverlay extends Overlay {
      * Creates a new FinalDestinationOverlay.
      * 
      * @param d Drawable to draw as the overlay.  This is presumably a flag.
-     * @param p an Info bundle describing where this destination is
+     * @param i an Info bundle describing where this destination is
      * @param parent parent MainMap which will pop up a dialog when this is tapped
      */
     public FinalDestinationOverlay(Drawable d, Info i, MainMap parent) {

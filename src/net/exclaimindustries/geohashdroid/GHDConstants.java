@@ -17,10 +17,7 @@ public final class GHDConstants {
     /** Preferences base. */
     public static final String PREFS_BASE = "GeohashDroid";
     
-    /**
-     * Prefs key where the last latitude is stored. 
-     * @see PREF_REMEMBER_GRATICULE
-     * */
+    /** Prefs key where the last latitude is stored. */
     public static final String PREF_DEFAULT_LAT = "DefaultLatitude";
     /** Prefs key where the last longitude is stored. */
     public static final String PREF_DEFAULT_LON = "DefaultLongitude";
