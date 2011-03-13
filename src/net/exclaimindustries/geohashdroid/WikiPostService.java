@@ -28,6 +28,8 @@ import net.exclaimindustries.tools.QueueService;
  * @author Nicholas Killewald
  */
 public class WikiPostService extends QueueService {
+    private static final String DEBUG_TAG = "WikiPostService";
+    
     /**
      * Listens for connection Intents.  And, as appropriate, informs the main
      * service to any also-appropriate changes to said connection. 
@@ -44,6 +46,18 @@ public class WikiPostService extends QueueService {
         
     }
     
+    /** A message post. */
+    public static final int EXTRA_TYPE_MESSAGE = 0;
+    /** A picture post. */
+    public static final int EXTRA_TYPE_PICTURE = 1;
+    
+    /**
+     * What sort of post this is.  It's either this or we figure it out by 
+     * implication, which can get sloppy.
+     * 
+     * This should be an int, and one of the types in the EXTRA_TYPE_ statics.
+     */
+    public static final String EXTRA_TYPE = "Type";
     /**
      * The Info object for a post.  The post page will be determined from here.
      *
@@ -156,8 +170,50 @@ public class WikiPostService extends QueueService {
      */
     @Override
     protected ReturnCode onHandleIntent(Intent i) {
-        // TODO Auto-generated method stub
-        return null;
+        // Let's do this!
+        WikiServiceHandler handler = null;
+        
+        int type = i.getIntExtra(EXTRA_TYPE, -1);
+        
+        // Determine what type we need.
+        switch(type)
+        {
+            case EXTRA_TYPE_MESSAGE:
+                Log.d(DEBUG_TAG, "Loading a handler for a message post...");
+                handler = new WikiMessageHandler();
+                break;
+            case EXTRA_TYPE_PICTURE:
+                // TODO: Don't have this yet...
+                // Log.d(DEBUG_TAG, "Loading a handler for a picture post...");
+                // handler = new WikiPictureHandler();
+                // break;
+            default:
+                // If we didn't get a type, report an error and continue on.
+                Log.w(DEBUG_TAG, "This Intent doesn't have a valid Type extra!  Ignoring...");
+                return ReturnCode.CONTINUE;
+        }
+        
+        // FIRE!
+        try {
+            handler.handlePost(this, i);
+        } catch (WikiException e) {
+            // Oops.  Something went wrong.  The severity dictates what we do.
+            // TODO: Also, we need to throw up a notification as need be.
+            switch(e.getSeverity()) {
+                case TEMPORARY:
+                    mTemporaryPause = true;
+                    return ReturnCode.PAUSE;
+                case PAUSING:
+                    mTemporaryPause = false;
+                    return ReturnCode.PAUSE;
+                case FATAL:
+                    mTemporaryPause = false;
+                    return ReturnCode.STOP;
+            }
+        }
+        
+        // If nothing went wrong, roll on!
+        return ReturnCode.CONTINUE;
     }
 
     /* (non-Javadoc)
