@@ -183,10 +183,9 @@ public class WikiPostService extends QueueService {
                 handler = new WikiMessageHandler();
                 break;
             case EXTRA_TYPE_PICTURE:
-                // TODO: Don't have this yet...
-                // Log.d(DEBUG_TAG, "Loading a handler for a picture post...");
-                // handler = new WikiPictureHandler();
-                // break;
+                Log.d(DEBUG_TAG, "Loading a handler for a picture post...");
+                handler = new WikiPictureHandler();
+                break;
             default:
                 // If we didn't get a type, report an error and continue on.
                 Log.w(DEBUG_TAG, "This Intent doesn't have a valid Type extra!  Ignoring...");

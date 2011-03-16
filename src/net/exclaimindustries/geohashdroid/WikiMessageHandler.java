@@ -7,7 +7,6 @@
  */
 package net.exclaimindustries.geohashdroid;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -34,8 +33,6 @@ public class WikiMessageHandler extends WikiServiceHandler {
     private static final Pattern RE_EXPEDITION = Pattern
             .compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",
                     Pattern.DOTALL);
-    private static final SimpleDateFormat SIG_DATE_FORMAT = new SimpleDateFormat(
-            "HH:mm, dd MMMM yyyy (z)");
 
     private static final String DEBUG_TAG = "WikiMessageHandler";
 

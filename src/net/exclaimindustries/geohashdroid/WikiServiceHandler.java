@@ -1,6 +1,7 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,9 @@ import android.content.Intent;
 public abstract class WikiServiceHandler {
     /** This format is used for all latitude/longitude texts in the wiki. */
     protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000");
+    
+    /** This format is used for all timestamps in sigs. */
+    protected static final SimpleDateFormat SIG_DATE_FORMAT = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
     
     /**
      * Handles the given post.  That is, posts it.
