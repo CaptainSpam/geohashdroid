@@ -78,34 +78,6 @@ public class WikiUtils {
       return WIKI_BASE_URL;
   }
   
-/** Returns the content of a http request in a single string. 
-     @param  httpclient an active HTTP session 
-     @param  httpreq    an HTTP request (GET or POST)
-     @return            the body of the http reply
-  */
-  private static String getHttpPage(HttpClient httpclient, HttpUriRequest httpreq) throws Exception {
-    // Remember the last request.  We might want to abort it later.
-    mLastRequest = httpreq;
-    
-    HttpResponse response = httpclient.execute(httpreq);
-   
-    HttpEntity entity = response.getEntity();
-          
-    if (entity!=null) {
-      BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
-      StringBuilder page = new StringBuilder();
-      while (true) {
-        String line = in.readLine();
-        if (line==null) break;
-        page.append(line + "\n");
-      }
-      in.close();
-      return page.toString();
-    } else {
-      return null;
-    }
-  }
-  
     /**
      * Returns the content of a http request as an XML Document.  This is to be
      * used only when we know the response to a request will be XML.  Otherwise,
@@ -234,73 +206,66 @@ public class WikiUtils {
     
     // And really, that's it.  We're done!
   }  
-  
+
   /** Uploads an image to the wiki
-    @param  httpclient  an active HTTP session, wiki login has to have happened before.
-    @param  filename    the name of the new image file
-    @param  description the description of the image. An initial description will be used as page content for the image's wiki page
-    @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
-   */
-  public static void putWikiImage(HttpClient httpclient, String filename, String description, byte[] data) throws Exception {
-    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "index.php?title=Special:Upload");
-    //httppost.addHeader("Host", "wiki.xkcd.com"); shouldn't be necessary.
-    //httppost.addHeader("Referer", "http://wiki.xkcd.com/geohashing/Special:Upload");
+     @param  httpclient  an active HTTP session, wiki login has to have happened before.
+     @param  filename    the name of the new image file
+     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
+     @param  formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
+     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
+  */
+  public static void putWikiImage(HttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
+    if(!formfields.containsKey("token")) {
+      throw new WikiException(R.string.wiki_error_unknown);
+    }
+      
+    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
+    
+    // First, we need an edit token.  Let's get one.
+    ArrayList <NameValuePair> tnvps = new ArrayList <NameValuePair>();
+    tnvps.add(new BasicNameValuePair("action", "query"));
+    tnvps.add(new BasicNameValuePair("prop", "info"));
+    tnvps.add(new BasicNameValuePair("intoken", "edit"));
+    tnvps.add(new BasicNameValuePair("titles", "UPLOAD_AN_IMAGE"));
+    tnvps.add(new BasicNameValuePair("format", "xml"));
+    
+    httppost.setEntity(new UrlEncodedFormEntity(tnvps, "utf-8"));
+    Document response = getHttpDocument(httpclient, httppost);
+    
+    Element root = response.getDocumentElement();
+    
+    // Hopefully, a token exists.  If not, a problem exists.
+    String token;
+    Element page;
+    try {
+        page = DOMUtil.getFirstElement(root, "page");
+        token = DOMUtil.getSimpleAttributeText(page, "edittoken");
+    } catch (Exception e) {
+        throw new WikiException(R.string.wiki_error_xml);
+    }
+
+    // TOKEN GET!  Now we've got us enough to get our upload on!
     Part[] nvps = new Part[]{
-      new FilePart("wpUploadFile", new ByteArrayPartSource(filename, data), "image/jpeg", "utf-8"),
-      new StringPart("wpSourceType", "file", "utf-8"),
-      new StringPart("wpDestFile", filename, "utf-8"),
-      new StringPart("wpUploadDescription", description, "utf-8"),
-      new StringPart("wpWatchthis", "true", "utf-8"),
-      new StringPart("wpIgnoreWarning", "true", "utf-8"),
-      new StringPart("wpUpload", "Upload file", "utf-8"),
-      new StringPart("wpDestFileWarningAck", "", "utf-8")
+      new StringPart("action", "upload", "utf-8"),
+      new StringPart("filename", filename, "utf-8"),
+      new StringPart("comment", description, "utf-8"),
+      new StringPart("watch", "true", "utf-8"),
+      new StringPart("ignorewarnings", "true", "utf-8"),
+      new StringPart("token", token, "utf-8"),
+      new StringPart("format", "xml", "utf-8"),
+      new FilePart("file", new ByteArrayPartSource(filename, data), "image/jpeg", "utf-8"),
     };
     httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
-
-    getHttpPage(httpclient, httppost);
+    
+    response = getHttpDocument(httpclient, httppost);
+    
+    root = response.getDocumentElement();
+    
+    // First, check for errors.
+    if(doesResponseHaveError(root)) {
+        throw new WikiException(getErrorTextId(findErrorCode(root)));
+    }
   }
-
-
-/*
- * NOTE: The following works on a 1.16 wiki.  Problem being, the Geohashing
- * Wiki is a 1.15 wiki, so we need to use the manual method used above. 
- */
-//  /** Uploads an image to the wiki
-//     @param  httpclient  an active HTTP session, wiki login has to have happened before.
-//     @param  filename    the name of the new image file
-//     @param  description the description of the image. An initial description will be used as page content for the image's wiki page
-//     @param  formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
-//     @param  data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
-//  */
-//  public static void putWikiImage(HttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
-//    if(!formfields.containsKey("token")) {
-//      throw new WikiException(R.string.wiki_error_unknown);
-//    }
-//      
-//    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
-//    //httppost.addHeader("Host", "wiki.xkcd.com"); shouldn't be necessary.
-//    //httppost.addHeader("Referer", "http://wiki.xkcd.com/geohashing/Special:Upload");
-//    Part[] nvps = new Part[]{
-//      new StringPart("action", "upload", "utf-8"),
-//      new StringPart("filename", filename, "utf-8"),
-//      new StringPart("comment", description, "utf-8"),
-//      new StringPart("watch", "true", "utf-8"),
-//      new StringPart("ignorewarning", "true", "utf-8"),
-//      new StringPart("token", formfields.get("token"), "utf-8"),
-//      new StringPart("format", "xml", "utf-8"),
-//      new FilePart("data", new ByteArrayPartSource(filename, data), "image/jpeg", "utf-8"),
-//    };
-//    httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
-//    
-//    Document response = getHttpDocumentDebug(httpclient, httppost);
-//    
-//    Element root = response.getDocumentElement();
-//    
-//    // First, check for errors.
-//    if(doesResponseHaveError(root)) {
-//        throw new WikiException(getErrorTextId(findErrorCode(root)));
-//    }
-//  }
   
   /**
    * Retrieves valid login cookies for an HTTP session.  These will be added to
@@ -323,6 +288,7 @@ public class WikiUtils {
                 
     httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
 
+    Log.d(DEBUG_TAG, "Trying login...");
     Document response = getHttpDocument(httpclient, httppost);
 
     // The result comes in as an XML chunk.  Since we're expecting the cookies
@@ -339,10 +305,47 @@ public class WikiUtils {
     }
     
     // Now, get the result.  If it was a success, cookies got added.  If it was
-    // a failure, throw it.
-    if(result.equals("Success"))
+    // NeedToken, this is a 1.16 wiki (as it should be now) and we need another
+    // request to get the final token.
+    if(result.equals("NeedToken")) {
+        Log.d(DEBUG_TAG, "Token needed, trying again...");
+        // Okay, do the same thing again, this time with the token we got the
+        // first time around.  Cookies will be set this time around, I think.
+        String token = DOMUtil.getSimpleAttributeText(login, "token");
+        
+        httppost =  new HttpPost(WIKI_BASE_URL + "api.php");
+        
+        nvps = new ArrayList <NameValuePair>();
+        nvps.add(new BasicNameValuePair("action", "login"));
+        nvps.add(new BasicNameValuePair("lgname", wpName));
+        nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
+        nvps.add(new BasicNameValuePair("lgtoken", token));
+        nvps.add(new BasicNameValuePair("format", "xml"));
+                    
+        httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+
+        Log.d(DEBUG_TAG, "Sending it out...");
+        response = getHttpDocument(httpclient, httppost);
+        
+        Log.d(DEBUG_TAG, "Response has returned!");
+        // Again!
+        root = response.getDocumentElement();
+        
+        try {
+            login = DOMUtil.getFirstElement(root, "login");
+            result = DOMUtil.getSimpleAttributeText(login, "result");
+        } catch (Exception e) {
+            throw new WikiException(R.string.wiki_error_xml);
+        }
+    }
+    
+    // Check it.  If NeedToken was returned again, then the wiki is just telling
+    // us nonsense and we've got a right to throw an exception.
+    if(result.equals("Success")) {
+        Log.d(DEBUG_TAG, "Success!");
         return;
-    else {
+    } else {
+        Log.d(DEBUG_TAG, "FAILURE!");
         throw new WikiException(getErrorTextId(result));
     }
   }
