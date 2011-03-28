@@ -379,12 +379,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // At this point, we need an edit token.  So, we'll try to get
                 // the expedition page for our token.  See the MediaWiki API
                 // documentation for the reasons why we have to do it this way.
-                // TODO: This only applies to 1.16 MediaWikis, so we can't do
-                // this just yet.
-//                WikiUtils.getWikiPage(httpclient, expedition, mFormfields);
-//                WikiUtils.putWikiImage(httpclient, filename, description, mFormfields, data);
+                WikiUtils.getWikiPage(httpclient, expedition, formfields);
+                WikiUtils.putWikiImage(httpclient, filename, description, formfields, data);
 
-                WikiUtils.putWikiImage(httpclient, filename, description, data);
                 addStatusAndNewline(R.string.wiki_conn_done);
 
                 addStatus(R.string.wiki_conn_expedition_retrieving);
