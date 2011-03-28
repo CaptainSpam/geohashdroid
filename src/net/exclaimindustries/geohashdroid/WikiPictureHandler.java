@@ -7,9 +7,16 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import java.text.DecimalFormat;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Paint.Style;
 import android.location.Location;
 import android.util.Log;
 
@@ -19,6 +26,14 @@ import android.util.Log;
  */
 public class WikiPictureHandler extends WikiServiceHandler {
     private static final String DEBUG_TAG = "WikiMessageHandler";
+    
+    private static final int INFOBOX_MARGIN = 16;
+    private static final int INFOBOX_PADDING = 8;
+    
+    private static DecimalFormat mDistFormat = new DecimalFormat("###.######");
+    
+    private static Paint mBackgroundPaint;
+    private static Paint mTextPaint;
 
     /* (non-Javadoc)
      * @see net.exclaimindustries.geohashdroid.WikiServiceHandler#handlePost(android.content.Context, android.content.Intent)
@@ -114,6 +129,92 @@ public class WikiPictureHandler extends WikiServiceHandler {
         if(username.length() == 0 || password.length() == 0) {
             // Oops.
             throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_conn_anon_pic_error);
+        }
+    }
+    
+    private void drawInfobox(Context context, Info info, Bitmap bm, Location loc) {
+        // First, we need to draw something.  Get a Canvas.
+        Canvas c = new Canvas(bm);
+        
+        // Now, draw!  We want to use the same colors as the Infobox uses.
+        makePaints(context);
+        
+        if(loc != null) {
+            // Assemble all our data.  Our four strings will be the final
+            // destination, our current location, and the distance.
+            String infoTo = context.getString(R.string.infobox_final) + " " + UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            String infoYou = context.getString(R.string.infobox_you) + " " + UnitConverter.makeFullCoordinateString(context, loc, false, UnitConverter.OUTPUT_LONG);
+            String infoDist = context.getString(R.string.infobox_dist) + " " + UnitConverter.makeDistanceString(context, mDistFormat, info.getDistanceInMeters(loc));
+            
+            // Then, to the render method!
+            String[] strings = {infoTo, infoYou, infoDist};
+            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+        } else {
+            // Otherwise, just throw up an unknown.
+            String[] strings = {context.getString(R.string.location_unknown)};
+            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+        }
+    }
+    
+    private void makePaints(Context context) {
+        // These are for efficiency's sake so we don't rebuild paints uselessly.
+        if(mBackgroundPaint == null) {
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setStyle(Style.FILL);
+            mBackgroundPaint.setColor(context.getResources().getColor(R.color.infobox_background));
+        }
+        
+        if(mTextPaint == null) {
+            mTextPaint = new Paint();
+            mTextPaint.setColor(context.getResources().getColor(R.color.infobox_text));
+            mTextPaint.setTextSize(context.getResources().getDimension(R.dimen.infobox_picture_fontsize));
+            mTextPaint.setAntiAlias(true);
+        }
+    }
+    
+    private void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint)
+    {
+        // FIXME: The math here is ugly and blunt and probably not too
+        // efficient or flexible.  It might even fail.  This needs to be
+        // fixed and made less-ugly later.
+        
+        // We need SOME strings.  If we've got nothing, bail out.
+        if(strings.length < 1) return;
+        
+        // First, init our variables.  This is as good a place as any to do so.
+        Rect textBounds = new Rect();
+        int[] heights = new int[strings.length];
+        int totalHeight = INFOBOX_MARGIN * 2;
+        int longestWidth = 0;
+        
+        // Now, loop through the strings, adding to the height and keeping track
+        // of the longest width.
+        int i = 0;
+        for(String s : strings) {
+            textPaint.getTextBounds(s, 0, s.length(), textBounds);
+            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
+            totalHeight += textBounds.height();
+            heights[i] = textBounds.height();
+            i++;
+        }
+        
+        // Now, we have us a rectangle.  Draw that.
+        Rect drawBounds =  new Rect(c.getWidth() - longestWidth - (INFOBOX_MARGIN * 2),
+                0,
+                c.getWidth(),
+                totalHeight);
+        
+        c.drawRect(drawBounds, backgroundPaint);
+        
+        // Now, place each of the strings.  We'll assume the topmost one is in
+        // index 0.  They should all be left-justified, too.
+        i = 0;
+        int curHeight = 0;
+        for(String s : strings) {
+            Log.d(DEBUG_TAG, "Drawing " + s + " at " + (drawBounds.left + INFOBOX_MARGIN) + "," + (INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight));
+            c.drawText(s, drawBounds.left + INFOBOX_MARGIN, INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight, textPaint);
+            curHeight += heights[i];
+            i++;
         }
     }
 
