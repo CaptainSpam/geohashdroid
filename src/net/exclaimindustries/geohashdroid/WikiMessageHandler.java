@@ -124,9 +124,6 @@ public class WikiMessageHandler extends WikiServiceHandler {
         /*
          * PART THREE: That whole business of actually posting something.
          */
-
-        // First, it's a try block. Exceptions at the end will just return the
-        // appropriate response.
         HttpClient httpclient = new DefaultHttpClient();
 
         // Right! Log in first, if we need to. If we're anon, forget

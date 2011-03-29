@@ -7,7 +7,17 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import java.io.ByteArrayOutputStream;
 import java.text.DecimalFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import net.exclaimindustries.tools.BitmapTools;
+
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.content.Context;
 import android.content.Intent;
@@ -26,6 +36,19 @@ import android.util.Log;
  */
 public class WikiPictureHandler extends WikiServiceHandler {
     private static final String DEBUG_TAG = "WikiMessageHandler";
+    
+    /** Matches the gallery section. */
+    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
+    /**
+     * Matches the gallery section header.
+     * TODO: Replace with API call to edit the section specifically?
+     */
+    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
+    
+    /** The largest width we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_WIDTH = 800;
+    /** The largest height we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_HEIGHT = 600;
     
     private static final int INFOBOX_MARGIN = 16;
     private static final int INFOBOX_PADDING = 8;
@@ -52,12 +75,12 @@ public class WikiPictureHandler extends WikiServiceHandler {
         boolean phoneTime = false;
         String username = "";
         String password = "";
-        
+
         /*
          * PART ONE: Validating data and reading it into local variables.
          */
 
-        // INCOMING INTENT!  Here we go again!  But THIS time, there's more data
+        // INCOMING INTENT! Here we go again! But THIS time, there's more data
         // to grab!
 
         // Info MUST exist and MUST be an Info object.
@@ -90,7 +113,7 @@ public class WikiPictureHandler extends WikiServiceHandler {
         if (intent.hasExtra(WikiPostService.EXTRA_TIMESTAMP))
             timestamp = intent.getLongExtra(WikiPostService.EXTRA_TIMESTAMP, 0);
 
-        // The post's text MAY exist.  We'll allow just posting a picture.
+        // The post's text MAY exist. We'll allow just posting a picture.
         if (intent.hasExtra(WikiPostService.EXTRA_POST_TEXT)) {
             text = intent.getStringExtra(WikiPostService.EXTRA_POST_TEXT);
         }
@@ -98,21 +121,21 @@ public class WikiPictureHandler extends WikiServiceHandler {
         // The "include coords" flag MAY exist. It defaults to true.
         include_coords = intent.getBooleanExtra(
                 WikiPostService.EXTRA_OPTION_COORDS, true);
-        
-        // The picture MUST exist.  That's sort of the whole point.  Don't throw
+
+        // The picture MUST exist. That's sort of the whole point. Don't throw
         // here; we throw if the picture WAS defined, but can't be opened for
         // whatever reason.
-        if(!intent.hasExtra(WikiPostService.EXTRA_PICTURE_FILE)
-                || intent.getStringExtra(WikiPostService.EXTRA_PICTURE_FILE).trim().length() == 0)
-        {
+        if (!intent.hasExtra(WikiPostService.EXTRA_PICTURE_FILE)
+                || intent.getStringExtra(WikiPostService.EXTRA_PICTURE_FILE)
+                        .trim().length() == 0) {
             Log.e(DEBUG_TAG, "There's no picture defined in this intent!");
             return;
         }
-        
-        // The "stamp picture" flag MAY exist.  It defaults to false.
+
+        // The "stamp picture" flag MAY exist. It defaults to false.
         stamp_image = intent.getBooleanExtra(
                 WikiPostService.EXTRA_OPTION_PICTURE_STAMP, false);
-        
+
         /*
          * PART TWO: Digging up and validating the prefs.
          */
@@ -121,15 +144,146 @@ public class WikiPictureHandler extends WikiServiceHandler {
 
         phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
 
-        // These MUST be defined (picture posts can't be anonymous).  Failure
+        // These MUST be defined (picture posts can't be anonymous). Failure
         // here throws a pause back.
         username = prefs.getString(GHDConstants.PREF_WIKI_USER, "").trim();
         password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
-        
-        if(username.length() == 0 || password.length() == 0) {
+
+        if (username.length() == 0 || password.length() == 0) {
             // Oops.
-            throw new WikiException(WikiException.Severity.PAUSING, R.string.wiki_conn_anon_pic_error);
+            throw new WikiException(WikiException.Severity.PAUSING,
+                    R.string.wiki_conn_anon_pic_error);
         }
+
+        /*
+         * PART THREE: Heeeeeeere we go...
+         */
+        HttpClient httpclient = new DefaultHttpClient();
+        byte[] data = null;
+
+        // Log right on in!
+        WikiUtils.login(httpclient, username, password);
+
+        String locationTag = "";
+
+        // Location now!
+        if (include_coords && loc != null) {
+            String pos = mLatLonFormat.format(loc.getLatitude()) + ","
+                    + mLatLonFormat.format(loc.getLongitude());
+            locationTag = " [http://www.openstreetmap.org/?lat="
+                    + loc.getLatitude() + "&lon=" + loc.getLongitude()
+                    + "&zoom=16&layers=B000FTF @" + pos + "]";
+        }
+
+        // Now then, we want to scale the image to cut down on memory use and
+        // upload time. The Geohashing wiki tends to frown upon images over
+        // 150k, so scaling and compressing are the way to go.
+        Bitmap bitmap = BitmapTools
+                .createRatioPreservedDownscaledBitmapFromFile(picture_file,
+                        MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT, true);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        // If we didn't get a picture out of that, we're boned. Apparently
+        // either that's not really an image or the image up and vanished at
+        // some point.
+        if (bitmap == null) {
+            throw new WikiException(WikiException.Severity.PAUSING,
+                    R.string.wiki_conn_pic_load_error);
+        }
+
+        // Then, if need be, put an infobox on it.
+        if (stamp_image) {
+            // Since we just got here from BitmapTools, this should be a
+            // read/write bitmap.
+            drawInfobox(context, info, bitmap, loc);
+        }
+
+        // Now, compress it!
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
+        data = bytes.toByteArray();
+
+        // Do recycling NOW, just to make sure we've booted it out of memory as
+        // soon as possible.
+        bitmap.recycle();
+        System.gc();
+
+        // Next, kick it out the door!
+        String localtime;
+        if (timestamp >= 0) {
+            localtime = SIG_DATE_FORMAT.format(new Date(timestamp));
+        } else if (phoneTime) {
+            localtime = SIG_DATE_FORMAT.format(new Date());
+        } else {
+            localtime = "~~~~~";
+        }
+
+        String expedition = WikiUtils.getWikiPageName(info);
+
+        String message = text + locationTag;
+
+        String filename = expedition + "_" + localtime + ".jpg";
+        String description = message + "\n\n"
+                + WikiUtils.getWikiCategories(info);
+
+        HashMap<String, String> formfields = new HashMap<String, String>();
+
+        // At this point, we need an edit token. So, we'll try to get the
+        // expedition page for our token. See the MediaWiki API documentation
+        // for the reasons why we have to do it this way.
+        WikiUtils.getWikiPage(httpclient, expedition, formfields);
+        WikiUtils.putWikiImage(httpclient, filename, description, formfields, data);
+
+        // With the picture smashed down and sent, we're ready to put this on
+        // the expedition page itself.
+        String page;
+
+        // Get the page. Since we're editing it, this is sort of important.
+        page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+        if ((page == null) || (page.trim().length() == 0)) {
+            // Unless, of course, the page doesn't exist in the first place, in
+            // which case we make a new page.
+            WikiUtils.putWikiPage(httpclient, expedition, WikiUtils
+                    .getWikiExpeditionTemplate(info, context), formfields);
+            page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+        }
+
+        // Add in our message (same retro/live caveat as in WikiMessageEditor).
+        String summaryPrefix;
+        if (info.isRetroHash())
+            summaryPrefix = context.getText(
+                    R.string.wiki_post_picture_summary_retro).toString();
+        else
+            summaryPrefix = context.getText(R.string.wiki_post_picture_summary).toString();
+
+        formfields.put("summary", summaryPrefix + " " + message);
+
+        String before = "";
+        String after = "";
+
+        // Dig right on in to figure out what needs replacing.
+        Matcher galleryq = RE_GALLERY.matcher(page);
+        if (galleryq.matches()) {
+            before = galleryq.group(1) + galleryq.group(2);
+            after = galleryq.group(3);
+        } else {
+            // If we didn't match the gallery, find the Photos section
+            // and create a new gallery in it.
+            Matcher photosq = RE_GALLERY_SECTION.matcher(page);
+            if (photosq.matches()) {
+                before = photosq.group(1) + "\n<gallery>";
+                after = "</gallery>\n" + photosq.group(2);
+            } else {
+                // If we STILL can't find it, just tack it on to the end
+                // of the page.
+                before = page + "\n<gallery>";
+                after = "</gallery>\n";
+            }
+        }
+
+        String galleryentry = "\nImage:" + filename + " | " + message + "\n";
+
+        // This doesn't get signed, so take it away now!
+        WikiUtils.putWikiPage(httpclient, expedition, before + galleryentry + after, formfields);
     }
     
     private void drawInfobox(Context context, Info info, Bitmap bm, Location loc) {
