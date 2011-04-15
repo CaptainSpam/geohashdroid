@@ -236,6 +236,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
 
                 finishDialog();
                 
+                reset();
+                
                 dismiss();
             } catch (WikiException ex) {
                 String error = (String)getText(ex.getErrorTextId());
@@ -260,6 +262,11 @@ public class WikiMessageEditor extends WikiBaseActivity {
     private class RetainedThings {
         public Thread thread;
         public WikiConnectionRunner handler;
+    }
+    
+    protected void reset() {
+        // Wipe out the text.
+        ((EditText)findViewById(R.id.wikiedittext)).setText("");
     }
 
 }

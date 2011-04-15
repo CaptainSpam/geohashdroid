@@ -449,6 +449,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
                 finishDialog();
                 
+                reset();
+                
                 dismiss();
             } catch (OutOfMemoryError er) {
                 // We CAN wind up with an OutOfMemoryError if, for instance, the
@@ -490,6 +492,20 @@ public class WikiPictureEditor extends WikiBaseActivity {
         public Bitmap thumbnail;
         public String latitude;
         public String longitude;
+    }
+    
+    protected void reset() {
+        // Text gets wiped out.
+        ((EditText)findViewById(R.id.wikiedittext)).setText("");
+        
+        // And the thumbnail gets reset (and the current selection is
+        // forgotten).
+        mCurrentThumbnail = null;
+        mCurrentFile = null;
+        mCurrentLongitude = null;
+        mCurrentLatitude = null;
+        setThumbnail();
+        resetSubmitButton();
     }
 
     @Override
