@@ -621,14 +621,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
     protected void doDismiss() {
         super.doDismiss();
         
-        // On success, we want to clear out the current selection.  So,
-        // let's do just that.
-        mCurrentThumbnail = null;
-        mCurrentFile = null;
-        mCurrentLongitude = null;
-        mCurrentLatitude = null;
-        setThumbnail();
-        resetSubmitButton();
+        reset();
     }
     
     private void drawInfobox(Bitmap bm, Location loc) {

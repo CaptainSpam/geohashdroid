@@ -189,7 +189,6 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
                 case WikiConnectionRunner.DIALOG_DISMISS:
                     mProgress.dismiss();
                     doDismiss();
-                    reset();
                     break;
                 case WikiConnectionRunner.DIALOG_ERROR:
                 {
