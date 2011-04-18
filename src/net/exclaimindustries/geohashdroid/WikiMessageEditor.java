@@ -9,7 +9,6 @@
 package net.exclaimindustries.geohashdroid;
 
 import android.os.Bundle;
-import android.app.ProgressDialog;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -124,22 +123,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
         
         EditText editText = (EditText)findViewById(R.id.wikiedittext);
         editText.addTextChangedListener(tw);
-        
-        // Now, let's see if we have anything retained...
-        try {
-            RetainedThings retain = (RetainedThings)getLastNonConfigurationInstance();
-            if(retain != null) {
-                // We have something retained!  Thus, we need to construct the
-                // popup and update it with the right status, assuming the
-                // thread's still going.
-                if(retain.thread != null && retain.thread.isAlive()) {
-                    mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, true, WikiMessageEditor.this);
-                    mConnectionHandler = retain.handler;
-                    mConnectionHandler.resetHandler(mProgressHandler);
-                    mWikiConnectionThread = retain.thread;
-                }
-            }
-        } catch (Exception ex) {}
     }
 
     @Override
@@ -158,31 +141,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
         }
         
         resetSubmitButton();
-    }
-
-    @Override
-    public Object onRetainNonConfigurationInstance() {
-        // If the configuration changes (i.e. orientation shift), we want to
-        // keep track of the thread we used to have.  That'll be used to
-        // populate the new popup next time around, if need be.
-        if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive()) {
-            mDontStopTheThread = true;
-            RetainedThings retain = new RetainedThings();
-            retain.handler = mConnectionHandler;
-            retain.thread = mWikiConnectionThread;
-            return retain;
-        } else {
-            return null;
-        }
-    }
-    
-    /**
-     * Since onRetainNonConfigurationInstance returns a plain ol' Object, this
-     * just holds the pieces of data we're retaining.
-     */
-    private class RetainedThings {
-        public Thread thread;
-        public WikiConnectionRunner handler;
     }
     
     protected void reset() {
