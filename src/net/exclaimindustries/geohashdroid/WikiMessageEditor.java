@@ -308,7 +308,12 @@ public class WikiMessageEditor extends WikiBaseActivity {
     protected void doDismiss() {
         super.doDismiss();
         
-        resetSubmitButton();
+        reset();
     }
 
+    protected void reset() {
+        // Wipe out the text.
+        ((EditText)findViewById(R.id.wikiedittext)).setText("");
+        resetSubmitButton();
+    }
 }
