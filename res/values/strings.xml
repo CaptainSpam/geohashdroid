@@ -198,6 +198,9 @@
 
 <string name="wiki_generic_error">There was an unknown problem communicating with the wiki.</string>
 
+<string name="wiki_toast_message_sending">Your message will be posted as soon as possible.</string>
+<string name="wiki_toast_picture_sending">Your picture will be posted as soon as possible.</string>
+
 <string name="pref_wiki_message">Gone hashing!</string>
 <string name="pref_wiki_submit_message">Submit</string>
 

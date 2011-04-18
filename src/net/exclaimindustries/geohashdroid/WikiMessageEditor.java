@@ -9,30 +9,22 @@
 package net.exclaimindustries.geohashdroid;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.app.ProgressDialog;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.content.Context;
+import android.widget.Toast;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 import android.location.Location;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import java.util.HashMap;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import java.util.Date;
 
-import java.text.SimpleDateFormat;
 /**
  * Displays an edit box and a send button, which shall upload the message
  * entered to the appropriate expedition page in the Geohashing wiki. 
@@ -40,12 +32,7 @@ import java.text.SimpleDateFormat;
  * @author Thomas Hirsch
  */
 public class WikiMessageEditor extends WikiBaseActivity {
-
-    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
-    private static final SimpleDateFormat sigDateFormat = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
-    
     private Info mInfo;
-    private HashMap<String, String> mFormfields;
 
     private static final String DEBUG_TAG = "MessageEditor";
     
@@ -62,17 +49,56 @@ public class WikiMessageEditor extends WikiBaseActivity {
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-              // We don't want to let the Activity handle the dialog.  That WILL
-              // cause it to show up properly and all, but after a configuration
-              // change (i.e. orientation shift), it won't show or update any text
-              // (as far as I know), as we can't reassign the handler properly.
-              // So, we'll handle it ourselves.
-              mProgress = ProgressDialog.show(WikiMessageEditor.this, "", "", true, true, WikiMessageEditor.this);
-              mConnectionHandler = new MessageConnectionRunner(mProgressHandler, WikiMessageEditor.this);
-              mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
-              mWikiConnectionThread.start();
+                // Assemble an Intent and send it off to the service.  Act fast,
+                // we're in the middle of the main thread here!
+                // TODO: Actually DO we want to be in the middle of the main
+                // thread?  This should be a quick series of operations, but if
+                // we shunt this off to another thread, we'll have to deal with
+                // making sure the user can't double-press the submit button and
+                // other things like that.
+                Intent i = new Intent(WikiMessageEditor.this, WikiPostService.class);
+                
+                i.putExtra(WikiPostService.EXTRA_TYPE, WikiPostService.EXTRA_TYPE_MESSAGE);
+                i.putExtra(WikiPostService.EXTRA_INFO, mInfo);
+                
+                EditText message = (EditText)findViewById(R.id.wikiedittext);
+                i.putExtra(WikiPostService.EXTRA_POST_TEXT, message.getText().toString());
+                
+                CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+                
+                if(includelocation.isChecked()) {
+                    i.putExtra(WikiPostService.EXTRA_OPTION_COORDS, true);
+                    
+                    Location loc = getLastLocation();
+                    if(loc != null) {
+                        i.putExtra(WikiPostService.EXTRA_LATITUDE, loc.getLatitude());
+                        i.putExtra(WikiPostService.EXTRA_LONGITUDE, loc.getLongitude());
+                    }
+                } else {
+                    i.putExtra(WikiPostService.EXTRA_OPTION_COORDS, false);
+                }
+                
+                SharedPreferences prefs = getSharedPreferences(
+                        GHDConstants.PREFS_BASE, 0);
+                
+                boolean phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
+                
+                if(phoneTime) {
+                    i.putExtra(WikiPostService.EXTRA_TIMESTAMP, System.currentTimeMillis());
+                }
+                
+                // Dispatch!
+                Log.d(DEBUG_TAG, "Sending service intent now...");
+                startService(i);
+                
+                reset();
+                
+                // Good!  Now toast!
+                Toast pumpernickel = Toast.makeText(WikiMessageEditor.this, R.string.wiki_toast_message_sending,
+                        Toast.LENGTH_SHORT);
+                pumpernickel.show();
             }
-          });
+        });
         
         // In the event the text changes, update the submit button accordingly.
         TextWatcher tw = new TextWatcher() {
@@ -147,136 +173,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
             return retain;
         } else {
             return null;
-        }
-    }
-    
-    private class MessageConnectionRunner extends WikiConnectionRunner {
-      MessageConnectionRunner(Handler h, Context c) {
-          super(h, c);
-      }
-
-        public void run() {
-            SharedPreferences prefs = getSharedPreferences(
-                    GHDConstants.PREFS_BASE, 0);
-            
-            boolean phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
-
-            try {
-                HttpClient httpclient = new DefaultHttpClient();
-
-                String wpName = prefs
-                        .getString(GHDConstants.PREF_WIKI_USER, "");
-                if (!wpName.trim().equals("")) {
-                    addStatus(R.string.wiki_conn_login);
-                    String wpPassword = prefs.getString(
-                            GHDConstants.PREF_WIKI_PASS, "");
-                    WikiUtils.login(httpclient, wpName, wpPassword);
-                    addStatusAndNewline(R.string.wiki_conn_success);
-                } else {
-                    addStatusAndNewline(R.string.wiki_conn_anon_warning);
-                }
-
-                String expedition = WikiUtils.getWikiPageName(mInfo);
-
-                String locationTag = "";
-
-                // Location! Is the checkbox ticked (and do we have a location
-                // handy)?
-                CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
-                if (includelocation.isChecked()) {
-                    Location lastLoc = getLastLocation();
-                    if (lastLoc != null) {
-                        String pos = mLatLonFormat.format(lastLoc.getLatitude()) + ","
-                                + mLatLonFormat.format(lastLoc.getLongitude());
-                        locationTag = " [http://www.openstreetmap.org/?lat="
-                                + lastLoc.getLatitude() + "&lon="
-                                + lastLoc.getLongitude()
-                                + "&zoom=16&layers=B000FTF @" + pos + "]";
-                        addStatus(R.string.wiki_conn_current_location);
-                        addStatus(" " + pos + "\n");
-                    } else {
-                        addStatusAndNewline(R.string.wiki_conn_current_location_unknown);
-                    }
-                }
-
-                addStatus(R.string.wiki_conn_expedition_retrieving);
-                addStatus(" " + expedition + "...");
-                String page;
-
-                mFormfields = new HashMap<String, String>();
-                page = WikiUtils.getWikiPage(httpclient, expedition,
-                        mFormfields);
-                if ((page == null) || (page.trim().length() == 0)) {
-                    addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);
-
-                    // ok, let's create some.
-                    addStatus(R.string.wiki_conn_expedition_creating);
-                    WikiUtils.putWikiPage(httpclient, expedition,
-                            WikiUtils.getWikiExpeditionTemplate(mInfo, WikiMessageEditor.this),
-                            mFormfields);
-                    addStatusAndNewline(R.string.wiki_conn_success);
-
-                    addStatus(R.string.wiki_conn_expedition_reretrieving);
-
-                    page = WikiUtils.getWikiPage(httpclient, expedition,
-                            mFormfields);
-                    addStatusAndNewline(R.string.wiki_conn_success);
-                } else {
-                    addStatusAndNewline(R.string.wiki_conn_success);
-                }
-
-                EditText editText = (EditText)findViewById(R.id.wikiedittext);
-                
-                // Change the summary so it has our message.
-                String summaryPrefix;
-                
-                // We shouldn't say this is live, per se, if this is a
-                // retrohash.
-                if(mInfo.isRetroHash())
-                    summaryPrefix = getText(R.string.wiki_post_message_summary_retro).toString();
-                else
-                    summaryPrefix = getText(R.string.wiki_post_message_summary).toString();
-                
-                mFormfields.put("summary", summaryPrefix + " " + editText.getText().toString()); 
-                
-                String before = "";
-                String after = "";
-
-                Matcher expeditionq = RE_EXPEDITION.matcher(page);
-                if (expeditionq.matches()) {
-                    before = expeditionq.group(1) + expeditionq.group(2);
-                    after = expeditionq.group(3);
-                } else {
-                    before = page;
-                }
-
-                String localtime = sigDateFormat.format(new Date());
-
-                String message = "\n*" + editText.getText().toString().trim()
-                        + "  -- ~~~" + locationTag + " "
-                        + (phoneTime ? localtime : "~~~~~") + "\n";
-
-                addStatus(R.string.wiki_conn_insert_message);
-                WikiUtils.putWikiPage(httpclient, expedition, before + message
-                        + after, mFormfields);
-                addStatusAndNewline(R.string.wiki_conn_done);
-
-                finishDialog();
-                
-                dismiss();
-            } catch (WikiException ex) {
-                String error = (String)getText(ex.getErrorTextId());
-                Log.d(DEBUG_TAG, "WIKI EXCEPTION: " + error);
-                error(error);
-            } catch (Exception ex) {
-                Log.d(DEBUG_TAG, "EXCEPTION: " + ex.getMessage());
-                if(ex.getMessage() != null)
-                    error(ex.getMessage());
-                else
-                    error((String)getText(R.string.wiki_error_unknown));
-                return;
-            }
-
         }
     }
     
