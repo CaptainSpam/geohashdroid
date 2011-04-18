@@ -85,7 +85,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private static final int INFOBOX_PADDING = 8;
     
     private Info mInfo;
-//    private Location mLocation;
     
     /** The currently-displayed file. */
     private String mCurrentFile;

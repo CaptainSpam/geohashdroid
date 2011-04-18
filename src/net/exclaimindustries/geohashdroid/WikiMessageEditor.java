@@ -24,6 +24,8 @@ import android.location.Location;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import java.util.HashMap;
 import java.util.regex.Pattern;
@@ -47,8 +49,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
 
     private static final String DEBUG_TAG = "MessageEditor";
     
-//    private Location mLocation;
-//    
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -73,6 +73,31 @@ public class WikiMessageEditor extends WikiBaseActivity {
               mWikiConnectionThread.start();
             }
           });
+        
+        // In the event the text changes, update the submit button accordingly.
+        TextWatcher tw = new TextWatcher() {
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                resetSubmitButton();
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count,
+                    int after) {
+                // Blah!
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before,
+                    int count) {
+                // BLAH!
+            }
+
+        };
+        
+        EditText editText = (EditText)findViewById(R.id.wikiedittext);
+        editText.addTextChangedListener(tw);
         
         // Now, let's see if we have anything retained...
         try {
@@ -105,6 +130,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
         } else {
             warning.setVisibility(View.GONE);
         }
+        
+        resetSubmitButton();
     }
 
     @Override
@@ -260,6 +287,28 @@ public class WikiMessageEditor extends WikiBaseActivity {
     private class RetainedThings {
         public Thread thread;
         public WikiConnectionRunner handler;
+    }
+    
+    private void resetSubmitButton() {
+        // Make sure the submit button is disabled if there's no text ready.
+        // That's all.  We can send things anonymously.
+        Button submitButton = (Button)findViewById(R.id.wikieditbutton);
+        EditText message  = (EditText)findViewById(R.id.wikiedittext);
+        
+        if(message == null || message.getText().toString().length() <= 0)
+        {
+            submitButton.setEnabled(false);
+        }
+        else
+        {
+            submitButton.setEnabled(true);
+        }
+    }
+    
+    protected void doDismiss() {
+        super.doDismiss();
+        
+        resetSubmitButton();
     }
 
 }
