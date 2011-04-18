@@ -236,8 +236,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
 
                 finishDialog();
                 
-                reset();
-                
                 dismiss();
             } catch (WikiException ex) {
                 String error = (String)getText(ex.getErrorTextId());

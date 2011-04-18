@@ -449,8 +449,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
                 finishDialog();
                 
-                reset();
-                
                 dismiss();
             } catch (OutOfMemoryError er) {
                 // We CAN wind up with an OutOfMemoryError if, for instance, the
