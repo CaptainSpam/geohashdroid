@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
       android:orientation="vertical"
-      android:layout_width="fill_parent"
-      android:layout_height="fill_parent">
+      android:layout_width="fill_parent" android:layout_height="fill_parent">
   <EditText android:id="@+id/wikiedittext"
         android:layout_width="fill_parent"
-        android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine" android:layout_height="wrap_content" android:layout_weight="1"/>
+        android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine" android:layout_height="fill_parent" android:layout_weight="1"/>
   <CheckBox android:id="@+id/includelocation"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
@@ -16,5 +15,5 @@
         android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_message"/>
   <TextView android:id="@+id/warningmessage"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent" android:text="@string/wiki_editor_not_logged_in" android:visibility="gone"/>
+        android:text="@string/wiki_editor_not_logged_in" android:layout_height="wrap_content" android:visibility="gone"/>
   </LinearLayout>
