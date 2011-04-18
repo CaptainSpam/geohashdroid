@@ -52,82 +52,120 @@ public class WikiPostService extends QueueService {
     public static final int EXTRA_TYPE_PICTURE = 1;
     
     /**
+     * <p>
      * What sort of post this is.  It's either this or we figure it out by 
      * implication, which can get sloppy.
+     * </p>
      * 
+     * <p>
      * This should be an int, and one of the types in the EXTRA_TYPE_ statics.
+     * </p>
      */
     public static final String EXTRA_TYPE = "Type";
     /**
+     * <p>
      * The Info object for a post.  The post page will be determined from here.
-     *
+     * </p>
+     * 
+     * <p>
      * This should be an Info parcelable.
+     * </p>
      */
     public static final String EXTRA_INFO = "Info";
     /**
+     * <p>
      * The latitude the user is at for a post.  If this or the longitude are not
      * defined, location is assumed to be unknown.  Note that if posting a
      * picture, the picture's stored location will NOT be consulted; retrieve it
      * beforehand and add it in before sending the Intent.
+     * </p>
      *
+     * <p>
      * This should be a double.
+     * </p>
      */
     public static final String EXTRA_LATITUDE = "Latitude";
     /**
+     * <p>
      * The longitude the user is at for a post.  If this or the latitude are not
      * defined, location is assumed to be unknown.  Note that if posting a
      * picture, the picture's stored location will NOT be consulted; retrieve it
      * beforehand and add it in before sending the Intent.
+     * </p>
      *
+     * <p>
      * This should be a double.
+     * </p>
      */
     public static final String EXTRA_LONGITUDE = "Longitude";
     /**
+     * <p>
      * The text for a post.
+     * </p>
      *
+     * <p>
      * This should be a string.
+     * </p>
      */
     public static final String EXTRA_POST_TEXT = "PostText";
     /**
-     * The post's time, as a measure of milliseconds past the epoch.  If this is
+     * <p>
+     * The post's time, as a measure of milliseconds past the epoch (yes,
+     * millis; this <i>is</i> Java we're dealing with, after all).  If this is
      * not defined, the post will be made with a standard MediaWiki signature,
      * meaning it will be stamped with the time it gets sent, NOT necessarily
      * the time it was made.  That is, get this sorted out BEFORE sending off
      * the Intent.
+     * </p>
      *
+     * <p>
      * This should be a long.
+     * </p>
      */
     public static final String EXTRA_TIMESTAMP = "Timestamp";
     /**
+     * <p>
      * The on-filesystem location of a picture to post.  If this is defined AND
      * is not an empty or all-whitespace string, it is assumed this will be
      * picture-posting mode, and thus an Intent with an invalid picture WILL
      * fail.
+     * </p>
      *
+     * <p>
      * This should be a string.
+     * </p>
      */
     public static final String EXTRA_PICTURE_FILE = "PicFile";
     /**
+     * <p>
      * Whether or not an infobox will be stamped onto a picture.  This is only
      * consulted if EXTRA_PICTURE_LOCATION is defined.  If this is not defined,
      * it will default to false.
+     * </p>
      *
+     * <p>
      * This should be a boolean.
+     * </p>
      */
     public static final String EXTRA_OPTION_PICTURE_STAMP = "PicStamp";
     /**
+     * <p>
      * Whether or not coordinates will be included with a post.  If true, the
      * coordinates given in EXTRA_LATITUDE and EXTRA_LONGITUDE will be appended
      * to the post with a link to a map.  If false, this won't be appended.
      * If not defined, this defaults to true.
+     * </p>
      *
+     * <p>
      * Note carefully, simply including a latitude and longitude will NOT imply
-     * this is true.  However, NOT including a latitude or longitude WILL imply
-     * this is false;  This option also has no bearing on
+     * this is true.  This option also has no bearing on
      * EXTRA_OPTION_PICTURE_STAMP; that will be posted anyway if its option is
      * set.
+     * </p>
      *
+     * <p>
      * This should be a boolean.
+     * </p>
      */
     public static final String EXTRA_OPTION_COORDS = "IncludeCoords";
 
@@ -146,9 +184,19 @@ public class WikiPostService extends QueueService {
     public WikiPostService() {
         super();
 
+        // mTemporaryPause should default to true at construction time.  If we
+        // just came back from being destroyed somehow, we can just try again
+        // and get the same error.
+        mTemporaryPause = true;
+    }
+    
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
         // Get a ConnectivityManager.
         ConnectivityManager connMan = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-
+        
         // Get a NetworkInfo.
         NetworkInfo netInfo = connMan.getActiveNetworkInfo();
 
@@ -157,12 +205,7 @@ public class WikiPostService extends QueueService {
             mIsConnected = true;
         } else {
             mIsConnected = false;
-        }
-
-        // mTemporaryPause should default to true at construction time.  If we
-        // just came back from being destroyed somehow, we can just try again
-        // and get the same error.
-        mTemporaryPause = true;
+        }        
     }
 
     /* (non-Javadoc)
