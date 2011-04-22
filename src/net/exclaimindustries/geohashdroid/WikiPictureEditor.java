@@ -18,6 +18,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import android.content.Context;
 import android.content.Intent;
@@ -141,17 +142,67 @@ public class WikiPictureEditor extends WikiBaseActivity {
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-              // We don't want to let the Activity handle the dialog.  That WILL
-              // cause it to show up properly and all, but after a configuration
-              // change (i.e. orientation shift), it won't show or update any text
-              // (as far as I know), as we can't reassign the handler properly.
-              // So, we'll handle it ourselves.
-              mProgress = ProgressDialog.show(WikiPictureEditor.this, "", "", true, true, WikiPictureEditor.this);
-              mConnectionHandler = new PictureConnectionRunner(mProgressHandler, WikiPictureEditor.this);
-              mWikiConnectionThread = new Thread(mConnectionHandler, "WikiConnectionThread");
-              mWikiConnectionThread.start();
+                // Fortunately, the major work (scaling the image) is done in
+                // the handler.  We just need to indicate where it is.
+                Intent i = new Intent(WikiPictureEditor.this, WikiPostService.class);
+                
+                i.putExtra(WikiPostService.EXTRA_TYPE, WikiPostService.EXTRA_TYPE_PICTURE);
+                i.putExtra(WikiPostService.EXTRA_INFO, mInfo);
+                
+                // No text means we just don't send any.  Unlike in the message
+                // posting, we can be without a message.
+                EditText message = (EditText)findViewById(R.id.wikiedittext);
+                
+                if(message.getText().toString().length() > 0)
+                    i.putExtra(WikiPostService.EXTRA_POST_TEXT, message.getText().toString());
+                
+
+                // Since the location can be both stamped AND/OR included,
+                // independently, let's always include it, if possible.
+                Location loc = getLastLocation();
+                if(loc != null) {
+                    i.putExtra(WikiPostService.EXTRA_LATITUDE, loc.getLatitude());
+                    i.putExtra(WikiPostService.EXTRA_LONGITUDE, loc.getLongitude());
+                }
+                
+                CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+                
+                i.putExtra(WikiPostService.EXTRA_OPTION_COORDS, includelocation.isChecked());
+                                
+                SharedPreferences prefs = getSharedPreferences(
+                        GHDConstants.PREFS_BASE, 0);
+                
+                boolean phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
+                
+                if(phoneTime) {
+                    i.putExtra(WikiPostService.EXTRA_TIMESTAMP, System.currentTimeMillis());
+                }
+
+                // Remember, location stamping is INDEPENDENT of including the
+                // location in the post.  I can't stress this enough.  Mostly
+                // because it's confusing at first.
+                CheckBox stamplocation = (CheckBox)findViewById(R.id.stamplocation);
+                
+                i.putExtra(WikiPostService.EXTRA_OPTION_PICTURE_STAMP, stamplocation.isChecked());
+                
+                // And finally, the picture.  The whole thing we were here for
+                // in the first place.  We're assuming it's valid owing to the
+                // input method and the submit button's enablement.
+                i.putExtra(WikiPostService.EXTRA_PICTURE_FILE, mCurrentFile);
+                
+                // Fire away!
+                Log.d(DEBUG_TAG, "Sending service intent now...");
+                startService(i);
+                
+                reset();
+                
+                // Good!  Now toast!
+                Toast sourdough = Toast.makeText(WikiPictureEditor.this, R.string.wiki_toast_picture_sending,
+                        Toast.LENGTH_SHORT);
+                sourdough.show();
+                
             }
-          });
+        });
         
         // We can set the background on the thumbnail view right away, even if
         // it's not actually visible.
