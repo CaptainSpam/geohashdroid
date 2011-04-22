@@ -9,6 +9,7 @@ package net.exclaimindustries.geohashdroid;
 
 import java.io.ByteArrayOutputStream;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -67,12 +68,10 @@ public class WikiPictureHandler extends WikiServiceHandler {
         Info info = null;
         Location loc = null;
         String text = "";
-        long timestamp = -1;
         boolean include_coords = true;
         String picture_file = null;
         boolean stamp_image = false;
 
-        boolean phoneTime = false;
         String username = "";
         String password = "";
 
@@ -108,11 +107,6 @@ public class WikiPictureHandler extends WikiServiceHandler {
                     WikiPostService.EXTRA_LONGITUDE, 0));
         }
 
-        // The timestamp MAY exist. If it doesn't, the post will be signed with
-        // four tildes.
-        if (intent.hasExtra(WikiPostService.EXTRA_TIMESTAMP))
-            timestamp = intent.getLongExtra(WikiPostService.EXTRA_TIMESTAMP, 0);
-
         // The post's text MAY exist. We'll allow just posting a picture.
         if (intent.hasExtra(WikiPostService.EXTRA_POST_TEXT)) {
             text = intent.getStringExtra(WikiPostService.EXTRA_POST_TEXT);
@@ -131,6 +125,8 @@ public class WikiPictureHandler extends WikiServiceHandler {
             Log.e(DEBUG_TAG, "There's no picture defined in this intent!");
             return;
         }
+        
+        picture_file = intent.getStringExtra(WikiPostService.EXTRA_PICTURE_FILE);
 
         // The "stamp picture" flag MAY exist. It defaults to false.
         stamp_image = intent.getBooleanExtra(
@@ -141,8 +137,6 @@ public class WikiPictureHandler extends WikiServiceHandler {
          */
         SharedPreferences prefs = context.getSharedPreferences(
                 GHDConstants.PREFS_BASE, 0);
-
-        phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
 
         // These MUST be defined (picture posts can't be anonymous). Failure
         // here throws a pause back.
@@ -207,21 +201,17 @@ public class WikiPictureHandler extends WikiServiceHandler {
         bitmap.recycle();
         System.gc();
 
-        // Next, kick it out the door!
-        String localtime;
-        if (timestamp >= 0) {
-            localtime = SIG_DATE_FORMAT.format(new Date(timestamp));
-        } else if (phoneTime) {
-            localtime = SIG_DATE_FORMAT.format(new Date());
-        } else {
-            localtime = "~~~~~";
-        }
+        // We actually ignore the phonetime option here.  We don't post the sig
+        // at all in a picture post, and the filename is somewhat arbitrary.
+        // So all we want is some pseudo-random stamp.
+        String now = new SimpleDateFormat("HH-mm-ss-SSS").format(new Date());
 
         String expedition = WikiUtils.getWikiPageName(info);
 
         String message = text + locationTag;
 
-        String filename = expedition + "_" + localtime + ".jpg";
+        // Next, kick it out the door!
+        String filename = expedition + "_" + now + ".jpg";
         String description = message + "\n\n"
                 + WikiUtils.getWikiCategories(info);
 
