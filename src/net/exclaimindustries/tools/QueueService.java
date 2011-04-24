@@ -370,6 +370,9 @@ public abstract class QueueService extends Service {
             // Now!  Loop through the queue!
             Intent i;
             
+            if(!mQueue.isEmpty())
+                onQueueStart();
+            
             while(!mQueue.isEmpty()) {
                 i = mQueue.peek();
 
@@ -443,6 +446,14 @@ public abstract class QueueService extends Service {
      * @return a ReturnCode indicating what the queue should do next
      */
     protected abstract ReturnCode onHandleIntent(Intent i);
+    
+    /**
+     * This gets called immediately before the first Intent is processed in a
+     * given run of QueueService.  That is to say, after the service is started
+     * due to an Intent coming in OR every time the service is told to resume
+     * after being paused.  onHandleIntent will be called after this returns.
+     */
+    protected abstract void onQueueStart();
     
     /**
      * This gets called if the queue needs to be paused for some reason.  The

@@ -257,6 +257,15 @@ public class WikiPostService extends QueueService {
         // If nothing went wrong, roll on!
         return ReturnCode.CONTINUE;
     }
+    
+    /* (non-Javadoc)
+     * @see net.exclaimindustries.tools.QueueService#onQueueStart()
+     */
+    @Override
+    protected void onQueueStart() {
+        // TODO Auto-generated method stub
+        
+    }
 
     /* (non-Javadoc)
      * @see net.exclaimindustries.tools.QueueService#onQueueEmpty(boolean)
@@ -293,4 +302,5 @@ public class WikiPostService extends QueueService {
         // TODO Auto-generated method stub
         return null;
     }
+
 }
