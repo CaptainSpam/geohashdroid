@@ -10,15 +10,19 @@ package net.exclaimindustries.tools;
 import java.text.DateFormat;
 import java.util.Calendar;
 
+import net.exclaimindustries.geohashdroid.R;
+
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
+import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -33,7 +37,8 @@ import android.widget.DatePicker;
  * @author Nicholas Killewald
  */
 public class DateButton extends Button implements OnClickListener, OnDateSetListener, OnDismissListener {
-
+    private final static String DEBUG_TAG = "DateButton";
+    
     /** The date that'll be returned later. */
     private Calendar mDate;
     /** Whether or not the dialog is showing (so it can be restored later). */
@@ -45,6 +50,8 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
     private final static String LAST_DATE = "LastDate";
     private final static String DIALOG_STATE = "DialogState";
     
+    private DateFormat mFormat;
+    
     public DateButton(Context context) {
         super(context);
         initButton();
@@ -52,12 +59,26 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
 
     public DateButton(Context context, AttributeSet attrs) {
         super(context, attrs);
+        applyExtraAttributes(attrs);
         initButton();
     }
     
     public DateButton(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        applyExtraAttributes(attrs);
         initButton();
+    }
+    
+    private void applyExtraAttributes(AttributeSet attrs) {
+        // This simply determines what date format we'll be using.  Different
+        // orientations and/or sizes might want short text, for instance.
+        TypedArray ta = getContext().obtainStyledAttributes(attrs, R.styleable.DateButton);
+        
+        int format = ta.getInt(R.styleable.DateButton_date_format, 1);
+
+        mFormat = DateFormat.getDateInstance(format);
+        
+        ta.recycle();
     }
 
     private void initButton() {
@@ -75,8 +96,7 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
      */
     public void setDate(Calendar newDate) {
         mDate = newDate;
-        setText(DateFormat.getDateInstance(DateFormat.LONG).format(
-                mDate.getTime()));
+        setText(mFormat.format(mDate.getTime()));
     }
     
     /**

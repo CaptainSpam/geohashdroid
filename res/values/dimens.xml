@@ -34,6 +34,7 @@
 	<dimen name="details_accuracy_fontsize_small">12dip</dimen>
 
 	<dimen name="main_padding">5dp</dimen>
+	<dimen name="button_date_padding">15dp</dimen>
 	<dimen name="dialog_font_size">18sp</dimen>
 	<dimen name="dialog_padding">10dp</dimen>
 	<dimen name="gallery_button_padding">10dp</dimen>

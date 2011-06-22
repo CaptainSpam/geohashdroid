@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:exclaim="http://schemas.android.com/apk/res/net.exclaimindustries.geohashdroid"
 	android:orientation="vertical" android:layout_width="fill_parent"
 	android:layout_gravity="center_vertical" android:layout_height="wrap_content">
 	<Button android:layout_width="wrap_content"
@@ -12,7 +13,7 @@
 	<net.exclaimindustries.tools.DateButton
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:id="@+id/DateButton" android:text="DATE GOES HERE"
-		android:layout_gravity="center_horizontal" />
+		android:layout_gravity="center_horizontal" exclaim:date_format="long_date" />
 	<TextView android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:id="@+id/GraticuleLabel"
 		android:text="@string/graticule_label" android:layout_gravity="center_horizontal"></TextView>

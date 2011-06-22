@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<declare-styleable name="DateButton">
+
+		<attr name="date_format">
+			<enum name="long_date" value="1" />
+			<enum name="medium_date" value="2" />
+			<enum name="short_date" value="3" />
+		</attr>
+
+	</declare-styleable>
+</resources>
