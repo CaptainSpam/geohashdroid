@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <LinearLayout android:id="@+id/LinearLayout01"
 	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:exclaim="http://schemas.android.com/apk/res/net.exclaimindustries.geohashdroid" 
 	android:orientation="horizontal" android:layout_height="fill_parent"
 	android:layout_width="fill_parent">
 	<LinearLayout android:layout_height="wrap_content"
@@ -14,9 +15,11 @@
 		<TextView android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:text="@string/date_label"
 			android:id="@+id/DateLabel" android:layout_gravity="center_horizontal"></TextView>
-		<DatePicker android:layout_width="wrap_content"
-			android:layout_height="wrap_content" android:id="@+id/Date"
-			android:saveEnabled="true" android:layout_gravity="center_horizontal"></DatePicker>
+		<net.exclaimindustries.tools.DateButton
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:text="DATE GOES HERE"
+			android:id="@+id/DateButton" android:textSize="@dimen/input_graticule_fontsize"
+		    android:padding="@dimen/button_date_padding" exclaim:date_format="medium_date" />
 	</LinearLayout>
 	<LinearLayout android:layout_height="wrap_content"
 		android:id="@+id/WideColumn2" android:orientation="vertical"

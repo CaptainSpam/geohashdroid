@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <LinearLayout android:id="@+id/LinearLayout01"
 	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:exclaim="http://schemas.android.com/apk/res/net.exclaimindustries.geohashdroid"
 	android:orientation="horizontal" android:layout_height="fill_parent"
 	android:layout_width="fill_parent" android:layout_gravity="center">
 	<LinearLayout android:layout_height="wrap_content"
@@ -17,7 +18,7 @@
 		<net.exclaimindustries.tools.DateButton
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:layout_gravity="center_horizontal" android:text="DATE GOES HERE"
-			android:id="@+id/DateButton" />
+			android:id="@+id/DateButton" exclaim:date_format="long_date" />
 
 		<LinearLayout android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:id="@+id/DateRow">
