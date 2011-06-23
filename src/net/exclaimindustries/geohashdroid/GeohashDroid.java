@@ -30,7 +30,6 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -179,26 +178,6 @@ public class GeohashDroid extends Activity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        
-        // This part is here to work around a bug in DatePicker.  Namely, it
-        // doesn't do its onRestoreInstanceState correctly and doesn't update
-        // the spinners immediately.  This will be removed if they ever fix it
-        // in the API itself (well, after I submit a patch for review).
-        try {
-            DatePicker date = (DatePicker)findViewById(R.id.Date);
-            
-            // This forces the spinners to update.
-            date.updateDate(date.getYear(), date.getMonth(), date.getDayOfMonth());
-        } catch (Exception ex) {
-            // If we throw an exception and can't cast, we're in the small
-            // display and thus don't need to work around the bug.
-        }
-    }
-
-    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
@@ -781,22 +760,12 @@ public class GeohashDroid extends Activity {
     
     private Calendar getActiveCalendar() {
         // This grabs the active Calendar object, be it from DatePicker or from
-        // DateButton.
-        Calendar cal;
-        
-        // First, try the DatePicker.  If this throws, we're using
-        // the small screen and we want a DateButton instead.
-        try {
-            DatePicker date = (DatePicker)findViewById(R.id.Date);
-            cal = Calendar.getInstance();
-            cal.setLenient(true);
-            cal.set(date.getYear(), date.getMonth(), date.getDayOfMonth());
-        } catch (Exception ex) {
-            DateButton date = (DateButton)findViewById(R.id.DateButton);
-            cal = date.getDate();
-        }
-        
-        return cal;
+        // DateButton.  Well, okay, now it's just from DateButton, as I'm
+        // deprecating DatePicker right now due to unresolved upstream bugs.
+        // The durn thing WAS fixed (by me), but it seems that fix isn't in all
+        // devices, so I can't count on it.
+        DateButton date = (DateButton)findViewById(R.id.DateButton);
+        return date.getDate();
     }
     
     private void setGlobalhashMode(boolean flag) {
