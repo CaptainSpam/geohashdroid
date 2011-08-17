@@ -100,6 +100,13 @@ public class DateButton extends Button implements OnClickListener, OnDateSetList
     }
     
     /**
+     * Sets the date on the button to whatever today is.
+     */
+    public void setToday() {
+        setDate(Calendar.getInstance());
+    }
+    
+    /**
      * Returns the last date picked by this button.  This defaults to the
      * current date.
      * 

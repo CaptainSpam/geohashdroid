@@ -74,6 +74,7 @@ public class GeohashDroid extends Activity {
     private EditText mLongitude;
     private Button mGoButton;
     private CheckBox mAutoBox;
+    private CheckBox mTodayBox;
     
     private boolean mGlobalhash;
 
@@ -158,12 +159,20 @@ public class GeohashDroid extends Activity {
         attachListeners();
         resetGoButton();
         
-        // Tick the checkbox if need be.
+        // Tick the checkboxes if need be.
         if(prefs.getBoolean(GHDConstants.PREF_CLOSEST, false)) {
             mAutoBox.setChecked(true);
         } else {
             mAutoBox.setChecked(false);
         }
+        
+        if(prefs.getBoolean(GHDConstants.PREF_TODAY, false)) {
+            mTodayBox.setChecked(true);
+            setTodayMode(true);
+        } else {
+            mTodayBox.setChecked(false);
+            setTodayMode(false);
+        }        
         
         // Set globalhash mode if need be.
         setGlobalhashMode(prefs.getBoolean(GHDConstants.PREF_GLOBALHASH_MODE, false));
@@ -295,6 +304,12 @@ public class GeohashDroid extends Activity {
         // The phone time checkbox defaults to off.
         if(!prefs.contains(GHDConstants.PREF_WIKI_PHONE_TIME)) {
             editor.putBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
+            toReturn = true;
+        }
+        
+        // The Today checkbox defaults to off.
+        if(!prefs.contains(GHDConstants.PREF_TODAY)) {
+            editor.putBoolean(GHDConstants.PREF_TODAY, false);
             toReturn = true;
         }
 
@@ -445,7 +460,7 @@ public class GeohashDroid extends Activity {
     }
 
     private void attachListeners() {
-        // Then the map button...
+        // First the map button...
         Button mapButton = (Button)findViewById(R.id.MapButton);
 
         mapButton.setOnClickListener(new OnClickListener() {
@@ -492,6 +507,31 @@ public class GeohashDroid extends Activity {
             }
             
         });
+        
+        // The other checkbox also needs to do stuff.
+        mTodayBox = (CheckBox)findViewById(R.id.TodayBox);
+        
+        mTodayBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                    boolean isChecked) {
+                // First, set the date button.
+                setTodayMode(isChecked);
+                
+                // Update prefs, of course.
+                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+                SharedPreferences.Editor editor = prefs.edit();
+                
+                editor.putBoolean(GHDConstants.PREF_TODAY, isChecked);
+                editor.commit();
+            }
+
+        });
+        
+        // Initialize the button, too.
+        
+        
 
         // And the Go button...
         mGoButton = (Button)findViewById(R.id.GoButton);
@@ -528,9 +568,6 @@ public class GeohashDroid extends Activity {
                 }
             }
         });
-
-        // Disable the Go button if a field is empty...
-        resetGoButton();
 
         // And the "What's Geohashing?" button...
         Button whatButton = (Button)findViewById(R.id.WhatButton);
@@ -759,13 +796,19 @@ public class GeohashDroid extends Activity {
     }
     
     private Calendar getActiveCalendar() {
-        // This grabs the active Calendar object, be it from DatePicker or from
-        // DateButton.  Well, okay, now it's just from DateButton, as I'm
-        // deprecating DatePicker right now due to unresolved upstream bugs.
-        // The durn thing WAS fixed (by me), but it seems that fix isn't in all
-        // devices, so I can't count on it.
+        // This grabs the active Calendar object.  Depending on prefs, this
+        // could be either today or what the DateButton says.
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
         DateButton date = (DateButton)findViewById(R.id.DateButton);
-        return date.getDate();
+        
+        if(prefs.getBoolean(GHDConstants.PREF_TODAY, false)) {
+            // If we're using today, set the button to today, too, in case the
+            // user waited past midnight on the main screen.
+            date.setToday();
+            return Calendar.getInstance();
+        } else {
+            return date.getDate();            
+        }
     }
     
     private void setGlobalhashMode(boolean flag) {
@@ -795,6 +838,25 @@ public class GeohashDroid extends Activity {
         resetGoButton();
         
         // And we're done!
+    }
+    
+    private void setTodayMode(boolean flag) {
+        // Sets things up for Today mode.  Which means to enable/disable the
+        // date button and reset what date it thinks it is.
+        DateButton date = (DateButton)findViewById(R.id.DateButton);
+        
+        if(flag) {
+            // Off!
+            date.setEnabled(false);
+            
+            // Also, make sure the date is set to today.  We'll actually ignore
+            // that when the time comes in the event the user stays on the
+            // main screen past midnight.
+            date.setToday();
+        } else {
+            // On!
+            date.setEnabled(true);
+        }
     }
 
 }
