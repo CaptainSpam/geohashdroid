@@ -21,6 +21,7 @@
 <string name="closest_label">Use Closest</string>
 <string name="globalhash_label">Globalhash!</string>
 <string name="gratmap_label">Pick From Map</string>
+<string name="always_today_label">Today</string>
 
 <string name="cancel_label">Cancel</string>
 <string name="darn_label">Darn!</string>

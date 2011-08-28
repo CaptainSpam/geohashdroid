@@ -20,11 +20,20 @@
 			android:layout_gravity="center_horizontal" android:text="DATE GOES HERE"
 			android:id="@+id/DateButton" exclaim:date_format="long_date" />
 
-		<LinearLayout android:layout_width="wrap_content"
-			android:layout_height="wrap_content" android:id="@+id/DateRow">
+		<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:text="@string/always_today_label" android:layout_gravity="center"
+			android:id="@+id/TodayBox" />
 
+		<TextView android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:textSize="@dimen/input_graticule_fontsize"
+			android:layout_gravity="center_horizontal" android:text="@string/globalhash_label"
+			android:visibility="gone" android:id="@+id/GlobalhashLabel"></TextView>
 
-		</LinearLayout>
+	</LinearLayout>
+	<LinearLayout android:layout_height="wrap_content"
+		android:id="@+id/WideColumn2" android:orientation="vertical"
+		android:layout_gravity="center" android:layout_margin="@dimen/main_padding"
+		android:layout_width="fill_parent" android:layout_weight=".5">
 		<TextView android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:id="@+id/GraticuleLabel"
 			android:text="@string/graticule_label" android:layout_gravity="center_horizontal"></TextView>
@@ -38,8 +47,7 @@
 				android:hint="@string/hint_lat" android:selectAllOnFocus="true"
 				android:layout_width="@dimen/input_graticule_width"
 				android:textSize="@dimen/input_graticule_fontsize"
-				android:layout_marginRight="@dimen/main_padding"
-				android:inputType="numberSigned"
+				android:layout_marginRight="@dimen/main_padding" android:inputType="numberSigned"
 				android:digits="0123456789-"></EditText>
 			<EditText android:layout_height="wrap_content" android:id="@+id/Longitude"
 				android:layout_gravity="center_vertical" android:maxLength="4"
@@ -47,21 +55,9 @@
 				android:hint="@string/hint_lon" android:selectAllOnFocus="true"
 				android:layout_width="@dimen/input_graticule_width"
 				android:textSize="@dimen/input_graticule_fontsize"
-				android:layout_marginLeft="@dimen/main_padding"
-				android:inputType="numberSigned"
+				android:layout_marginLeft="@dimen/main_padding" android:inputType="numberSigned"
 				android:digits="0123456789-"></EditText>
 		</LinearLayout>
-        <TextView android:layout_width="wrap_content"
-              android:layout_height="wrap_content" android:textSize="@dimen/input_graticule_fontsize"
-              android:layout_gravity="center_horizontal" android:text="@string/globalhash_label"
-              android:visibility="gone" android:id="@+id/GlobalhashLabel"></TextView>
-		
-	</LinearLayout>
-	<LinearLayout android:layout_height="wrap_content"
-		android:id="@+id/WideColumn2" android:orientation="vertical"
-		android:layout_gravity="center" android:layout_margin="@dimen/main_padding"
-		android:layout_width="fill_parent" android:layout_weight=".5">
-
 		<CheckBox android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:drawableLeft="@drawable/refresh"
 			android:text="@string/closest_label" android:layout_gravity="center_horizontal"
