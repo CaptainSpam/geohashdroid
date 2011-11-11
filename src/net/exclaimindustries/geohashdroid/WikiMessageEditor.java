@@ -189,8 +189,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
                         String pos = mLatLonFormat.format(lastLoc.getLatitude()) + ","
                                 + mLatLonFormat.format(lastLoc.getLongitude());
                         locationTag = " [http://www.openstreetmap.org/?lat="
-                                + lastLoc.getLatitude() + "&lon="
-                                + lastLoc.getLongitude()
+                                + mLatLonLinkFormat.format(lastLoc.getLatitude()) + "&lon="
+                                + mLatLonLinkFormat.format(lastLoc.getLongitude())
                                 + "&zoom=16&layers=B000FTF @" + pos + "]";
                         addStatus(R.string.wiki_conn_current_location);
                         addStatus(" " + pos + "\n");

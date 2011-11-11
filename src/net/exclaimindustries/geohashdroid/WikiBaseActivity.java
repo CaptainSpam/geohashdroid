@@ -9,6 +9,8 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 import net.exclaimindustries.tools.LocationAwareActivity;
 
@@ -163,6 +165,14 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
     
     /** This format is used for all latitude/longitude texts in the wiki. */
     protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000");
+    
+    /**
+     * This format is used for all latitude/longitude <i>links</i> in the wiki.
+     * This differs from mLatLonFormat in that it doesn't clip values to four
+     * decimal points AND it forces the decimal separator to period (well,
+     * technically, to en_US formatting, which is the same thing).
+     */
+    protected static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
     
     private static final String LAST_ERROR = "LastError";
     
