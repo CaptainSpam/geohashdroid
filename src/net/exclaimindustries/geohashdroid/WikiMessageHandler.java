@@ -143,7 +143,8 @@ public class WikiMessageHandler extends WikiServiceHandler {
             String pos = mLatLonFormat.format(loc.getLatitude()) + ","
                     + mLatLonFormat.format(loc.getLongitude());
             locationTag = " [http://www.openstreetmap.org/?lat="
-                    + loc.getLatitude() + "&lon=" + loc.getLongitude()
+                    + mLatLonLinkFormat.format(loc.getLatitude()) + "&lon="
+                    + mLatLonLinkFormat.format(loc.getLongitude())
                     + "&zoom=16&layers=B000FTF @" + pos + "]";
         }
 

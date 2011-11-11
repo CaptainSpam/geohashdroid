@@ -348,7 +348,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         String lon = mLatLonFormat.format(sentLoc.getLongitude());
                         Log.d(DEBUG_TAG, "lat = " + lat + " lon = " + lon);
                         locationTag = " [http://www.openstreetmap.org/?lat="
-                                + lat + "&lon=" + lon
+                                + mLatLonLinkFormat.format(sentLoc.getLatitude()) + "&lon="
+                                + mLatLonLinkFormat.format(sentLoc.getLongitude())
                                 + "&zoom=16&layers=B000FTF @" + lat + "," + lon
                                 + "]";
                     }
@@ -361,9 +362,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     if(includelocation.isChecked()) {
                         if (sentLoc != null) {
                             locationTag = " [http://www.openstreetmap.org/?lat="
-                                    + sentLoc.getLatitude()
+                                    + mLatLonLinkFormat.format(sentLoc.getLatitude())
                                     + "&lon="
-                                    + sentLoc.getLongitude()
+                                    + mLatLonLinkFormat.format(sentLoc.getLongitude())
                                     + "&zoom=16&layers=B000FTF @"
                                     + mLatLonFormat.format(sentLoc.getLatitude())
                                     + ","
