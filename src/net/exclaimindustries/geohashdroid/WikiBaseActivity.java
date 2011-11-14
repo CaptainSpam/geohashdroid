@@ -164,13 +164,12 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
     protected WikiConnectionRunner mConnectionHandler;
     
     /** This format is used for all latitude/longitude texts in the wiki. */
-    protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000");
+    protected static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
     
     /**
      * This format is used for all latitude/longitude <i>links</i> in the wiki.
      * This differs from mLatLonFormat in that it doesn't clip values to four
-     * decimal points AND it forces the decimal separator to period (well,
-     * technically, to en_US formatting, which is the same thing).
+     * decimal points.
      */
     protected static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
     

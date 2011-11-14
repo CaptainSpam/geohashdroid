@@ -7,7 +7,9 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.util.Locale;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -16,7 +18,8 @@ import android.util.Log;
 
 /**
  * This is a simple utility class which converts a distance output (in meters)
- * into whatever is needed for the job (kilometers, miles, feet).
+ * into whatever is needed for the job (kilometers, miles, feet).  It also turns
+ * coordinates into whatever needs to be displayed (minutes/seconds, etc).
  * 
  * @author Nicholas Killewald
  */
@@ -33,12 +36,16 @@ public class UnitConverter {
     /** Output should be even longer, with even more decimal places. */
     public static final int OUTPUT_DETAILED = 2;
     
-    protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("###.000");
-    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.00000");
-    protected static final DecimalFormat DETAIL_FORMAT = new DecimalFormat("###.00000000");
+    // All of the coordinate formats use Locale.US for the locale to force the
+    // decimal delimiter to be a period instead of a comma.  Coordinates, as far
+    // as I can tell, are always represented with a period, even if the country
+    // in question uses commas.
+    protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("###.000", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.00000", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat DETAIL_FORMAT = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
     
-    protected static final DecimalFormat SHORT_SECONDS_FORMAT = new DecimalFormat("###.00");
-    protected static final DecimalFormat LONG_SECONDS_FORMAT = new DecimalFormat("###.0000");
+    protected static final DecimalFormat SHORT_SECONDS_FORMAT = new DecimalFormat("###.00", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat LONG_SECONDS_FORMAT = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
     
     private static final String DEBUG_TAG = "UnitConverter";
 
