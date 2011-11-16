@@ -40,6 +40,12 @@ public class DetailedInfoScreen extends LocationAwareActivity {
 
     private static final String INFO = "info";
 
+    private static final String LONGITUDE = "longitude";
+
+    private static final String LATITUDE = "latitude";
+    
+    private static final String SHOW_RADAR_ACTION = "com.google.android.radar.SHOW_RADAR";
+
     private Info mInfo;
 
     private PowerManager.WakeLock mWakeLock;
@@ -55,6 +61,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
 
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_SEND_TO_MAPS = 6;
+    private static final int MENU_SEND_TO_RADAR = 7;
 
     /*
      * (non-Javadoc)
@@ -120,7 +127,14 @@ public class DetailedInfoScreen extends LocationAwareActivity {
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
 
-        
+        item = menu.add(Menu.NONE, MENU_SEND_TO_RADAR, 2, 
+        		R.string.menu_item_radar);
+        item.setIcon(android.R.drawable.ic_menu_compass);
+
+		final boolean isAvailable = AndroidUtil.isIntentAvailable(this,
+				SHOW_RADAR_ACTION);
+		item.setEnabled(isAvailable);
+
         return true;
     }
 
@@ -154,6 +168,12 @@ public class DetailedInfoScreen extends LocationAwareActivity {
                 startActivity(i);
                 
                 return true;
+            }
+            case MENU_SEND_TO_RADAR: {
+            	Intent i = new Intent(SHOW_RADAR_ACTION);              
+                i.putExtra(LATITUDE, (float)mInfo.getLatitude());
+                i.putExtra(LONGITUDE, (float)mInfo.getLongitude());          
+                startActivity(i);
             }
         }
         return false;

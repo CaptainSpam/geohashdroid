@@ -134,6 +134,7 @@
 <string name="menu_item_send_to_maps">Send to Maps</string>
 <string name="menu_item_globalhash">Globalhash</string>
 <string name="menu_item_geohash">Geohash</string>
+<string name="menu_item_radar">Radar</string>
 
 <string name="wiki_editor_activity_title">Enter Message</string>
 <string name="wiki_picture_activity_title">Upload Picture</string>
