@@ -9,6 +9,7 @@ package net.exclaimindustries.geohashdroid;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 
+import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationAwareActivity;
 
 import android.content.Context;
@@ -118,22 +119,25 @@ public class DetailedInfoScreen extends LocationAwareActivity {
 
         MenuItem item;
 
-        // We've got Send To Maps, and we've got settings.  Simple.
+        // We can send this to a map!
         item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 0,
                 R.string.menu_item_send_to_maps);
         item.setIcon(android.R.drawable.ic_menu_myplaces);
+
+        // We can send this to radar!
+        item = menu.add(Menu.NONE, MENU_SEND_TO_RADAR, 1, 
+                R.string.menu_item_radar);
+        item.setIcon(android.R.drawable.ic_menu_compass);
         
-        item = menu.add(Menu.NONE, MENU_SETTINGS, 1,
+        // (if we have radar)
+        final boolean isAvailable = AndroidUtil.isIntentAvailable(this,
+                SHOW_RADAR_ACTION);
+        item.setEnabled(isAvailable);
+        
+        // And we can go to settings!
+        item = menu.add(Menu.NONE, MENU_SETTINGS, 2,
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
-
-        item = menu.add(Menu.NONE, MENU_SEND_TO_RADAR, 2, 
-        		R.string.menu_item_radar);
-        item.setIcon(android.R.drawable.ic_menu_compass);
-
-		final boolean isAvailable = AndroidUtil.isIntentAvailable(this,
-				SHOW_RADAR_ACTION);
-		item.setEnabled(isAvailable);
 
         return true;
     }
