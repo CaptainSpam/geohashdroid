@@ -22,7 +22,6 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -37,7 +36,7 @@ import android.widget.DatePicker;
  * @author Nicholas Killewald
  */
 public class DateButton extends Button implements OnClickListener, OnDateSetListener, OnDismissListener {
-    private final static String DEBUG_TAG = "DateButton";
+//    private final static String DEBUG_TAG = "DateButton";
     
     /** The date that'll be returned later. */
     private Calendar mDate;
