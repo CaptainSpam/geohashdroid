@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.ZoomChangeOverlay;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -72,6 +73,12 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private static final String ORIENTATION = "orientation";
     private static final String ZOOM = "zoomLevel";
     private static final String AUTOZOOM = "autoZoom";
+    
+    private static final String LONGITUDE = "longitude";
+
+    private static final String LATITUDE = "latitude";
+    
+    private static final String SHOW_RADAR_ACTION = "com.google.android.radar.SHOW_RADAR";
 
     // Menu constants
     private static final int MENU_RECENTER = 1;
@@ -79,7 +86,8 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_MAP_MODE = 4;
     private static final int MENU_POST = 5;
-    private static final int MENU_SEND_TO_MAPS = 6;
+    private static final int MENU_SEND_TO_RADAR = 6;
+    private static final int MENU_SEND_TO_MAPS = 7;
 
     private static final int MENU_RECENTER_DESTINATION = 10;
     private static final int MENU_RECENTER_MYLOCATION = 11;
@@ -361,13 +369,23 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         sub.add(Menu.NONE, MENU_POST_WIKI, 2,
                 R.string.menu_item_post_wiki);
         
+        // And now, for the power of RADAR!
+        item = menu.add(Menu.NONE, MENU_SEND_TO_RADAR, 4, 
+                R.string.menu_item_radar);
+        item.setIcon(android.R.drawable.ic_menu_compass);
+        
+        // (if we have radar)
+        final boolean isAvailable = AndroidUtil.isIntentAvailable(this,
+                SHOW_RADAR_ACTION);
+        item.setEnabled(isAvailable);
+        
         // And the export option!
-        item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 4,
+        item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 5,
                 R.string.menu_item_send_to_maps);
         item.setIcon(android.R.drawable.ic_menu_myplaces);
 
         // Settings comes last!  Settings ALWAYS comes last.
-        item = menu.add(Menu.NONE, MENU_SETTINGS, 5,
+        item = menu.add(Menu.NONE, MENU_SETTINGS, 6,
                 R.string.menu_item_settings);
         item.setIcon(android.R.drawable.ic_menu_preferences);
         
@@ -691,6 +709,13 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
             case MENU_SEND_TO_MAPS: {
                 showDialog(DIALOG_SEND_TO_MAPS);
                 
+                return true;
+            }
+            case MENU_SEND_TO_RADAR: {
+                Intent i = new Intent(SHOW_RADAR_ACTION);              
+                i.putExtra(LATITUDE, (float)mInfo.getLatitude());
+                i.putExtra(LONGITUDE, (float)mInfo.getLongitude());          
+                startActivity(i);
                 return true;
             }
 
