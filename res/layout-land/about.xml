@@ -38,9 +38,8 @@
 						android:text="@string/about_by" android:layout_gravity="center_horizontal"
 						android:padding="10px" android:gravity="center" android:textSize="@dimen/about_names"></TextView>
 					<TextView android:layout_width="wrap_content"
-						android:layout_height="wrap_content" android:id="@+id/AuthorWiki"
-						android:text="@string/about_wiki_features" android:layout_gravity="center_horizontal"
-						android:padding="10px" android:gravity="center" android:textSize="@dimen/about_names"></TextView>
+						android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+						android:padding="10px" android:gravity="center" android:textSize="@dimen/about_names" android:text="@string/about_with" android:id="@+id/AuthorWith"></TextView>
 					<TextView android:layout_height="wrap_content" android:id="@+id/BasedOn"
 						android:text="@string/about_based_on" android:layout_gravity="center_horizontal"
 						android:layout_width="wrap_content"
