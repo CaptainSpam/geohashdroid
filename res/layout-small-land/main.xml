@@ -3,7 +3,7 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:exclaim="http://schemas.android.com/apk/res/net.exclaimindustries.geohashdroid"
 	android:orientation="horizontal" android:layout_height="fill_parent"
-	android:layout_width="fill_parent" android:layout_gravity="center">
+	android:layout_width="fill_parent" android:layout_gravity="center" android:baselineAligned="false">
 	<LinearLayout android:layout_height="wrap_content"
 		android:orientation="vertical" android:id="@+id/WideColumn1"
 		android:layout_margin="@dimen/main_padding" android:layout_gravity="center"

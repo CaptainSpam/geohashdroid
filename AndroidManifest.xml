@@ -1,45 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="net.exclaimindustries.geohashdroid" android:installLocation="auto" android:versionName="0.7.15" android:versionCode="698" xmlns:android="http://schemas.android.com/apk/res/android">
-	<uses-sdk android:targetSdkVersion="4" android:minSdkVersion="3"/>
-	<application android:icon="@drawable/icon" android:label="@string/app_name"
-		android:description="@string/app_description" android:theme="@style/Theme.GeohashDroid" android:allowClearUserData="true" android:debuggable="true">
-		<uses-library android:name="com.google.android.maps" />
-		<activity android:label="@string/app_name" android:name=".GeohashDroid">
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-		</activity>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    android:installLocation="auto"
+    package="net.exclaimindustries.geohashdroid"
+    android:versionCode="698"
+    android:versionName="0.7.15" >
 
-		<activity android:name="MainMap" android:label="@string/map_activity_title"
-			android:theme="@style/Theme.NoBackground.NoTitleBar"></activity>
-		<activity android:name="PreferenceEditScreen" android:label="@string/app_name"
-			android:theme="@android:style/Theme"></activity>
-		<activity android:name="WikiMessageEditor" android:label="@string/wiki_editor_activity_title"></activity>
-		<activity android:name="WikiPictureEditor" android:label="@string/wiki_picture_activity_title"></activity>
+    <uses-sdk
+        android:minSdkVersion="3"
+        android:targetSdkVersion="4" />
 
-		<activity android:name="GraticuleMap" android:label="@string/gratmap_activity_title"
-			android:theme="@style/Theme.NoBackground">
-			<intent-filter>
-				<action android:name="net.exclaimindustries.geohashdroid.PICK_GRATICULE"></action>
-				<category android:name="android.intent.category.DEFAULT"></category>
-			</intent-filter>
-		</activity>
-		<activity android:name="DetailedInfoScreen" android:label="@string/detail_activity_title"></activity>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:resizeable="true"
+        android:smallScreens="true" />
 
-		<activity android:name="StockGrabber" android:theme="@android:style/Theme.Dialog"
-			android:label="@string/standby_title" />
+    <application
+        android:allowClearUserData="true"
+        android:debuggable="true"
+        android:description="@string/app_description"
+        android:icon="@drawable/icon"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.GeohashDroid" >
+        <uses-library android:name="com.google.android.maps" />
 
-		<activity android:label="@string/standby_title" android:name="LocationGrabber"
-			android:theme="@android:style/Theme.Dialog"></activity>
-	</application>
-	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
-	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
-	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"></uses-permission>
-	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
+        <activity
+            android:name=".GeohashDroid"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="MainMap"
+            android:label="@string/map_activity_title"
+            android:theme="@style/Theme.NoBackground.NoTitleBar" >
+        </activity>
+        <activity
+            android:name="PreferenceEditScreen"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme" >
+        </activity>
+        <activity
+            android:name="WikiMessageEditor"
+            android:label="@string/wiki_editor_activity_title" >
+        </activity>
+        <activity
+            android:name="WikiPictureEditor"
+            android:label="@string/wiki_picture_activity_title" >
+        </activity>
+        <activity
+            android:name="GraticuleMap"
+            android:label="@string/gratmap_activity_title"
+            android:theme="@style/Theme.NoBackground" >
+            <intent-filter>
+                <action android:name="net.exclaimindustries.geohashdroid.PICK_GRATICULE" >
+                </action>
 
+                <category android:name="android.intent.category.DEFAULT" >
+                </category>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="DetailedInfoScreen"
+            android:label="@string/detail_activity_title" >
+        </activity>
+        <activity
+            android:name="StockGrabber"
+            android:label="@string/standby_title"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name="LocationGrabber"
+            android:label="@string/standby_title"
+            android:theme="@android:style/Theme.Dialog" >
+        </activity>
+    </application>
 
-<supports-screens android:smallScreens="true" android:largeScreens="true" android:normalScreens="true" android:resizeable="true" android:anyDensity="true"></supports-screens>
-
-</manifest> 
+</manifest>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="fill_parent" android:layout_height="fill_parent"
-	android:orientation="horizontal">
+	android:orientation="horizontal" android:baselineAligned="false">
 
 
 	<LinearLayout android:id="@+id/LinearLayout01"
@@ -10,7 +10,7 @@
 		android:layout_height="fill_parent">
 		<EditText android:id="@+id/wikiedittext" android:hint="@string/hint_message"
 			android:inputType="textCapSentences|textMultiLine"
-			android:layout_width="fill_parent" android:layout_height="fill_parent"
+			android:layout_width="fill_parent" android:layout_height="0dp"
 			android:layout_weight="1" />
 		<CheckBox android:id="@+id/includelocation"
 			android:layout_width="wrap_content" android:layout_height="36sp"

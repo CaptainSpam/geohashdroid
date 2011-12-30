@@ -44,6 +44,9 @@
 	<dimen name="about_version_date">14dip</dimen>
 	<dimen name="about_urls">20dip</dimen>
 	
+	<dimen name="about_major_padding">10dp</dimen>
+	<dimen name="about_minor_padding">5dp</dimen>
+	
 	<!-- This one really really doesn't depend on dpi or whatnot, as this is
 	     directly going into an image that'll always be a fairly similar size
 	     no matter what happens. -->
