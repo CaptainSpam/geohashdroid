@@ -7,8 +7,8 @@
 	<dimen name="infobox_height">100dp</dimen>
 	<dimen name="infobox_padding">5dp</dimen>
 
-	<dimen name="input_graticule_width">85dp</dimen>
-	<dimen name="input_graticule_fontsize">30sp</dimen>
+	<dimen name="input_graticule_width">90dp</dimen>
+	<dimen name="input_graticule_fontsize">30dp</dimen>
 	<dimen name="infobox_fontsize">16dp</dimen>
 	<dimen name="infobox_jumbo_fontsize">22dp</dimen>
 	<dimen name="infobox_jumbo_fontsize_portrait">18dp</dimen>
