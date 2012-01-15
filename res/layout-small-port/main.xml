@@ -16,7 +16,7 @@
 			android:text="@string/date_label" android:layout_gravity="center_vertical"></TextView>
 		<net.exclaimindustries.tools.DateButton
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:id="@+id/DateButton" android:text="DATE GOES HERE"
+			android:id="@+id/DateButton"
 			android:layout_gravity="center" exclaim:date_format="long_date" />
 		<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:text="@string/always_today_label" android:layout_gravity="center"
