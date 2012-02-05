@@ -51,6 +51,11 @@ public final class GHDConstants {
     /** Prefs key specifying if the Today checkbox is ticked. */
     public static final String PREF_TODAY = "AlwaysToday";
     
+    /** Threshold for the "Accuracy Low" warning (currently 64m). **/
+    public static final int LOW_ACCURACY_THRESHOLD = 64;
+    /** Threshold for the "Accuracy Really Low" warning (currently 200m). **/
+    public static final int REALLY_LOW_ACCURACY_THRESHOLD = 200;
+    
     /**
      * Action for picking a graticule. In Geohash Droid, this means to go to
      * GraticuleMap. Though, so long as it returns a
