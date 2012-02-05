@@ -244,8 +244,8 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // Determine what sort of infobox gets displayed. Make the other one
         // invisible, too. Or both.
-        MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
-        MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
+        MainMapInfoBox infobox = (MainMapInfoBoxSmall)findViewById(R.id.InfoBox);
+        MainMapInfoBox infoboxbig = (MainMapInfoBoxJumbo)findViewById(R.id.JumboInfoBox);
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
@@ -255,16 +255,16 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         if (setting.equals("Jumbo")) {
             // Jumbo disables the compass!
             mMyLocation.disableCompass();
-            infobox.setVisibility(View.INVISIBLE);
+            infobox.setVisibility(View.GONE);
             infoboxbig.setVisibility(View.VISIBLE);
         } else if (setting.equals("Small")) {
             mMyLocation.enableCompass();
             infobox.setVisibility(View.VISIBLE);
-            infoboxbig.setVisibility(View.INVISIBLE);
+            infoboxbig.setVisibility(View.GONE);
         } else {
             mMyLocation.disableCompass();
-            infobox.setVisibility(View.INVISIBLE);
-            infoboxbig.setVisibility(View.INVISIBLE);
+            infobox.setVisibility(View.GONE);
+            infoboxbig.setVisibility(View.GONE);
         }
 
         populateInfoBox();
@@ -882,8 +882,8 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // Populates the InfoBoxes with the needed information. Note that this
         // just gets skipped if the box isn't being displayed. We only send
         // the data to whatever's visible, if anything.
-        MainMapInfoBoxView infobox = (MainMapInfoBoxView)findViewById(R.id.InfoBox);
-        MainMapInfoBoxView infoboxbig = (MainMapJumboInfoBoxView)findViewById(R.id.JumboInfoBox);
+        MainMapInfoBox infobox = (MainMapInfoBoxSmall)findViewById(R.id.InfoBox);
+        MainMapInfoBox infoboxbig = (MainMapInfoBoxJumbo)findViewById(R.id.JumboInfoBox);
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
