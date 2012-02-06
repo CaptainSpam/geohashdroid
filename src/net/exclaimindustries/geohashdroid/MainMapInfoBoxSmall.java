@@ -13,7 +13,6 @@ import android.content.Context;
 import android.location.Location;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.widget.TextView;
 
 /**
@@ -66,7 +65,7 @@ public class MainMapInfoBoxSmall extends MainMapInfoBox {
 
         Context c = getContext();
 
-        if (getVisibility() != View.VISIBLE)
+        if (getVisibility() != VISIBLE)
             return;
 
         // Get the final destination. We'll translate it to N/S and E/W

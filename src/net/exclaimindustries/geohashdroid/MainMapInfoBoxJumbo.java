@@ -14,7 +14,6 @@ import android.location.Location;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.widget.TextView;
 
 /**
@@ -77,7 +76,7 @@ public class MainMapInfoBoxJumbo extends MainMapInfoBox {
 
         Context c = getContext();
 
-        if (getVisibility() != View.VISIBLE)
+        if (getVisibility() != VISIBLE)
             return;
         
         // Because the minutes and seconds readouts are MUCH longer than that of

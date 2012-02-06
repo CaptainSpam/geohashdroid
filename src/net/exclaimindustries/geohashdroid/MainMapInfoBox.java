@@ -10,7 +10,6 @@ package net.exclaimindustries.geohashdroid;
 import android.content.Context;
 import android.location.Location;
 import android.util.AttributeSet;
-import android.view.View;
 import android.widget.LinearLayout;
 
 /**
@@ -49,7 +48,7 @@ public abstract class MainMapInfoBox extends LinearLayout {
 
         // If we're being set visible again, immediately update the box.
         // This probably isn't strictly necessary, but it's defensive.
-        if (visibility == View.VISIBLE && lastInfo != null) {
+        if (visibility == VISIBLE && lastInfo != null) {
             update(lastInfo, lastLoc);
         }
     }
