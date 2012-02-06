@@ -131,11 +131,9 @@ public class MainMapInfoBoxJumbo extends MainMapInfoBox {
         TextView ytv, dtv, atv;
         
         ytv = (TextView)findViewById(R.id.YouText);
-        ytv.setVisibility(VISIBLE);
         ytv.setText(youLine);
         
         dtv = (TextView)findViewById(R.id.DistanceText);
-        dtv.setVisibility(VISIBLE);
         dtv.setText(distanceLine);
         
         // Accuracy is hidden if it's not needed.

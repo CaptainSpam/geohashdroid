@@ -109,24 +109,15 @@ public class MainMapInfoBoxSmall extends MainMapInfoBox {
         
         // Good!  Now that we've got all the data, let's grab all our TextViews
         // and go to town!
-        TextView tv;
-        tv = ((TextView)findViewById(R.id.ToText));
-        tv.setVisibility(VISIBLE);
-        tv.setText(finalLine);
-        
-        tv = ((TextView)findViewById(R.id.YouText));
-        tv.setVisibility(VISIBLE);
-        tv.setText(youLine);
-        
-        tv = ((TextView)findViewById(R.id.DistanceText));
-        tv.setVisibility(VISIBLE);
-        tv.setText(distanceLine);
+        ((TextView)findViewById(R.id.ToText)).setText(finalLine);
+        ((TextView)findViewById(R.id.YouText)).setText(youLine);
+        ((TextView)findViewById(R.id.DistanceText)).setText(distanceLine);
         
         // Accuracy is hidden if it's not needed.
         if(accuracyLine == null) {
             ((TextView)findViewById(R.id.AccuracyText)).setVisibility(GONE);
         } else {
-            tv = ((TextView)findViewById(R.id.AccuracyText)); 
+            TextView tv = ((TextView)findViewById(R.id.AccuracyText)); 
             tv.setVisibility(VISIBLE);
             tv.setText(accuracyLine);
         }
