@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    
+    <TextView
+        android:id="@+id/TapSomethingText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:textColor="@color/infobox_text"
+        android:textSize="@dimen/infobox_fontsize"
+        android:text="@string/gratmap_activity_title" />
+    
+    <TextView
+        android:id="@+id/GraticuleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:textColor="@color/infobox_text"
+        android:textSize="@dimen/infobox_fontsize" />
+
+    <TextView
+        android:id="@+id/ThirtyWestText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:textColor="@color/infobox_text"
+        android:textSize="@dimen/infobox_fontsize" 
+        android:text="@string/infobox_30w" />
+</merge>

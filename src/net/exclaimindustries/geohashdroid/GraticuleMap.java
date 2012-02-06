@@ -227,7 +227,7 @@ public class GraticuleMap extends MapActivity implements
     }
 
     private void updateBox(Graticule g, Location l) {
-        GraticuleMapInfoBoxView box = (GraticuleMapInfoBoxView)findViewById(R.id.InfoBox);
+        GraticuleMapInfoBox box = (GraticuleMapInfoBox)findViewById(R.id.InfoBox);
         box.update(g, l);
     }
 
