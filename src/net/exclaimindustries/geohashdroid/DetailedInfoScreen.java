@@ -7,7 +7,6 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.text.DateFormat;
-import java.text.DecimalFormat;
 
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationAwareActivity;
@@ -52,13 +51,6 @@ public class DetailedInfoScreen extends LocationAwareActivity {
     private PowerManager.WakeLock mWakeLock;
 
     private static final String DEBUG_TAG = "DetailedInfoScreen";
-
-    /** The decimal format for distances. */
-    protected static final DecimalFormat DIST_FORMAT = new DecimalFormat(
-            "###.######");
-    /** The decimal format for accuracy. */
-    protected static final DecimalFormat ACCURACY_FORMAT = new DecimalFormat(
-            "###.##");
 
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_SEND_TO_MAPS = 6;
@@ -261,12 +253,12 @@ public class DetailedInfoScreen extends LocationAwareActivity {
             tv = (TextView)findViewById(R.id.YouLon);
             tv.setText(UnitConverter.makeLongitudeCoordinateString(this, loc.getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
             tv = (TextView)findViewById(R.id.Distance);
-            tv.setText(UnitConverter.makeDistanceString(this, DIST_FORMAT,
+            tv.setText(UnitConverter.makeDistanceString(this, GHDConstants.DIST_FORMAT,
                     mInfo.getDistanceInMeters(loc)));
             tv = (TextView)findViewById(R.id.Accuracy);
             tv.setText(getResources().getString(R.string.details_accuracy,
                     UnitConverter.makeDistanceString(this,
-                            ACCURACY_FORMAT, loc.getAccuracy())));
+                            GHDConstants.ACCURACY_FORMAT, loc.getAccuracy())));
         }
 
     }

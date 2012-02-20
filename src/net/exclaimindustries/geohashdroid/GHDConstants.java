@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import java.text.DecimalFormat;
+
 /**
  * The <code>GHDConstants</code> class doesn't do anything directly.  All it
  * does is serve as a place to store project-wide statics.
@@ -63,4 +65,10 @@ public final class GHDConstants {
      * could take its place if someone else writes a better graticule picker.
      */
     public static final String PICK_GRATICULE = "net.exclaimindustries.geohashdroid.PICK_GRATICULE";
+    
+    
+    /** The decimal format for most distances. */
+    public static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");
+    /** The decimal format for most accuracy readouts. */
+    public static final DecimalFormat ACCURACY_FORMAT = new DecimalFormat("###.##");
 }
