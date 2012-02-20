@@ -69,8 +69,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
     
     private static final String STORED_FILE = "StoredFile";
-    private static final String STORED_LATITUDE = "StoredLatitude";
-    private static final String STORED_LONGITUDE = "StoredLongitude";
+    private static final String STORED_LOCATION = "StoredLocation";
 
     /** This gets declared at create time to save some calculation later. */
     private static int THUMB_DIMEN;
@@ -92,9 +91,8 @@ public class WikiPictureEditor extends WikiBaseActivity {
     /** The currently-displayed thumbnail. */
     private Bitmap mCurrentThumbnail;
     
-    /** The current latitude and longitude. */
-    private String mCurrentLatitude;
-    private String mCurrentLongitude;
+    /** The current picture location. */
+    private Location mPictureLocation;
     
     private DecimalFormat mDistFormat = new DecimalFormat("###.######");
     
@@ -176,17 +174,14 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 // And in any event, put the image info back up.
                 mCurrentFile = retain.currentFile;
                 mCurrentThumbnail = retain.thumbnail;
-                mCurrentLatitude = retain.latitude;
-                mCurrentLongitude = retain.longitude;
+                mPictureLocation = retain.picLocation;
                 
                 setThumbnail();
             } else {
                 // If there was nothing to retain, maybe we've got a bundle.
                 if(icicle != null) {
                     if(icicle.containsKey(STORED_FILE)) mCurrentFile = icicle.getString(STORED_FILE);
-                    if(icicle.containsKey(STORED_LATITUDE)) mCurrentLatitude = icicle.getString(STORED_LATITUDE);
-                    if(icicle.containsKey(STORED_LONGITUDE)) mCurrentLongitude = icicle.getString(STORED_LONGITUDE);
-                    
+                    if(icicle.containsKey(STORED_LOCATION)) mPictureLocation = icicle.getParcelable(STORED_LOCATION);
                 }
                 
                 // Rebuild it all in any event.
@@ -209,6 +204,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         super.onResume();
         
         resetSubmitButton();
+        updateCoords();
     }
 
     @Override
@@ -226,8 +222,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         
         retain.currentFile = mCurrentFile;
         retain.thumbnail = mCurrentThumbnail;
-        retain.latitude = mCurrentLatitude;
-        retain.longitude = mCurrentLongitude;
+        retain.picLocation = mPictureLocation;
 
         return retain;
     }
@@ -237,8 +232,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         super.onSaveInstanceState(outState);
         
         outState.putString(STORED_FILE, mCurrentFile);
-        outState.putString(STORED_LATITUDE, mCurrentLatitude);
-        outState.putString(STORED_LONGITUDE, mCurrentLongitude);
+        outState.putParcelable(STORED_LOCATION, mPictureLocation);
     }
 
     private class PictureConnectionRunner extends WikiConnectionRunner {
@@ -276,19 +270,11 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
                 CheckBox stamplocation = (CheckBox)findViewById(R.id.stamplocation);
                 try {
-                    if(mCurrentLatitude == null || mCurrentLongitude == null
-                            || mCurrentLatitude.trim().length() == 0
-                            || mCurrentLongitude.trim().length() == 0)
+                    if(mPictureLocation == null)
                         throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
-
-                    // Get a location from the strings.  If any of this fails,
-                    // fall to the exception handler.
-                    double llat = Double.parseDouble(mCurrentLatitude);
-                    double llon = Double.parseDouble(mCurrentLongitude);
-                    sentLoc = new Location("");
-                    sentLoc.setLatitude(llat);
-                    sentLoc.setLongitude(llon);
                         
+                    sentLoc = mPictureLocation;
+                    
                     if(includelocation.isChecked()) {
                         // Parse the following out, first to a double, then
                         // back to a String using the formatter, just to make
@@ -488,8 +474,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         public WikiConnectionRunner handler;
         public String currentFile;
         public Bitmap thumbnail;
-        public String latitude;
-        public String longitude;
+        public Location picLocation;
     }
 
     protected void reset() {
@@ -500,9 +485,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
         // forgotten).
         mCurrentThumbnail = null;
         mCurrentFile = null;
-        mCurrentLongitude = null;
-        mCurrentLatitude = null;
+        mPictureLocation = null;
         setThumbnail();
+        updateCoords();
         resetSubmitButton();
     }
     
@@ -526,21 +511,86 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     cursor.moveToFirst(); 
                     mCurrentFile = cursor.getString(0);
                     // These two could very well be null or empty.  Nothing
-                    // wrong with that.
-                    mCurrentLatitude = cursor.getString(1);
-                    mCurrentLongitude = cursor.getString(2);
+                    // wrong with that.  But if they're good, make a Location
+                    // out of them.
+                    String lat = cursor.getString(1);
+                    String lon = cursor.getString(2);
+                    
+                    try {
+                        double llat = Double.parseDouble(lat);
+                        double llon = Double.parseDouble(lon);
+                        mPictureLocation = new Location("");
+                        mPictureLocation.setLatitude(llat);
+                        mPictureLocation.setLongitude(llon);
+                    } catch (Exception ex) {
+                        // If we get an exception, we got it because of the
+                        // number parser.  Assume it's invalid.
+                        mPictureLocation = null;
+                    }
+                    
                     cursor.close();
                 }
+            } else {
+                mPictureLocation = null;
             }
 
             // Always rebuild the thumbnail and reset submit, just in case.
             buildThumbnail();
             setThumbnail();
             resetSubmitButton();
+            updateCoords();
             
             // We'll decode the bitmap at upload time so as not to keep a
             // potentially big chunky Bitmap around at all times.
         }
+    }
+    
+    private void updateCoords() {
+        // We've got two scenarios here.  One is that we have a picture with
+        // coordinates on it.  The other is that we don't and have to rely on
+        // the user's current location.
+        if(mPictureLocation != null) {
+            // We have a location!  That must mean we have a picture AND it has
+            // geolocation data on it!  Set the title as such.
+            TextView tv = (TextView)(findViewById(R.id.usingstring));
+            tv.setText(R.string.wiki_editor_using_photo_location);
+            
+            // Then, put in the coords.
+            tv = (TextView)(findViewById(R.id.coordstring));
+            tv.setText(UnitConverter.makeFullCoordinateString(this, mPictureLocation, false, UnitConverter.OUTPUT_LONG));
+            
+            // And the distance.
+            tv = (TextView)(findViewById(R.id.diststring));
+            tv.setText(UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(mPictureLocation)));
+        } else {
+            // We have no location!  Let's go with whatever we know.
+            TextView tv = (TextView)(findViewById(R.id.usingstring));
+            tv.setText(R.string.wiki_editor_using_your_location);
+            
+            Location lastLoc = getLastLocation();
+            
+            if(lastLoc != null)
+            {
+                // And we know something!
+                tv = (TextView)(findViewById(R.id.coordstring));
+                tv.setText(UnitConverter.makeFullCoordinateString(this, lastLoc, false, UnitConverter.OUTPUT_LONG));
+                
+                tv = (TextView)(findViewById(R.id.diststring));
+                tv.setText(UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(lastLoc)));
+            } else {
+                // We know nothing!  NOTHING!
+                tv = (TextView)(findViewById(R.id.coordstring));
+                tv.setText(R.string.standby_title);
+                
+                tv = (TextView)(findViewById(R.id.diststring));
+                tv.setText(R.string.standby_title);
+            }
+        }
+    }
+    
+    protected void locationUpdated() {
+        // Update the coordinates if need be.
+        if(mPictureLocation == null) updateCoords();
     }
     
     private void buildThumbnail() {

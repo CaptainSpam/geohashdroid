@@ -32,6 +32,9 @@
 	<dimen name="details_subtitle_fontsize_small">28sp</dimen>
 	<dimen name="details_distance_fontsize_small">18dip</dimen>
 	<dimen name="details_accuracy_fontsize_small">12dip</dimen>
+	
+	<dimen name="wikipost_tiny_fontsize">14dip</dimen>
+	<dimen name="wikipost_really_tiny_fontsize">12dip</dimen>
 
 	<dimen name="main_padding">5dp</dimen>
 	<dimen name="button_date_padding">15dp</dimen>

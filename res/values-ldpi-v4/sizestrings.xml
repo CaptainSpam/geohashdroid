@@ -3,4 +3,6 @@
 <string name="wiki_dialog_append_coordinates">Append coordinates</string>
 <string name="wiki_dialog_stamp_image">Stamp infobox</string>
 <string name="wiki_picture_not_logged_in">Please enter a username in Preferences first.</string>
+<string name="wiki_editor_using_your_location">Your location:</string>
+<string name="wiki_editor_using_photo_location">Picture location:</string>
 </resources>
