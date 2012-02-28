@@ -557,7 +557,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
             
             // Then, put in the coords.
             tv = (TextView)(findViewById(R.id.coordstring));
-            tv.setText(UnitConverter.makeFullCoordinateString(this, mPictureLocation, false, UnitConverter.OUTPUT_LONG));
+            tv.setText(UnitConverter.makeFullCoordinateString(this, mPictureLocation, false, UnitConverter.OUTPUT_SHORT));
             
             // And the distance.
             tv = (TextView)(findViewById(R.id.diststring));
@@ -573,7 +573,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
             {
                 // And we know something!
                 tv = (TextView)(findViewById(R.id.coordstring));
-                tv.setText(UnitConverter.makeFullCoordinateString(this, lastLoc, false, UnitConverter.OUTPUT_LONG));
+                tv.setText(UnitConverter.makeFullCoordinateString(this, lastLoc, false, UnitConverter.OUTPUT_SHORT));
                 
                 tv = (TextView)(findViewById(R.id.diststring));
                 tv.setText(UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(lastLoc)));
