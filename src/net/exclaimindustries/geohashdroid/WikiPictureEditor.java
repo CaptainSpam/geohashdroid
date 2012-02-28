@@ -83,6 +83,13 @@ public class WikiPictureEditor extends WikiBaseActivity {
     private static final int INFOBOX_MARGIN = 16;
     private static final int INFOBOX_PADDING = 8;
     
+    /**
+     * Amount of time until we don't consider this to be a "live" picture.
+     * Currently 15 minutes.  Note that there's no timeout for a "retro"
+     * picture, as that's determined by when the user started the trek.
+     */
+    private static final int LIVE_TIMEOUT = 900000;
+    
     private Info mInfo;
     
     /** The currently-displayed file. */
@@ -93,6 +100,9 @@ public class WikiPictureEditor extends WikiBaseActivity {
     
     /** The current picture location. */
     private Location mPictureLocation;
+    
+    /** The current picture date.  Man, I hope this is a long. */
+    private long mPictureDate = -1;
     
     private DecimalFormat mDistFormat = new DecimalFormat("###.######");
     
@@ -395,11 +405,15 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
 
                 // Add in our message (same caveat as in WikiMessageEditor)...
-                String summaryPrefix;
-                if(mInfo.isRetroHash())
+                String summaryPrefix = "";
+                if(mInfo.isRetroHash()) {
                     summaryPrefix = getText(R.string.wiki_post_picture_summary_retro).toString();
-                else
+                } else if(System.currentTimeMillis() - mPictureDate < LIVE_TIMEOUT) {
+                    // If the picture was WITHIN the timeout, post it with the
+                    // live title.  If not (and it's not retro), don't put any
+                    // title on it.
                     summaryPrefix = getText(R.string.wiki_post_picture_summary).toString();
+                }
                 
                 formfields.put("summary", summaryPrefix + " " + message);
 
@@ -506,10 +520,12 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     cursor = getContentResolver().query(uri, new String[] 
                          { MediaStore.Images.ImageColumns.DATA,
                             MediaStore.Images.ImageColumns.LATITUDE,
-                            MediaStore.Images.ImageColumns.LONGITUDE }, 
+                            MediaStore.Images.ImageColumns.LONGITUDE,
+                            MediaStore.Images.ImageColumns.DATE_TAKEN }, 
                          null, null, null); 
                     cursor.moveToFirst(); 
                     mCurrentFile = cursor.getString(0);
+                    mPictureDate = cursor.getLong(3);
                     // These two could very well be null or empty.  Nothing
                     // wrong with that.  But if they're good, make a Location
                     // out of them.
@@ -532,6 +548,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                 }
             } else {
                 mPictureLocation = null;
+                mPictureDate = -1;
             }
 
             // Always rebuild the thumbnail and reset submit, just in case.
