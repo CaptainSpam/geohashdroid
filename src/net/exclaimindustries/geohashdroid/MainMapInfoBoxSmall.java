@@ -110,7 +110,9 @@ public class MainMapInfoBoxSmall extends MainMapInfoBox {
         // and go to town!
         ((TextView)findViewById(R.id.ToText)).setText(finalLine);
         ((TextView)findViewById(R.id.YouText)).setText(youLine);
-        ((TextView)findViewById(R.id.DistanceText)).setText(distanceLine);
+        TextView dtv = (TextView)findViewById(R.id.DistanceText);
+        dtv.setText(distanceLine);
+        dtv.setTextColor(getDistanceColor(c, info, loc));
         
         // Accuracy is hidden if it's not needed.
         if(accuracyLine == null) {

@@ -65,4 +65,41 @@ public abstract class MainMapInfoBox extends LinearLayout {
      */
     public abstract void update(Info info, Location loc);
 
+    /**
+     * Gets the appropriate color for the distance text.  That is, normal if the
+     * user is out of range, something else if the user is within the accuracy
+     * of the GPS signal AND said accuracy isn't low to begin with.
+     * 
+     * @param c
+     *            a Context
+     * @param info
+     *            the active info
+     * @param loc
+     *            where the user is (can be null)
+     * @return
+     *            the appropriate color (NOT a resource reference)
+     */
+    protected int getDistanceColor(Context c, Info info, Location loc) {
+        if(loc == null) {
+            return c.getResources().getColor(R.color.infobox_text);
+        } else {
+            float accuracy = loc.getAccuracy();
+            
+            // For testing purposes, if the accuracy comes up as zero, assume
+            // that we're either feeding in data via DDMS for testing purposes
+            // or someone decided to put alien GPS-like technology with somehow
+            // absolute accuracy into an Android device and they really have
+            // better things to do than Geohashing.  In either case, use a
+            // relatively sane value for the accuracy.
+            if(accuracy == 0) accuracy = 5;
+
+            if(loc != null
+                    && accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD
+                    && info.getDistanceInMeters(loc) <= accuracy) {
+                    return c.getResources().getColor(R.color.infobox_in_range);
+                } else {
+                    return c.getResources().getColor(R.color.infobox_text);
+                }
+        }
+    }
 }

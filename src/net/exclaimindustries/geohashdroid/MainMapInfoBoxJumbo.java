@@ -104,13 +104,13 @@ public class MainMapInfoBoxJumbo extends MainMapInfoBox {
             youLine = c.getString(R.string.infobox_you) + " "
                     + c.getString(R.string.standby_title);
         }
-
+        
         // The distance to the final destination (as the crow flies)
         String distanceLine = c.getString(R.string.infobox_dist)
                 + " "
                 + (loc != null ? (UnitConverter.makeDistanceString(c,
-                        mDistFormat, info.getDistanceInMeters(loc))) : c
-                        .getString(R.string.standby_title));
+                        mDistFormat, info.getDistanceInMeters(loc)))
+                        : c.getString(R.string.standby_title));
 
         // Whether or not this is at all accurate.
         String accuracyLine = null;
@@ -134,6 +134,7 @@ public class MainMapInfoBoxJumbo extends MainMapInfoBox {
         
         dtv = (TextView)findViewById(R.id.DistanceText);
         dtv.setText(distanceLine);
+        dtv.setTextColor(getDistanceColor(c, info, loc));
         
         // Accuracy is hidden if it's not needed.
         atv = (TextView)findViewById(R.id.AccuracyText);
