@@ -245,6 +245,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
             tv.setText(s);
             tv = (TextView)findViewById(R.id.Distance);
             tv.setText(s);
+            tv.setTextColor(getResources().getColor(R.color.details_text));
             tv = (TextView)findViewById(R.id.Accuracy);
             tv.setText("");
         } else {
@@ -255,6 +256,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
             tv = (TextView)findViewById(R.id.Distance);
             tv.setText(UnitConverter.makeDistanceString(this, GHDConstants.DIST_FORMAT,
                     mInfo.getDistanceInMeters(loc)));
+            tv.setTextColor(getDistanceColor(loc));
             tv = (TextView)findViewById(R.id.Accuracy);
             tv.setText(getResources().getString(R.string.details_accuracy,
                     UnitConverter.makeDistanceString(this,
@@ -266,6 +268,36 @@ public class DetailedInfoScreen extends LocationAwareActivity {
     @Override
     protected void locationUpdated() {
         updateInfo(getLastLocation());
+    }
+    
+    /**
+     * Gets the appropriate color for the distance text.  That is, normal if the
+     * user is out of range, something else if the user is within the accuracy
+     * of the GPS signal AND said accuracy isn't low to begin with.
+     *
+     * @param loc
+     *            where the user is (can be null)
+     * @return
+     *            the appropriate color (NOT a resource reference)
+     */
+    private int getDistanceColor(Location loc) {
+        if(loc == null) {
+            return getResources().getColor(R.color.details_text);
+        } else {
+            float accuracy = loc.getAccuracy();
+            
+            // For testing purposes, the joke that goes here can be found in
+            // MainMapInfoBox's version of this method.
+            if(accuracy == 0) accuracy = 5;
+
+            if(loc != null
+                    && accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD
+                    && mInfo.getDistanceInMeters(loc) <= accuracy) {
+                    return getResources().getColor(R.color.details_in_range);
+                } else {
+                    return getResources().getColor(R.color.details_text);
+                }
+        }
     }
 
 }
