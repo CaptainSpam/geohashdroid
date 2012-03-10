@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.Date;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 /**
  * Displays an edit box and a send button, which shall upload the message
@@ -46,6 +47,8 @@ public class WikiMessageEditor extends WikiBaseActivity {
     
     private Info mInfo;
     private HashMap<String, String> mFormfields;
+    
+    private DecimalFormat mDistFormat = new DecimalFormat("###.######");
 
     private static final String DEBUG_TAG = "MessageEditor";
     
@@ -315,5 +318,34 @@ public class WikiMessageEditor extends WikiBaseActivity {
         // Wipe out the text.
         ((EditText)findViewById(R.id.wikiedittext)).setText("");
         resetSubmitButton();
+    }
+    
+    @Override
+    protected void locationUpdated() {
+        // Coordinates!  Update 'em!
+        updateCoords();
+    }
+    
+    private void updateCoords() {
+        // Unlike in the wiki picture activity, we only have to concern
+        // ourselves with the user's current location.  No picture location, nor
+        // any need to change a text string.  Yay!
+        Location lastLoc = getLastLocation();
+        TextView tv;
+        
+        if(lastLoc != null)
+        {
+            tv = (TextView)(findViewById(R.id.coordstring));
+            tv.setText(UnitConverter.makeFullCoordinateString(this, lastLoc, false, UnitConverter.OUTPUT_SHORT));
+            
+            tv = (TextView)(findViewById(R.id.diststring));
+            tv.setText(UnitConverter.makeDistanceString(this, mDistFormat, mInfo.getDistanceInMeters(lastLoc)));
+        } else {
+            tv = (TextView)(findViewById(R.id.coordstring));
+            tv.setText(R.string.standby_title);
+            
+            tv = (TextView)(findViewById(R.id.diststring));
+            tv.setText(R.string.standby_title);
+        }
     }
 }

@@ -1,19 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-      android:orientation="vertical"
-      android:layout_width="fill_parent" android:layout_height="fill_parent">
-  <EditText android:id="@+id/wikiedittext"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <EditText
+        android:id="@+id/wikiedittext"
         android:layout_width="fill_parent"
-        android:hint="@string/hint_message" android:inputType="textCapSentences|textMultiLine" android:layout_height="0dp" android:layout_weight="1"/>
-  <CheckBox android:id="@+id/includelocation"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:hint="@string/hint_message"
+        android:inputType="textCapSentences|textMultiLine" />
+
+    <TextView
+        android:id="@+id/coordstring"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:text="@string/standby_title"
+        android:textSize="@dimen/wikipost_really_tiny_fontsize"
+        android:visibility="visible" />
+
+    <TextView
+        android:id="@+id/diststring"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:text="@string/standby_title"
+        android:textSize="@dimen/wikipost_really_tiny_fontsize"
+        android:visibility="visible" />
+
+    <CheckBox
+        android:id="@+id/includelocation"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:checked="true" android:text="@string/wiki_dialog_append_coordinates"/>
-  
-  <Button android:id="@+id/wikieditbutton"
+        android:checked="true"
+        android:text="@string/wiki_dialog_append_coordinates" />
+
+    <Button
+        android:id="@+id/wikieditbutton"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" android:text="@string/wiki_dialog_submit_message"/>
-  <TextView android:id="@+id/warningmessage"
+        android:layout_height="wrap_content"
+        android:text="@string/wiki_dialog_submit_message" />
+
+    <TextView
+        android:id="@+id/warningmessage"
         android:layout_width="fill_parent"
-        android:text="@string/wiki_editor_not_logged_in" android:layout_height="wrap_content" android:visibility="gone"/>
-  </LinearLayout>
+        android:layout_height="wrap_content"
+        android:text="@string/wiki_editor_not_logged_in"
+        android:visibility="gone" />
+
+</LinearLayout>

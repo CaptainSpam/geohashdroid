@@ -384,11 +384,6 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
     protected void doDismiss() {
         
     }
-
-    @Override
-    protected void locationUpdated() {
-        // Don't need to do anything with this, the stored Location will do.
-    }
     
     /**
      * Do whatever needs doing to reset the screen after, say, the post is made.

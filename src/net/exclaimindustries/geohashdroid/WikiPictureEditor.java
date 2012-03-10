@@ -605,6 +605,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         }
     }
     
+    @Override
     protected void locationUpdated() {
         // Update the coordinates if need be.
         if(mPictureLocation == null) updateCoords();
