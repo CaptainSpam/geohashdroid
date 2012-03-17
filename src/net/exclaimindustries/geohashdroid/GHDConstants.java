@@ -52,6 +52,11 @@ public final class GHDConstants {
     public static final String PREF_WIKI_PHONE_TIME = "WikiUsePhoneTime";
     /** Prefs key specifying if the Today checkbox is ticked. */
     public static final String PREF_TODAY = "AlwaysToday";
+    /**
+     * Prefs key tracking if we've reported on the closeness of the user to the
+     * final destination.
+     */
+    public static final String PREF_CLOSENESS_REPORTED = "ClosenessReported";
     
     /** Threshold for the "Accuracy Low" warning (currently 64m). **/
     public static final int LOW_ACCURACY_THRESHOLD = 64;
