@@ -39,6 +39,11 @@ import android.widget.Toast;
  */
 public class ClosenessActor {
     private Context mContext;
+    /**
+     * Cache this locally so we don't need to keep going to preferences on EVERY
+     * location update. 
+     */
+    private boolean mBeenThere;
     
     /**
      * Makes a new ClosenessActor.  The only way this could be MORE exciting is
@@ -49,6 +54,8 @@ public class ClosenessActor {
      */
     public ClosenessActor(Context c) {
         mContext = c;
+        
+        mBeenThere = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0).getBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, false);
     }
     
     /**
@@ -59,6 +66,7 @@ public class ClosenessActor {
         SharedPreferences.Editor editor = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0).edit();
         editor.putBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, false);
         editor.commit();
+        mBeenThere = false;
     }
     
     /**
@@ -68,15 +76,17 @@ public class ClosenessActor {
      * @param loc the current Location on which to act
      */
     public void actOnLocation(Info info, Location loc) {
-        // First, if we've been down this path before, ignore it.  Let's abuse
-        // the preferences system to give us an effectively static boolean!
-        SharedPreferences prefs = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0);
-        if(prefs.getBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, false)) return;
+        // First, if we've been down this path before, ignore it.
+        if(mBeenThere) return;
         
         // Otherwise, do a quick measurement get toastin'!
         if(isCloseEnough(info, loc)) {
-            SharedPreferences.Editor editor = prefs.edit();
+            // Let's abuse the preferences system to give us an effectively
+            // static boolean!
+            SharedPreferences.Editor editor = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0).edit();
             editor.putBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, true);
+            editor.commit();
+            mBeenThere = true;
             Toast.makeText(mContext, R.string.toast_close_enough, Toast.LENGTH_LONG);
         }
     }
