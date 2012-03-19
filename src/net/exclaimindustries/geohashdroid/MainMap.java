@@ -21,6 +21,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -58,8 +62,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private boolean mAutoZoom = true;
     // Our bucket o' info (some data is repeated for convenience)
     private Info mInfo;
-    // The actor!
-    private ClosenessActor mCloseness;
 
     private PowerManager.WakeLock mWakeLock;
 
@@ -123,6 +125,78 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private int mNextNearbyY;
 
     private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
+    
+    /**
+     * This class needs to be here so ClosenessActor has something to act on.
+     * It effectively acts like LocationAwareActivity, just pared down to just
+     * what ClosenessActor needs.
+     */
+    private class ClosenessActorHolder implements LocationListener {
+        private ClosenessActor mCloseness;
+//        private Location mLastLocation;
+        private boolean mIsGPSActive = false;
+        private LocationManager mManager;
+        private Info mInfo;
+        
+        ClosenessActorHolder(Context c, Info i) {
+            mInfo = i;
+            mCloseness = new ClosenessActor(c);
+            mManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        }
+        
+        public void reset() {
+            mCloseness.reset();
+        }
+        
+        public void activate() {
+            // See what's open.
+            List<String> providers = mManager.getProviders(true);
+
+            // Now, register all providers and get us going!
+            for (String s : providers) {
+                mManager.requestLocationUpdates(s, 0, 0, this);
+            }
+        }
+        
+        public void deactivate() {
+            // Stop getting location updates.
+            mManager.removeUpdates(this);
+        }
+
+        @Override
+        public void onLocationChanged(Location loc) {
+            if (loc.getProvider() != null
+                    && loc.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+                // If this was a GPS fix, flip on our handy boolean and update!
+                mIsGPSActive = true;
+                mCloseness.actOnLocation(mInfo, loc);
+            } else if (!mIsGPSActive) {
+                // If this wasn't a GPS fix, but last we knew, GPS wasn't active
+                // (or doesn't have a fix yet), update anyway.
+                mCloseness.actOnLocation(mInfo, loc);
+            }
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            if (provider.equals(LocationManager.GPS_PROVIDER))
+                mIsGPSActive = false;
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            if (provider.equals(LocationManager.GPS_PROVIDER)
+                    && status != LocationProvider.AVAILABLE)
+                mIsGPSActive = false;
+        }
+    }
+    
+    private ClosenessActorHolder mClosenessHolder;
 
     @Override
     protected void onCreate(Bundle icicle) {
@@ -130,7 +204,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         
         mNearbyOn = false;
         mResumeFlags = false;
-        mCloseness = new ClosenessActor(this);
 
         // First, reset the wakelock. The last one, if one was there in the
         // first place, was released on the last onStop. Thus, this is safe.
@@ -153,6 +226,8 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // it.  This is better than the store-with-icicle method I used earlier,
         // since that sometimes persisted when the Intent should've overridden.
         assignNewInfo((Info)getIntent().getParcelableExtra(GeohashDroid.INFO));
+        
+        mClosenessHolder = new ClosenessActorHolder(this, mInfo);
 
         // Now, gather up our data and do anything we need to that's common to
         // all cases.
@@ -237,6 +312,9 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         mMyLocation.disableMyLocation();
         mMyLocation.disableCompass();
 
+        // Stop the ClosenessActor.
+        mClosenessHolder.deactivate();
+        
         // Release the wakelock.
         mWakeLock.release();
     }
@@ -300,6 +378,9 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // As does the wakelock.
         mWakeLock.acquire();
+        
+        // And set the ClosenessActor in motion.
+        mClosenessHolder.activate();
     }
 
     @Override
@@ -1101,7 +1182,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         }
         
         // Step Six:
-        mCloseness.reset();
+        mClosenessHolder.reset();
         
         // Done and done!
     }
