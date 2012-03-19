@@ -90,8 +90,6 @@ public class WikiPictureEditor extends WikiBaseActivity {
      */
     private static final int LIVE_TIMEOUT = 900000;
     
-    private Info mInfo;
-    
     /** The currently-displayed file. */
     private String mCurrentFile;
     
@@ -608,6 +606,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
     @Override
     protected void locationUpdated() {
         // Update the coordinates if need be.
+        super.locationUpdated();
         if(mPictureLocation == null) updateCoords();
     }
     

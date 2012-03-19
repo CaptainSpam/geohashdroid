@@ -38,6 +38,8 @@ import android.widget.Toast;
  *
  */
 public class ClosenessActor {
+//    private static final String DEBUG_TAG = "ClosenessActor";
+    
     private Context mContext;
     /**
      * Cache this locally so we don't need to keep going to preferences on EVERY
@@ -77,7 +79,9 @@ public class ClosenessActor {
      */
     public void actOnLocation(Info info, Location loc) {
         // First, if we've been down this path before, ignore it.
-        if(mBeenThere) return;
+        if(mBeenThere || info == null) {
+            return;
+        }
         
         // Otherwise, do a quick measurement get toastin'!
         if(isCloseEnough(info, loc)) {
@@ -87,7 +91,7 @@ public class ClosenessActor {
             editor.putBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, true);
             editor.commit();
             mBeenThere = true;
-            Toast.makeText(mContext, R.string.toast_close_enough, Toast.LENGTH_LONG);
+            Toast.makeText(mContext, R.string.toast_close_enough, Toast.LENGTH_LONG).show();
         }
     }
     

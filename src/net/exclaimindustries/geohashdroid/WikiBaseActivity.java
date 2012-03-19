@@ -160,6 +160,8 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
     protected ProgressDialog mProgress;
     protected Thread mWikiConnectionThread;
     protected boolean mDontStopTheThread = false;
+    private ClosenessActor mCloseness;
+    protected Info mInfo;
     
     protected WikiConnectionRunner mConnectionHandler;
     
@@ -244,6 +246,8 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
                 mLastErrorText = icicle.getString(LAST_ERROR);
             } catch (Exception ex) {}
         }
+        
+        mCloseness = new ClosenessActor(this);
     }
     
     /* (non-Javadoc)
@@ -377,6 +381,12 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
         return true;
     }
     
+    @Override
+    protected void locationUpdated() {
+        // In all cases, make sure the ClosenessActor acts as need be.
+        mCloseness.actOnLocation(mInfo, getLastLocation());
+    }
+
     /**
      * Do whatever needs to be done when the dialog is dismissed on success.
      * The base method does nothing.

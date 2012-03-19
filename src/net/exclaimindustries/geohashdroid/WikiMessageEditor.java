@@ -45,7 +45,6 @@ public class WikiMessageEditor extends WikiBaseActivity {
     private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
     private static final SimpleDateFormat sigDateFormat = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
     
-    private Info mInfo;
     private HashMap<String, String> mFormfields;
     
     private DecimalFormat mDistFormat = new DecimalFormat("###.######");
@@ -322,6 +321,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
     
     @Override
     protected void locationUpdated() {
+        super.locationUpdated();
         // Coordinates!  Update 'em!
         updateCoords();
     }

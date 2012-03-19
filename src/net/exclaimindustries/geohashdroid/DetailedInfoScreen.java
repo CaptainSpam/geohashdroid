@@ -47,6 +47,8 @@ public class DetailedInfoScreen extends LocationAwareActivity {
     private static final String SHOW_RADAR_ACTION = "com.google.android.radar.SHOW_RADAR";
 
     private Info mInfo;
+    
+    private ClosenessActor mCloseness;
 
     private PowerManager.WakeLock mWakeLock;
 
@@ -67,6 +69,9 @@ public class DetailedInfoScreen extends LocationAwareActivity {
 
         // Lay 'er out!
         setContentView(R.layout.detail);
+        
+        // Set up the actor!
+        mCloseness = new ClosenessActor(this);
 
         // Get me a wakelock! Since we're dealing with something the
         // user might want to take pictures of outside the phone, this
@@ -267,6 +272,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
 
     @Override
     protected void locationUpdated() {
+        mCloseness.actOnLocation(mInfo, getLastLocation());
         updateInfo(getLastLocation());
     }
     

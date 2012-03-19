@@ -58,6 +58,8 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private boolean mAutoZoom = true;
     // Our bucket o' info (some data is repeated for convenience)
     private Info mInfo;
+    // The actor!
+    private ClosenessActor mCloseness;
 
     private PowerManager.WakeLock mWakeLock;
 
@@ -128,6 +130,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         
         mNearbyOn = false;
         mResumeFlags = false;
+        mCloseness = new ClosenessActor(this);
 
         // First, reset the wakelock. The last one, if one was there in the
         // first place, was released on the last onStop. Thus, this is safe.
@@ -1096,6 +1099,9 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         } else {
             mMapView.getController().animateTo(i.getFinalDestination());
         }
+        
+        // Step Six:
+        mCloseness.reset();
         
         // Done and done!
     }

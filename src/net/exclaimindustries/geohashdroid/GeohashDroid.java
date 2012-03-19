@@ -714,6 +714,9 @@ public class GeohashDroid extends Activity {
                     .getLongitudeString(true));
             editor.commit();
         }
+        
+        // Then, before we kick this off, reset the ClosenessActor.
+        new ClosenessActor(this).reset();
 
         Intent i = new Intent(GeohashDroid.this, MainMap.class);
 
