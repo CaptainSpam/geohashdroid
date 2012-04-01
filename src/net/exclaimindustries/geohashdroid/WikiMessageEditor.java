@@ -21,19 +21,21 @@ import android.content.SharedPreferences;
 
 import android.location.Location;
 
+import net.exclaimindustries.tools.DateTools;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-import java.util.Date;
 
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 /**
  * Displays an edit box and a send button, which shall upload the message
  * entered to the appropriate expedition page in the Geohashing wiki. 
@@ -43,7 +45,6 @@ import java.text.SimpleDateFormat;
 public class WikiMessageEditor extends WikiBaseActivity {
 
     private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
-    private static final SimpleDateFormat sigDateFormat = new SimpleDateFormat("HH:mm, dd MMMM yyyy (z)");
     
     private HashMap<String, String> mFormfields;
     
@@ -252,7 +253,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
                     before = page;
                 }
 
-                String localtime = sigDateFormat.format(new Date());
+                String localtime = DateTools.getWikiDateString(Calendar.getInstance());
 
                 String message = "\n*" + editText.getText().toString().trim()
                         + "  -- ~~~" + locationTag + " "
