@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid;
 
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
@@ -1203,8 +1204,14 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         // We use the "0,0?q=" form, because that'll put a marker on the
         // map.  If we just used the normal form, it would just center
         // the map to that location and not do anything with it.
-        i.setData(Uri.parse("geo:0,0?q=" + location));
-        startActivity(i);        
+        i.setData(Uri.parse("geo:0,0?q=loc:"
+                + location
+                + "("
+                + this.getString(
+                        R.string.send_to_maps_point_name,
+                        DateFormat.getDateInstance(DateFormat.LONG).format(
+                                mInfo.getCalendar().getTime())) + ")&z=15"));
+        startActivity(i);  
     }
 
     @Override
