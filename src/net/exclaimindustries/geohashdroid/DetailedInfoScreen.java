@@ -1,4 +1,5 @@
 /**
+ * DetailedInfoScreen.java
  * Copyright (C)2009 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
@@ -156,16 +157,19 @@ public class DetailedInfoScreen extends LocationAwareActivity {
                 Intent i = new Intent();
                 i.setAction(Intent.ACTION_VIEW);
                 
-                // Assemble the URI line.  We'll use a slightly higher-than-
-                // default zoom level (we don't have the ability to say "fit
-                // this and the user's current location on screen" when we're
-                // going to the Maps app).
+                // Assemble the location.  This is a simple latitude,longitude
+                // setup.
                 String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
                 
-                // We use the "0,0?q=" form, because that'll put a marker on the
-                // map.  If we just used the normal form, it would just center
-                // the map to that location and not do anything with it.
-                i.setData(Uri.parse("geo:0,0?q=" + location));
+                // Then, toss the location out the door and hope whatever map
+                // we're using is paying attention.
+                i.setData(Uri.parse("geo:0,0?q=loc:"
+                        + location
+                        + "("
+                        + this.getString(
+                                R.string.send_to_maps_point_name,
+                                DateFormat.getDateInstance(DateFormat.LONG).format(
+                                        mInfo.getCalendar().getTime())) + ")&z=15"));
                 startActivity(i);
                 
                 return true;

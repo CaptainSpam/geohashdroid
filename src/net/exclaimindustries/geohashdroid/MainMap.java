@@ -1195,15 +1195,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         Intent i = new Intent();
         i.setAction(Intent.ACTION_VIEW);
         
-        // Assemble the URI line.  We'll use a slightly higher-than-
-        // default zoom level (we don't have the ability to say "fit
-        // this and the user's current location on screen" when we're
-        // going to the Maps app).
+        // Assemble the location.  This is a simple latitude,longitude setup.
         String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
         
-        // We use the "0,0?q=" form, because that'll put a marker on the
-        // map.  If we just used the normal form, it would just center
-        // the map to that location and not do anything with it.
+        // Then, toss the location out the door and hope whatever map we're
+        // using is paying attention.
         i.setData(Uri.parse("geo:0,0?q=loc:"
                 + location
                 + "("
