@@ -121,6 +121,12 @@ public class DetailedInfoScreen extends LocationAwareActivity {
         item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 0,
                 R.string.menu_item_send_to_maps);
         item.setIcon(android.R.drawable.ic_menu_myplaces);
+        
+        // (if we have a map)
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
+        boolean isAvailable = AndroidUtil.isIntentAvailable(this, i);
+        item.setEnabled(isAvailable);
 
         // We can send this to radar!
         item = menu.add(Menu.NONE, MENU_SEND_TO_RADAR, 1, 
@@ -128,7 +134,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
         item.setIcon(android.R.drawable.ic_menu_compass);
         
         // (if we have radar)
-        final boolean isAvailable = AndroidUtil.isIntentAvailable(this,
+        isAvailable = AndroidUtil.isIntentAvailable(this,
                 SHOW_RADAR_ACTION);
         item.setEnabled(isAvailable);
         

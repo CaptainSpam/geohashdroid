@@ -7,9 +7,12 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.tools.AndroidUtil;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
@@ -119,8 +122,13 @@ public class FinalDestinationOverlay extends Overlay {
         // With a tap, we prompt to send it off to the Maps app.  To MainMap!
         if(isPointOnIcon(p, mapView))
         {
-            // If this is on us, we need to act!  Give us a popup!
-            mParent.showDialog(MainMap.DIALOG_SEND_TO_MAPS);
+            // Well, ONLY if we have a map to go to.
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
+            if(AndroidUtil.isIntentAvailable(mParent, i)) {
+                // If this is on us, we need to act!  Give us a popup!
+                mParent.showDialog(MainMap.DIALOG_SEND_TO_MAPS);
+            }
             return true;
         }
         else

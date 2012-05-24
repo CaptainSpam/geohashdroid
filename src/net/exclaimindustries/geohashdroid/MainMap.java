@@ -460,7 +460,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         item.setIcon(android.R.drawable.ic_menu_compass);
         
         // (if we have radar)
-        final boolean isAvailable = AndroidUtil.isIntentAvailable(this,
+        boolean isAvailable = AndroidUtil.isIntentAvailable(this,
                 SHOW_RADAR_ACTION);
         item.setEnabled(isAvailable);
         
@@ -468,6 +468,12 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         item = menu.add(Menu.NONE, MENU_SEND_TO_MAPS, 5,
                 R.string.menu_item_send_to_maps);
         item.setIcon(android.R.drawable.ic_menu_myplaces);
+        
+        // (if we have a map)
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
+        isAvailable = AndroidUtil.isIntentAvailable(this, i);
+        item.setEnabled(isAvailable);
 
         // Settings comes last!  Settings ALWAYS comes last.
         item = menu.add(Menu.NONE, MENU_SETTINGS, 6,
