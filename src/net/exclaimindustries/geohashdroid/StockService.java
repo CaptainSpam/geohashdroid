@@ -11,10 +11,13 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+//import android.util.Log;
 
 /**
  * <p>
@@ -34,6 +37,21 @@ import android.os.IBinder;
  *
  */
 public class StockService extends Service {
+    
+//    private static final String DEBUG_TAG = "StockService";
+    
+    public static class StockBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context c, Intent i) {
+            // If this is the boot broadcast, start the service.
+            if(i.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
+                Intent serviceIntent = new Intent(c, StockService.class);
+                c.startService(serviceIntent);
+            }
+        }
+        
+    }
 
     private AlarmManager mAlarmManager;
     
@@ -73,12 +91,15 @@ public class StockService extends Service {
             alarmTime.add(Calendar.DAY_OF_MONTH, 1);
         }
         
+        Intent alarmIntent = new Intent();
+        alarmIntent.setAction(GHDConstants.STOCK_ALARM);
+        
         mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
         
         mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
                 alarmTime.getTimeInMillis(),
                 AlarmManager.INTERVAL_DAY,
-                null);
+                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
     }
 
 }
