@@ -82,6 +82,8 @@
             android:label="@string/standby_title"
             android:theme="@android:style/Theme.Dialog" >
         </activity>
+        <service android:name="StockService">
+        </service>
     </application>
 
 </manifest>
