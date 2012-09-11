@@ -67,10 +67,10 @@ public class UnitConverter {
         // First, get the current unit preference.
         SharedPreferences prefs = c.getSharedPreferences(
                 GHDConstants.PREFS_BASE, 0);
-        String units = prefs.getString(GHDConstants.PREF_DIST_UNITS, "Metric");
+        String units = prefs.getString(GHDConstants.PREF_DIST_UNITS, GHDConstants.PREFVAL_DIST_METRIC);
 
         // Second, run the conversion.
-        if (units.equals("Metric")) {
+        if (units.equals(GHDConstants.PREFVAL_DIST_METRIC)) {
             // Meters are easy, if not only for the fact that, by default, the
             // Location object returns distances in meters. And the fact that
             // it's in powers of ten.
@@ -79,7 +79,7 @@ public class UnitConverter {
             } else {
                 return df.format(distance) + "m";
             }
-        } else if (units.equals("Imperial")) {
+        } else if (units.equals(GHDConstants.PREFVAL_DIST_IMPERIAL)) {
             // Convert!
             double feet = distance * FEET_PER_METER;
 
@@ -204,7 +204,7 @@ public class UnitConverter {
         NumberFormat nf = NumberFormat.getInstance();
 
         try {
-            if(units.equals("Degrees")) {
+            if(units.equals(GHDConstants.PREFVAL_COORD_DEGREES)) {
                 // Easy case: Use the result Location gives us, modified by the
                 // longForm boolean.
                 switch(format) {
@@ -215,7 +215,7 @@ public class UnitConverter {
                     default:
                         return DETAIL_FORMAT.format(coord) + "\u00b0";
                 }
-            } else if(units.equals("Minutes")) {
+            } else if(units.equals(GHDConstants.PREFVAL_COORD_MINUTES)) {
                 // Harder case 1: Minutes.
                 String temp = Location.convert(coord, Location.FORMAT_MINUTES);
                 String[] split = temp.split(":");
@@ -231,7 +231,7 @@ public class UnitConverter {
                     default:
                         return split[0] + "\u00b0" + split[1]+ "\u2032";
                 }
-            } else if(units.equals("Seconds")) {
+            } else if(units.equals(GHDConstants.PREFVAL_COORD_SECONDS)) {
                 // Harder case 2: Seconds.
                 String temp = Location.convert(coord, Location.FORMAT_SECONDS);
                 String[] split = temp.split(":");

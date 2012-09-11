@@ -331,15 +331,15 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
-        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
+        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, GHDConstants.PREFVAL_INFOBOX_SMALL);
 
         // And now, check it.
-        if (setting.equals("Jumbo")) {
+        if (setting.equals(GHDConstants.PREFVAL_INFOBOX_JUMBO)) {
             // Jumbo disables the compass!
             mMyLocation.disableCompass();
             infobox.setVisibility(View.GONE);
             infoboxbig.setVisibility(View.VISIBLE);
-        } else if (setting.equals("Small")) {
+        } else if (setting.equals(GHDConstants.PREFVAL_INFOBOX_SMALL)) {
             mMyLocation.enableCompass();
             infobox.setVisibility(View.VISIBLE);
             infoboxbig.setVisibility(View.GONE);
@@ -978,11 +978,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
-        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
+        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, GHDConstants.PREFVAL_INFOBOX_SMALL);
 
-        if (setting.equals("Jumbo"))
+        if (setting.equals(GHDConstants.PREFVAL_INFOBOX_JUMBO))
             infoboxbig.update(mInfo, mMyLocation.getLastFix());
-        else if (setting.equals("Small"))
+        else if (setting.equals(GHDConstants.PREFVAL_INFOBOX_SMALL))
             infobox.update(mInfo, mMyLocation.getLastFix());
     }
 

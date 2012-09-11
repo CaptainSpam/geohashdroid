@@ -120,10 +120,10 @@ public class PreferenceEditScreen extends PreferenceActivity {
         
         // Starting it off with infobox size!
         curPref = (Preference)findPreference(GHDConstants.PREF_INFOBOX_SIZE);
-        String set = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
-        if(set.equals("None"))
+        String set = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, GHDConstants.PREFVAL_INFOBOX_SMALL);
+        if(set.equals(GHDConstants.PREFVAL_INFOBOX_NONE))
             curPref.setSummary(R.string.pref_infobox_off);
-        else if(set.equals("Small"))
+        else if(set.equals(GHDConstants.PREFVAL_INFOBOX_SMALL))
             curPref.setSummary(R.string.pref_infobox_small);
         else
             curPref.setSummary(R.string.pref_infobox_jumbo);
@@ -136,9 +136,9 @@ public class PreferenceEditScreen extends PreferenceActivity {
                 // newValue better be a String...
                 if(newValue instanceof String) {
                     String set = (String)newValue;
-                    if(set.equals("None"))
+                    if(set.equals(GHDConstants.PREFVAL_INFOBOX_NONE))
                         preference.setSummary(R.string.pref_infobox_off);
-                    else if(set.equals("Small"))
+                    else if(set.equals(GHDConstants.PREFVAL_INFOBOX_SMALL))
                         preference.setSummary(R.string.pref_infobox_small);
                     else
                         preference.setSummary(R.string.pref_infobox_jumbo);
@@ -150,8 +150,8 @@ public class PreferenceEditScreen extends PreferenceActivity {
         
         // Distance units!
         curPref = (Preference)findPreference(GHDConstants.PREF_DIST_UNITS);
-        set = prefs.getString(GHDConstants.PREF_DIST_UNITS, "Metric");
-        if(set.equals("Metric"))
+        set = prefs.getString(GHDConstants.PREF_DIST_UNITS, GHDConstants.PREFVAL_DIST_METRIC);
+        if(set.equals(GHDConstants.PREFVAL_DIST_METRIC))
             curPref.setSummary(R.string.pref_units_metric);
         else
             curPref.setSummary(R.string.pref_units_imperial);
@@ -164,7 +164,7 @@ public class PreferenceEditScreen extends PreferenceActivity {
                 // newValue better be a String...
                 if(newValue instanceof String) {
                     String set = (String)newValue;
-                    if(set.equals("Metric"))
+                    if(set.equals(GHDConstants.PREFVAL_DIST_METRIC))
                         preference.setSummary(R.string.pref_units_metric);
                     else
                         preference.setSummary(R.string.pref_units_imperial);
@@ -176,10 +176,10 @@ public class PreferenceEditScreen extends PreferenceActivity {
         
         // Coordinate units!
         curPref = (Preference)findPreference(GHDConstants.PREF_COORD_UNITS);
-        set = prefs.getString(GHDConstants.PREF_COORD_UNITS, "Degrees");
-        if(set.equals("Degrees"))
+        set = prefs.getString(GHDConstants.PREF_COORD_UNITS, GHDConstants.PREFVAL_COORD_DEGREES);
+        if(set.equals(GHDConstants.PREFVAL_COORD_DEGREES))
             curPref.setSummary(R.string.pref_coordunits_degrees);
-        else if(set.equals("Minutes"))
+        else if(set.equals(GHDConstants.PREFVAL_COORD_MINUTES))
             curPref.setSummary(R.string.pref_coordunits_minutes);
         else
             curPref.setSummary(R.string.pref_coordunits_seconds);
@@ -192,9 +192,9 @@ public class PreferenceEditScreen extends PreferenceActivity {
                 // newValue better be a String...
                 if(newValue instanceof String) {
                     String set = (String)newValue;
-                    if(set.equals("Degrees"))
+                    if(set.equals(GHDConstants.PREFVAL_COORD_DEGREES))
                         preference.setSummary(R.string.pref_coordunits_degrees);
-                    else if(set.equals("Minutes"))
+                    else if(set.equals(GHDConstants.PREFVAL_COORD_MINUTES))
                         preference.setSummary(R.string.pref_coordunits_minutes);
                     else
                         preference.setSummary(R.string.pref_coordunits_seconds);
