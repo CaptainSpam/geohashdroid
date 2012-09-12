@@ -255,12 +255,12 @@ public class HashBuilder {
             if (sCal.get(Calendar.MONTH) + 1 < 10)
                 sMonthStr = "0" + (sCal.get(Calendar.MONTH) + 1);
             else
-                sMonthStr = new Integer(sCal.get(Calendar.MONTH) + 1).toString();
+                sMonthStr = Integer.valueOf(sCal.get(Calendar.MONTH) + 1).toString();
 
             if (sCal.get(Calendar.DAY_OF_MONTH) < 10)
                 sDayStr = "0" + sCal.get(Calendar.DAY_OF_MONTH);
             else
-                sDayStr = new Integer(sCal.get(Calendar.DAY_OF_MONTH)).toString();
+                sDayStr = Integer.valueOf(sCal.get(Calendar.DAY_OF_MONTH)).toString();
 
             // Good, good! Now, to the web!  Go through our list of sites in
             // order until we find an answer, we bottom out, or we abort.  In
@@ -316,7 +316,7 @@ public class HashBuilder {
                 // With that done, we try to convert the output to the float.
                 // If this fails, we got bogus data and should roll on.
                 try {
-                    new Float(result);
+                    Float.parseFloat(result);
                 } catch (NumberFormatException nfe) {
                     result = "";
                     continue;
@@ -657,12 +657,12 @@ public class HashBuilder {
         if (c.get(Calendar.MONTH) + 1 < 10)
             monthStr = "0" + (c.get(Calendar.MONTH) + 1);
         else
-            monthStr = new Integer(c.get(Calendar.MONTH) + 1).toString();
+            monthStr = Integer.valueOf(c.get(Calendar.MONTH) + 1).toString();
 
         if (c.get(Calendar.DAY_OF_MONTH) < 10)
             dayStr = "0" + c.get(Calendar.DAY_OF_MONTH);
         else
-            dayStr = new Integer(c.get(Calendar.DAY_OF_MONTH)).toString();
+            dayStr = Integer.valueOf(c.get(Calendar.DAY_OF_MONTH)).toString();
 
         // And here it goes!
         String fullLine = c.get(Calendar.YEAR) + "-" + monthStr + "-"
