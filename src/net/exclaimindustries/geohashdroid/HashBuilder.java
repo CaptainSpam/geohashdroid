@@ -130,7 +130,7 @@ public class HashBuilder {
             mGrat = g;
             mHandler = h;
             mStatus = IDLE;
-            mWakeLock = ((PowerManager)(con.getSystemService(Context.POWER_MANAGER))).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, DEBUG_TAG);
+            mWakeLock = ((PowerManager)(con.getSystemService(Context.POWER_SERVICE))).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, DEBUG_TAG);
         }
         
         @Override
