@@ -28,6 +28,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.util.Log;
 
 /**
@@ -74,6 +75,8 @@ public class HashBuilder {
      * static methods of HashBuilder to make the Info bundle.
      */
     public static class StockRunner implements Runnable {
+        private static final String DEBUG_TAG = "StockRunner";
+
         /**
          * This is busy, either with getting the stock price or working out
          * the hash.
@@ -110,6 +113,7 @@ public class HashBuilder {
         private HttpGet mRequest;
         private int mStatus;
         private Object mLastObject;
+        private PowerManager.WakeLock mWakeLock;
         
         // This may be expanded later to allow a user-definable list, hence why
         // it doesn't follow the usual naming conventions I use.  Of course, in
@@ -126,10 +130,28 @@ public class HashBuilder {
             mGrat = g;
             mHandler = h;
             mStatus = IDLE;
+            mWakeLock = ((PowerManager)(con.getSystemService(Context.POWER_MANAGER))).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, DEBUG_TAG);
         }
         
         @Override
         public void run() {
+            // And STAY awake!  This might be called from StockService, which,
+            // itself, might be woken up from its peaceful slumber by an alarm.
+            // It'll hand off control to this thread, so this thread will need
+            // to keep its own partial wakelock to make sure everything gets
+            // done before the device snoozes off again.
+            mWakeLock.acquire();
+           
+            // Call the actual meat of the matter.  That's peppered with return
+            // statements for the error cases, so wrapping the call with the
+            // wakelock controls here makes the most sense.
+            runStock();
+
+            // Now, release it.
+            mWakeLock.release();
+        }
+
+        private void runStock() {
             Info toReturn;
             String stock;
             
@@ -210,7 +232,7 @@ public class HashBuilder {
             {
                 Message m = Message.obtain(mHandler, mStatus, toReturn);
                 m.sendToTarget();
-            }   
+            }
         }
         
         /**
