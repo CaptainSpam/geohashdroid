@@ -192,18 +192,18 @@ public class HashBuilder {
                     } catch (FileNotFoundException fnfe) {
                         // If we got a 404, assume it's not posted yet.
                         mStatus = ERROR_NOT_POSTED;
-                        sendMessage(null);
+                        sendMessage(createInvalidInfo(mCal, mGrat));
                         return;
                     } catch (IOException ioe) {
                         // If we got anything else, assume a problem.
                         mStatus = ERROR_SERVER;
-                        sendMessage(null);
+                        sendMessage(createInvalidInfo(mCal, mGrat));
                         return;
                     }
                     
                     if(mStatus == ABORTED) {
                         // If we aborted, send that back, too.
-                        sendMessage(null);
+                        sendMessage(createInvalidInfo(mCal, mGrat));
                         return;
                     }
                 }
@@ -586,7 +586,7 @@ public class HashBuilder {
      * @param c date from which this hash comes
      * @param stockPrice effective stock price (already adjusted for the 30W Rule)
      * @param g the graticule in question
-     * @return
+     * @return a new Info object
      */
     protected static Info createInfo(Calendar c, String stockPrice, Graticule g) {
         // This creates the Info object that'll go right back to whatever was
@@ -601,6 +601,17 @@ public class HashBuilder {
         
         // And finally...
         return new Info(lat, lon, g, c);
+    }
+    
+    /**
+     * Build an Info object marked as invalid.  This is for error-reporting.
+     * 
+     * @param c date from which this hash should've come
+     * @param g the graticule in question
+     * @return an Info object marked invalid
+     */
+    protected static Info createInvalidInfo(Calendar c, Graticule g) {
+        return new Info(g, c);
     }
     
     /**

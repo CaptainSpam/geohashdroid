@@ -258,6 +258,10 @@ public class StockGrabber extends Activity {
                         failure(RESULT_SERVER_FAILURE);
                         break;
                 }
+            } else if(message.obj == null || !((Info)message.obj).isValid()) {
+                // This shouldn't happen; if this was ALL_OKAY, a valid Info
+                // should be defined.  But hey, defensive coding and all.
+                failure(RESULT_SERVER_FAILURE);
             } else {
                 // If, however, we got the all clear, then we're clear! Get
                 // the Info object and act!

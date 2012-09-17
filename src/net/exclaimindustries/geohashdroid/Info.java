@@ -44,6 +44,7 @@ public class Info implements Parcelable {
     private Graticule mGraticule;
     private Calendar mDate;
     private boolean mRetroHash;
+    private boolean mValid;
 
     /**
      * Creates an Info object with the given data. That's it.  If making a
@@ -67,6 +68,24 @@ public class Info implements Parcelable {
         mLongitude = longitude;
         mGraticule = graticule;
         setDate(date);
+        mValid = true;
+    }
+    
+    /**
+     * Creates an Info object with the given graticule and date, but which is
+     * invalid (i.e. has no valid latitude/longitude data).  This is used when
+     * StockRunner reports an error; this way, any Handler can at least figure
+     * out what was going on in the first place.
+     * 
+     * @param graticule the graticule
+     * @param date the date
+     */
+    public Info(Graticule graticule, Calendar date) {
+        mLatitude = 0;
+        mLongitude = 0;
+        mGraticule = graticule;
+        setDate(date);
+        mValid = false;
     }
 
     /**
@@ -305,6 +324,18 @@ public class Info implements Parcelable {
      */
     public boolean isRetroHash() {
         return mRetroHash;
+    }
+    
+    /**
+     * Determines if this Info is valid.  A valid Info has latitude and
+     * longitude data and can thus be sent straight to the map.  An invalid one
+     * doesn't and shouldn't be used for hashing, but CAN be used in a
+     * StockRunner handler to know what the date and graticule was.
+     * 
+     * @return true if valid, false if not
+     */
+    public boolean isValid() {
+        return mValid;
     }
     
     public static final Parcelable.Creator<Info> CREATOR = new Parcelable.Creator<Info>() {
