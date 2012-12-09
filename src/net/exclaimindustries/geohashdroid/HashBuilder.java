@@ -451,7 +451,7 @@ public class HashBuilder {
      * Checks if the stock price for the given date and graticule (accounting
      * for the 30W rule) is stored and can be retrieved without going to the
      * internet.  If this returns true, the interface should NOT display a popup
-     * and should expect to recieve a new Info object quickly.
+     * and should expect to receive a new Info object quickly.
      * 
      * @param con Context used to retrieve the database, if needed
      * @param c Calendar object with the adventure date requested (this will

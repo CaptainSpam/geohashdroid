@@ -20,6 +20,7 @@
         android:normalScreens="true"
         android:resizeable="true"
         android:smallScreens="true" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
         android:allowClearUserData="true"
@@ -84,9 +85,8 @@
         </activity>
         <service android:name="StockService">
         </service>
-        <receiver android:name="StockService$StockBroadcastReceiver">
+        <receiver android:name="net.exclaimindustries.geohashdroid.StockService$StockAlarmReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM"/>
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_FETCH"/>
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_ABORT"/>

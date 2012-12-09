@@ -37,9 +37,15 @@ import android.os.PowerManager;
  * </p>
  * 
  * <p>
+ * In the current implementation, it ONLY starts up when the app is run.  That
+ * is, it won't come on at boot time.  That seems rude for a simple Geohashing
+ * app, really.
+ * </p>
+ * 
+ * <p>
  * Preferably, this'll eventually become the central point from which all stock
  * retrieval comes.  So everything will send out BroadcastIntents to get stock
- * data.  
+ * data.  Eventually.  Not now.
  * </p>
  * @author Nicholas Killewald
  *
@@ -57,7 +63,7 @@ public class StockService extends Service {
     
     private HashBuilder.StockRunner mRunner;
 
-    private AlarmManager mAlarmManager;
+    private AlarmManager mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
     
     /**
      * This handles all wakelockery.
@@ -80,25 +86,6 @@ public class StockService extends Service {
         } else {
             if(mWakeLock.isHeld()) mWakeLock.release();
         }
-    }
-
-    public static class StockBroadcastReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context c, Intent i)  {
-            // Good morning!  Now STAY awake until we're done here.  If the
-            // wakelock is already acquired, don't bother; it'll be freed when
-            // we're done.
-            doWakeLockery(c, true);
-            
-            // If this is the boot broadcast, start the service.
-            if(i.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
-                Intent serviceIntent = new Intent(c, StockService.class);
-                serviceIntent.setAction(i.getAction());
-                c.startService(serviceIntent);
-            }
-        }
-        
     }
     
     /**
@@ -124,6 +111,19 @@ public class StockService extends Service {
                 }
             }
         }
+    }
+    
+    /**
+     * This wakes up the service when the party alarm starts.
+     */
+    public static class StockAlarmReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO Auto-generated method stub
+            
+        }
+        
     }
     
     /* (non-Javadoc)
@@ -170,9 +170,46 @@ public class StockService extends Service {
                 doWakeLockery(service, false);
             } else if(message.what == HashBuilder.StockRunner.ERROR_NOT_POSTED) {
                 // If it wasn't posted yet, we need to send up a notification
-                // AND schedule another check later.
+                // AND schedule another check later.  First, though, make sure
+                // this is a sane request.  If the current time is BEFORE the
+                // usual check time (9:30am), don't try again; we'll never get
+                // a valid stock price until the NYSE opens, and the alarm will
+                // take care of that.  Remember, this should ONLY trigger on
+                // the non-30W stock ("today").  The 30W stock ("yesterday")
+                // should work in all cases StockService is concerned about,
+                // and even if it doesn't, non-30W won't work, either.  This is
+                // why we check 30W first.
+                //
+                // Now, note that "today" in this case will be the system's
+                // concept of "today", regardless of any 30W considerations.
+                Calendar cal = Calendar.getInstance();
+                Calendar nineThirty = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                nineThirty.set(Calendar.HOUR_OF_DAY, 14);
+                nineThirty.set(Calendar.MINUTE, 29);
+                nineThirty.setTimeZone(TimeZone.getDefault());
+                nineThirty.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
+                nineThirty.set(Calendar.MONTH, cal.get(Calendar.MONTH));
+                nineThirty.set(Calendar.YEAR, cal.get(Calendar.YEAR));
                 
-                // TODO: Do so!
+                // TODO: We need a notification here!
+                
+                // Now we've got a calendar for right now, plus one for 9:30am
+                // EST "today".  If "right now" is later than 9:30am, reschedule
+                // another alarm in a half hour and hit the snooze button.
+                // Otherwise, just give up.
+                if(cal.after(nineThirty)) {
+                    cal.add(Calendar.MINUTE, 30);
+                    
+                    Intent alarmIntent = new Intent();
+                    alarmIntent.setAction(GHDConstants.STOCK_ALARM);
+                    
+                    service.mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
+                            cal.getTimeInMillis(),
+                            AlarmManager.INTERVAL_DAY,
+                            PendingIntent.getBroadcast(service, 0, alarmIntent, 0));
+                }
+                
+                service.stopSelf();                
                 doWakeLockery(service, false);
             } else if(message.what == HashBuilder.StockRunner.ERROR_SERVER) {
                 // A server error can mean any of a wide variety of things.  If
@@ -190,14 +227,15 @@ public class StockService extends Service {
                     // TODO: NOTIFICATION!!!
                 }
                 
-                // In any event, release the wakelock.  We'll be awake for
-                // whatever happens to need us later.
+                // In any event, release the wakelock and stop the service.
+                // We'll wake back up when the time's right.
                 doWakeLockery(service, false);
+                service.stopSelf();
             } else {
                 // Otherwise, we should be good to go!  If this was 30W, go get
                 // the non-30W data.  If this was non-30W, stop; we're all done
                 // here.
-                if(!info.uses30WRule() && !HashBuilder.hasStockStored(service, info.getCalendar(), DUMMY_TODAY)) {
+                if(info.uses30WRule() && !HashBuilder.hasStockStored(service, info.getCalendar(), DUMMY_TODAY)) {
                     service.doStockFetching(false);
                     
                     // Oh, and don't release the wakelock juuuuuust yet.  Still
@@ -205,7 +243,9 @@ public class StockService extends Service {
                 }
                 else
                 {
-                    // Okay, NOW release the wakelock.
+                    // We're done!  The alarm should wake us back up later if we
+                    // need it, so down goes the service!
+                    service.stopSelf();
                     doWakeLockery(service, false);
                 }
             }
@@ -247,10 +287,10 @@ public class StockService extends Service {
         // TODO: Should I check to make sure we're not trying to get a "today"
         // too early?  That is, if it's before 9:30am "today", there won't be
         // a stock yet, and that'll return an error...
-        boolean shouldReleaseWakelock = false;
+        boolean isBusy = false;
         
         if(isConnected()) {
-            shouldReleaseWakelock = doAllStockDbChecks();
+            isBusy = doAllStockDbChecks();
         }
         
         // Second, set the alarm.  We're aiming at 9:30am ET (2:30pm UTC).  The
@@ -273,14 +313,12 @@ public class StockService extends Service {
         Intent alarmIntent = new Intent();
         alarmIntent.setAction(GHDConstants.STOCK_ALARM);
         
-        mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-        
         mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
                 alarmTime.getTimeInMillis(),
                 AlarmManager.INTERVAL_DAY,
                 PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
         
-        if(shouldReleaseWakelock) doWakeLockery(this, false);
+        if(isBusy) doWakeLockery(this, false);
     }
 
     @Override
