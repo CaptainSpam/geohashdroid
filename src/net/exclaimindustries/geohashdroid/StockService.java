@@ -58,7 +58,7 @@ public class StockService extends Service {
     
     private static final Graticule DUMMY_YESTERDAY = new Graticule(51, false, 0, true);
     private static final Graticule DUMMY_TODAY = new Graticule(38, false, 84, true);
-    
+
     private NetworkReceiver mNetReceiver = new NetworkReceiver();
     
     private HashBuilder.StockRunner mRunner;
@@ -274,38 +274,84 @@ public class StockService extends Service {
         thread.start();
     }
 
+    /**
+     * This makes a 9:30am ET Calendar for today's date.  Note that if a
+     * Calendar is supplied, what will be returned will be in America/New_York,
+     * using the date it is in New York right now.
+     *
+     * @param source if not null, use this as the base, rather than build up a
+     *               new Calendar from scratch
+     * @return a new Calendar for 9:30am ET for today's (or the supplied) date
+     */
+    private Calendar makeNineThirty(Calendar source) {
+        Calendar base;
+
+        if(source == null) {
+            base = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+        } else {
+            base = (Calendar)source.clone();
+            base.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+        }
+
+        base.set(Calendar.HOUR_OF_DAY, 9);
+        base.set(Calendar.MINUTE, 30);
+
+        return base;
+    }
+
+    /**
+     * Makes a new Calendar that represents the most recent probable date that
+     * a stock would exist.  It does so by comparing the current time to 9:30am
+     * ET of the same day.  If it's before 9:30am (and would thus be before we
+     * can confidently say the NYSE has opened and a value reported), this will
+     * rewind it by one day.  If it's after 9:30am, the date will remain the
+     * same.  Note that the only important part of this is the date; the actual
+     * time and time zone of the returned value are not guaranteed, though
+     * chances are it'll be in the same time zone as what is given (or the
+     * default time zone if not given).
+     *
+     * This implicitly assumes that source is today, if given.  This won't
+     * return an accurate date if, say, source is next week.
+     *
+     * @param source if not null, use this as the base, rather than whatever
+     *               the system considers the current time.
+     * @return a new Calendar whose date is the most recent date a stock is
+     *         likely to exist.
+     */
+    private Calendar getMostRecentStockDate(Calendar source) {
+        Calendar base;
+
+        if(source == null) {
+            base = Calendar.getInstance();
+        } else {
+            base = (Calendar)source.clone();
+        }
+
+        // First, get 9:30 for today.
+        Calendar nineThirty = makeNineThirty(base);
+
+        // Then, compare it to the base.
+        if(base.before(nineThirty)) {
+            // It's before 9:30am!  Rewind!
+            base.add(Calendar.DAY_OF_MONTH, -1);
+        }
+
+        // And that should be that!
+        return base;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         
-        // First off, get today's stocks, if need be and if possible, as soon as
-        // we start the service.  That'll ensure we're in a fully-cached state
-        // as soon as we begin without waiting a day until the alarm goes off
-        // for the first time.  This'll also kick off a new thread, so we can
-        // move forward past this.
-        //
-        // TODO: Should I check to make sure we're not trying to get a "today"
-        // too early?  That is, if it's before 9:30am "today", there won't be
-        // a stock yet, and that'll return an error...
-        boolean isBusy = false;
-        
-        if(isConnected()) {
-            isBusy = doAllStockDbChecks();
-        }
-        
-        // Second, set the alarm.  We're aiming at 9:30am ET (with any
-        // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in
-        // the interests of possible clock discrepancies and such (not to
-        // mention any delays in the stock reporting sites being updated), we'll
-        // wait the extra half hour.  The first alarm should be the NEXT 9:30am
-        // ET.
-        //
-        // TODO: There has to be a more efficient way to determine this.
+        // First, set the alarm.  We're aiming at 9:30am ET (with any applicable
+        // DST adjustments).  The NYSE opens at 9:00am ET, but in the interests
+        // of possible clock discrepancies and such (not to mention any delays
+        // in the stock reporting sites being updated), we'll wait the extra
+        // half hour.  The first alarm should be the NEXT 9:30am ET.
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
         
-        Calendar alarmTime = (Calendar)cal.clone();
-        alarmTime.set(Calendar.HOUR_OF_DAY, 9);
-        alarmTime.set(Calendar.MINUTE, 30);
+        Calendar alarmTime = makeNineThirty(cal);
         
         if(alarmTime.before(cal)) {
             alarmTime.add(Calendar.DAY_OF_MONTH, 1);
@@ -318,6 +364,21 @@ public class StockService extends Service {
                 alarmTime.getTimeInMillis(),
                 AlarmManager.INTERVAL_DAY,
                 PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+ 
+        // Second, get today's stocks, if need be and if possible, as soon as we
+        // start the service.  That'll ensure we're in a fully-cached state as
+        // soon as we begin without waiting a day until the alarm goes off for
+        // the first time.  This'll also kick off a new thread, so we can move
+        // move forward past this.
+        //
+        // TODO: Should I check to make sure we're not trying to get a "today"
+        // too early?  That is, if it's before 9:30am "today", there won't be
+        // a stock yet, and that'll return an error...
+        boolean isBusy = false;
+        
+        if(isConnected()) {
+            isBusy = doAllStockDbChecks();
+        }
         
         if(isBusy) doWakeLockery(this, false);
     }
