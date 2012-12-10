@@ -183,8 +183,8 @@ public class StockService extends Service {
                 // Now, note that "today" in this case will be the system's
                 // concept of "today", regardless of any 30W considerations.
                 Calendar cal = Calendar.getInstance();
-                Calendar nineThirty = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-                nineThirty.set(Calendar.HOUR_OF_DAY, 14);
+                Calendar nineThirty = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+                nineThirty.set(Calendar.HOUR_OF_DAY, 9);
                 nineThirty.set(Calendar.MINUTE, 29);
                 nineThirty.setTimeZone(TimeZone.getDefault());
                 nineThirty.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
@@ -293,17 +293,18 @@ public class StockService extends Service {
             isBusy = doAllStockDbChecks();
         }
         
-        // Second, set the alarm.  We're aiming at 9:30am ET (2:30pm UTC).  The
-        // NYSE opens at 9:00am ET, but in the interests of possible clock
-        // discrepancies and such (not to mention any delays in the stock
-        // reporting sites being updated), we'll wait the extra half hour.  The
-        // first alarm should be the NEXT 9:30am ET.
+        // Second, set the alarm.  We're aiming at 9:30am ET (with any
+        // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in
+        // the interests of possible clock discrepancies and such (not to
+        // mention any delays in the stock reporting sites being updated), we'll
+        // wait the extra half hour.  The first alarm should be the NEXT 9:30am
+        // ET.
         //
         // TODO: There has to be a more efficient way to determine this.
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
         
         Calendar alarmTime = (Calendar)cal.clone();
-        alarmTime.set(Calendar.HOUR_OF_DAY, 14);
+        alarmTime.set(Calendar.HOUR_OF_DAY, 9);
         alarmTime.set(Calendar.MINUTE, 30);
         
         if(alarmTime.before(cal)) {
