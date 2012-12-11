@@ -64,6 +64,7 @@ public class StockService extends Service {
     private HashBuilder.StockRunner mRunner;
 
     private AlarmManager mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+    private ConnectivityManager mConnectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
     
     /**
      * This handles all wakelockery.
@@ -263,7 +264,7 @@ public class StockService extends Service {
             mRunner.abort();
         }
         
-        mRunner = HashBuilder.requestStockRunner(this, Calendar.getInstance(),
+        mRunner = HashBuilder.requestStockRunner(this, getMostRecentStockDate(null),
                 (yesterday ? DUMMY_YESTERDAY : DUMMY_TODAY),
                 new ResponseHandler(this));
         
@@ -390,9 +391,7 @@ public class StockService extends Service {
 
     private boolean isConnected() {
         // This just checks if we've got any valid network connection at all.
-        ConnectivityManager connMgr = (ConnectivityManager) 
-                getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
     }
     
@@ -404,7 +403,7 @@ public class StockService extends Service {
         // Why yes, I AM accounting for the vanishingly slim possibility
         // that the boundaries of a day might pass between the two calls
         // of hasStockStored below.  Thank you for noticing.
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = getMostRecentStockDate(null);
         
         // Go to the database!  This should be a relatively painless call.
         if(!HashBuilder.hasStockStored(this, cal, DUMMY_YESTERDAY)) {
