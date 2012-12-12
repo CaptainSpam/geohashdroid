@@ -219,6 +219,9 @@
 <string name="hint_lon">Lon</string>
 <string name="hint_message">Message</string>
 
+<string name="notification_title">Fetching stocks...</string>
+<string name="notification_detail">(now checking %1$s)</string>
+
 <string name="about_by">By Nicholas Killewald</string>
 <string name="about_with">With contributions by Thomas Hirsch and Jonas Graudums</string>
 <string name="about_based_on">Based on the Geohashing algorithm by Randall Munroe</string>

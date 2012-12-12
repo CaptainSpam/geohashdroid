@@ -8,11 +8,13 @@
 package net.exclaimindustries.geohashdroid;
 
 import java.lang.ref.WeakReference;
+import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -26,6 +28,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
 //import android.util.Log;
+import android.support.v4.app.NotificationCompat;
 
 /**
  * <p>
@@ -65,6 +68,11 @@ public class StockService extends Service {
 
     private AlarmManager mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
     private ConnectivityManager mConnectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+    private NotificationManager mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+    
+    private NotificationCompat.Builder mNotificationBuilder;
+    
+    private static final int NOTIFICATION_ID = 1;
     
     /**
      * This handles all wakelockery.
@@ -161,25 +169,25 @@ public class StockService extends Service {
             // Response!
             Info info = (Info)message.obj;
             StockService service = mService.get();
+            boolean doneHere = true;
             
             // First, what happened?
             if(message.what == HashBuilder.StockRunner.ABORTED) {
                 // If we aborted, then just clear the notification and forget
-                // about it.
-                
-                // TODO: Do so!
-                doWakeLockery(service, false);
+                // about it.  In the current incarnation, we're the only ones
+                // who can abort the operation, and there can only be one such
+                // operation at a time.
             } else if(message.what == HashBuilder.StockRunner.ERROR_NOT_POSTED) {
-                // If it wasn't posted yet, we need to send up a notification
-                // AND schedule another check later.  First, though, make sure
-                // this is a sane request.  If the current time is BEFORE the
-                // usual check time (9:30am), don't try again; we'll never get
-                // a valid stock price until the NYSE opens, and the alarm will
-                // take care of that.  Remember, this should ONLY trigger on
-                // the non-30W stock ("today").  The 30W stock ("yesterday")
-                // should work in all cases StockService is concerned about,
-                // and even if it doesn't, non-30W won't work, either.  This is
-                // why we check 30W first.
+                // If it wasn't posted yet, we need to schedule another check
+                // later.  First, though, make sure this is a sane request.  If
+                // the current time is BEFORE the usual check time (9:30am),
+                // don't try again; we'll never get a valid stock price until
+                // the NYSE opens, and the alarm will take care of that.
+                // Remember, this should ONLY trigger on the non-30W stock
+                // ("today").  The 30W stock ("yesterday") should work in all
+                // cases StockService is concerned about, and even if it
+                // doesn't, non-30W won't work, either.  This is why we check
+                // 30W first.
                 //
                 // Now, note that "today" in this case will be the system's
                 // concept of "today", regardless of any 30W considerations.
@@ -191,8 +199,6 @@ public class StockService extends Service {
                 nineThirty.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
                 nineThirty.set(Calendar.MONTH, cal.get(Calendar.MONTH));
                 nineThirty.set(Calendar.YEAR, cal.get(Calendar.YEAR));
-                
-                // TODO: We need a notification here!
                 
                 // Now we've got a calendar for right now, plus one for 9:30am
                 // EST "today".  If "right now" is later than 9:30am, reschedule
@@ -209,9 +215,6 @@ public class StockService extends Service {
                             AlarmManager.INTERVAL_DAY,
                             PendingIntent.getBroadcast(service, 0, alarmIntent, 0));
                 }
-                
-                service.stopSelf();                
-                doWakeLockery(service, false);
             } else if(message.what == HashBuilder.StockRunner.ERROR_SERVER) {
                 // A server error can mean any of a wide variety of things.  If
                 // we're not connected right now, we can pretty reliably assume
@@ -221,34 +224,29 @@ public class StockService extends Service {
                     // So if that's the case, the NetworkReceiver can kick in.
                     IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
                     service.registerReceiver(service.mNetReceiver, filter);
-                } else {
-                    // If that's NOT the case, give up.  The remaining wide
-                    // variety of things is not worth thinking about.
-                    
-                    // TODO: NOTIFICATION!!!
                 }
                 
-                // In any event, release the wakelock and stop the service.
-                // We'll wake back up when the time's right.
-                doWakeLockery(service, false);
-                service.stopSelf();
+                // If that's NOT the case, give up.  The remaining wide variety
+                // of things is not worth thinking about.
+                
             } else {
                 // Otherwise, we should be good to go!  If this was 30W, go get
-                // the non-30W data.  If this was non-30W, stop; we're all done
-                // here.
+                // the non-30W data for the SAME date.  If this was non-30W,
+                // stop; we're all done here.
                 if(info.uses30WRule() && !HashBuilder.hasStockStored(service, info.getCalendar(), DUMMY_TODAY)) {
                     service.doStockFetching(false);
                     
-                    // Oh, and don't release the wakelock juuuuuust yet.  Still
-                    // need to finish fetching.
+                    // Oh, and we're NOT done here.
+                    doneHere = false;
                 }
-                else
-                {
-                    // We're done!  The alarm should wake us back up later if we
-                    // need it, so down goes the service!
-                    service.stopSelf();
-                    doWakeLockery(service, false);
-                }
+                // If not, we're done!  The alarm should wake us back up later
+                // when we need it.
+            }
+            
+            if(doneHere) {
+                doWakeLockery(service, false);
+                service.clearNotification();
+                service.stopSelf();
             }
         }
     }
@@ -256,15 +254,16 @@ public class StockService extends Service {
     private void doStockFetching(boolean yesterday) {
         // Remember, this DOES NOT CARE if the stock is already cached.  Do that
         // check FIRST!  It's a static call on HashBuilder!
-        
-        // TODO: NOTIFICATION!!!
+        Calendar request = getMostRecentStockDate(null);
+        showNotification(Info.makeAdjustedCalendar(request,
+                (yesterday ? DUMMY_YESTERDAY : DUMMY_TODAY)));
         
         // First, kill the previous StockRunner, if it was in progress somehow.
         if(mRunner != null && mRunner.getStatus() == HashBuilder.StockRunner.BUSY) {
             mRunner.abort();
         }
         
-        mRunner = HashBuilder.requestStockRunner(this, getMostRecentStockDate(null),
+        mRunner = HashBuilder.requestStockRunner(this, request,
                 (yesterday ? DUMMY_YESTERDAY : DUMMY_TODAY),
                 new ResponseHandler(this));
         
@@ -345,6 +344,13 @@ public class StockService extends Service {
     public void onCreate() {
         super.onCreate();
         
+        // Ready the notification!  The detail text will be set by date, of
+        // course.
+        mNotificationBuilder = new NotificationCompat.Builder(this)
+            .setSmallIcon(R.drawable.geohashing_logo_notification)
+            .setContentTitle(getString(R.string.notification_title))
+            .setOngoing(true);
+        
         // First, set the alarm.  We're aiming at 9:30am ET (with any applicable
         // DST adjustments).  The NYSE opens at 9:00am ET, but in the interests
         // of possible clock discrepancies and such (not to mention any delays
@@ -420,5 +426,18 @@ public class StockService extends Service {
         // If we fell out of the if statements, we have all the stocks we
         // need.  Return false to let the caller know.
         return false;
+    }
+    
+    private void showNotification(Calendar date) {
+        mNotificationBuilder.setContentText(
+                getString(R.string.notification_detail,
+                        DateFormat
+                            .getDateInstance(DateFormat.MEDIUM)
+                            .format(date.getTime())));
+        mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+    }
+    
+    private void clearNotification() {
+        mNotificationManager.cancel(NOTIFICATION_ID);
     }
 }
