@@ -99,10 +99,19 @@ public final class GHDConstants {
      * NYSE isn't open on Saturday, so Friday's open value is used) and
      * "yesterday" will also be Friday (both 30W and non-30W users get the same
      * hash data on Saturdays and Sundays).
-     * 
-     * After this data is retrieved, a STOCK_RESULT broadcast will occur.
      */
     public static final String STOCK_ALARM = "net.exclaimindustries.geohashdroid.STOCK_ALARM";
+
+    /**
+     * Broadcast intent for the alarm that tells StockService to try again on
+     * a failed check due to the stock not being posted yet.  In practice, the
+     * resulting action will be the same as STOCK_ALARM (cache the stocks). 
+     * This is needed because otherwise it'd be considered the same intent,
+     * meaning the single-shot alarm would cancel the first one.
+     *
+     * Do note, this intent should NOT be scheduled to be repeating.
+     */
+    public static final String STOCK_ALARM_RETRY = "net.exclaimindustries.geohashdroid.STOCK_ALARM_RETRY";
 
     /**
      * Broadcast intent to tell StockService to retrieve a specific day's stock
@@ -119,14 +128,26 @@ public final class GHDConstants {
      * Broadcast intent to tell StockService to abort whatever it was doing.
      */
     public static final String STOCK_ABORT = "net.exclaimindustries.geohashdroid.STOCK_ABORT";
-    
+
+    /**
+     * Directed intent to tell StockService to set the alarms, but don't
+     * actually do anything about it and shut down right afterward.
+     */
+    public static final String STOCK_INIT = "net.exclaimindustries.geohashdroid.STOCK_INIT";
+
+    /**
+     * Directed intent to tell StockService to abort all its alarms.  This would
+     * be for turning off the service in preferences.
+     */
+    public static final String STOCK_CANCEL_ALARMS = "net.exclaimindustries.geohashdroid.STOCK_CANCEL_ALARMS";
+
     /**
      * Broadcast intent sent back by StockService when a result has been
      * retrieved.  In general, you'd register something to pick this up on an
      * as-you-need-it basis, not register it with the manifest.
      * 
-     * TODO: Determine the data that'll come back with this; it'll either just
-     * be the stock value or a parcelized Info object.
+     * TODO: This doesn't happen yet.  It'll happen once I convert all the stock
+     * grabbing stuff to the background service.
      */
     public static final String STOCK_RESULT = "net.exclaimindustries.geohashdroid.STOCK_RESULT";
     

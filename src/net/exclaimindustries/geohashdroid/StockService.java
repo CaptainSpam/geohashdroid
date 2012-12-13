@@ -27,8 +27,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
-//import android.util.Log;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 /**
  * <p>
@@ -67,7 +67,6 @@ public class StockService extends Service {
     private HashBuilder.StockRunner mRunner;
 
     private AlarmManager mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-    private ConnectivityManager mConnectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
     private NotificationManager mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
     
     private NotificationCompat.Builder mNotificationBuilder;
@@ -107,7 +106,7 @@ public class StockService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(isConnected()) {
+            if(isConnected(context)) {
                 doWakeLockery(context, true);
                 
                 // NETWORK'D!!! Unregister ourselves from broadcasts and fire
@@ -129,8 +128,13 @@ public class StockService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            // TODO Auto-generated method stub
-            
+            doWakeLockery(context, true);
+
+            // Fire off the Intent to start up the service.  That'll handle all
+            // of whatever we need handled.
+            Intent i = new Intent(context, StockService.class);
+            i.setAction(intent.getAction());
+            context.startService(i);
         }
         
     }
@@ -179,60 +183,37 @@ public class StockService extends Service {
                 // operation at a time.
             } else if(message.what == HashBuilder.StockRunner.ERROR_NOT_POSTED) {
                 // If it wasn't posted yet, we need to schedule another check
-                // later.  First, though, make sure this is a sane request.  If
-                // the current time is BEFORE the usual check time (9:30am),
-                // don't try again; we'll never get a valid stock price until
-                // the NYSE opens, and the alarm will take care of that.
-                // Remember, this should ONLY trigger on the non-30W stock
-                // ("today").  The 30W stock ("yesterday") should work in all
-                // cases StockService is concerned about, and even if it
-                // doesn't, non-30W won't work, either.  This is why we check
-                // 30W first.
-                //
-                // Now, note that "today" in this case will be the system's
-                // concept of "today", regardless of any 30W considerations.
+                // later.  Thankfully, the logic required to make sure this is
+                // a sane request is in the initial check when the stock alarm
+                // happens, so we just need to bump up the time by a half hour
+                // and wait it out.  
                 Calendar cal = Calendar.getInstance();
-                Calendar nineThirty = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
-                nineThirty.set(Calendar.HOUR_OF_DAY, 9);
-                nineThirty.set(Calendar.MINUTE, 29);
-                nineThirty.setTimeZone(TimeZone.getDefault());
-                nineThirty.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
-                nineThirty.set(Calendar.MONTH, cal.get(Calendar.MONTH));
-                nineThirty.set(Calendar.YEAR, cal.get(Calendar.YEAR));
-                
-                // Now we've got a calendar for right now, plus one for 9:30am
-                // EST "today".  If "right now" is later than 9:30am, reschedule
-                // another alarm in a half hour and hit the snooze button.
-                // Otherwise, just give up.
-                if(cal.after(nineThirty)) {
-                    cal.add(Calendar.MINUTE, 30);
-                    
-                    Intent alarmIntent = new Intent();
-                    alarmIntent.setAction(GHDConstants.STOCK_ALARM);
-                    
-                    service.mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
-                            cal.getTimeInMillis(),
-                            AlarmManager.INTERVAL_DAY,
-                            PendingIntent.getBroadcast(service, 0, alarmIntent, 0));
-                }
+                cal.add(Calendar.MINUTE, 30);
+
+                Intent alarmIntent = new Intent();
+                alarmIntent.setAction(GHDConstants.STOCK_ALARM_RETRY);
+
+                service.mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
+                        cal.getTimeInMillis(),
+                        AlarmManager.INTERVAL_DAY,
+                        PendingIntent.getBroadcast(service, 0, alarmIntent, 0));
             } else if(message.what == HashBuilder.StockRunner.ERROR_SERVER) {
                 // A server error can mean any of a wide variety of things.  If
                 // we're not connected right now, we can pretty reliably assume
                 // said thing is in the variety of "it failed because there's no
                 // network connection".
-                if(!service.isConnected()) {
+                if(!isConnected(service)) {
                     // So if that's the case, the NetworkReceiver can kick in.
-                    IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-                    service.registerReceiver(service.mNetReceiver, filter);
+                    service.registerReceiver(service.mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
                 }
                 
                 // If that's NOT the case, give up.  The remaining wide variety
-                // of things is not worth thinking about.
-                
+                // of things is not worth thinking about.  We'll alarm up later.
             } else {
-                // Otherwise, we should be good to go!  If this was 30W, go get
-                // the non-30W data for the SAME date.  If this was non-30W,
-                // stop; we're all done here.
+                // Otherwise, we should be good to go!  The runner also cached
+                // the data, so we don't have anything else to do with it.  If
+                // this was 30W, go get the non-30W data for the SAME date.  If
+                // this was non-30W, stop; we're all done here.
                 if(info.uses30WRule() && !HashBuilder.hasStockStored(service, info.getCalendar(), DUMMY_TODAY)) {
                     service.doStockFetching(false);
                     
@@ -351,11 +332,11 @@ public class StockService extends Service {
             .setContentTitle(getString(R.string.notification_title))
             .setOngoing(true);
         
-        // First, set the alarm.  We're aiming at 9:30am ET (with any applicable
-        // DST adjustments).  The NYSE opens at 9:00am ET, but in the interests
-        // of possible clock discrepancies and such (not to mention any delays
-        // in the stock reporting sites being updated), we'll wait the extra
-        // half hour.  The first alarm should be the NEXT 9:30am ET.
+        // At create time, set the alarm.  We're aiming at 9:30am ET (with any
+        // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in the
+        // interests of possible clock discrepancies and such (not to mention
+        // any delays in the stock reporting sites being updated), we'll wait
+        // the extra half hour.  The first alarm should be the NEXT 9:30am ET.
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
         
         Calendar alarmTime = makeNineThirty(cal);
@@ -364,40 +345,72 @@ public class StockService extends Service {
             alarmTime.add(Calendar.DAY_OF_MONTH, 1);
         }
         
-        Intent alarmIntent = new Intent();
-        alarmIntent.setAction(GHDConstants.STOCK_ALARM);
+        Intent alarmIntent = new Intent(GHDConstants.STOCK_ALARM);
         
         mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
                 alarmTime.getTimeInMillis(),
                 AlarmManager.INTERVAL_DAY,
                 PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
- 
-        // Second, get today's stocks, if need be and if possible, as soon as we
-        // start the service.  That'll ensure we're in a fully-cached state as
-        // soon as we begin without waiting a day until the alarm goes off for
-        // the first time.  This'll also kick off a new thread, so we can move
-        // move forward past this.
-        //
-        // TODO: Should I check to make sure we're not trying to get a "today"
-        // too early?  That is, if it's before 9:30am "today", there won't be
-        // a stock yet, and that'll return an error...
-        boolean isBusy = false;
-        
-        if(isConnected()) {
-            isBusy = doAllStockDbChecks();
-        }
-        
-        if(isBusy) doWakeLockery(this, false);
     }
 
     @Override
     public void onStart(Intent intent, int startId) {
+        // TODO: Okay, NEXT version I throw out all this 1.6 nonsense and go
+        // straight up to 4.0.  Then I can ignore this deprecated method.  And
+        // fix one hell of a lot of other things, too.
         super.onStart(intent, startId);
+
+        // Examine the Intent.  What're we doing with it?
+        if(intent.getAction().equals(GHDConstants.STOCK_ALARM)
+                || intent.getAction().equals(GHDConstants.STOCK_ALARM_RETRY)) {
+            // It's the alarm!
+            boolean isBusy = false;
+            if(isConnected(this)) {
+                isBusy = doAllStockDbChecks();
+            } else {
+                // If there's no connection, wait for one first.
+                registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+            }
+
+            // If we're NOT busy, release the wakelock.  If either of these
+            // broadcasts come in, the wakelock is held (so that the device
+            // doesn't fall right back asleep after the broadcast is handled),
+            // so we need to release it.  However, if we're busy, the response
+            // mechanism will take care of things when it's done.
+            if(!isBusy) doWakeLockery(this, false);
+
+        } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_ALARMS)) {
+            // We've been told to stop all alarms!  While we're at it, abort any
+            // in-progress connections, too!
+            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM), 0));
+            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM_RETRY), 0));
+            unregisterReceiver(mNetReceiver);
+            if(mRunner != null) mRunner.abort();
+
+            doWakeLockery(this, false);
+            stopSelf();
+        } else if(intent.getAction().equals(GHDConstants.STOCK_ABORT)) {
+            // We've been told to stop what we're doing!
+            if(mRunner != null) mRunner.abort();
+            doWakeLockery(this, false);
+            stopSelf();
+        } else if(intent.getAction().equals(GHDConstants.STOCK_INIT)) {
+            // Initialization and running stocks are two different things.  If
+            // we've been told to init, then alarm creation has already happened
+            // in onCreate, and we'll get said alarm when the time comes.  Init
+            // means the user is already in the app and poking around, thus it's
+            // sort of too late.
+            doWakeLockery(this, false);
+            stopSelf();
+        } else {
+            // Stop doing this!
+            Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
+        }
     }
 
-    private boolean isConnected() {
+    private static boolean isConnected(Context c) {
         // This just checks if we've got any valid network connection at all.
-        NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+        NetworkInfo networkInfo = (ConnectivityManager)c.getSystemService(Context.CONNECTIVITY_SERVICE).getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
     }
     
