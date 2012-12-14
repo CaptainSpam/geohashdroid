@@ -369,7 +369,7 @@ public class StockService extends Service {
                 isBusy = doAllStockDbChecks();
             } else {
                 // If there's no connection, wait for one first.
-                registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+                registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
             }
 
             // If we're NOT busy, release the wakelock.  If either of these
@@ -410,7 +410,7 @@ public class StockService extends Service {
 
     private static boolean isConnected(Context c) {
         // This just checks if we've got any valid network connection at all.
-        NetworkInfo networkInfo = (ConnectivityManager)c.getSystemService(Context.CONNECTIVITY_SERVICE).getActiveNetworkInfo();
+        NetworkInfo networkInfo = ((ConnectivityManager)c.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
     }
     
