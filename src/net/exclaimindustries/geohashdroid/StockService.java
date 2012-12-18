@@ -109,14 +109,12 @@ public class StockService extends Service {
             if(isConnected(context)) {
                 doWakeLockery(context, true);
                 
-                // NETWORK'D!!! Unregister ourselves from broadcasts and fire
-                // off those checks!
+                // NETWORK'D!!! Unregister ourselves from broadcasts and get an
+                // Intent fired off to the Service!
                 context.unregisterReceiver(this);
-                if(!doAllStockDbChecks()) {
-                    // If no stock checks needed to be done, release the
-                    // wakelock right away.
-                    doWakeLockery(context, false);
-                }
+                Intent i = new Intent(context, StockService.class);
+                i.setAction(GHDConstants.STOCK_ALARM);
+                context.startService(i);
             }
         }
     }
