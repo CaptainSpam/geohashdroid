@@ -66,8 +66,8 @@ public class StockService extends Service {
     
     private HashBuilder.StockRunner mRunner;
 
-    private AlarmManager mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-    private NotificationManager mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+    private AlarmManager mAlarmManager;
+    private NotificationManager mNotificationManager;
     
     private NotificationCompat.Builder mNotificationBuilder;
     
@@ -218,11 +218,12 @@ public class StockService extends Service {
                     Log.d(DEBUG_TAG, "We're not connected, waiting for a network connection...");
                     // So if that's the case, the NetworkReceiver can kick in.
                     service.registerReceiver(service.mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+                } else {
+                    // If that's NOT the case, give up.  The remaining wide
+                    // variety of things is not worth thinking about.  We'll
+                    // give it another go on the next alarm.
+                    Log.w(DEBUG_TAG, "Server reported some manner of error, NOT rescheduling a retry!");
                 }
-                
-                // If that's NOT the case, give up.  The remaining wide variety
-                // of things is not worth thinking about.  We'll alarm up later.
-                Log.w(DEBUG_TAG, "Server reported some manner of error, NOT rescheduling a retry!");
             } else {
                 // Otherwise, we should be good to go!  The runner also cached
                 // the data, so we don't have anything else to do with it.  If
@@ -346,6 +347,8 @@ public class StockService extends Service {
         super.onCreate();
         
         Log.d(DEBUG_TAG, "Creating StockService...");
+        mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         
         // Ready the notification!  The detail text will be set by date, of
         // course.
@@ -369,9 +372,7 @@ public class StockService extends Service {
         
         Intent alarmIntent = new Intent(GHDConstants.STOCK_ALARM);
         
-        Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + DateFormat
-                .getDateInstance(DateFormat.MEDIUM)
-                .format(alarmTime.getTime()));
+        Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + alarmTime.getTime().toString());
         
         mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
                 alarmTime.getTimeInMillis(),
@@ -416,7 +417,12 @@ public class StockService extends Service {
             Log.d(DEBUG_TAG, "Got STOCK_CANCEL_ALARMS!");
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM), 0));
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM_RETRY), 0));
-            unregisterReceiver(mNetReceiver);
+            try {
+                unregisterReceiver(mNetReceiver);
+            } catch (IllegalArgumentException e) {
+                // If this gets thrown, we didn't actually register the receiver
+                // yet.  Ignore it.
+            }
             if(mRunner != null) mRunner.abort();
 
             doWakeLockery(this, false);
@@ -433,7 +439,7 @@ public class StockService extends Service {
             // in onCreate, and we'll get said alarm when the time comes.  Init
             // means the user is already in the app and poking around, thus it's
             // sort of too late.
-            Log.d(DEBUG_TAG, "Got STOCK_INIT, so not much is happening...");
+            Log.d(DEBUG_TAG, "Got STOCK_INIT, so I guess we're done here");
             doWakeLockery(this, false);
             stopSelf();
         } else {
