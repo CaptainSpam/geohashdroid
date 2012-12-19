@@ -102,7 +102,7 @@ public class StockService extends Service {
      * if we run into a network issue and are waiting for the connection to come
      * back up, at which time we can try firing off a stock check again.
      */
-    private class NetworkReceiver extends BroadcastReceiver {
+    private static class NetworkReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -179,6 +179,12 @@ public class StockService extends Service {
                 // about it.  In the current incarnation, we're the only ones
                 // who can abort the operation, and there can only be one such
                 // operation at a time.
+                // Since only we can abort this AND we're stopping the service
+                // in any of those cases, we SHOULD remove the notification, but
+                // NOT stop the service.
+                doneHere = false;
+                doWakeLockery(service, false);
+                service.clearNotification();
             } else if(message.what == HashBuilder.StockRunner.ERROR_NOT_POSTED) {
                 // If it wasn't posted yet, we need to schedule another check
                 // later.  Thankfully, the logic required to make sure this is
@@ -375,7 +381,10 @@ public class StockService extends Service {
             // doesn't fall right back asleep after the broadcast is handled),
             // so we need to release it.  However, if we're busy, the response
             // mechanism will take care of things when it's done.
-            if(!isBusy) doWakeLockery(this, false);
+            if(!isBusy) {
+                doWakeLockery(this, false);
+                stopSelf();
+            }
 
         } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_ALARMS)) {
             // We've been told to stop all alarms!  While we're at it, abort any
