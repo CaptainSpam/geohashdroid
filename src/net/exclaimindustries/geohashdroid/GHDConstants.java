@@ -57,6 +57,8 @@ public final class GHDConstants {
      * final destination.
      */
     public static final String PREF_CLOSENESS_REPORTED = "ClosenessReported";
+    /** Prefs key specifying if the background StockService should be used. */
+    public static final String PREF_STOCK_SERVICE = "UseStockService";
     
     /** Prefs value for no infobox at all. */
     public static final String PREFVAL_INFOBOX_NONE = "None";
