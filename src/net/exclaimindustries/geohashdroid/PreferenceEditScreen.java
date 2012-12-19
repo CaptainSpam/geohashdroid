@@ -10,6 +10,7 @@ package net.exclaimindustries.geohashdroid;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -199,6 +200,36 @@ public class PreferenceEditScreen extends PreferenceActivity {
                     else
                         preference.setSummary(R.string.pref_coordunits_seconds);
                 }
+                return true;
+            }
+            
+        });
+        
+        // StockService!
+        curPref = (Preference)findPreference(GHDConstants.PREF_STOCK_SERVICE);
+        // Presumably, the CURRENT status of StockService is valid, so we only
+        // need to worry about changing it from here.
+        curPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference,
+                    Object newValue) {
+                if(newValue instanceof Boolean) {
+                    Boolean set = (Boolean)newValue;
+                    
+                    Intent i = new Intent(PreferenceEditScreen.this, StockService.class);
+                    
+                    if(set.booleanValue()) {
+                        // ON!  Start the service!
+                        i.setAction(GHDConstants.STOCK_INIT);                        
+                    } else {
+                        // OFF!  Stop the service and cancel all alarms!
+                        i.setAction(GHDConstants.STOCK_CANCEL_ALARMS);
+                    }
+                    
+                    startService(i);
+                }
+                
                 return true;
             }
             
