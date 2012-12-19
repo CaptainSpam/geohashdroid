@@ -106,7 +106,9 @@ public class StockService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(DEBUG_TAG, "Network status update!");
             if(isConnected(context)) {
+                Log.d(DEBUG_TAG, "The network is back up!");
                 doWakeLockery(context, true);
                 
                 // NETWORK'D!!! Unregister ourselves from broadcasts and get an
@@ -126,6 +128,7 @@ public class StockService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(DEBUG_TAG, "STOCK ALARM!!!  Action is " + intent.getAction());
             doWakeLockery(context, true);
 
             // Fire off the Intent to start up the service.  That'll handle all
@@ -173,12 +176,16 @@ public class StockService extends Service {
             StockService service = mService.get();
             boolean doneHere = true;
             
+            Log.d(DEBUG_TAG, "Stock response!");
+            
             // First, what happened?
             if(message.what == HashBuilder.StockRunner.ABORTED) {
                 // If we aborted, then just clear the notification and forget
                 // about it.  In the current incarnation, we're the only ones
                 // who can abort the operation, and there can only be one such
                 // operation at a time.
+                Log.d(DEBUG_TAG, "Stock running aborted");
+                
                 // Since only we can abort this AND we're stopping the service
                 // in any of those cases, we SHOULD remove the notification, but
                 // NOT stop the service.
@@ -190,7 +197,8 @@ public class StockService extends Service {
                 // later.  Thankfully, the logic required to make sure this is
                 // a sane request is in the initial check when the stock alarm
                 // happens, so we just need to bump up the time by a half hour
-                // and wait it out.  
+                // and wait it out.
+                Log.d(DEBUG_TAG, "Stock not posted yet, rescheduling another check in 30 minutes...");
                 Calendar cal = Calendar.getInstance();
                 cal.add(Calendar.MINUTE, 30);
 
@@ -207,18 +215,22 @@ public class StockService extends Service {
                 // said thing is in the variety of "it failed because there's no
                 // network connection".
                 if(!isConnected(service)) {
+                    Log.d(DEBUG_TAG, "We're not connected, waiting for a network connection...");
                     // So if that's the case, the NetworkReceiver can kick in.
                     service.registerReceiver(service.mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
                 }
                 
                 // If that's NOT the case, give up.  The remaining wide variety
                 // of things is not worth thinking about.  We'll alarm up later.
+                Log.w(DEBUG_TAG, "Server reported some manner of error, NOT rescheduling a retry!");
             } else {
                 // Otherwise, we should be good to go!  The runner also cached
                 // the data, so we don't have anything else to do with it.  If
                 // this was 30W, go get the non-30W data for the SAME date.  If
                 // this was non-30W, stop; we're all done here.
+                Log.d(DEBUG_TAG, "Stock retrieved!");
                 if(info.uses30WRule() && !HashBuilder.hasStockStored(service, info.getCalendar(), DUMMY_TODAY)) {
+                    Log.d(DEBUG_TAG, "Now, doing that again for the non-30W stock...");
                     service.doStockFetching(false);
                     
                     // Oh, and we're NOT done here.
@@ -229,6 +241,7 @@ public class StockService extends Service {
             }
             
             if(doneHere) {
+                Log.d(DEBUG_TAG, "We're done here, shutting down everything...");
                 doWakeLockery(service, false);
                 service.clearNotification();
                 service.stopSelf();
@@ -239,15 +252,18 @@ public class StockService extends Service {
     private void doStockFetching(boolean yesterday) {
         // Remember, this DOES NOT CARE if the stock is already cached.  Do that
         // check FIRST!  It's a static call on HashBuilder!
+        Log.d(DEBUG_TAG, "doStockFetching called!");
         Calendar request = getMostRecentStockDate(null);
         showNotification(Info.makeAdjustedCalendar(request,
                 (yesterday ? DUMMY_YESTERDAY : DUMMY_TODAY)));
         
         // First, kill the previous StockRunner, if it was in progress somehow.
         if(mRunner != null && mRunner.getStatus() == HashBuilder.StockRunner.BUSY) {
+            Log.w(DEBUG_TAG, "The StockRunner was busy!  Aborting that to start a new one...");
             mRunner.abort();
         }
         
+        Log.d(DEBUG_TAG, "Starting a stock fetch for " + (yesterday ? "YESTERDAY" : "TODAY") + "'S stock...");
         mRunner = HashBuilder.requestStockRunner(this, request,
                 (yesterday ? DUMMY_YESTERDAY : DUMMY_TODAY),
                 new ResponseHandler(this));
@@ -260,7 +276,7 @@ public class StockService extends Service {
     }
 
     /**
-     * This makes a 9:30am ET Calendar for today's date.  Note that if a
+     * This makes a 9:30am ET Calendar for today's date.  Note that even if a
      * Calendar is supplied, what will be returned will be in America/New_York,
      * using the date it is in New York right now.
      *
@@ -329,6 +345,8 @@ public class StockService extends Service {
     public void onCreate() {
         super.onCreate();
         
+        Log.d(DEBUG_TAG, "Creating StockService...");
+        
         // Ready the notification!  The detail text will be set by date, of
         // course.
         mNotificationBuilder = new NotificationCompat.Builder(this)
@@ -351,6 +369,10 @@ public class StockService extends Service {
         
         Intent alarmIntent = new Intent(GHDConstants.STOCK_ALARM);
         
+        Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + DateFormat
+                .getDateInstance(DateFormat.MEDIUM)
+                .format(alarmTime.getTime()));
+        
         mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
                 alarmTime.getTimeInMillis(),
                 AlarmManager.INTERVAL_DAY,
@@ -368,11 +390,13 @@ public class StockService extends Service {
         if(intent.getAction().equals(GHDConstants.STOCK_ALARM)
                 || intent.getAction().equals(GHDConstants.STOCK_ALARM_RETRY)) {
             // It's the alarm!
+            Log.d(DEBUG_TAG, "Starting StockService on STOCK_ALARM or STOCK_ALARM_RETRY!");
             boolean isBusy = false;
             if(isConnected(this)) {
                 isBusy = doAllStockDbChecks();
             } else {
                 // If there's no connection, wait for one first.
+                Log.d(DEBUG_TAG, "...but we're not connected!");
                 registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
             }
 
@@ -389,6 +413,7 @@ public class StockService extends Service {
         } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_ALARMS)) {
             // We've been told to stop all alarms!  While we're at it, abort any
             // in-progress connections, too!
+            Log.d(DEBUG_TAG, "Got STOCK_CANCEL_ALARMS!");
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM), 0));
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM_RETRY), 0));
             unregisterReceiver(mNetReceiver);
@@ -397,6 +422,7 @@ public class StockService extends Service {
             doWakeLockery(this, false);
             stopSelf();
         } else if(intent.getAction().equals(GHDConstants.STOCK_ABORT)) {
+            Log.d(DEBUG_TAG, "Got STOCK_ABORT!");
             // We've been told to stop what we're doing!
             if(mRunner != null) mRunner.abort();
             doWakeLockery(this, false);
@@ -407,6 +433,7 @@ public class StockService extends Service {
             // in onCreate, and we'll get said alarm when the time comes.  Init
             // means the user is already in the app and poking around, thus it's
             // sort of too late.
+            Log.d(DEBUG_TAG, "Got STOCK_INIT, so not much is happening...");
             doWakeLockery(this, false);
             stopSelf();
         } else {
@@ -445,6 +472,7 @@ public class StockService extends Service {
         
         // If we fell out of the if statements, we have all the stocks we
         // need.  Return false to let the caller know.
+        Log.d(DEBUG_TAG, "All stocks check out for today, no action needed");
         return false;
     }
     
