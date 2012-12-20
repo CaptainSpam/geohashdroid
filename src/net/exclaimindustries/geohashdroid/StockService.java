@@ -297,6 +297,8 @@ public class StockService extends Service {
 
         base.set(Calendar.HOUR_OF_DAY, 9);
         base.set(Calendar.MINUTE, 30);
+        base.set(Calendar.SECOND, 0);
+        base.set(Calendar.MILLISECOND, 0);
 
         return base;
     }
