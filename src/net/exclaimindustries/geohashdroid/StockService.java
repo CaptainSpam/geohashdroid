@@ -218,6 +218,13 @@ public class StockService extends Service {
                     Log.d(DEBUG_TAG, "We're not connected, waiting for a network connection...");
                     // So if that's the case, the NetworkReceiver can kick in.
                     service.registerReceiver(service.mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+                    
+                    // Do almost all of the doneHere part.  Just don't stop the
+                    // service.  We'll need it up to keep the NetworkReceiver we
+                    // JUST registered around.
+                    doWakeLockery(service, false);
+                    service.clearNotification();
+                    doneHere = false;
                 } else {
                     // If that's NOT the case, give up.  The remaining wide
                     // variety of things is not worth thinking about.  We'll
@@ -358,28 +365,6 @@ public class StockService extends Service {
             .setSmallIcon(R.drawable.geohashing_logo_notification)
             .setContentTitle(getString(R.string.notification_title))
             .setOngoing(true);
-        
-        // At create time, set the alarm.  We're aiming at 9:30am ET (with any
-        // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in the
-        // interests of possible clock discrepancies and such (not to mention
-        // any delays in the stock reporting sites being updated), we'll wait
-        // the extra half hour.  The first alarm should be the NEXT 9:30am ET.
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
-        
-        Calendar alarmTime = makeNineThirty(cal);
-        
-        if(alarmTime.before(cal)) {
-            alarmTime.add(Calendar.DAY_OF_MONTH, 1);
-        }
-        
-        Intent alarmIntent = new Intent(GHDConstants.STOCK_ALARM);
-        
-        Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + alarmTime.getTime().toString());
-        
-        mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
-                alarmTime.getTimeInMillis(),
-                AlarmManager.INTERVAL_DAY,
-                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
     }
 
     @Override
@@ -394,25 +379,27 @@ public class StockService extends Service {
                 || intent.getAction().equals(GHDConstants.STOCK_ALARM_RETRY)) {
             // It's the alarm!
             Log.d(DEBUG_TAG, "Starting StockService on STOCK_ALARM or STOCK_ALARM_RETRY!");
-            boolean isBusy = false;
             if(isConnected(this)) {
-                isBusy = doAllStockDbChecks();
+                if(!doAllStockDbChecks()) {
+                    // If we're NOT busy (that is, if doAllStockDbChecks returns
+                    // false), release the wakelock.  If either of these
+                    // broadcasts come in, the wakelock is held (so that the 
+                    // device doesn't fall right back asleep after the broadcast
+                    // is handled), so we need to release it.  However, if we're
+                    // busy, the response mechanism will take care of things
+                    // when it's done.
+                    doWakeLockery(this, false);
+                    stopSelf();
+                }
             } else {
                 // If there's no connection, wait for one first.
                 Log.d(DEBUG_TAG, "...but we're not connected!");
                 registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
-            }
-
-            // If we're NOT busy, release the wakelock.  If either of these
-            // broadcasts come in, the wakelock is held (so that the device
-            // doesn't fall right back asleep after the broadcast is handled),
-            // so we need to release it.  However, if we're busy, the response
-            // mechanism will take care of things when it's done.
-            if(!isBusy) {
+                
+                // Release the wakelock, but DON'T stop the service!  That'll
+                // kill off (or leak) the receiver we JUST registered!
                 doWakeLockery(this, false);
-                stopSelf();
             }
-
         } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_ALARMS)) {
             // We've been told to stop all alarms!  While we're at it, abort any
             // in-progress connections, too!
@@ -436,17 +423,56 @@ public class StockService extends Service {
             doWakeLockery(this, false);
             stopSelf();
         } else if(intent.getAction().equals(GHDConstants.STOCK_INIT)) {
-            // Initialization and running stocks are two different things.  If
-            // we've been told to init, then alarm creation has already happened
-            // in onCreate, and we'll get said alarm when the time comes.  Init
-            // means the user is already in the app and poking around, thus it's
-            // sort of too late.
-            Log.d(DEBUG_TAG, "Got STOCK_INIT, so I guess we're done here");
+            Log.d(DEBUG_TAG, "Got STOCK_INIT!");
+            
+            // At init time, set the alarm.  We're aiming at 9:30am ET (with any
+            // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in
+            // the interests of possible clock discrepancies and such (not to
+            // mention any delays in the stock reporting sites being updated),
+            // we'll wait the extra half hour.  The first alarm should be the
+            // NEXT 9:30am ET.  If the user wants to take a chance and get a
+            // stock value closer to 9:00am ET than that, well, they can do it
+            // themselves.
+            Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+            
+            Calendar alarmTime = makeNineThirty(cal);
+            
+            if(alarmTime.before(cal)) {
+                alarmTime.add(Calendar.DAY_OF_MONTH, 1);
+            }
+            
+            Intent alarmIntent = new Intent(GHDConstants.STOCK_ALARM);
+            
+            Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + alarmTime.getTime().toString());
+            
+            mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
+                    alarmTime.getTimeInMillis(),
+                    AlarmManager.INTERVAL_DAY,
+                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+                        
+            // AlarmManager sends out broadcasts, and the receiver we've got
+            // will wake the service back up, so we can stop everything right
+            // now.
             doWakeLockery(this, false);
             stopSelf();
         } else {
             // Stop doing this!
             Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        // TODO Auto-generated method stub
+        super.onDestroy();
+        
+        // We've got this receiver.  If it's still registered at onDestroy time,
+        // we've got to kill it off, else it leaks.
+        try {
+            unregisterReceiver(mNetReceiver);
+        } catch (IllegalArgumentException e) {
+            // If this gets thrown, we didn't actually register the receiver
+            // yet.  Ignore it.
         }
     }
 
