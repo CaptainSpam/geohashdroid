@@ -116,6 +116,12 @@ public final class GHDConstants {
     public static final String STOCK_ALARM_RETRY = "net.exclaimindustries.geohashdroid.STOCK_ALARM_RETRY";
 
     /**
+     * Intent sent when the network's come back up.  This tells the service to
+     * drop foreground mode and otherwise behave as if it were a STOCK_ALARM.
+     */
+    public static final String STOCK_ALARM_NETWORK_BACK = "net.exclaimindustries.geohashdroid.STOCK_ALARM_NETWORK_BACK";
+    
+    /**
      * Broadcast intent to tell StockService to retrieve a specific day's stock
      * value.  This will require some extra Intent data to tell it what date it
      * should be retrieving.  Also, assuming this isn't what StockService is

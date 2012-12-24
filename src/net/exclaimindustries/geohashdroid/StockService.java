@@ -16,7 +16,6 @@ import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -53,7 +52,7 @@ import android.util.Log;
  * @author Nicholas Killewald
  *
  */
-public class StockService extends Service {
+public class StockService extends ForegroundCompatService {
     
     private static final String DEBUG_TAG = "StockService";
     
@@ -70,6 +69,7 @@ public class StockService extends Service {
     private NotificationManager mNotificationManager;
     
     private NotificationCompat.Builder mNotificationBuilder;
+    private NotificationCompat.Builder mNotificationNetwork;
     
     private static final int NOTIFICATION_ID = 1;
     
@@ -115,7 +115,7 @@ public class StockService extends Service {
                 // Intent fired off to the Service!
                 context.unregisterReceiver(this);
                 Intent i = new Intent(context, StockService.class);
-                i.setAction(GHDConstants.STOCK_ALARM);
+                i.setAction(GHDConstants.STOCK_ALARM_NETWORK_BACK);
                 context.startService(i);
             }
         }
@@ -218,6 +218,7 @@ public class StockService extends Service {
                     Log.d(DEBUG_TAG, "We're not connected, waiting for a network connection...");
                     // So if that's the case, the NetworkReceiver can kick in.
                     service.registerReceiver(service.mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+                    service.startForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION, service.mNotificationNetwork.build());
                     
                     // Do almost all of the doneHere part.  Just don't stop the
                     // service.  We'll need it up to keep the NetworkReceiver we
@@ -365,6 +366,13 @@ public class StockService extends Service {
             .setSmallIcon(R.drawable.geohashing_logo_notification)
             .setContentTitle(getString(R.string.notification_title))
             .setOngoing(true);
+        
+        // And ready another notification for networking!
+        mNotificationNetwork = new NotificationCompat.Builder(this)
+            .setSmallIcon(R.drawable.geohashing_logo_notification)
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(getString(R.string.notification_wait_for_network))
+            .setOngoing(true);
     }
 
     @Override
@@ -373,12 +381,20 @@ public class StockService extends Service {
         // straight up to 4.0.  Then I can ignore this deprecated method.  And
         // fix one hell of a lot of other things, too.
         super.onStart(intent, startId);
+        
+        // Did we just come back from the network check?
+        if(intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)) {
+            // We did!  Stop foreground mode!
+            Log.d(DEBUG_TAG, "It's STOCK_ALARM_NETWORK_BACK!  Stopping foreground mode...");
+            stopForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION);
+        }
 
         // Examine the Intent.  What're we doing with it?
         if(intent.getAction().equals(GHDConstants.STOCK_ALARM)
-                || intent.getAction().equals(GHDConstants.STOCK_ALARM_RETRY)) {
+                || intent.getAction().equals(GHDConstants.STOCK_ALARM_RETRY)
+                || intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)) {
             // It's the alarm!
-            Log.d(DEBUG_TAG, "Starting StockService on STOCK_ALARM or STOCK_ALARM_RETRY!");
+            Log.d(DEBUG_TAG, "Starting StockService on some manner of STOCK_ALARM!");
             if(isConnected(this)) {
                 if(!doAllStockDbChecks()) {
                     // If we're NOT busy (that is, if doAllStockDbChecks returns
@@ -395,6 +411,12 @@ public class StockService extends Service {
                 // If there's no connection, wait for one first.
                 Log.d(DEBUG_TAG, "...but we're not connected!");
                 registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+                
+                // We need to keep this in the foreground until the network
+                // comes back, else Android will most likely kill the service,
+                // taking the network receiver with it (and thus meaning it
+                // won't wake up when the network comes back).
+                startForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION, mNotificationNetwork.build());
                 
                 // Release the wakelock, but DON'T stop the service!  That'll
                 // kill off (or leak) the receiver we JUST registered!
@@ -465,6 +487,8 @@ public class StockService extends Service {
     public void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
+        
+        Log.d(DEBUG_TAG, "StockService is being destroyed NOW!");
         
         // We've got this receiver.  If it's still registered at onDestroy time,
         // we've got to kill it off, else it leaks.
