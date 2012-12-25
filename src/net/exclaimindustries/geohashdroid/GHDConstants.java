@@ -122,6 +122,12 @@ public final class GHDConstants {
     public static final String STOCK_ALARM_NETWORK_BACK = "net.exclaimindustries.geohashdroid.STOCK_ALARM_NETWORK_BACK";
     
     /**
+     * Intent sent when the "Waiting for network" notification is tapped.  This
+     * will prompt the user to give up on the network.
+     */
+    public static final String STOCK_CANCEL_NETWORK = "net.exclaimindustries.geohashdroid.STOCK_CANCEL_ALARM";
+    
+    /**
      * Broadcast intent to tell StockService to retrieve a specific day's stock
      * value.  This will require some extra Intent data to tell it what date it
      * should be retrieving.  Also, assuming this isn't what StockService is

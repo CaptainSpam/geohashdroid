@@ -365,14 +365,16 @@ public class StockService extends ForegroundCompatService {
         mNotificationBuilder = new NotificationCompat.Builder(this)
             .setSmallIcon(R.drawable.geohashing_logo_notification)
             .setContentTitle(getString(R.string.notification_title))
-            .setOngoing(true);
+            .setOngoing(true)
+            .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, GeohashDroid.class), 0));
         
         // And ready another notification for networking!
         mNotificationNetwork = new NotificationCompat.Builder(this)
             .setSmallIcon(R.drawable.geohashing_logo_notification)
             .setContentTitle(getString(R.string.notification_title))
             .setContentText(getString(R.string.notification_wait_for_network))
-            .setOngoing(true);
+            .setOngoing(true)
+            .setContentIntent(PendingIntent.getService(this, 0, new Intent(this, StockService.class).setAction(GHDConstants.STOCK_CANCEL_NETWORK), 0));
     }
 
     @Override
@@ -477,6 +479,8 @@ public class StockService extends ForegroundCompatService {
             // now.
             doWakeLockery(this, false);
             stopSelf();
+        } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_NETWORK)) {
+            Log.d(DEBUG_TAG, "Got STOCK_CANCEL_NETWORK!  Time to prompt!");
         } else {
             // Stop doing this!
             Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
