@@ -229,7 +229,7 @@
 <string name="notification_wait_for_network">Waiting for the network...</string>
 
 <string name="dialog_abandon_network_title">Give up on the network?</string>
-<string name="dialog_abandon_network_text">Geohash Droid is presently waiting for a network connection before it tries to prefetch today's stock value.  Do you want to give up on that for today?</string>
+<string name="dialog_abandon_network_text">Geohash Droid is presently waiting for a network connection before it tries to prefetch today\'s stock value.  Do you want to give up on that for today?</string>
 <string name="dialog_abandon_network_yes">Yes, give up</string>
 <string name="dialog_abandon_network_no">No, keep waiting</string>
 <string name="dialog_abandon_network_prefs">Actually, open preferences</string>
