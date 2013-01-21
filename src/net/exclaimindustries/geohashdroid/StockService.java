@@ -13,15 +13,22 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -72,6 +79,97 @@ public class StockService extends ForegroundCompatService {
     private NotificationCompat.Builder mNotificationNetwork;
     
     private static final int NOTIFICATION_ID = 1;
+    
+    private static final String DIALOG = "Dialog";
+    private static final int DIALOG_CANCEL_NETWORK = 0;
+    
+    /**
+     * This is a handy transparent container for any dialogs that StockService
+     * will need to display.
+     */
+    public static class DialogHandler extends Activity {
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            
+            // Get the Intent, and by that token, what dialog we display.  Since
+            // this should only be called from StockService anyway, we'll just
+            // go right ahead and crash if there's no extra there.
+            Intent i = getIntent();
+            
+            int dialog = i.getIntExtra(DIALOG, -1);
+            
+            showDialog(dialog);
+        }
+
+        @Override
+        protected Dialog onCreateDialog(int id) {
+            switch(id) {
+                case DIALOG_CANCEL_NETWORK:
+                {
+                    // Here's a little number I like to call "Are you sure you
+                    // want to cancel the wait for the network?"...
+                    AlertDialog.Builder build = new AlertDialog.Builder(this);
+                    
+                    build.setTitle(R.string.dialog_abandon_network_title);
+                    build.setMessage(R.string.dialog_abandon_network_text);
+                    build.setIcon(android.R.drawable.ic_dialog_alert);
+                    
+                    build.setPositiveButton(R.string.dialog_abandon_network_yes,
+                            new OnClickListener() {
+
+                                @Override
+                                public void onClick(DialogInterface dialog,
+                                        int which) {
+                                    // Clear!
+                                    dismissDialog(DIALOG_CANCEL_NETWORK);
+                                    
+                                    // Send an intent back to the Service to
+                                    // tell it to give up.
+                                    Intent i = new Intent(DialogHandler.this, StockService.class);
+                                    i.setAction(GHDConstants.STOCK_CANCEL_NETWORK);
+                                    startService(i);
+                                    
+                                    // And we're done here!
+                                    finish();
+                                }
+                    });
+                    
+                    build.setNegativeButton(R.string.dialog_abandon_network_no,
+                            new OnClickListener() {
+
+                                @Override
+                                public void onClick(DialogInterface dialog,
+                                        int which) {
+                                    // Just dismiss the dialog and stop the
+                                    // activity.
+                                    dismissDialog(DIALOG_CANCEL_NETWORK);
+                                    
+                                    finish();
+                                }
+                        
+                    });
+                    
+                    build.setOnCancelListener(new OnCancelListener() {
+
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            // DISMISSED!
+                            finish();
+                        }
+                        
+                    });
+                    
+                    return build.create();
+                }
+            }
+            
+            Log.e(DEBUG_TAG, "What sort of dialog is " + id + " supposed to be?  Come ON, now!");
+            return null;
+        }
+        
+    };
     
     /**
      * This handles all wakelockery.
@@ -374,7 +472,7 @@ public class StockService extends ForegroundCompatService {
             .setContentTitle(getString(R.string.notification_title))
             .setContentText(getString(R.string.notification_wait_for_network))
             .setOngoing(true)
-            .setContentIntent(PendingIntent.getService(this, 0, new Intent(this, StockService.class).setAction(GHDConstants.STOCK_CANCEL_NETWORK), 0));
+            .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, StockService.DialogHandler.class).putExtra(DIALOG, DIALOG_CANCEL_NETWORK), 0));
     }
 
     @Override
@@ -384,10 +482,12 @@ public class StockService extends ForegroundCompatService {
         // fix one hell of a lot of other things, too.
         super.onStart(intent, startId);
         
-        // Did we just come back from the network check?
-        if(intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)) {
+        // Did we just come back from the network check?  Or, were we just told
+        // to give up on that nonsense?
+        if(intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)
+                || intent.getAction().equals(GHDConstants.STOCK_CANCEL_NETWORK)) {
             // We did!  Stop foreground mode!
-            Log.d(DEBUG_TAG, "It's STOCK_ALARM_NETWORK_BACK!  Stopping foreground mode...");
+            Log.d(DEBUG_TAG, "The network wait needs to be stopped!  Stopping foreground mode...");
             stopForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION);
         }
 
@@ -480,7 +580,14 @@ public class StockService extends ForegroundCompatService {
             doWakeLockery(this, false);
             stopSelf();
         } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_NETWORK)) {
-            Log.d(DEBUG_TAG, "Got STOCK_CANCEL_NETWORK!  Time to prompt!");
+            Log.d(DEBUG_TAG, "Got STOCK_CANCEL_NETWORK!  Unregistering the network reciever!");
+            try {
+                unregisterReceiver(mNetReceiver);
+            } catch (IllegalArgumentException e) {
+                // If this gets thrown, the receiver somehow isn't set.  Eh,
+                // forget about it.
+            }
+            clearNotification();
         } else {
             // Stop doing this!
             Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");

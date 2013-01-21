@@ -92,6 +92,7 @@
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_ABORT"/>
             </intent-filter>
         </receiver>
+        <activity android:theme="@style/Theme.Transparent" android:name="StockService$DialogHandler"></activity>
     </application>
 
 </manifest>
