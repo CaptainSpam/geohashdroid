@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:installLocation="auto"
     package="net.exclaimindustries.geohashdroid"
+    android:installLocation="auto"
     android:versionCode="702"
     android:versionName="0.7.17" >
 
@@ -13,14 +13,15 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
+
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
         android:normalScreens="true"
         android:resizeable="true"
         android:smallScreens="true" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowClearUserData="true"
@@ -83,16 +84,28 @@
             android:label="@string/standby_title"
             android:theme="@android:style/Theme.Dialog" >
         </activity>
-        <service android:name="StockService">
+
+        <service android:name="StockService" >
         </service>
-        <receiver android:name="net.exclaimindustries.geohashdroid.StockService$StockAlarmReceiver" android:exported="false">
+
+        <receiver
+            android:name="net.exclaimindustries.geohashdroid.StockService$StockAlarmReceiver"
+            android:exported="false" >
             <intent-filter>
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM"/>
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_FETCH"/>
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ABORT"/>
+                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM" />
+                <action android:name="net.exclaimindustries.geohashdroid.STOCK_FETCH" />
+                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ABORT" />
             </intent-filter>
         </receiver>
-        <activity android:theme="@style/Theme.Transparent" android:name="StockService$DialogHandler"></activity>
+
+        <activity
+            android:name="DialogHandler"
+            android:enabled="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@style/Theme.Transparent" >
+        </activity>
     </application>
 
 </manifest>
