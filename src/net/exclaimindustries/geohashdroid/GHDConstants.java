@@ -117,15 +117,9 @@ public final class GHDConstants {
 
     /**
      * Intent sent when the network's come back up.  This tells the service to
-     * drop foreground mode and otherwise behave as if it were a STOCK_ALARM.
+     * shut off the receiver and otherwise behave as if it were a STOCK_ALARM.
      */
     public static final String STOCK_ALARM_NETWORK_BACK = "net.exclaimindustries.geohashdroid.STOCK_ALARM_NETWORK_BACK";
-    
-    /**
-     * Intent sent when the "Waiting for network" notification is tapped.  This
-     * will prompt the user to give up on the network.
-     */
-    public static final String STOCK_CANCEL_NETWORK = "net.exclaimindustries.geohashdroid.STOCK_CANCEL_ALARM";
     
     /**
      * Broadcast intent to tell StockService to retrieve a specific day's stock

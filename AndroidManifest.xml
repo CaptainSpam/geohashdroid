@@ -98,14 +98,11 @@
             </intent-filter>
         </receiver>
 
-        <activity
-            android:name="DialogHandler"
-            android:enabled="true"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:noHistory="true"
-            android:theme="@style/Theme.Transparent" >
-        </activity>
+        <receiver android:name="StockService$NetworkReceiver" android:enabled="false">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

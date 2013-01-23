@@ -16,10 +16,12 @@ import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
@@ -52,7 +54,7 @@ import android.util.Log;
  * @author Nicholas Killewald
  *
  */
-public class StockService extends ForegroundCompatService {
+public class StockService extends Service {
     
     private static final String DEBUG_TAG = "StockService";
     
@@ -60,8 +62,6 @@ public class StockService extends ForegroundCompatService {
     
     private static final Graticule DUMMY_YESTERDAY = new Graticule(51, false, 0, true);
     private static final Graticule DUMMY_TODAY = new Graticule(38, false, 84, true);
-
-    private NetworkReceiver mNetReceiver = new NetworkReceiver();
     
     private HashBuilder.StockRunner mRunner;
 
@@ -69,7 +69,6 @@ public class StockService extends ForegroundCompatService {
     private NotificationManager mNotificationManager;
     
     private NotificationCompat.Builder mNotificationBuilder;
-    private NotificationCompat.Builder mNotificationNetwork;
     
     private static final int NOTIFICATION_ID = 1;
     
@@ -97,12 +96,11 @@ public class StockService extends ForegroundCompatService {
     }
     
     /**
-     * This receiver isn't declared in the manifest because we want to be able
-     * to shut it off if we don't want it on.  In general, it should ONLY go on
-     * if we run into a network issue and are waiting for the connection to come
-     * back up, at which time we can try firing off a stock check again.
+     * This receiver listens for network connectivity changes in case we ran
+     * into a problem with network connectivity and wanted to know if that
+     * changed.
      */
-    private static class NetworkReceiver extends BroadcastReceiver {
+    public static class NetworkReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -111,9 +109,7 @@ public class StockService extends ForegroundCompatService {
                 Log.d(DEBUG_TAG, "The network is back up!");
                 doWakeLockery(context, true);
                 
-                // NETWORK'D!!! Unregister ourselves from broadcasts and get an
-                // Intent fired off to the Service!
-                context.unregisterReceiver(this);
+                // NETWORK'D!!!
                 Intent i = new Intent(context, StockService.class);
                 i.setAction(GHDConstants.STOCK_ALARM_NETWORK_BACK);
                 context.startService(i);
@@ -217,15 +213,7 @@ public class StockService extends ForegroundCompatService {
                 if(!isConnected(service)) {
                     Log.d(DEBUG_TAG, "We're not connected, waiting for a network connection...");
                     // So if that's the case, the NetworkReceiver can kick in.
-                    service.registerReceiver(service.mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
-                    service.startForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION, service.mNotificationNetwork.build());
-                    
-                    // Do almost all of the doneHere part.  Just don't stop the
-                    // service.  We'll need it up to keep the NetworkReceiver we
-                    // JUST registered around.
-                    doWakeLockery(service, false);
-                    service.clearNotification();
-                    doneHere = false;
+                    service.setNetworkReceiver(true);
                 } else {
                     // If that's NOT the case, give up.  The remaining wide
                     // variety of things is not worth thinking about.  We'll
@@ -367,19 +355,6 @@ public class StockService extends ForegroundCompatService {
             .setContentTitle(getString(R.string.notification_title))
             .setOngoing(true)
             .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, GeohashDroid.class), 0));
-        
-        // And ready another notification for networking!
-        mNotificationNetwork = new NotificationCompat.Builder(this)
-            .setSmallIcon(R.drawable.geohashing_logo_notification)
-            .setContentTitle(getString(R.string.notification_title))
-            .setContentText(getString(R.string.notification_wait_for_network))
-            .setOngoing(true)
-            .setContentIntent(
-                PendingIntent.getActivity(this, 0,
-                    new Intent(this, DialogHandler.class)
-                        .setAction(GHDConstants.STOCK_CANCEL_NETWORK)
-                        .putExtra(DialogHandler.DIALOG, DialogHandler.DIALOG_CANCEL_NETWORK),
-                    PendingIntent.FLAG_UPDATE_CURRENT));
     }
 
     @Override
@@ -389,13 +364,11 @@ public class StockService extends ForegroundCompatService {
         // fix one hell of a lot of other things, too.
         super.onStart(intent, startId);
         
-        // Did we just come back from the network check?  Or, were we just told
-        // to give up on that nonsense?
-        if(intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)
-                || intent.getAction().equals(GHDConstants.STOCK_CANCEL_NETWORK)) {
-            // We did!  Stop foreground mode!
-            Log.d(DEBUG_TAG, "The network wait needs to be stopped!  Stopping foreground mode...");
-            stopForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION);
+        // If we've been told the network just came back, we can shut off the
+        // network receiver.  If we're still in trouble network-wise, it'll go
+        // right back on when we check in a second...
+        if(intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)) {
+            setNetworkReceiver(false);
         }
 
         // Examine the Intent.  What're we doing with it?
@@ -419,17 +392,12 @@ public class StockService extends ForegroundCompatService {
             } else {
                 // If there's no connection, wait for one first.
                 Log.d(DEBUG_TAG, "...but we're not connected!");
-                registerReceiver(mNetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+
+                // Stand by for the network!
+                setNetworkReceiver(true);
                 
-                // We need to keep this in the foreground until the network
-                // comes back, else Android will most likely kill the service,
-                // taking the network receiver with it (and thus meaning it
-                // won't wake up when the network comes back).
-                startForegroundCompat(ForegroundCompatService.DEFAULT_FOREGROUND_NOTIFICATION, mNotificationNetwork.build());
-                
-                // Release the wakelock, but DON'T stop the service!  That'll
-                // kill off (or leak) the receiver we JUST registered!
                 doWakeLockery(this, false);
+                stopSelf();
             }
         } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_ALARMS)) {
             // We've been told to stop all alarms!  While we're at it, abort any
@@ -437,12 +405,7 @@ public class StockService extends ForegroundCompatService {
             Log.d(DEBUG_TAG, "Got STOCK_CANCEL_ALARMS!");
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM), 0));
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM_RETRY), 0));
-            try {
-                unregisterReceiver(mNetReceiver);
-            } catch (IllegalArgumentException e) {
-                // If this gets thrown, we didn't actually register the receiver
-                // yet.  Ignore it.
-            }
+            setNetworkReceiver(false);
             if(mRunner != null) mRunner.abort();
 
             doWakeLockery(this, false);
@@ -486,35 +449,9 @@ public class StockService extends ForegroundCompatService {
             // now.
             doWakeLockery(this, false);
             stopSelf();
-        } else if(intent.getAction().equals(GHDConstants.STOCK_CANCEL_NETWORK)) {
-            Log.d(DEBUG_TAG, "Got STOCK_CANCEL_NETWORK!  Unregistering the network reciever!");
-            try {
-                unregisterReceiver(mNetReceiver);
-            } catch (IllegalArgumentException e) {
-                // If this gets thrown, the receiver somehow isn't set.  Eh,
-                // forget about it.
-            }
-            clearNotification();
         } else {
             // Stop doing this!
             Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
-        }
-    }
-
-    @Override
-    public void onDestroy() {
-        // TODO Auto-generated method stub
-        super.onDestroy();
-        
-        Log.d(DEBUG_TAG, "StockService is being destroyed NOW!");
-        
-        // We've got this receiver.  If it's still registered at onDestroy time,
-        // we've got to kill it off, else it leaks.
-        try {
-            unregisterReceiver(mNetReceiver);
-        } catch (IllegalArgumentException e) {
-            // If this gets thrown, we didn't actually register the receiver
-            // yet.  Ignore it.
         }
     }
 
@@ -563,5 +500,15 @@ public class StockService extends ForegroundCompatService {
     
     private void clearNotification() {
         mNotificationManager.cancel(NOTIFICATION_ID);
+    }
+    
+    private void setNetworkReceiver(boolean enabled) {
+        ComponentName receiver = new ComponentName(this, NetworkReceiver.class);
+        PackageManager pm = getPackageManager();
+        
+        pm.setComponentEnabledSetting(receiver,
+                (enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED),
+                PackageManager.DONT_KILL_APP);
     }
 }
