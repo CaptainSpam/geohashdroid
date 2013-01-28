@@ -376,6 +376,15 @@ public class StockService extends Service {
                 || intent.getAction().equals(GHDConstants.STOCK_ALARM_NETWORK_BACK)) {
             // It's the alarm!
             Log.d(DEBUG_TAG, "Starting StockService on some manner of STOCK_ALARM!");
+
+            // If we got the REAL stock alarm while still waiting on the RETRY
+            // alarm (i.e. the server kept reporting the stock wasn't posted all
+            // day until the next 9:30), we should stop the retry alarm.  It'll
+            // get set back up if the stock is STILL unavailable, and by
+            // shutting it down here, we preferably avoid acting on two alarms
+            // at the same time.
+            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(GHDConstants.STOCK_ALARM_RETRY), 0));
+
             if(isConnected(this)) {
                 if(!doAllStockDbChecks()) {
                     // If we're NOT busy (that is, if doAllStockDbChecks returns
