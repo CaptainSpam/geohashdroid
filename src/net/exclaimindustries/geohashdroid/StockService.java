@@ -201,9 +201,8 @@ public class StockService extends Service {
                 Intent alarmIntent = new Intent();
                 alarmIntent.setAction(GHDConstants.STOCK_ALARM_RETRY);
 
-                service.mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
+                service.mAlarmManager.set(AlarmManager.RTC_WAKEUP,
                         cal.getTimeInMillis(),
-                        AlarmManager.INTERVAL_DAY,
                         PendingIntent.getBroadcast(service, 0, alarmIntent, 0));
             } else if(message.what == HashBuilder.StockRunner.ERROR_SERVER) {
                 // A server error can mean any of a wide variety of things.  If
