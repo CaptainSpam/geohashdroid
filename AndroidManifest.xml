@@ -95,6 +95,7 @@
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM" />
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_FETCH" />
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_ABORT" />
+                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM_RETRY" />
             </intent-filter>
         </receiver>
 
