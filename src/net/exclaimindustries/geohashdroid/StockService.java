@@ -194,11 +194,13 @@ public class StockService extends Service {
                 // a sane request is in the initial check when the stock alarm
                 // happens, so we just need to bump up the time by a half hour
                 // and wait it out.
-                Log.d(DEBUG_TAG, "Stock not posted yet, rescheduling another check in 30 minutes...");
+                
                 Calendar cal = Calendar.getInstance();
                 cal.add(Calendar.MINUTE, 30);
 
-                Intent alarmIntent = new Intent();
+                Log.d(DEBUG_TAG, "Stock not posted yet, rescheduling another check in 30 minutes (at " + cal.getTime().toString() + ")...");
+                
+                Intent alarmIntent = new Intent(service, StockService.StockAlarmReceiver.class);
                 alarmIntent.setAction(GHDConstants.STOCK_ALARM_RETRY);
 
                 service.mAlarmManager.set(AlarmManager.RTC_WAKEUP,
@@ -248,7 +250,6 @@ public class StockService extends Service {
     private void doStockFetching(boolean yesterday) {
         // Remember, this DOES NOT CARE if the stock is already cached.  Do that
         // check FIRST!  It's a static call on HashBuilder!
-        Log.d(DEBUG_TAG, "doStockFetching called!");
         Calendar request = getMostRecentStockDate(null);
         showNotification(Info.makeAdjustedCalendar(request,
                 (yesterday ? DUMMY_YESTERDAY : DUMMY_TODAY)));
