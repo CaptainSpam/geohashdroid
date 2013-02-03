@@ -12,12 +12,10 @@ import java.text.DateFormat;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationAwareActivity;
 
-import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -51,9 +49,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
     
     private ClosenessActor mCloseness;
 
-    private PowerManager.WakeLock mWakeLock;
-
-    private static final String DEBUG_TAG = "DetailedInfoScreen";
+//    private static final String DEBUG_TAG = "DetailedInfoScreen";
 
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_SEND_TO_MAPS = 6;
@@ -73,15 +69,6 @@ public class DetailedInfoScreen extends LocationAwareActivity {
         
         // Set up the actor!
         mCloseness = new ClosenessActor(this);
-
-        // Get me a wakelock! Since we're dealing with something the
-        // user might want to take pictures of outside the phone, this
-        // one keeps the screen bright at all times, hence why we don't
-        // just try to keep the same lock from MainMap.
-        PowerManager pl = (PowerManager)getSystemService(Context.POWER_SERVICE);
-        mWakeLock = pl.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
-                | PowerManager.ACQUIRE_CAUSES_WAKEUP
-                | PowerManager.ON_AFTER_RELEASE, DEBUG_TAG);
 
         // Get us some info!
         if (icicle != null && icicle.containsKey(INFO)) {
@@ -201,28 +188,12 @@ public class DetailedInfoScreen extends LocationAwareActivity {
     /*
      * (non-Javadoc)
      * 
-     * @see android.app.Activity#onPause()
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        // SLEEEEEEEP!
-        mWakeLock.release();
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
      * @see android.app.Activity#onResume()
      */
     @Override
     protected void onResume() {
         super.onResume();
 
-        // Don't sleeeeeeep!
-        mWakeLock.acquire();
-        
         updateDest();
 
         // Populate the location with the last known data, if it's no older

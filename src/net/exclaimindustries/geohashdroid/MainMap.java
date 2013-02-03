@@ -31,7 +31,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PowerManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -63,8 +62,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
     private boolean mAutoZoom = true;
     // Our bucket o' info (some data is repeated for convenience)
     private Info mInfo;
-
-    private PowerManager.WakeLock mWakeLock;
 
     private static final String DEBUG_TAG = "MainMap";
 
@@ -206,14 +203,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         mNearbyOn = false;
         mResumeFlags = false;
 
-        // First, reset the wakelock. The last one, if one was there in the
-        // first place, was released on the last onStop. Thus, this is safe.
-        PowerManager pl = (PowerManager)getSystemService(Context.POWER_SERVICE);
-        mWakeLock = pl.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK
-                | PowerManager.ACQUIRE_CAUSES_WAKEUP
-                | PowerManager.ON_AFTER_RELEASE, DEBUG_TAG);
-        // The first call to onResume will acquire.
-
         boolean restarting = false;
 
         if (icicle != null && icicle.containsKey(AUTOZOOM)) {
@@ -315,9 +304,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // Stop the ClosenessActor.
         mClosenessHolder.deactivate();
-        
-        // Release the wakelock.
-        mWakeLock.release();
     }
 
     @Override
@@ -331,15 +317,15 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
-        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
+        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, GHDConstants.PREFVAL_INFOBOX_SMALL);
 
         // And now, check it.
-        if (setting.equals("Jumbo")) {
+        if (setting.equals(GHDConstants.PREFVAL_INFOBOX_JUMBO)) {
             // Jumbo disables the compass!
             mMyLocation.disableCompass();
             infobox.setVisibility(View.GONE);
             infoboxbig.setVisibility(View.VISIBLE);
-        } else if (setting.equals("Small")) {
+        } else if (setting.equals(GHDConstants.PREFVAL_INFOBOX_SMALL)) {
             mMyLocation.enableCompass();
             infobox.setVisibility(View.VISIBLE);
             infoboxbig.setVisibility(View.GONE);
@@ -376,9 +362,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         // MyLocationOverlay comes right back on.
         mMyLocation.enableMyLocation();
-
-        // As does the wakelock.
-        mWakeLock.acquire();
         
         // And set the ClosenessActor in motion.
         mClosenessHolder.activate();
@@ -978,11 +961,11 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
 
         SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE,
                 0);
-        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, "Small");
+        String setting = prefs.getString(GHDConstants.PREF_INFOBOX_SIZE, GHDConstants.PREFVAL_INFOBOX_SMALL);
 
-        if (setting.equals("Jumbo"))
+        if (setting.equals(GHDConstants.PREFVAL_INFOBOX_JUMBO))
             infoboxbig.update(mInfo, mMyLocation.getLastFix());
-        else if (setting.equals("Small"))
+        else if (setting.equals(GHDConstants.PREFVAL_INFOBOX_SMALL))
             infobox.update(mInfo, mMyLocation.getLastFix());
     }
 
