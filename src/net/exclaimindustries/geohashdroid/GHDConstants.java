@@ -57,6 +57,27 @@ public final class GHDConstants {
      * final destination.
      */
     public static final String PREF_CLOSENESS_REPORTED = "ClosenessReported";
+    /** Prefs key specifying if the background StockService should be used. */
+    public static final String PREF_STOCK_SERVICE = "UseStockService";
+    
+    /** Prefs value for no infobox at all. */
+    public static final String PREFVAL_INFOBOX_NONE = "None";
+    /** Prefs value for a small infobox (with compass). */
+    public static final String PREFVAL_INFOBOX_SMALL = "Small";
+    /** Prefs value for a jumbo infobox (without compass). */
+    public static final String PREFVAL_INFOBOX_JUMBO = "Jumbo";
+    
+    /** Prefs value for metric distances. */
+    public static final String PREFVAL_DIST_METRIC = "Metric";
+    /** Prefs value for not-metric distances. */
+    public static final String PREFVAL_DIST_IMPERIAL = "Imperial";
+    
+    /** Prefs value for coordinates in degrees. */
+    public static final String PREFVAL_COORD_DEGREES = "Degrees";
+    /** Prefs value for coordinates in minutes. */
+    public static final String PREFVAL_COORD_MINUTES = "Minutes";
+    /** Prefs value for coordinates in minutes and seconds. */
+    public static final String PREFVAL_COORD_SECONDS = "Seconds";
     
     /** Prefs value for no infobox at all. */
     public static final String PREFVAL_INFOBOX_NONE = "None";
@@ -90,6 +111,72 @@ public final class GHDConstants {
      */
     public static final String PICK_GRATICULE = "net.exclaimindustries.geohashdroid.PICK_GRATICULE";
     
+    /**
+     * Broadcast intent for the alarm that tells StockService that it's time to
+     * go fetch a stock.  At that time, it'll retrieve stock data for "today"
+     * and "yesterday".  In this case, "today" and "yesterday" are both relative
+     * to when stock data is expected to exist for the actual "today"; for
+     * instance, if this is called on a Saturday, "today" will be Friday (the
+     * NYSE isn't open on Saturday, so Friday's open value is used) and
+     * "yesterday" will also be Friday (both 30W and non-30W users get the same
+     * hash data on Saturdays and Sundays).
+     */
+    public static final String STOCK_ALARM = "net.exclaimindustries.geohashdroid.STOCK_ALARM";
+
+    /**
+     * Broadcast intent for the alarm that tells StockService to try again on
+     * a failed check due to the stock not being posted yet.  In practice, the
+     * resulting action will be the same as STOCK_ALARM (cache the stocks). 
+     * This is needed because otherwise it'd be considered the same intent,
+     * meaning the single-shot alarm would cancel the first one.
+     *
+     * Do note, this intent should NOT be scheduled to be repeating.
+     */
+    public static final String STOCK_ALARM_RETRY = "net.exclaimindustries.geohashdroid.STOCK_ALARM_RETRY";
+
+    /**
+     * Intent sent when the network's come back up.  This tells the service to
+     * shut off the receiver and otherwise behave as if it were a STOCK_ALARM.
+     */
+    public static final String STOCK_ALARM_NETWORK_BACK = "net.exclaimindustries.geohashdroid.STOCK_ALARM_NETWORK_BACK";
+    
+    /**
+     * Broadcast intent to tell StockService to retrieve a specific day's stock
+     * value.  This will require some extra Intent data to tell it what date it
+     * should be retrieving.  Also, assuming this isn't what StockService is
+     * already fetching, this will abort anything currently in progress.
+     * 
+     * TODO: Determine what that extra data should be; a manual fetch request
+     * should include the graticule and perform 30W adjustments.
+     */
+    public static final String STOCK_FETCH = "net.exclaimindustries.geohashdroid.STOCK_FETCH";
+    
+    /**
+     * Broadcast intent to tell StockService to abort whatever it was doing.
+     */
+    public static final String STOCK_ABORT = "net.exclaimindustries.geohashdroid.STOCK_ABORT";
+
+    /**
+     * Directed intent to tell StockService to set the alarms, but don't
+     * actually do anything about it and shut down right afterward.
+     */
+    public static final String STOCK_INIT = "net.exclaimindustries.geohashdroid.STOCK_INIT";
+
+    /**
+     * Directed intent to tell StockService to abort all its alarms.  This would
+     * be for turning off the service in preferences.
+     */
+    public static final String STOCK_CANCEL_ALARMS = "net.exclaimindustries.geohashdroid.STOCK_CANCEL_ALARMS";
+
+    /**
+     * Broadcast intent sent back by StockService when a result has been
+     * retrieved.  In general, you'd register something to pick this up on an
+     * as-you-need-it basis, not register it with the manifest.
+     * 
+     * TODO: This doesn't happen yet.  It'll happen once I convert all the stock
+     * grabbing stuff to the background service.
+     */
+    public static final String STOCK_RESULT = "net.exclaimindustries.geohashdroid.STOCK_RESULT";
     
     /** The decimal format for most distances. */
     public static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");

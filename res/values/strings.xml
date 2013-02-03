@@ -102,6 +102,10 @@
 <string name="pref_wikiphonetime_on">Use the time on the phone instead of the wiki\'s time for wiki posts</string>
 <string name="pref_wikiphonetime_off">Use the standard wiki time signature for wiki posts</string>
 
+<string name="pref_usestockservice_title">Prefetch stocks</string>
+<string name="pref_usestockservice_on">Try to prefetch each day\'s stock value</string>
+<string name="pref_usestockservice_off">Only fetch stock values on-demand</string>
+
 <string name="pref_stockwipe_title">Clear stock cache</string>
 <string name="pref_stockwipe_dialog_text">Are you sure you want to clear all stock cache data?</string>
 <string name="pref_cat_map">Map options</string>
@@ -218,6 +222,11 @@
 <string name="hint_lat">Lat</string>
 <string name="hint_lon">Lon</string>
 <string name="hint_message">Message</string>
+
+<string name="notification_title">Fetching stocks...</string>
+<string name="notification_detail">(now checking %1$s)</string>
+
+<string name="notification_wait_for_network">Waiting for the network...</string>
 
 <string name="about_by">By Nicholas Killewald</string>
 <string name="about_with">With contributions by Thomas Hirsch and Jonas Graudums</string>

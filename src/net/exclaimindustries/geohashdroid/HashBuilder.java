@@ -28,6 +28,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.util.Log;
 
 /**
@@ -74,6 +75,8 @@ public class HashBuilder {
      * static methods of HashBuilder to make the Info bundle.
      */
     public static class StockRunner implements Runnable {
+        private static final String DEBUG_TAG = "StockRunner";
+
         /**
          * This is busy, either with getting the stock price or working out
          * the hash.
@@ -104,13 +107,14 @@ public class HashBuilder {
         public static final int ABORTED = 5;
     
         private Context mContext;
-    	private Calendar mCal;
-    	private Graticule mGrat;
-    	private Handler mHandler;
-    	private HttpGet mRequest;
-    	private int mStatus;
+        private Calendar mCal;
+        private Graticule mGrat;
+        private Handler mHandler;
+        private HttpGet mRequest;
+        private int mStatus;
         private Object mLastObject;
-    	
+        private PowerManager.WakeLock mWakeLock;
+        
         // This may be expanded later to allow a user-definable list, hence why
         // it doesn't follow the usual naming conventions I use.  Of course, in
         // THAT case, we'd need to make it not be a raw array.  The general form
@@ -119,86 +123,104 @@ public class HashBuilder {
         private final static String[] mServers = { "http://geo.crox.net/djia/%Y/%m/%d",
             "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d"};
 
-    	
-    	private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
-    	    mContext = con;
-    		mCal = c;
-    		mGrat = g;
-    		mHandler = h;
-    		mStatus = IDLE;
-    	}
-    	
+        
+        private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
+            mContext = con;
+            mCal = c;
+            mGrat = g;
+            mHandler = h;
+            mStatus = IDLE;
+            mWakeLock = ((PowerManager)(con.getSystemService(Context.POWER_SERVICE))).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, DEBUG_TAG);
+        }
+        
         @Override
         public void run() {
-        	Info toReturn;
-        	String stock;
-        	
-        	mStatus = BUSY;
-        	
+            // And STAY awake!  This might be called from StockService, which,
+            // itself, might be woken up from its peaceful slumber by an alarm.
+            // It'll hand off control to this thread, so this thread will need
+            // to keep its own partial wakelock to make sure everything gets
+            // done before the device snoozes off again.
+            mWakeLock.acquire();
+           
+            // Call the actual meat of the matter.  That's peppered with return
+            // statements for the error cases, so wrapping the call with the
+            // wakelock controls here makes the most sense.
+            runStock();
+
+            // Now, release it.
+            mWakeLock.release();
+        }
+
+        private void runStock() {
+            Info toReturn;
+            String stock;
+            
+            mStatus = BUSY;
+            
             // First, we need to adjust the calendar in the event we're in the
             // range of the 30W rule.  To that end, sCal is for stock calendar.
             Calendar sCal = Info.makeAdjustedCalendar(mCal, mGrat);
             
             // Grab a lock on our lock object.
-        	synchronized(locker) {
-        		// First, if this exists in the cache, use it instead of going
-        		// off to the internet.  This method uses the ACTUAL date, so
-        	    // we can ignore sCal for now.
-        		toReturn = getStoredInfo(mContext, mCal, mGrat);
-        		if(toReturn != null) {
+            synchronized(locker) {
+                // First, if this exists in the cache, use it instead of going
+                // off to the internet.  This method uses the ACTUAL date, so
+                // we can ignore sCal for now.
+                toReturn = getStoredInfo(mContext, mCal, mGrat);
+                if(toReturn != null) {
                     // Hey, whadya know, we've got something!  Send this data
-        		    // back to the Handler and return!
-        		    mStatus = ALL_OKAY;
-        		    sendMessage(toReturn);
-        			return;
-        		}
-        		
-        		// If that failed, we need a stock price.  First, check to see
-        		// if it's in the database.  
-        		stock = getStoredStock(mContext, sCal);
-        		
-        		// If we found something, great!  Let's move on!
-        		if(stock == null) {
-            		// Otherwise, we need to start heading off to the net.
-            		mStatus = BUSY;
-            		try {
-            		    stock = fetchStock(sCal);
+                    // back to the Handler and return!
+                    mStatus = ALL_OKAY;
+                    sendMessage(toReturn);
+                    return;
+                }
+                
+                // If that failed, we need a stock price.  First, check to see
+                // if it's in the database.  
+                stock = getStoredStock(mContext, sCal);
+                
+                // If we found something, great!  Let's move on!
+                if(stock == null) {
+                    // Otherwise, we need to start heading off to the net.
+                    mStatus = BUSY;
+                    try {
+                        stock = fetchStock(sCal);
                         // If this didn't throw an exception AND it's not blank,
                         // stash it in the database.
                         if(stock.trim().length() != 0)
                             storeStock(mContext, sCal, stock);
-            		} catch (FileNotFoundException fnfe) {
-            		    // If we got a 404, assume it's not posted yet.
-            		    mStatus = ERROR_NOT_POSTED;
-            		    sendMessage(null);
-            		    return;
-            		} catch (IOException ioe) {
-            		    // If we got anything else, assume a problem.
-            		    mStatus = ERROR_SERVER;
-            		    sendMessage(null);
-            		    return;
-            		}
-            		
-            		if(mStatus == ABORTED) {
-            		    // If we aborted, send that back, too.
-            		    sendMessage(null);
-            		    return;
-            		}
-        		}
-        	}
+                    } catch (FileNotFoundException fnfe) {
+                        // If we got a 404, assume it's not posted yet.
+                        mStatus = ERROR_NOT_POSTED;
+                        sendMessage(createInvalidInfo(mCal, mGrat));
+                        return;
+                    } catch (IOException ioe) {
+                        // If we got anything else, assume a problem.
+                        mStatus = ERROR_SERVER;
+                        sendMessage(createInvalidInfo(mCal, mGrat));
+                        return;
+                    }
+                    
+                    if(mStatus == ABORTED) {
+                        // If we aborted, send that back, too.
+                        sendMessage(createInvalidInfo(mCal, mGrat));
+                        return;
+                    }
+                }
+            }
 
-    		// We assemble an Info object and get ready to return it.  This uses
-        	// the REAL date so we display the right thing on the detail screen
-        	// (or anywhere else; the point is, we can report to the user if
-        	// they're in the influence of the 30W Rule).
+            // We assemble an Info object and get ready to return it.  This uses
+            // the REAL date so we display the right thing on the detail screen
+            // (or anywhere else; the point is, we can report to the user if
+            // they're in the influence of the 30W Rule).
             toReturn = createInfo(mCal, stock, mGrat);
                 
-    		// Good!  Now, we can stash this away in the database for later.
-    		storeInfo(mContext, toReturn);
-        	
-        	// And we're done!
-        	mStatus = ALL_OKAY;
-        	sendMessage(toReturn);
+            // Good!  Now, we can stash this away in the database for later.
+            storeInfo(mContext, toReturn);
+            
+            // And we're done!
+            mStatus = ALL_OKAY;
+            sendMessage(toReturn);
         }
         
         private void sendMessage(Object toReturn) {
@@ -210,7 +232,7 @@ public class HashBuilder {
             {
                 Message m = Message.obtain(mHandler, mStatus, toReturn);
                 m.sendToTarget();
-            }   
+            }
         }
         
         /**
@@ -233,12 +255,12 @@ public class HashBuilder {
             if (sCal.get(Calendar.MONTH) + 1 < 10)
                 sMonthStr = "0" + (sCal.get(Calendar.MONTH) + 1);
             else
-                sMonthStr = new Integer(sCal.get(Calendar.MONTH) + 1).toString();
+                sMonthStr = Integer.valueOf(sCal.get(Calendar.MONTH) + 1).toString();
 
             if (sCal.get(Calendar.DAY_OF_MONTH) < 10)
                 sDayStr = "0" + sCal.get(Calendar.DAY_OF_MONTH);
             else
-                sDayStr = new Integer(sCal.get(Calendar.DAY_OF_MONTH)).toString();
+                sDayStr = Integer.valueOf(sCal.get(Calendar.DAY_OF_MONTH)).toString();
 
             // Good, good! Now, to the web!  Go through our list of sites in
             // order until we find an answer, we bottom out, or we abort.  In
@@ -294,7 +316,7 @@ public class HashBuilder {
                 // With that done, we try to convert the output to the float.
                 // If this fails, we got bogus data and should roll on.
                 try {
-                    new Float(result);
+                    Float.parseFloat(result);
                 } catch (NumberFormatException nfe) {
                     result = "";
                     continue;
@@ -352,22 +374,22 @@ public class HashBuilder {
          * @param h the Handler what gets updaterin'.
          */
         public void changeHandler(Handler h) {
-        	mHandler = h;
+            mHandler = h;
         }
         
         /**
          * Abort the current connection, if one exists.
          */
         public void abort() {
-        	if(mRequest != null)
-    	    {
-        	    // Bail out of the request (if there is one)...
-    	        mRequest.abort();
-    	    }
-	        // Put the brakes on the handler...
-	        mHandler = null;
-	        // And change status.
-	        mStatus = ABORTED;
+            if(mRequest != null)
+            {
+                // Bail out of the request (if there is one)...
+                mRequest.abort();
+            }
+            // Put the brakes on the handler...
+            mHandler = null;
+            // And change status.
+            mStatus = ABORTED;
         }
         
         /**
@@ -429,7 +451,7 @@ public class HashBuilder {
      * Checks if the stock price for the given date and graticule (accounting
      * for the 30W rule) is stored and can be retrieved without going to the
      * internet.  If this returns true, the interface should NOT display a popup
-     * and should expect to recieve a new Info object quickly.
+     * and should expect to receive a new Info object quickly.
      * 
      * @param con Context used to retrieve the database, if needed
      * @param c Calendar object with the adventure date requested (this will
@@ -439,8 +461,8 @@ public class HashBuilder {
      *         internet for it
      */
     public static boolean hasStockStored(Context con, Calendar c, Graticule g) {
-//    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
-    	
+//        Calendar sCal = Info.makeAdjustedCalendar(c, g);
+        
         return getQuickCache(c, g) != null || getStore(con).getInfo(c, g) != null;
     }
 
@@ -457,8 +479,8 @@ public class HashBuilder {
      *         without going to the internet.
      */
     public static Info getStoredInfo(Context con, Calendar c, Graticule g) {
-    	// First, check the quick cache.
-//    	Calendar sCal = Info.makeAdjustedCalendar(c, g);
+        // First, check the quick cache.
+//        Calendar sCal = Info.makeAdjustedCalendar(c, g);
 
         // If it's in the quick cache, use it.
         Log.d(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c)
@@ -469,7 +491,7 @@ public class HashBuilder {
             if(result.isGlobalHash()) return result;
             else return cloneInfo(result, g);
         }
-    	
+        
         // Otherwise, check the stock cache.
         Info i = getStore(con).getInfo(c, g);
         
@@ -519,12 +541,12 @@ public class HashBuilder {
      * @param i an Info bundle with everything we need
      */
     private synchronized static void storeInfo(Context con, Info i) {
-    	// First, replace the last-known results.
-    	quickCache(i);
-    	
-    	StockStoreDatabase store = getStore(con);
-    	
-    	// Then, write it to the database.
+        // First, replace the last-known results.
+        quickCache(i);
+        
+        StockStoreDatabase store = getStore(con);
+        
+        // Then, write it to the database.
         store.storeInfo(i);
         store.cleanup();
     }
@@ -564,7 +586,7 @@ public class HashBuilder {
      * @param c date from which this hash comes
      * @param stockPrice effective stock price (already adjusted for the 30W Rule)
      * @param g the graticule in question
-     * @return
+     * @return a new Info object
      */
     protected static Info createInfo(Calendar c, String stockPrice, Graticule g) {
         // This creates the Info object that'll go right back to whatever was
@@ -579,6 +601,17 @@ public class HashBuilder {
         
         // And finally...
         return new Info(lat, lon, g, c);
+    }
+    
+    /**
+     * Build an Info object marked as invalid.  This is for error-reporting.
+     * 
+     * @param c date from which this hash should've come
+     * @param g the graticule in question
+     * @return an Info object marked invalid
+     */
+    protected static Info createInvalidInfo(Calendar c, Graticule g) {
+        return new Info(g, c);
     }
     
     /**
@@ -635,12 +668,12 @@ public class HashBuilder {
         if (c.get(Calendar.MONTH) + 1 < 10)
             monthStr = "0" + (c.get(Calendar.MONTH) + 1);
         else
-            monthStr = new Integer(c.get(Calendar.MONTH) + 1).toString();
+            monthStr = Integer.valueOf(c.get(Calendar.MONTH) + 1).toString();
 
         if (c.get(Calendar.DAY_OF_MONTH) < 10)
             dayStr = "0" + c.get(Calendar.DAY_OF_MONTH);
         else
-            dayStr = new Integer(c.get(Calendar.DAY_OF_MONTH)).toString();
+            dayStr = Integer.valueOf(c.get(Calendar.DAY_OF_MONTH)).toString();
 
         // And here it goes!
         String fullLine = c.get(Calendar.YEAR) + "-" + monthStr + "-"
@@ -649,8 +682,8 @@ public class HashBuilder {
     }
 
     private static Info getQuickCache(Calendar sCal, Graticule g) {
-    	// We don't use Calendar.equals here, as that checks all properties,
-    	// including potentially some we don't really care about.
+        // We don't use Calendar.equals here, as that checks all properties,
+        // including potentially some we don't really care about.
         boolean is30W = (g == null || g.uses30WRule());
         
         // At any rate, first off, the most recent date/30W combo.  Then, the

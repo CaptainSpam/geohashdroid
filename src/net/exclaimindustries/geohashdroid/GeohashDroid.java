@@ -89,7 +89,8 @@ public class GeohashDroid extends Activity {
 
         setContentView(R.layout.main);
 
-        // First things first, set up the default preferences.
+        // First things first, set up the preferences AND act on any prefs we
+        // might be interested in (i.e. stock prefetch).
         initPrefs();
 
         // Set ourselves back up if we came in from elsewhere...
@@ -311,6 +312,16 @@ public class GeohashDroid extends Activity {
         if(!prefs.contains(GHDConstants.PREF_TODAY)) {
             editor.putBoolean(GHDConstants.PREF_TODAY, false);
             toReturn = true;
+        }
+        
+        // Stock prefetch defaults to off.  However, if it's on, we should start
+        // it up right now.
+        if(!prefs.contains(GHDConstants.PREF_STOCK_SERVICE)) {
+            editor.putBoolean(GHDConstants.PREF_STOCK_SERVICE, false);
+            toReturn = true;
+        } else if(prefs.getBoolean(GHDConstants.PREF_STOCK_SERVICE, false)) {
+            Intent i = new Intent(this, StockService.class).setAction(GHDConstants.STOCK_INIT);
+            startService(i);
         }
 
         editor.commit();

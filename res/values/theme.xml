@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
+
     <style name="Theme.NoBackground" parent="android:Theme.Light">
         <item name="android:windowBackground">@null</item>
     </style>
-    
+
     <style name="Theme.NoBackground.NoTitleBar" parent="android:Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@null</item>
-    </style>   
-  	
-   	<style name="Theme.GeohashDroid" parent="android:Theme.Light">
-   		<item name="android:windowBackground">@drawable/geohashing_logo_background</item>
-   	</style>
+    </style>
+
+    <style name="Theme.GeohashDroid" parent="android:Theme.Light">
+        <item name="android:windowBackground">@drawable/geohashing_logo_background</item>
+    </style>
 
 </resources>

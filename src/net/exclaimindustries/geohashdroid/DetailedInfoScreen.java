@@ -12,7 +12,6 @@ import java.text.DateFormat;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationAwareActivity;
 
-import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.net.Uri;
@@ -50,7 +49,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
     
     private ClosenessActor mCloseness;
 
-    private static final String DEBUG_TAG = "DetailedInfoScreen";
+//    private static final String DEBUG_TAG = "DetailedInfoScreen";
 
     private static final int MENU_SETTINGS = 3;
     private static final int MENU_SEND_TO_MAPS = 6;
