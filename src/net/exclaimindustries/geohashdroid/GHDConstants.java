@@ -79,25 +79,6 @@ public final class GHDConstants {
     /** Prefs value for coordinates in minutes and seconds. */
     public static final String PREFVAL_COORD_SECONDS = "Seconds";
     
-    /** Prefs value for no infobox at all. */
-    public static final String PREFVAL_INFOBOX_NONE = "None";
-    /** Prefs value for a small infobox (with compass). */
-    public static final String PREFVAL_INFOBOX_SMALL = "Small";
-    /** Prefs value for a jumbo infobox (without compass). */
-    public static final String PREFVAL_INFOBOX_JUMBO = "Jumbo";
-    
-    /** Prefs value for metric distances. */
-    public static final String PREFVAL_DIST_METRIC = "Metric";
-    /** Prefs value for not-metric distances. */
-    public static final String PREFVAL_DIST_IMPERIAL = "Imperial";
-    
-    /** Prefs value for coordinates in degrees. */
-    public static final String PREFVAL_COORD_DEGREES = "Degrees";
-    /** Prefs value for coordinates in minutes. */
-    public static final String PREFVAL_COORD_MINUTES = "Minutes";
-    /** Prefs value for coordinates in minutes and seconds. */
-    public static final String PREFVAL_COORD_SECONDS = "Seconds";
-    
     /** Threshold for the "Accuracy Low" warning (currently 64m). **/
     public static final int LOW_ACCURACY_THRESHOLD = 64;
     /** Threshold for the "Accuracy Really Low" warning (currently 200m). **/
