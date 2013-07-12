@@ -1189,13 +1189,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         
         // Then, toss the location out the door and hope whatever map we're
         // using is paying attention.
-        i.setData(Uri.parse("geo:0,0?q=loc:"
-                + location
-                + "("
-                + this.getString(
-                        R.string.send_to_maps_point_name,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(
-                                mInfo.getCalendar().getTime())) + ")&z=15"));
+        i.setData(Uri.parse("geo:0,0?q=loc:" + location))
         startActivity(i);  
     }
 
