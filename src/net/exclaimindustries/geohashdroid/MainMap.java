@@ -8,7 +8,6 @@
 
 package net.exclaimindustries.geohashdroid;
 
-import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
@@ -1189,7 +1188,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
         
         // Then, toss the location out the door and hope whatever map we're
         // using is paying attention.
-        i.setData(Uri.parse("geo:0,0?q=loc:" + location))
+        i.setData(Uri.parse("geo:0,0?q=loc:" + location));
         startActivity(i);  
     }
 
