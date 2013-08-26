@@ -118,7 +118,7 @@
 <string name="toast_stockwipe_failure">There was a problem clearing the stock cache database.</string>
 
 <string name="dialog_send_to_maps_title">Send to Maps?</string>
-<string name="dialog_send_to_maps_text">Do you want to view this point on the Maps app?  Note that it may plot it at the closest road, so you may need to come back here if you want to get more exact.</string>
+<string name="dialog_send_to_maps_text">Do you want to view this point on the Maps app?  Note that it may plot it at the closest point of interest, so you may need to come back here if you want to get more exact.</string>
 <string name="dialog_send_to_maps_yes">Yes, go to Maps</string>
 <string name="dialog_send_to_maps_no">No, stay here</string>
 
