@@ -177,6 +177,9 @@
 <string name="wiki_conn_upload_image">Uploading image...</string>
 <string name="wiki_conn_shrink_image">Compressing and scaling image...</string>
 <string name="wiki_conn_updating_gallery">Updating gallery...</string>
+<string name="wiki_conn_check_picture_exists">Checking to see if this picture already exists...</string>
+<string name="wiki_conn_check_picture_exists_yes">it does, skipping re-upload...</string>
+<string name="wiki_conn_check_picture_exists_no">it doesn\'t.</string>
 
 <string name="wiki_error_xml">Invalid XML sent from wiki.</string>
 <string name="wiki_error_unknown">An unknown error happened with the wiki.  Please try again.</string>
