@@ -48,8 +48,9 @@ import android.util.Log;
  */
 public class WikiUtils {
   /** The base URL for all wiki activities.  Remember the trailing slash! */
-  private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
-  private static String WIKI_API_URL = WIKI_BASE_URL + "api.php";
+  private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
+  /** The URL for the MediaWiki API.  There's no trailing slash here. */
+  private static final String WIKI_API_URL = WIKI_BASE_URL + "api.php";
 
   private static final String DEBUG_TAG = "WikiUtils";
   
@@ -75,6 +76,16 @@ public class WikiUtils {
    */
   public static String getWikiBaseUrl() {
       return WIKI_BASE_URL;
+  }
+  
+  /**
+   * Returns the URL for the MediaWiki API.  This is where any queries should
+   * go, in standard HTTP query form.
+   * 
+   * @return the MediaWiki API URL
+   */
+  public static String getWikiApiUrl() {
+      return WIKI_API_URL;
   }
   
     /**
@@ -111,7 +122,7 @@ public class WikiUtils {
       // It's GET time!  This is basically the same as the content request, but
       // we really don't need ANY data other than whether or not the page
       // exists, so we won't call for anything.
-      HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&titles="
+      HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&titles="
             + URLEncoder.encode(pagename, "UTF-8"));
       
       Document response = getHttpDocument(httpclient, httpget);
@@ -153,7 +164,7 @@ public class WikiUtils {
    */
   public static String getWikiPage(HttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
     // We can use a GET statement here.
-    HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&prop="
+    HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&prop="
             + URLEncoder.encode("info|revisions", "UTF-8")
             + "&rvprop=content&format=xml&intoken=edit&titles="
             + URLEncoder.encode(pagename, "UTF-8"));
@@ -521,8 +532,8 @@ public class WikiUtils {
               while((input = br.readLine()) != null) {
                   input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));
                   input = input.replaceAll("%%LONGITUDE%%", UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), true, UnitConverter.OUTPUT_DETAILED));
-                  input = input.replaceAll("%%LATITUDEURL%%", new Double(info.getLatitude()).toString());
-                  input = input.replaceAll("%%LONGITUDEURL%%", new Double(info.getLongitude()).toString());
+                  input = input.replaceAll("%%LATITUDEURL%%", Double.valueOf(info.getLatitude()).toString());
+                  input = input.replaceAll("%%LONGITUDEURL%%",Double.valueOf(info.getLongitude()).toString());
                   input = input.replaceAll("%%DATENUMERIC%%", date);
                   input = input.replaceAll("%%DATESHORT%%", DateFormat.format("E MMM d yyyy", info.getCalendar()).toString());
                   input = input.replaceAll("%%DATEGOOGLE%%", DateFormat.format("d+MMM+yyyy", info.getCalendar()).toString());
