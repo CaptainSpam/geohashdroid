@@ -48,7 +48,9 @@ import android.util.Log;
  */
 public class WikiUtils {
   /** The base URL for all wiki activities.  Remember the trailing slash! */
-  private static String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
+  private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
+  /** The URL for the MediaWiki API.  There's no trailing slash here. */
+  private static final String WIKI_API_URL = WIKI_BASE_URL + "api.php";
 
   private static final String DEBUG_TAG = "WikiUtils";
   
@@ -76,6 +78,16 @@ public class WikiUtils {
       return WIKI_BASE_URL;
   }
   
+  /**
+   * Returns the URL for the MediaWiki API.  This is where any queries should
+   * go, in standard HTTP query form.
+   * 
+   * @return the MediaWiki API URL
+   */
+  public static String getWikiApiUrl() {
+      return WIKI_API_URL;
+  }
+  
     /**
      * Returns the content of a http request as an XML Document.  This is to be
      * used only when we know the response to a request will be XML.  Otherwise,
@@ -96,7 +108,48 @@ public class WikiUtils {
         
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(entity.getContent());
     }
-
+  
+  /**
+   * Returns whether or not a given wiki page or file exists.
+   * 
+   * @param  httpclient an active HTTP session 
+   * @param  pagename   the name of the wiki page
+   * @return            true if the page exists, false if not
+   * @throws WikiException problem with the wiki, translate the ID
+   * @throws Exception     anything else happened, use getMessage
+   */
+  public static boolean doesWikiPageExist(HttpClient httpclient, String pagename) throws Exception {
+      // It's GET time!  This is basically the same as the content request, but
+      // we really don't need ANY data other than whether or not the page
+      // exists, so we won't call for anything.
+      HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&titles="
+            + URLEncoder.encode(pagename, "UTF-8"));
+      
+      Document response = getHttpDocument(httpclient, httpget);
+      
+      // Now for some of the usual checking that should look familiar...
+      Element root = response.getDocumentElement();
+      
+      // Error check!
+      if(doesResponseHaveError(root)) {
+          throw new WikiException(getErrorTextId(findErrorCode(root)));
+      }
+      
+      Element pageElem;
+      try {
+          pageElem = DOMUtil.getFirstElement(root, "page");
+      } catch (Exception e) {
+          throw new WikiException(R.string.wiki_error_xml);
+      }
+      
+      // "invalid" or "missing" both resolve to the same answer: No.  Anything
+      // else means yes.
+      if(pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing"))
+          return false;
+      else
+          return true;
+  }
+  
   /**
    * Returns the raw content of a wiki page in a single string.  Optionally,
    * also attaches the fields for future resubmission to a HashMap (namely, an
@@ -111,7 +164,7 @@ public class WikiUtils {
    */
   public static String getWikiPage(HttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
     // We can use a GET statement here.
-    HttpGet httpget = new HttpGet(WIKI_BASE_URL + "api.php?action=query&prop="
+    HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&prop="
             + URLEncoder.encode("info|revisions", "UTF-8")
             + "&rvprop=content&format=xml&intoken=edit&titles="
             + URLEncoder.encode(pagename, "UTF-8"));
@@ -180,7 +233,7 @@ public class WikiUtils {
         throw new WikiException(R.string.wiki_error_protected);
     }
 
-    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
+    HttpPost httppost = new HttpPost(WIKI_API_URL);
     
     ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
     nvps.add(new BasicNameValuePair("action", "edit"));
@@ -217,7 +270,7 @@ public class WikiUtils {
       throw new WikiException(R.string.wiki_error_unknown);
     }
       
-    HttpPost httppost = new HttpPost(WIKI_BASE_URL + "api.php");
+    HttpPost httppost = new HttpPost(WIKI_API_URL);
     
     // First, we need an edit token.  Let's get one.
     ArrayList <NameValuePair> tnvps = new ArrayList <NameValuePair>();
@@ -276,7 +329,7 @@ public class WikiUtils {
    * @throws Exception     anything else happened, use getMessage
    */
   public static void login(HttpClient httpclient, String wpName, String wpPassword) throws Exception {
-    HttpPost httppost =  new HttpPost(WIKI_BASE_URL + "api.php");
+    HttpPost httppost =  new HttpPost(WIKI_API_URL);
 
     ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
     nvps.add(new BasicNameValuePair("action", "login"));
@@ -311,7 +364,7 @@ public class WikiUtils {
         // first time around.  Cookies will be set this time around, I think.
         String token = DOMUtil.getSimpleAttributeText(login, "token");
         
-        httppost =  new HttpPost(WIKI_BASE_URL + "api.php");
+        httppost =  new HttpPost(WIKI_API_URL);
         
         nvps = new ArrayList <NameValuePair>();
         nvps.add(new BasicNameValuePair("action", "login"));
@@ -479,8 +532,8 @@ public class WikiUtils {
               while((input = br.readLine()) != null) {
                   input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));
                   input = input.replaceAll("%%LONGITUDE%%", UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), true, UnitConverter.OUTPUT_DETAILED));
-                  input = input.replaceAll("%%LATITUDEURL%%", new Double(info.getLatitude()).toString());
-                  input = input.replaceAll("%%LONGITUDEURL%%", new Double(info.getLongitude()).toString());
+                  input = input.replaceAll("%%LATITUDEURL%%", Double.valueOf(info.getLatitude()).toString());
+                  input = input.replaceAll("%%LONGITUDEURL%%",Double.valueOf(info.getLongitude()).toString());
                   input = input.replaceAll("%%DATENUMERIC%%", date);
                   input = input.replaceAll("%%DATESHORT%%", DateFormat.format("E MMM d yyyy", info.getCalendar()).toString());
                   input = input.replaceAll("%%DATEGOOGLE%%", DateFormat.format("d+MMM+yyyy", info.getCalendar()).toString());

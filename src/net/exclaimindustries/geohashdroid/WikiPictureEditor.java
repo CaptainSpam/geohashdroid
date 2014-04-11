@@ -8,49 +8,41 @@
  */
 package net.exclaimindustries.geohashdroid;
 
-import android.os.Bundle;
-import android.os.Handler;
-import android.app.ProgressDialog;
-import android.view.View;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.TextView;
-import android.widget.ImageView;
-
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-
-import android.provider.MediaStore;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Rect;
-import android.graphics.Paint.Style;
-
-import android.util.DisplayMetrics;
-import android.util.Log;
-import android.location.Location;
+import java.io.ByteArrayOutputStream;
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.exclaimindustries.tools.BitmapTools;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import java.util.HashMap;
-
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-
-import java.io.ByteArrayOutputStream;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Paint.Style;
+import android.graphics.Rect;
+import android.location.Location;
 import android.net.Uri;
-
-import java.util.Date;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
+import android.os.Bundle;
+import android.os.Handler;
+import android.provider.MediaStore;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 /**
  * Displays a picture selector, an edit box and a send button, which shall upload the picture to the wiki and add it to the
@@ -256,7 +248,14 @@ public class WikiPictureEditor extends WikiBaseActivity {
 
             try {
                 HttpClient httpclient = new DefaultHttpClient();
+                
+                CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
+                CheckBox stamplocation = (CheckBox)findViewById(R.id.stamplocation);
+                EditText editText = (EditText)findViewById(R.id.wikiedittext);
+                HashMap<String, String> formfields = new HashMap<String, String>();
 
+                // Attempt to log in.  The user MUST log in if an image is going
+                // to be uploaded.
                 String wpName = prefs
                         .getString(GHDConstants.PREF_WIKI_USER, "");
                 if (!wpName.equals("")) {
@@ -269,15 +268,16 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     error((String)getText(R.string.wiki_conn_anon_pic_error));
                     return;
                 }
-
-                String locationTag = "";
-                // Hold on to whatever location we're going with.  This could
-                // be useful later.
-                Location sentLoc;
                 
-                CheckBox includelocation = (CheckBox)findViewById(R.id.includelocation);
-                CheckBox stamplocation = (CheckBox)findViewById(R.id.stamplocation);
+                // Next, we need some location data.  Hopefully we have some,
+                // else this sort of defeats the entire purpose of an explicitly
+                // location-based game.  The locationTag will be pasted onto the
+                // image both in its own description and in the gallery section.
+                String locationTag = "";
+                Location sentLoc;
+
                 try {
+                    // If the picture has location data, we'll go with that.
                     if(mPictureLocation == null)
                         throw new RuntimeException("Latitude or Longitude aren't defined in picture, control passes to catch block...");
                         
@@ -319,90 +319,108 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         }
                     }
                 }
-
-                addStatus(R.string.wiki_conn_shrink_image);
-
-                // First, we want to scale the image to cut down on memory use
-                // and upload time. The Geohashing wiki tends to frown upon
-                // images over 150k, so scaling and compressing are the way to
-                // go.
-                Bitmap bitmap = BitmapTools
-                        .createRatioPreservedDownscaledBitmapFromFile(
-                                mCurrentFile, MAX_UPLOAD_WIDTH,
-                                MAX_UPLOAD_HEIGHT, true);
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 
-                if(bitmap == null) {
-                    error((String)getText(R.string.wiki_conn_pic_load_error));
-                    return;
-                }
-                
-                // Then, if need be, put an infobox on it.
-                if(stamplocation.isChecked()) {
-                    // Since we just got here from BitmapTools, this should be a
-                    // read/write bitmap.
-                    drawInfobox(bitmap, sentLoc);
-                }
-                
-                // Now, compress it!
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
-                data = bytes.toByteArray();
-
-                // Do recycling NOW, just to make sure we've booted it out of
-                // memory as soon as possible.
-                bitmap.recycle();
-                System.gc();
-
-                addStatusAndNewline(R.string.wiki_conn_done);
-
-                addStatus(R.string.wiki_conn_upload_image);
-                String now = new SimpleDateFormat("HH-mm-ss-SSS")
-                        .format(new Date());
-                String expedition = WikiUtils.getWikiPageName(mInfo);
-
-                EditText editText = (EditText)findViewById(R.id.wikiedittext);
-
+                // We've got a location tag, now we can finalize the message.
                 String message = editText.getText().toString().trim()
                         + locationTag;
 
-                String filename = expedition + "_" + now + ".jpg";
-                String description = message + "\n\n" + WikiUtils.getWikiCategories(mInfo);
+                // Assemble the filename now.  We want to check if it already
+                // exists on the wiki so we know if we can skip the entire
+                // scale-and-upload tomfoolery.
+                String expedition = WikiUtils.getWikiPageName(mInfo);
                 
-                HashMap<String, String> formfields = new HashMap<String, String>();
-                
-                // At this point, we need an edit token.  So, we'll try to get
-                // the expedition page for our token.  See the MediaWiki API
-                // documentation for the reasons why we have to do it this way.
-                WikiUtils.getWikiPage(httpclient, expedition, formfields);
-                WikiUtils.putWikiImage(httpclient, filename, description, formfields, data);
-
-                addStatusAndNewline(R.string.wiki_conn_done);
-
+                // Grab hold of an edit token.  And, get the page's current
+                // contents for later editing.
                 addStatus(R.string.wiki_conn_expedition_retrieving);
                 addStatus(" " + expedition + "...");
-                String page;
-
-                page = WikiUtils.getWikiPage(httpclient, expedition,
-                        formfields);
+                String page = WikiUtils.getWikiPage(httpclient, expedition, formfields);
+                
+                // While we've got the page loaded, let's see if we need to
+                // actually create it to begin with.  If so, the expedition
+                // template will do.
                 if ((page == null) || (page.trim().length() == 0)) {
                     addStatusAndNewline(R.string.wiki_conn_expedition_nonexistant);
-                    ;
 
-                    // ok, let's create some.
+                    // It's not there.  Make it!
                     addStatus(R.string.wiki_conn_expedition_creating);
                     WikiUtils.putWikiPage(httpclient, expedition,
                             WikiUtils.getWikiExpeditionTemplate(mInfo, WikiPictureEditor.this),
                             formfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
+                    
+                    // Pull it back in for future processing.
                     addStatus(R.string.wiki_conn_expedition_reretrieving);
                     page = WikiUtils.getWikiPage(httpclient, expedition,
                             formfields);
                     addStatusAndNewline(R.string.wiki_conn_success);
                 } else {
+                    // Excellent, it's already there!
                     addStatusAndNewline(R.string.wiki_conn_success);
                 }
+                
+                // Now, the filename on the server will be the expedition stamp
+                // plus the username plus the picture's timestamp.  That should
+                // prove unique enough unless the user is uploading stuff with
+                // bogus timestamps.
+                String filename = expedition + "_" + wpName + "_" + mPictureDate + ".jpg";
+                addStatus(R.string.wiki_conn_check_picture_exists);
+                if(!WikiUtils.doesWikiPageExist(httpclient, "File:" + filename)) {
+                    // It's not there yet.  Time for scaling.
+                    addStatusAndNewline(R.string.wiki_conn_check_picture_exists_no);
+                    
+                    addStatus(R.string.wiki_conn_shrink_image);
 
-                // Add in our message (same caveat as in WikiMessageEditor)...
+                    // First, we want to scale the image to cut down on memory use
+                    // and upload time. The Geohashing wiki tends to frown upon
+                    // images over 150k, so scaling and compressing are the way to
+                    // go.
+                    Bitmap bitmap = BitmapTools
+                            .createRatioPreservedDownscaledBitmapFromFile(
+                                    mCurrentFile, MAX_UPLOAD_WIDTH,
+                                    MAX_UPLOAD_HEIGHT, true);
+                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                    
+                    if(bitmap == null) {
+                        error((String)getText(R.string.wiki_conn_pic_load_error));
+                        return;
+                    }
+                    
+                    // Then, if need be, put an infobox on it.
+                    if(stamplocation.isChecked()) {
+                        // Since we just got here from BitmapTools, this should be a
+                        // read/write bitmap.
+                        drawInfobox(bitmap, sentLoc);
+                    }
+                    
+                    // Now, compress it!
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
+                    data = bytes.toByteArray();
+
+                    // Do recycling NOW, just to make sure we've booted it out of
+                    // memory as soon as possible.
+                    bitmap.recycle();
+                    System.gc();
+
+                    addStatusAndNewline(R.string.wiki_conn_done);
+                    
+                    addStatus(R.string.wiki_conn_upload_image);
+
+                    String description = message + "\n\n" + WikiUtils.getWikiCategories(mInfo);
+                    
+                    // With data in hand and an edit token ready to go, we can
+                    // finally upload.  Go!
+                    WikiUtils.putWikiImage(httpclient, filename, description, formfields, data);
+
+                    addStatusAndNewline(R.string.wiki_conn_done);
+                } else {
+                    // It's already there!  Wow!  That saves us a LOT of time!
+                    addStatusAndNewline(R.string.wiki_conn_check_picture_exists_yes);
+                }
+
+                // With reasonable assurance that the picture is on the server
+                // by this point, next we need to put it on the page itself.
+                // Though, we DO need to know if it's a retro or live pic for
+                // the summary...
                 String summaryPrefix = "";
                 if(mInfo.isRetroHash()) {
                     summaryPrefix = getText(R.string.wiki_post_picture_summary_retro).toString();
@@ -413,9 +431,10 @@ public class WikiPictureEditor extends WikiBaseActivity {
                     summaryPrefix = getText(R.string.wiki_post_picture_summary).toString();
                 }
                 
+                // And hey, now we have a summary!
                 formfields.put("summary", summaryPrefix + " " + message);
 
-                
+                // Then, we add the image to the gallery.
                 String before = "";
                 String after = "";
                 
@@ -445,6 +464,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
                         + galleryentry + after, formfields);
                 addStatus(R.string.wiki_conn_success);
 
+                // And we're done!
                 finishDialog();
                 
                 dismiss();
@@ -732,7 +752,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         }
     }
     
-    private void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint)
+    private static void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint)
     {
         // FIXME: The math here is ugly and blunt and probably not too
         // efficient or flexible.  It might even fail.  This needs to be

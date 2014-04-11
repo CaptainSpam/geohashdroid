@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.exclaimindustries.geohashdroid"
     android:installLocation="auto"
-    android:versionCode="703"
-    android:versionName="0.7.18" >
+    android:versionCode="704"
+    android:versionName="0.7.19" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -14,11 +14,12 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     
     <uses-feature
         android:glEsVersion="0x00020000"
         android:required="true"/>
-
+    
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
