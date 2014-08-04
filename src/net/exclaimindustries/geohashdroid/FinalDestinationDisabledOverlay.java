@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.geohashdroid.util.Info;
+
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
 

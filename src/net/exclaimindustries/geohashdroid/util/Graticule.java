@@ -5,7 +5,7 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.util;
 
 import com.google.android.maps.GeoPoint;
 

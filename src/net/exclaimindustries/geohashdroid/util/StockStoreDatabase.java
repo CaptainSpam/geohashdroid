@@ -5,7 +5,7 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.util;
 
 import java.util.Calendar;
 
@@ -17,7 +17,6 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
-
 import net.exclaimindustries.tools.DateTools;
 
 /**

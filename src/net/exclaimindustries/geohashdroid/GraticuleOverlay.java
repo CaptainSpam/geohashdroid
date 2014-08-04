@@ -7,6 +7,7 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.geohashdroid.util.Graticule;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;

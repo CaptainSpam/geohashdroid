@@ -6,36 +6,38 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.wiki;
 
-import android.os.Bundle;
-import android.os.Handler;
-import android.app.ProgressDialog;
-import android.view.View;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.content.Context;
-import android.content.SharedPreferences;
+import java.text.DecimalFormat;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import android.location.Location;
-
+import net.exclaimindustries.geohashdroid.GeohashDroid;
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.DateTools;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.location.Location;
+import android.os.Bundle;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-
-import java.text.DecimalFormat;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
 /**
  * Displays an edit box and a send button, which shall upload the message
  * entered to the appropriate expedition page in the Geohashing wiki. 

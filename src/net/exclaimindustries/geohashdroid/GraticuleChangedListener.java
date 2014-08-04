@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.geohashdroid.util.Graticule;
+
 /**
  * A GraticuleChangedListener listens for a change in Graticules.
  * 

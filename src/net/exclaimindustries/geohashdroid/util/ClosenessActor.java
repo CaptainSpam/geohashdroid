@@ -5,8 +5,9 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.util;
 
+import net.exclaimindustries.geohashdroid.R;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;

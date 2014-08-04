@@ -11,6 +11,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
 
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;

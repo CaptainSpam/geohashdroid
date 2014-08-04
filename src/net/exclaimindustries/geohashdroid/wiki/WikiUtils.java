@@ -7,8 +7,22 @@
  * The source package should have a LICENSE file at the toplevel.
  */
 
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.wiki;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.DOMUtil;
 import net.exclaimindustries.tools.DateTools;
 
@@ -17,28 +31,17 @@ import org.apache.commons.httpclient.methods.multipart.FilePart;
 import org.apache.commons.httpclient.methods.multipart.MultipartEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.StringPart;
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.message.BasicNameValuePair;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URLEncoder;
-
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import android.content.Context;
 import android.text.format.DateFormat;

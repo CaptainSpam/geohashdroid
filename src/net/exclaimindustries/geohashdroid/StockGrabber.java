@@ -9,6 +9,9 @@ package net.exclaimindustries.geohashdroid;
 
 import java.util.Calendar;
 
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.geohashdroid.util.Info;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

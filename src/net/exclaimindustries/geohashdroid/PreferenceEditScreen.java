@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;

@@ -6,7 +6,7 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.wiki;
 
 import java.io.ByteArrayOutputStream;
 import java.text.DecimalFormat;
@@ -14,6 +14,11 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.exclaimindustries.geohashdroid.GeohashDroid;
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.BitmapTools;
 
 import org.apache.http.client.HttpClient;

@@ -12,6 +12,10 @@ import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
 
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.geohashdroid.util.Info;
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.NotificationManager;

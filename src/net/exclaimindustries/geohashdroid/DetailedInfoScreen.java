@@ -9,9 +9,11 @@ package net.exclaimindustries.geohashdroid;
 
 import java.text.DateFormat;
 
+import net.exclaimindustries.geohashdroid.util.ClosenessActor;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationAwareActivity;
-
 import android.content.Intent;
 import android.location.Location;
 import android.net.Uri;

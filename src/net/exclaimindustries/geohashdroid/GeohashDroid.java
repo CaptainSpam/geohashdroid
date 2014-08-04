@@ -9,8 +9,12 @@ package net.exclaimindustries.geohashdroid;
 
 import java.util.Calendar;
 
+import net.exclaimindustries.geohashdroid.util.ClosenessActor;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.DateButton;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -479,7 +483,7 @@ public class GeohashDroid extends Activity {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(
-                        net.exclaimindustries.geohashdroid.GHDConstants.PICK_GRATICULE);
+                        net.exclaimindustries.geohashdroid.util.GHDConstants.PICK_GRATICULE);
 
                 Graticule g = null;
 

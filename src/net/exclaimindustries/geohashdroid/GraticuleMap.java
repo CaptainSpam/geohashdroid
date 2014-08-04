@@ -7,6 +7,7 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.geohashdroid.util.Graticule;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;

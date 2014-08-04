@@ -5,7 +5,7 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.util;
 
 import java.text.DecimalFormat;
 
@@ -158,6 +158,84 @@ public final class GHDConstants {
      * grabbing stuff to the background service.
      */
     public static final String STOCK_RESULT = "net.exclaimindustries.geohashdroid.STOCK_RESULT";
+    
+    /**
+     * Date extra passed into the Intent for StockService.  This contains the
+     * date to retrieve.
+     * 
+     * TODO: The date in some format or another?
+     */
+    public static final String SERVICE_DATE = "date";
+    
+    /**
+     * <p>
+     * Flag extra passed into the Intent for StockService.  If present, this
+     * flag means StockService should also take whatever it gets and return an
+     * appropriate Info object.   If this is passed in, you MUST pass in 
+     * SERVICE_GRATICULE else an error will be returned.
+     * </p>
+     * 
+     * <p>
+     * Don't pass this during the stock prefeetch, obviously, as that's just
+     * supposed to toss the stock into the cache.
+     * </p>
+     */
+    public static final String SERVICE_GET_INFO = "getInfo";
+    
+    /**
+     * Graticule extra passed into the Intent for StockService.  This MUST be
+     * passed if SERVICE_GET_INFO is passed in.  If this is NOT a Graticule,
+     * this is assumed to be a Globalhash check.  If a 30W Graticule is passed
+     * in or a Globalhash is requested, this WILL affect what date is checked.
+     */
+    public static final String SERVICE_GRATICULE = "graticule";
+    
+    /**
+     * Flag extra passed into the Intent for StockService.  If present, this
+     * throws a notification up if a network call is required.  This is used
+     * during stock prefetch; during normal use, the user should get some other
+     * feedback that indicates a fetch is in progress.
+     */
+    public static final String SERVICE_NOTIFY = "notify";
+    
+    /**
+     * Arbitrary ID int to pass to StockService.  This will be returned with the
+     * BroadcastIntent, if given.
+     */
+    public static final String SERVICE_REQUEST_ID = "id";
+
+    /**
+     * BroadcastIntent response extra whose presence indicates something went
+     * wrong.  Exactly what, you ask?  Well, that's what the various sundry
+     * SERVICE_RESPONSE_ERROR_* things are for!
+     */
+    public static final String SERVICE_RESPONSE_ERROR = "error";
+    
+    /**
+     * Error response indicating the requested stock has not been posted yet.
+     */
+    public static final String SERVICE_RESPONSE_ERROR_STOCK_NOT_POSTED = "notPosted";
+    
+    /**
+     * Error response indicating there's no network connection.
+     */
+    public static final String SERVICE_RESPONSE_ERROR_NO_NETWORK = "noNetwork";
+    
+    /**
+     * Error response indicating nearly anything else went wrong.
+     */
+    public static final String SERVICE_RESPONSE_ERROR_UNKNOWN = "unknown";
+    
+    /**
+     * BroadcastIntent response extra containing the stock result.
+     */
+    public static final String SERVICE_RESPONSE_STOCK = "stock";
+    
+    /**
+     * BroadcastIntent response extra containing an Info object, if it was
+     * requested.
+     */
+    public static final String SERVICE_RESPONSE_INFO = "info";
     
     /** The decimal format for most distances. */
     public static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");

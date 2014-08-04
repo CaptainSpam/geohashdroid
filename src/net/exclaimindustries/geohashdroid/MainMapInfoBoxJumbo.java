@@ -9,6 +9,8 @@ package net.exclaimindustries.geohashdroid;
 
 import java.text.DecimalFormat;
 
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Info;
 import android.content.Context;
 import android.location.Location;
 import android.util.AttributeSet;

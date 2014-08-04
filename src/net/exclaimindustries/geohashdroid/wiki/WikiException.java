@@ -5,7 +5,7 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.wiki;
 
 /**
  * A <code>WikiException</code> is thrown when some problem happens with the

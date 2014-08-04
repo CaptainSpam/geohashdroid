@@ -12,6 +12,14 @@ import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.exclaimindustries.geohashdroid.util.ClosenessActor;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.wiki.WikiMessageEditor;
+import net.exclaimindustries.geohashdroid.wiki.WikiPictureEditor;
+import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.ZoomChangeOverlay;
 import android.app.AlertDialog;

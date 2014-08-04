@@ -6,14 +6,17 @@
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
-package net.exclaimindustries.geohashdroid;
+package net.exclaimindustries.geohashdroid.wiki;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
+import net.exclaimindustries.geohashdroid.PreferenceEditScreen;
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.ClosenessActor;
+import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.LocationAwareActivity;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
