@@ -21,10 +21,6 @@ public class AboutDialog extends AlertDialog {
 
     public AboutDialog(Context context) {
         super(context);
-        create();
-    }
-
-    private void create() {
         // We can't use setContextView on this (I don't think), so we need to
         // inflate the layout ourselves.
         LayoutInflater inflater = (LayoutInflater)getContext()
