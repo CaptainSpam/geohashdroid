@@ -121,6 +121,12 @@
         
         <meta-data android:name="com.google.android.gms.version"
            android:value="@integer/google_play_services_version" />
+        <service android:name=".services.StockService" android:label="@string/title_stockservice">
+            <intent-filter>
+                <action android:name="net.exclaimindustries.geohashdroid.ACTION_STOCK_REQUEST"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

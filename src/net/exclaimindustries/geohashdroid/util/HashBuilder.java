@@ -69,10 +69,13 @@ public class HashBuilder {
     private static Info mTwoInfosAgo;
 
     /**
-     * <code>StockRunner</code> is what runs the stocks.  It is meant to be run
-     * as a thread.  Only one will run at a time for purposes of the stock cache
-     * database remaining sane.  Once it has the data, it'll go back to the
-     * static methods of HashBuilder to make the Info bundle.
+     * <code>StockRunner</code> is what fetches the stocks.  It can be run as a
+     * separate thread where it will respond to the given Handler or in
+     * single-thread mode where you need to pull the data from the StockRunner
+     * when it's done.  Only one will run at a time for purposes of the stock
+     * cache database remaining sane.  Once it has the data, it'll go back to
+     * the static methods of HashBuilder to make the Info bundle and put it in
+     * the cache.
      */
     public static class StockRunner implements Runnable {
         private static final String DEBUG_TAG = "StockRunner";
@@ -112,14 +115,14 @@ public class HashBuilder {
         private Handler mHandler;
         private HttpGet mRequest;
         private int mStatus;
-        private Object mLastObject;
+        private Info mLastObject;
         private PowerManager.WakeLock mWakeLock;
         
         // This may be expanded later to allow a user-definable list, hence why
         // it doesn't follow the usual naming conventions I use.  Of course, in
         // THAT case, we'd need to make it not be a raw array.  The general form
         // is that %Y is the four-digit year, %m is the zero-padded month, and
-        // %d is (wait for it...) the zero-padded date.
+        // %d is the zero-padded date.
         private final static String[] mServers = { "http://geo.crox.net/djia/%Y/%m/%d",
             "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d"};
 
@@ -135,11 +138,9 @@ public class HashBuilder {
         
         @Override
         public void run() {
-            // And STAY awake!  This might be called from StockService, which,
-            // itself, might be woken up from its peaceful slumber by an alarm.
-            // It'll hand off control to this thread, so this thread will need
-            // to keep its own partial wakelock to make sure everything gets
-            // done before the device snoozes off again.
+            // And STAY awake!  This might be called from a thread that hands
+            // off control here, so we need our own WakeLock to make sure it
+            // stays awake during the connection.
             mWakeLock.acquire();
            
             // Call the actual meat of the matter.  That's peppered with return
@@ -151,7 +152,28 @@ public class HashBuilder {
             mWakeLock.release();
         }
 
-        private void runStock() {
+        /**
+          <p>
+         * Runs the stock fetch in the current thread.  Use this if you're
+         * already in a separate thread and want it to be synchronous.  Don't
+         * use this if you're in the main thread, because it's stupid and wrong
+         * to put network I/O on the main thread.
+         * </p>
+         *
+         * <p>
+         * Note that if this is called directly (as opposed to starting this as
+         * a new thread), WakeLocks will NOT be applied.  That's on you.  If
+         * this IS called as a new thread, however, it will be surrounded by
+         * WakeLock calls.
+         * </p>
+         * 
+         * <p>
+         * When this method returns, the cache will have been updated, if
+         * appropriate.  If you didn't have a Handler defined, you can retrieve
+         * the status and data from {@link #getStatus()} and {@link #getLastResultObject()}.
+         * </p>
+         */
+        public void runStock() {
             Info toReturn;
             String stock;
             
@@ -223,11 +245,12 @@ public class HashBuilder {
             sendMessage(toReturn);
         }
         
-        private void sendMessage(Object toReturn) {
+        private void sendMessage(Info toReturn) {
             mLastObject = toReturn;
             
-            // If mHandler is null, either this wasn't set up right or we've
-            // been told to abort and need to put the brakes on quick.
+            // If mHandler is null, either this is single-thread mode and the
+            // caller will get the return data some other way, or we've been
+            // told to abort and need to put the brakes on quick.
             if(mHandler != null)
             {
                 Message m = Message.obtain(mHandler, mStatus, toReturn);
@@ -236,14 +259,14 @@ public class HashBuilder {
         }
         
         /**
-         * Returns the last result object created from this StockRunner.  This
-         * is just in case the result comes when no handler is defined and it
-         * needs to be pulled out.  This may be null.  Always remember to check
-         * the status first and ONLY do this if an ALL_OKAY is returned.
+         * Returns the last result Info created from this StockRunner.  This is
+         * used when the result comes when no handler is defined and it needs to
+         * be pulled out.  This may be null.  Always remember to check the 
+         * status first and ONLY do this if an ALL_OKAY is returned.
          * 
-         * @return the last object created from this StockRunner (may be null)
+         * @return the last Info created from this StockRunner (may be null)
          */
-        public Object getLastResultObject() {
+        public Info getLastResultObject() {
             return mLastObject;
         }
         
@@ -371,7 +394,7 @@ public class HashBuilder {
         /**
          * Updates the Handler that will be informed when this thread is done.
          * 
-         * @param h the Handler what gets updaterin'.
+         * @param h the Handler what gets updaterin' (can be null)
          */
         public void changeHandler(Handler h) {
             mHandler = h;
@@ -438,10 +461,11 @@ public class HashBuilder {
      * Requests a <code>StockRunner</code> object to perform a stock-fetching
      * operation.
      * 
+     * @param con Context for databasey stuff
      * @param c Calendar object with the adventure date requested (this will
      *          account for the 30W Rule, so don't put it in) 
      * @param g Graticule to use
-     * @param h Handler to handle the response once it comes in
+     * @param h Handler to handle the response once it comes in (can be null)
      */
     public static StockRunner requestStockRunner(Context con, Calendar c, Graticule g, Handler h) {
         return new StockRunner(con, c, g, h);
@@ -571,7 +595,7 @@ public class HashBuilder {
     /**
      * Wipes out the entire stock cache.  No, seriously.
      * 
-     * @param con Context used to retrieve the database, if needed
+     * @param con Context used to retrieve the database
      * @return true on success, false on failure
      */
     public synchronized static boolean deleteCache(Context con) {
@@ -617,10 +641,10 @@ public class HashBuilder {
     /**
      * Builds a new Info object by applying a new Graticule to an existing Info
      * object.  That is to say, change the destination of an Info object to
-     * somewhere else.  As if it were the same day and same stock value (and
+     * somewhere else, as if it were the same day and same stock value (and
      * thus the same hash).  Note that this will throw an exception if the 
      * existing Info's 30W-alignment isn't the same as the new Graticule's,
-     * because that would require a trip back to the internet, and by this
+     * because that might require a trip back to the internet, and by this
      * point, we should know that we don't need to do so.
      * 
      * Also note that you can't do any cloning actions on a globalhash, since

@@ -6,6 +6,8 @@
 
 <!-- api_map_key should be defined elsewhere and not uploaded to SVN -->
 
+<string name="title_stockservice">StockService</string>
+
 <string name="graticule_label">Graticule:</string>
 <string name="date_label">Date:</string>
 <string name="what_label">What\'s Geohashing?</string>
