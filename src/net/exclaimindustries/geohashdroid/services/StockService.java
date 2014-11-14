@@ -59,8 +59,6 @@ public class StockService extends WakefulIntentService {
      * but isn't a Graticule object (null counts as a Graticule), StockService
      * will ignore and discard the request, even if a request ID was sent.
      * </p>
-     * 
-     * @see #EXTRA_REQUEST_ID
      */
     public static final String ACTION_STOCK_REQUEST = "net.exclaimindustries.geohashdroid.STOCK_REQUEST";
     
@@ -69,21 +67,29 @@ public class StockService extends WakefulIntentService {
      * result.  The intent will have a motley assortment of extras with it, each
      * of which are mentioned in this class, most of which were supplied with
      * the {@link #ACTION_STOCK_REQUEST} that started this.
-     * 
-     * @see #EXTRA_DATE
-     * @see #EXTRA_GRATICULE
-     * @see #EXTRA_INFO
-     * @see #EXTRA_REQUEST_ID
-     * @see #EXTRA_RESPONSE_CODE
      */
     public static final String ACTION_STOCK_RESULT = "net.exclaimindustries.geohashdroid.STOCK_RESULT";
     
     /**
      * Key for an ID extra on the response.  This isn't actually used and is not
      * required, but whatever is stored here (so long as it's an int) will be
-     * put in the broadcast Intent when done.  Try to keep this positive.
+     * put in the broadcast Intent when done.  If this isn't specified, it will
+     * come back as -1.
      */
     public static final String EXTRA_REQUEST_ID = "net.exclaimindustries.geohashdroid.EXTRA_REQUEST_ID";
+    /**
+     * Key for additional flags in the request.  These don't change how the
+     * request is handled, like the request ID, and will simply be passed back
+     * in the resulting broadcast Intent.  This helps BroadcastReceivers know
+     * what led to this request, which can come in handy if there's some case
+     * where you want to ignore responses the came from, say, the stock alarm.
+     */
+    public static final String EXTRA_REQUEST_FLAGS = "net.exclaimindustries.geohashdroid.EXTRA_REQUEST_FLAGS";
+    /**
+     * Key for additional flags in the response.  These give additional info as
+     * to what happened during the request.
+     */
+    public static final String EXTRA_RESPONSE_FLAGS = "net.exclaimindustries.geohashdroid.EXTRA_RESPONSE_FLAGS";
     /**
      * Key for a Graticule extra.  This must be defined, though it can be null
      * if you're requesting a Globalhash.
@@ -104,6 +110,30 @@ public class StockService extends WakefulIntentService {
      */
     public static final String EXTRA_RESPONSE_CODE = "net.exclaimindustries.geohashdroid.EXTRA_RESPONSE_CODE";
     
+    /**
+     * Flag meaning this request came from the stock alarm around 9:30am EST.
+     * This is for pre-cache stuff.
+     */
+    public static final int FLAG_ALARM = 0x1;
+    /**
+     * Flag meaning this request was manually initiated by the user.  This is
+     * for if the user specifically wants a certain date or Graticule.
+     */
+    public static final int FLAG_USER_INITIATED = 0x2;
+    /**
+     * Flag meaning this request was automatically initiated.  This is used if
+     * the user goes to the map, the last known date wasn't today, and the user
+     * hasn't overridden the expedition with a new date or Graticule.
+     */
+    public static final int FLAG_AUTO_INITIATED = 0x4;
+
+    /**
+     * Flag meaning this response was found in the cache.  If not set, it was
+     * either found on the web or it wasn't found at all, the latter of which
+     * implying you really ought to have checked the response code first.
+     */
+    public static final int FLAG_CACHED = 0x1;
+
     /** All okay response. */
     public static final int RESPONSE_OKAY = 0;
     /** Error response if the requested stock wasn't posted yet. */
@@ -140,10 +170,13 @@ public class StockService extends WakefulIntentService {
         if(!intent.hasExtra(EXTRA_GRATICULE) || !intent.hasExtra(EXTRA_DATE)) return;
         
         // Maybe we have a request ID!
-        int requestId = -1;
-        if(intent.hasExtra(EXTRA_REQUEST_ID)) {
-            requestId = intent.getIntExtra(EXTRA_REQUEST_ID, -1);
-        }
+        int requestId = intent.getIntExtra(EXTRA_REQUEST_ID, -1);
+
+        // Maybe we have flags!
+        int flags = intent.getIntExtra(EXTRA_REQUEST_FLAGS, 0);
+
+        // Maybe we'll respond with flags!
+        int respFlags = 0;
         
         // Oh, man, can we ever parcelize a Graticule!
         Parcelable p = intent.getParcelableExtra(EXTRA_GRATICULE);
@@ -163,12 +196,13 @@ public class StockService extends WakefulIntentService {
         
         // If we got something, great!  Broadcast it right on out!
         if(info != null) {
-            dispatchIntent(RESPONSE_OKAY, requestId, cal, graticule, info);
+            respFlags |= FLAG_CACHED;
+            dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info);
         } else {
             // Otherwise, we need to go to the web.
             if(!isConnected(this)) {
                 // ...if we CAN go to the web, that is.
-                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, cal, graticule, null);
+                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null);
             } else {
                 StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule, null);
                 runner.runStock();
@@ -179,11 +213,11 @@ public class StockService extends WakefulIntentService {
                 switch(result) {
                     case HashBuilder.StockRunner.ALL_OKAY:
                         // Hooray!  We win!  Dispatch an intent with the info.
-                        dispatchIntent(RESPONSE_OKAY, requestId, cal, graticule, runner.getLastResultObject());
+                        dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject());
                         break;
                     case HashBuilder.StockRunner.ERROR_NOT_POSTED:
                         // Aw.  It's not posted yet.
-                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, cal, graticule, null);
+                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null);
                         break;
                     default:
                         // In all other cases, just assume it's a network error.
@@ -191,13 +225,13 @@ public class StockService extends WakefulIntentService {
                         // we got IDLE, BUSY, or ABORTED, none of which make any
                         // sense in this context, which means something went
                         // horribly, horribly wrong.
-                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, cal, graticule, null);
+                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null);
                 }
             }
         }
     }
     
-    private void dispatchIntent(int responseCode, int requestId, Calendar date, Graticule graticule, Info info) {
+    private void dispatchIntent(int responseCode, int requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
         
@@ -205,6 +239,8 @@ public class StockService extends WakefulIntentService {
         // not at all what Intent broadcasting was made for, but hey.
         intent.putExtra(EXTRA_RESPONSE_CODE, responseCode);
         intent.putExtra(EXTRA_REQUEST_ID, requestId);
+        intent.putExtra(EXTRA_REQUEST_FLAGS, flags);
+        intent.putExtra(EXTRA_RESPONSE_FLAGS, respFlags);
         intent.putExtra(EXTRA_DATE, date);
         intent.putExtra(EXTRA_GRATICULE, graticule);
         intent.putExtra(EXTRA_INFO, info);
