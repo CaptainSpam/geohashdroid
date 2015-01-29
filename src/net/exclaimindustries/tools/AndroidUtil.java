@@ -6,11 +6,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 /**
  * AndroidUtil features some helpful convenience methods for Android.
  * 
- * @author Jonas Graudums
+ * @author Jonas Graudums, Nicholas Killewald
  */
 public class AndroidUtil {
 
@@ -46,5 +48,25 @@ public class AndroidUtil {
         List<ResolveInfo> list = packageManager.queryIntentActivities(intent,
                 PackageManager.MATCH_DEFAULT_ONLY);
         return list.size() > 0;
+    }
+
+    /**
+     * <p>
+     * Indicates whether there's any valid internet connection at all.  This
+     * call doesn't care if said connection is wifi, mobile, Bluetooth, or
+     * whatever.
+     * </p>
+     *
+     * <p>
+     * TODO: This might benefit from some corresponding methods that DO narrow
+     * things down a bit, like making sure it's a high-bandwidth connection.
+     * </p>
+     *
+     * @param context a Context, needed to get the ConnectivityManager
+     * @return true if an internet connection exists, false otherwise
+     */
+    public static boolean isConnected(Context context) {
+        NetworkInfo networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        return (networkInfo != null && networkInfo.isConnected());
     }
 }

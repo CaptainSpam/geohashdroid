@@ -9,6 +9,7 @@ package net.exclaimindustries.geohashdroid;
 
 import java.util.Calendar;
 
+import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.util.ClosenessActor;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -324,7 +325,7 @@ public class GeohashDroid extends Activity {
             editor.putBoolean(GHDConstants.PREF_STOCK_SERVICE, false);
             toReturn = true;
         } else if(prefs.getBoolean(GHDConstants.PREF_STOCK_SERVICE, false)) {
-            Intent i = new Intent(this, StockService.class).setAction(GHDConstants.STOCK_INIT);
+            Intent i = new Intent(this, AlarmService.class).setAction(AlarmService.STOCK_INIT);
             startService(i);
         }
 

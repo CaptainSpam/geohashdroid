@@ -7,6 +7,7 @@
  */
 package net.exclaimindustries.geohashdroid;
 
+import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import android.app.AlertDialog;
@@ -219,14 +220,14 @@ public class PreferenceEditScreen extends PreferenceActivity {
                 if(newValue instanceof Boolean) {
                     Boolean set = (Boolean)newValue;
                     
-                    Intent i = new Intent(PreferenceEditScreen.this, StockService.class);
+                    Intent i = new Intent(PreferenceEditScreen.this, AlarmService.class);
                     
                     if(set.booleanValue()) {
                         // ON!  Start the service!
-                        i.setAction(GHDConstants.STOCK_INIT);                        
+                        i.setAction(AlarmService.STOCK_INIT);                        
                     } else {
                         // OFF!  Stop the service and cancel all alarms!
-                        i.setAction(GHDConstants.STOCK_CANCEL_ALARMS);
+                        i.setAction(AlarmService.STOCK_CANCEL_ALARMS);
                     }
                     
                     startService(i);

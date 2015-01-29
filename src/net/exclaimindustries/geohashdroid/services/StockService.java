@@ -1,5 +1,5 @@
 /**
- * HashService.java
+ * StockService.java
  * Copyright (C)2014 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
@@ -14,10 +14,8 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.geohashdroid.util.HashBuilder.StockRunner;
 import net.exclaimindustries.geohashdroid.util.Info;
-import android.content.Context;
+import net.exclaimindustries.tools.AndroidUtil;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Parcelable;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
@@ -200,7 +198,7 @@ public class StockService extends WakefulIntentService {
             dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info);
         } else {
             // Otherwise, we need to go to the web.
-            if(!isConnected(this)) {
+            if(!AndroidUtil.isConnected(this)) {
                 // ...if we CAN go to the web, that is.
                 dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null);
             } else {
@@ -247,11 +245,5 @@ public class StockService extends WakefulIntentService {
         
         // And away it goes!
         sendBroadcast(intent);
-    }
-
-    private static boolean isConnected(Context c) {
-        // This just checks if we've got any valid network connection at all.
-        NetworkInfo networkInfo = ((ConnectivityManager)c.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        return (networkInfo != null && networkInfo.isConnected());
     }
 }

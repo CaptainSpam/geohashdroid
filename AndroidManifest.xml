@@ -6,7 +6,7 @@
     android:versionName="0.7.19" >
 
     <uses-sdk
-        android:minSdkVersion="15"
+        android:minSdkVersion="16"
         android:targetSdkVersion="21" />
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -94,27 +94,6 @@
             android:theme="@android:style/Theme.Dialog" >
         </activity>
 
-        <service android:name="StockService" >
-        </service>
-
-        <receiver
-            android:name="net.exclaimindustries.geohashdroid.StockService$StockAlarmReceiver"
-            android:exported="false" >
-            <intent-filter>
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM" />
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_FETCH" />
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ABORT" />
-                <action android:name="net.exclaimindustries.geohashdroid.STOCK_ALARM_RETRY" />
-            </intent-filter>
-        </receiver>
-        <receiver
-            android:name="StockService$NetworkReceiver"
-            android:enabled="false" >
-            <intent-filter>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-            </intent-filter>
-        </receiver>
-
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="@string/api_map_key_v2" />
@@ -126,6 +105,23 @@
             android:name=".services.StockService"
             android:label="@string/title_stockservice" >
         </service>
+        <service
+            android:name=".services.AlarmService"
+            android:label="@string/title_alarmservice" >
+        </service>
+
+        <receiver android:name=".services.AlarmService$StockReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="net.exclaimindustries.geohashdroid.STOCK_RESULT" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".services.AlarmService$NetworkReceiver"
+            android:enabled="false" android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".activities.ServiceTester"
