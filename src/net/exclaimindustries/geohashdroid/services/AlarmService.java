@@ -377,7 +377,7 @@ public class AlarmService extends WakefulIntentService {
             // get set back up if the stock is STILL unavailable, and by
             // shutting it down here, we preferably avoid acting on two alarms
             // at the same time.
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY), 0));
+            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
             
             // StockService takes care of all the network connectivity checks
             // and other things that the alarm-checking StockService used to
