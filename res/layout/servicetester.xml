@@ -42,4 +42,28 @@
         android:text="Results and status will go here."
         android:textColor="#00e" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/alarmon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Alarm On" />
+
+        <Button
+            android:id="@+id/alarm_off"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Alarm Off" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/alarmresult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alarm count goes here" />
+
 </LinearLayout>

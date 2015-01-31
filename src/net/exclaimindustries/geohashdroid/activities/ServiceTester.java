@@ -12,6 +12,7 @@ import java.util.Calendar;
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -34,6 +35,8 @@ import android.widget.TextView;
 public class ServiceTester extends Activity {
     
     private TextView mResponseTv;
+    private TextView mAlarmTv;
+    private int mAlarms = 0;
     
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
 
@@ -69,6 +72,13 @@ public class ServiceTester extends Activity {
             }
             
             mResponseTv.setText(toSay);
+            
+            
+            // If it was an alarm response, update the alarm TextView.
+            if((intent.getIntExtra(StockService.EXTRA_REQUEST_FLAGS, 0) & StockService.FLAG_ALARM) != 0) {
+                mAlarms++;
+                mAlarmTv.setText("Alarms received: " + mAlarms);
+            }
         }
         
     };
@@ -84,10 +94,14 @@ public class ServiceTester extends Activity {
         
         final TextView requestTv = (TextView)findViewById(R.id.request);
         mResponseTv = (TextView)findViewById(R.id.results);
+        mAlarmTv = (TextView)findViewById(R.id.alarmresult);
         
         Button non30w = (Button)findViewById(R.id.non30w);
         Button is30w = (Button)findViewById(R.id.is30w);
         Button baddate = (Button)findViewById(R.id.baddate);
+        
+        Button alarmon = (Button)findViewById(R.id.alarmon);
+        Button alarmoff = (Button)findViewById(R.id.alarm_off);
         
         // Each button will just fire off an Intent for StockService to handle.
         non30w.setOnClickListener(new OnClickListener() {
@@ -127,6 +141,26 @@ public class ServiceTester extends Activity {
                 requestTv.setText("Requested stock for next week with request ID " + i.getIntExtra(StockService.EXTRA_REQUEST_ID, -1) + " (should return an error)");
             }
             
+        });
+        
+        alarmon.setOnClickListener(new OnClickListener() {
+            
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(AlarmService.STOCK_ALARM_ON);
+                i.setClass(ServiceTester.this, AlarmService.class);
+                WakefulIntentService.sendWakefulWork(ServiceTester.this, i);
+            }
+        });
+        
+        alarmoff.setOnClickListener(new OnClickListener() {
+            
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(AlarmService.STOCK_ALARM_OFF);
+                i.setClass(ServiceTester.this, AlarmService.class);
+                WakefulIntentService.sendWakefulWork(ServiceTester.this, i);
+            }
         });
         
         mIntentFilter = new IntentFilter();
