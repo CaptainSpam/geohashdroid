@@ -10,13 +10,12 @@ package net.exclaimindustries.geohashdroid.services;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
-
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.AndroidUtil;
-import android.annotation.TargetApi;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -28,7 +27,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
-
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 /**
@@ -91,16 +89,14 @@ public class AlarmService extends WakefulIntentService {
     private static final String STOCK_ALARM_NETWORK_BACK = "net.exclaimindustries.geohashdroid.STOCK_ALARM_NETWORK_BACK";
     
     /**
-     * Directed intent to tell StockService to set the alarms, but don't
-     * actually do anything about it and shut down right afterward.
+     * Directed intent to tell StockService to set the alarms.
      */
-    public static final String STOCK_INIT = "net.exclaimindustries.geohashdroid.STOCK_INIT";
+    public static final String STOCK_ALARM_ON = "net.exclaimindustries.geohashdroid.STOCK_ALARM_ON";
 
     /**
-     * Directed intent to tell StockService to abort all its alarms.  This would
-     * be for turning off the service in preferences.
+     * Directed intent to tell StockService to cancel the alarms.
      */
-    public static final String STOCK_CANCEL_ALARMS = "net.exclaimindustries.geohashdroid.STOCK_CANCEL_ALARMS";
+    public static final String STOCK_ALARM_OFF = "net.exclaimindustries.geohashdroid.STOCK_ALARM_OFF";
     
     /**
      * This receiver listens for network connectivity changes in case we ran
@@ -156,7 +152,7 @@ public class AlarmService extends WakefulIntentService {
                 Log.d(DEBUG_TAG, "StockService returned with an alarming response!");
                 
                 // It's ours!  Send it to the wakeful part!
-                intent.setClass(context, AlarmManager.class);
+                intent.setClass(context, AlarmService.class);
                 WakefulIntentService.sendWakefulWork(context, intent);
             }
         }
@@ -233,35 +229,18 @@ public class AlarmService extends WakefulIntentService {
     public AlarmService() {
         super("AlarmService");
     }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        
-        Log.d(DEBUG_TAG, "Creating AlarmService...");
-        mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        
-        // Ready the notification!  The detail text will be set by date, of
-        // course.
-        mNotificationBuilder = new Notification.Builder(this)
-            .setSmallIcon(R.drawable.geohashing_logo_notification)
-            .setContentTitle(getString(R.string.notification_title))
-            .setOngoing(true);
-        
-        // Oh, and if we're in Lollipop, we can go ahead and make this a public
-        // Notification.  It's not really sensitive.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            mNotificationBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
-    }
     
     private void showNotification(Calendar date) {
+        // The notification in this case just says when there's an active
+        // network transaction going.  We don't need to bug the user that we're
+        // waiting for a network connection, as chances are, the user's also
+        // waiting for one, and doesn't need us reminding them of this fact.
         mNotificationBuilder.setContentText(
                 getString(R.string.notification_detail,
                         DateFormat
                             .getDateInstance(DateFormat.MEDIUM)
                             .format(date.getTime())));
+        
         mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
     }
     
@@ -315,6 +294,29 @@ public class AlarmService extends WakefulIntentService {
         WakefulIntentService.sendWakefulWork(this, request);
     }
 
+    @SuppressLint("NewApi")
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        // Init these now, at create time.  The service MIGHT not die between
+        // calls, after all.  Maybe.
+        mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        
+        // Ready the notification!  The detail text will be set by date, of
+        // course.
+        mNotificationBuilder = new Notification.Builder(this)
+            .setSmallIcon(R.drawable.geohashing_logo_notification)
+            .setContentTitle(getString(R.string.notification_title))
+            .setOngoing(true);
+        
+        // Oh, and if we're in Lollipop, we can go ahead and make this a public
+        // Notification.  It's not really sensitive.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            mNotificationBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
+    }
+    
     @Override
     protected void doWakefulWork(Intent intent) {
         // If we've been told the network just came back, we can shut off the
@@ -324,16 +326,16 @@ public class AlarmService extends WakefulIntentService {
             setNetworkReceiver(false);
         }
         
-        if(intent.getAction().equals(STOCK_CANCEL_ALARMS)) {
+        if(intent.getAction().equals(STOCK_ALARM_OFF)) {
             // We've been told to stop all alarms!  While we're at it, abort any
             // in-progress connections, too!
-            Log.d(DEBUG_TAG, "Got STOCK_CANCEL_ALARMS!");
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM), 0));
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY), 0));
+            Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
+            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
+            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
             setNetworkReceiver(false);
-        } else if(intent.getAction().equals(STOCK_INIT)) {
-            Log.d(DEBUG_TAG, "Got STOCK_INIT!");
-            
+            clearNotification();
+        } else if(intent.getAction().equals(STOCK_ALARM_ON)) {
+            Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
             // At init time, set the alarm.  We're aiming at 9:30am ET (with any
             // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in
             // the interests of possible clock discrepancies and such (not to
@@ -343,7 +345,6 @@ public class AlarmService extends WakefulIntentService {
             // stock value closer to 9:00am ET than that, well, they can do it
             // themselves.
             Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
-            
             Calendar alarmTime = makeNineThirty(cal);
             
             if(alarmTime.before(cal)) {
@@ -351,6 +352,7 @@ public class AlarmService extends WakefulIntentService {
             }
             
             Intent alarmIntent = new Intent(STOCK_ALARM);
+            alarmIntent.setClass(this, StockAlarmReceiver.class);
             
             Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + alarmTime.getTime().toString());
             
@@ -382,6 +384,8 @@ public class AlarmService extends WakefulIntentService {
             // take care of.  It'll also tell us if the stock hasn't been
             // posted just yet.  So, we can count on that for error checking.
             if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
+                Log.d(DEBUG_TAG, "Just got a stock result!");
+                
                 int result = intent.getIntExtra(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
                 Graticule g = intent.getParcelableExtra(StockService.EXTRA_GRATICULE);
                 
@@ -390,6 +394,7 @@ public class AlarmService extends WakefulIntentService {
                     // And wait.  And wait.
                     Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
                     setNetworkReceiver(true);
+                    clearNotification();
                     return;
                 }
                 
@@ -398,6 +403,7 @@ public class AlarmService extends WakefulIntentService {
                     // half hour or so.  Good night!
                     Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
                     snooze();
+                    clearNotification();
                     return;
                 }
                 
@@ -417,10 +423,12 @@ public class AlarmService extends WakefulIntentService {
                         // If the response we just checked for was a 30W one and
                         // it came back okay, then we fire off a check for the
                         // non-30W one.
+                        Log.d(DEBUG_TAG, "That was the 30W response, going up to non-30W...");
                         sendRequest(GHDConstants.DUMMY_TODAY);
                     } else {
                         // If, however, we got the non-30W back, then our job is
                         // done!  Yay!
+                        Log.d(DEBUG_TAG, "The 30W response!  We're done!");
                         clearNotification();
                         return;
                     }
@@ -429,6 +437,7 @@ public class AlarmService extends WakefulIntentService {
                 // If it's NOT a result, that means we're starting a new check
                 // at a 30W hash for some reason.  Doesn't matter what reason.
                 // We just need to do it.
+                Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
                 sendRequest(GHDConstants.DUMMY_YESTERDAY);
                 return;
             }

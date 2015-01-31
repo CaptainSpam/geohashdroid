@@ -224,10 +224,10 @@ public class PreferenceEditScreen extends PreferenceActivity {
                     
                     if(set.booleanValue()) {
                         // ON!  Start the service!
-                        i.setAction(AlarmService.STOCK_INIT);                        
+                        i.setAction(AlarmService.STOCK_ALARM_ON);                        
                     } else {
                         // OFF!  Stop the service and cancel all alarms!
-                        i.setAction(AlarmService.STOCK_CANCEL_ALARMS);
+                        i.setAction(AlarmService.STOCK_ALARM_OFF);
                     }
                     
                     startService(i);

@@ -110,17 +110,24 @@
             android:label="@string/title_alarmservice" >
         </service>
 
-        <receiver android:name=".services.AlarmService$StockReceiver" android:exported="false">
+        <receiver
+            android:name=".services.AlarmService$StockReceiver"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="net.exclaimindustries.geohashdroid.STOCK_RESULT" />
             </intent-filter>
         </receiver>
         <receiver
             android:name=".services.AlarmService$NetworkReceiver"
-            android:enabled="false" android:exported="false">
+            android:enabled="false"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".services.AlarmService$StockAlarmReceiver"
+            android:exported="false" >
         </receiver>
 
         <activity

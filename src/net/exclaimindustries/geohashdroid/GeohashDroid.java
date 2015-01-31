@@ -325,7 +325,7 @@ public class GeohashDroid extends Activity {
             editor.putBoolean(GHDConstants.PREF_STOCK_SERVICE, false);
             toReturn = true;
         } else if(prefs.getBoolean(GHDConstants.PREF_STOCK_SERVICE, false)) {
-            Intent i = new Intent(this, AlarmService.class).setAction(AlarmService.STOCK_INIT);
+            Intent i = new Intent(this, AlarmService.class).setAction(AlarmService.STOCK_ALARM_ON);
             startService(i);
         }
 
