@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- Notification ID for when the alarm is grabbing stocks. -->
+    <item name="alarm_notification" type="id" />
+    <!-- Notification ID for when an active wiki connection is going on. -->
+    <item name="wiki_working_notification" type="id" />
+    <!-- Notification ID for when we're waiting for a connection for the wiki or
+         some other form of input. -->
+    <item name="wiki_waiting_notification" type="id" />
+</resources>

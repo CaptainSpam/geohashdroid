@@ -31,7 +31,7 @@ import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 /**
  * <p>
- * <code>AlarmService is a background service that retrieves the current stock
+ * <code>AlarmService</code> is a background service that retrieves the current stock
  * value around 9:30am ET (that is, a reasonable time after the opening of the
  * New York Stock Exchange, at which time the DJIA opening value is known).
  * It makes requests to {@link StockService}, which then stores the result away
@@ -56,8 +56,6 @@ public class AlarmService extends WakefulIntentService {
     private NotificationManager mNotificationManager;
     
     private Notification.Builder mNotificationBuilder;
-    
-    private static final int NOTIFICATION_ID = 1;
     
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -241,11 +239,11 @@ public class AlarmService extends WakefulIntentService {
                             .getDateInstance(DateFormat.MEDIUM)
                             .format(date.getTime())));
         
-        mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+        mNotificationManager.notify(R.id.alarm_notification, mNotificationBuilder.build());
     }
     
     private void clearNotification() {
-        mNotificationManager.cancel(NOTIFICATION_ID);
+        mNotificationManager.cancel(R.id.alarm_notification);
     }
     
     private void setNetworkReceiver(boolean enabled) {
