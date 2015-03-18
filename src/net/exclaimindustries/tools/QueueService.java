@@ -1,6 +1,6 @@
 /**
  * QueueService.java
- * Copyright (C)2011 Nicholas Killewald
+ * Copyright (C)2015 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
@@ -39,7 +39,7 @@ import android.util.Log;
  * work similarly enough under the hood to justify it.
  * </p>
  * 
- * @author captainspam
+ * @author Nicholas Killewald
  *
  */
 public abstract class QueueService extends Service {
@@ -112,9 +112,6 @@ public abstract class QueueService extends Service {
     private Queue<Intent> mQueue;
     private Thread mThread;
     
-    // Whether or not the queue will restart on a new Intent if it's paused.
-    private volatile boolean mResumeOnNewIntent;
-    
     // Whether or not the queue is currently paused.
     private volatile boolean mIsPaused;
     
@@ -123,9 +120,6 @@ public abstract class QueueService extends Service {
         
         // Give us a queue!
         mQueue = new ConcurrentLinkedQueue<Intent>();
-        
-        // Default us to not resuming on a new Intent.
-        mResumeOnNewIntent = false;
         
         // And we're not paused by default.
         mIsPaused = false;
@@ -336,7 +330,7 @@ public abstract class QueueService extends Service {
             // Next, if the thread isn't already running (AND we're not paused),
             // make it run.  If it IS running, we'll just process the next one
             // in turn.
-            if(isPaused() && mResumeOnNewIntent) {
+            if(isPaused() && resumeOnNewIntent()) {
                 Log.d(DEBUG_TAG, "Queue was paused, resuming it now!");
                 
                 if(mThread != null && mThread.isAlive()) {
@@ -430,17 +424,15 @@ public abstract class QueueService extends Service {
     }
     
     /**
-     * Sets whether or not the queue will resume itself if a new Intent comes in
-     * while it's paused.  Ordinarily, it won't; that is, the queue won't move
-     * again until an explicit COMMAND_RESUME comes in.  Setting this to true
-     * will make it implicit that when a new Intent arrives, if the queue is
-     * paused, it will restart it immediately.
-     * 
-     * @param flag true to auto-restart, false to not (default is false)
+     * Called whenever a new data Intent comes in and the queue is paused to
+     * determine if the queue should resume immediately.  If this returns false,
+     * the queue will remain paused until an explicit {@link #COMMAND_RESUME}
+     * command Intent is sent.  Note that the queue will always start if the
+     * queue is empty.
+     *
+     * @return true to resume on a new Intent, false to remain paused
      */
-    public void setResumeOnNewIntent(boolean flag) {
-        mResumeOnNewIntent = flag;
-    }
+    protected abstract boolean resumeOnNewIntent();
 
     /**
      * Subclasses call this every time something from the queue comes in to be
