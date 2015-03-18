@@ -26,11 +26,11 @@ import android.util.Log;
 
 /**
  * <p>
- * A <code>QueueService</code> is similar in theory to an
- * <code>IntentService</code>, with the exception that the <code>Intent</code>
- * is stored in a queue and dealt with that way.  This also means the queue can
- * be observed and iterated as need be to, for instance, get a list of
- * currently-waiting things to process.
+ * A <code>QueueService</code> is similar in theory to an {@link IntentService},
+ * with the exception that the <code>Intent</code> is stored in a queue and
+ * dealt with that way.  This also means the queue can be observed and iterated
+ * as need be to, for instance, get a list of currently-waiting things to
+ * process.
  * </p>
  * 
  * <p>
@@ -40,7 +40,6 @@ import android.util.Log;
  * </p>
  * 
  * @author Nicholas Killewald
- *
  */
 public abstract class QueueService extends Service {
     private static final String DEBUG_TAG = "QueueService";
@@ -251,25 +250,18 @@ public abstract class QueueService extends Service {
     }
     
     /**
+     * <p>
      * Handles the Intent sent in.  Specifically, this looks at the Intent,
      * decides if it's a command or a work unit, and then either acts on the
      * command or shoves the Intent into the queue to be processed, starting the
      * queue-working thread if need be.  This gets called on a separate thread
      * from the rest of the GUI (AND a separate thread from the queue worker).
-     * 
-     * Note very carefully, this is NOT what should process the queue itself.
-     * That is, you don't override this as your main workhorse.  You only
-     * override this if you have some other special command Intents to handle
-     * other than the basic QueueService stuff.
-     * 
-     * In general, you don't override this.  If you do, make absolutely sure you
-     * call back up to the superclass if you're not handling the Intent, and
-     * make sure you do so AFTER your own processing, else it'll go in the queue
-     * regardless of what you do.
+     * The actual application-specific work happens in {@link #handleIntent(Intent)}.
+     * </p>
      * 
      * @param intent the incoming Intent
      */
-    protected void handleCommand(Intent intent) {
+    private void handleCommand(Intent intent) {
         // First, check if this is a command message.
         if(intent.hasExtra(COMMAND_EXTRA)) {
             // If so, take command.  Make sure it's a valid command.
@@ -379,7 +371,7 @@ public abstract class QueueService extends Service {
 
                 Log.d(DEBUG_TAG, "Processing intent...");
                 
-                ReturnCode r = onHandleIntent(i);
+                ReturnCode r = handleIntent(i);
                 
                 Log.d(DEBUG_TAG, "Intent processed, return code is " + r);
                 
@@ -435,47 +427,63 @@ public abstract class QueueService extends Service {
     protected abstract boolean resumeOnNewIntent();
 
     /**
-     * Subclasses call this every time something from the queue comes in to be
-     * processed.  This will not be called on the main thread.  There will be
-     * no callback on successful processing of an individual Intent, but
-     * onQueuePause will be called if the queue is paused, and onQueueEmpty will
-     * be called at the end of all processing.
+     * Subclasses get this called every time something from the queue comes in
+     * to be processed.  This will not be called on the main thread.  There will
+     * be no callback on successful processing of an individual Intent, but
+     * {@link #onQueuePause(Intent)} will be called if the queue is paused, and
+     * onQueueEmpty will be called at the end of all processing.
      * 
      * @param i Intent to be processed
      * @return a ReturnCode indicating what the queue should do next
      */
-    protected abstract ReturnCode onHandleIntent(Intent i);
+    protected abstract ReturnCode handleIntent(Intent i);
     
     /**
      * This gets called immediately before the first Intent is processed in a
      * given run of QueueService.  That is to say, after the service is started
      * due to an Intent coming in OR every time the service is told to resume
-     * after being paused.  onHandleIntent will be called after this returns.
+     * after being paused.  {@link #handleIntent(Intent)} will be called after
+     * this returns.  This would be a good place to set up wakelocks.
      */
     protected abstract void onQueueStart();
     
     /**
+     * <p>
      * This gets called if the queue needs to be paused for some reason.  The
      * Intent that caused the pause will be included.  The thread will be killed
-     * after this callback returns.  However, isPaused() will return false if
-     * called during this callback.  Try not to block it.
+     * after this callback returns.  However, {@link isPaused()} will return
+     * false if called during this callback.  Try not to block it.
+     * </p>
      * 
+     * <p>
      * Note that you aren't doing the actual pausing here.  This method is just
      * here to do status updates or to inform the user that the queue is paused,
      * which might or might not require more input.  If you need more
      * information as to exactly why the queue was paused, you can always stuff
      * more extras in the Intent during onHandleIntent before it gets here.
+     * </p>
      * 
+     * <p>
+     * Now would be a good time to release that wakelock you made back in
+     * {@link #onQueueStart()}.
+     * </p>
      * @param i Intent that caused the pause
      */
     protected abstract void onQueuePause(Intent i);
     
     /**
+     * <p>
      * This is called right after the queue is done processing and right before
      * the thread is killed and isn't paused.  The boolean indicates if
-     * processing was complete.  If false, it means a STOP was received or
-     * COMMAND_ABORT was sent.  The queue will be emptied AFTER this method
-     * returns.
+     * processing was complete.  If false, it means a {@link #STOP} was received
+     * or {@link #COMMAND_ABORT} was sent.  The queue will be emptied AFTER this
+     * method returns.
+     * </p>
+     * 
+     * <p>
+     * This would be another good place to release that {@link #onQueueStart()}
+     * wakelock you've been holding onto.  Onto which you've been holding.
+     * </p>
      *  
      * @param allProcessed true if the queue emptied normally, false if it was
      *                     aborted before all Intents were processed
@@ -483,6 +491,7 @@ public abstract class QueueService extends Service {
     protected abstract void onQueueEmpty(boolean allProcessed);
     
     /**
+     * <p>
      * Serializes the given Intent to disk for later re-reading.  Note that at
      * this point, an Intent is solely used as a means of storing data.  Which,
      * really, it can be, though I doubt that's why it was made.  This gets
@@ -490,10 +499,13 @@ public abstract class QueueService extends Service {
      * left at all) so that they can be recreated at onCreate time to persist
      * the Service's state (there doesn't appear to be an onSaveInstanceState
      * like you'd get with Activities).
+     * </p>
      * 
+     * <p>
      * Note that no checking is done to ensure you actually wrote anything to
      * the stream.  If the result is a zero-byte file, that's your
      * responsibility to handle it at deserialize time.
+     * </p>
      * 
      * @param i the Intent to serialize
      * @param os what you'll be writing to
