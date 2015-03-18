@@ -13,9 +13,9 @@
 <string name="date_label">Date:</string>
 <string name="what_label">What\'s Geohashing?</string>
 
-<string name="search_label">Attempting to determine your location...</string>
+<string name="search_label">Attempting to determine your location&#8230;</string>
 
-<string name="search_title">Searching...</string>
+<string name="search_title">Searching&#8230;</string>
 <string name="go_label">Go!</string>
 <string name="go_disabled_label">Enter a graticule</string>
 <string name="ok_label">Okay</string>
@@ -36,10 +36,10 @@
 <string name="dialog_switch_graticule_unknown">Do you want to switch to this graticule?</string>
 
 <string name="error_title">Error</string>
-<string name="standby_title">Stand by...</string>
+<string name="standby_title">Stand by&#8230;</string>
 <string name="location_unknown">Location unknown</string>
-<string name="stock_label">Retrieving stock data...</string>
-<string name="location_label">Attempting to determine your location...</string>
+<string name="stock_label">Retrieving stock data&#8230;</string>
+<string name="location_label">Attempting to determine your location&#8230;</string>
 <string name="error_search_failed">Couldn\'t figure out your graticule.  Make sure GPS and/or wireless network location sensing are enabled in Settings and you are in range of either.</string>
 <string name="error_not_yet_posted">There hasn\'t been a stock price posted for that date.</string>
 <string name="error_server_failure">There was a problem talking to the stock price server.  Please try again later.</string>
@@ -49,8 +49,8 @@
 <string name="detail_activity_title">Details</string>
 <string name="destination_label">Today\'s Point</string>
 
-<string name="find_location">Trying to determine your location...</string>
-<string name="find_location_again">Readjusting view...</string>
+<string name="find_location">Trying to determine your location&#8230;</string>
+<string name="find_location_again">Readjusting view&#8230;</string>
 <string name="autozoom_turned_off">Automatic zooming turned off</string>
 <string name="autozoom_turned_on">Automatic zooming turned on</string>
 
@@ -163,10 +163,10 @@
 <string name="hint_lon">Lon</string>
 <string name="hint_message">Message</string>
 
-<string name="notification_title">Fetching stocks...</string>
+<string name="notification_title">Fetching stocks&#8230;</string>
 <string name="notification_detail">(now checking %1$s)</string>
 
-<string name="notification_wait_for_network">Waiting for the network...</string>
+<string name="notification_wait_for_network">Waiting for the network&#8230;</string>
 
 <string name="about_by">By Nicholas Killewald</string>
 <string name="about_with">With contributions by Thomas Hirsch and Jonas Graudums</string>
