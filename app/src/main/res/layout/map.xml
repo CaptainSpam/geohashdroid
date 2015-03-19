@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:id="@+id/MapViewLayout"
+    android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:keepScreenOn="true"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<view android:id="@+id/Map" class="com.google.android.maps.MapView"
+		android:layout_width="fill_parent" android:layout_height="fill_parent"
+		android:enabled="true" android:clickable="true" android:apiKey="@string/api_map_key"
+		android:focusable="true"></view>
+	<net.exclaimindustries.geohashdroid.MainMapInfoBoxSmall android:id="@+id/InfoBox"
+   		android:layout_width="wrap_content" android:layout_height="wrap_content"
+		android:layout_alignTop="@id/Map" android:layout_alignRight="@id/Map"
+		android:background="@color/infobox_background"
+		android:visibility="visible"
+		android:padding="@dimen/infobox_padding" />
+	<net.exclaimindustries.geohashdroid.MainMapInfoBoxJumbo android:id="@+id/JumboInfoBox"
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:layout_alignTop="@id/Map" android:layout_alignRight="@id/Map"
+		android:background="@color/infobox_background"
+		android:width="@dimen/infobox_width"
+		android:padding="@dimen/infobox_padding"
+		android:visibility="visible" />
+</RelativeLayout>

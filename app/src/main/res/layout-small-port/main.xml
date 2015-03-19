@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:exclaim="http://schemas.android.com/apk/res-auto"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_gravity="center_vertical" android:layout_height="wrap_content">
+	<Button android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:id="@+id/WhatButton"
+		android:text="@string/what_label" android:layout_gravity="center_horizontal"
+		android:layout_margin="@dimen/main_padding"></Button>
+	<LinearLayout android:layout_height="wrap_content" android:layout_width="wrap_content"
+		android:orientation="horizontal" android:id="@+id/DateRow"
+		android:layout_gravity="center_horizontal" android:layout_margin="@dimen/main_padding">
+		
+		<TextView android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/DateLabel"
+			android:text="@string/date_label" android:layout_gravity="center_vertical"></TextView>
+		<net.exclaimindustries.tools.DateButton
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:id="@+id/DateButton"
+			android:layout_gravity="center" exclaim:date_format="long_date" />
+		<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:text="@string/always_today_label" android:layout_gravity="center"
+			android:id="@+id/TodayBox" />
+	</LinearLayout>
+	<TextView android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:id="@+id/GraticuleLabel"
+		android:text="@string/graticule_label" android:layout_gravity="center_horizontal"></TextView>
+	<LinearLayout android:layout_height="wrap_content"
+		android:orientation="horizontal" android:id="@+id/GraticuleRow"
+		android:layout_gravity="center_horizontal" android:layout_width="wrap_content"
+		android:layout_margin="@dimen/main_padding">
+		<EditText android:layout_height="wrap_content" android:id="@+id/Latitude"
+			android:layout_gravity="center_vertical" android:maxLength="4"
+			android:saveEnabled="true" android:hint="@string/hint_lat"
+			android:selectAllOnFocus="true" android:layout_width="@dimen/input_graticule_width"
+			android:textSize="@dimen/input_graticule_fontsize" android:inputType="numberSigned"
+			android:digits="0123456789-"></EditText>
+		<EditText android:layout_height="wrap_content" android:id="@+id/Longitude"
+			android:layout_gravity="center_vertical" android:saveEnabled="true"
+			android:hint="@string/hint_lon" android:selectAllOnFocus="true"
+			android:layout_width="@dimen/input_graticule_width"
+			android:maxLength="4" android:textSize="@dimen/input_graticule_fontsize"
+			android:inputType="numberSigned" android:digits="0123456789-"></EditText>
+	</LinearLayout>
+        <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="@dimen/input_graticule_fontsize"
+                android:layout_gravity="center_horizontal" android:text="@string/globalhash_label"
+                android:visibility="gone" android:id="@+id/GlobalhashLabel"></TextView>
+
+	<LinearLayout android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+		android:id="@+id/ButtonRow" android:orientation="horizontal"
+		android:layout_margin="@dimen/main_padding">
+		<CheckBox android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:drawableLeft="@drawable/refresh"
+			android:text="@string/closest_label" android:layout_gravity="center_horizontal"
+			android:id="@+id/AutoBox"></CheckBox>
+		<Button android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:drawableLeft="@drawable/map"
+			android:id="@+id/MapButton" android:layout_gravity="center_horizontal"
+			android:text="@string/gratmap_label"></Button>
+	</LinearLayout>
+	<Button android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:text="@string/go_label"
+		android:layout_gravity="center_horizontal" android:id="@+id/GoButton"
+		android:width="@dimen/button_go_width" android:layout_margin="@dimen/main_padding"></Button>
+
+</LinearLayout>

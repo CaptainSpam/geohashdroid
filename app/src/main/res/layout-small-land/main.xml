@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:exclaim="http://schemas.android.com/apk/res-auto"
+	android:id="@+id/LinearLayout01"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	android:layout_gravity="center" android:baselineAligned="false" android:orientation="horizontal">
+	<LinearLayout android:id="@+id/WideColumn1"
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:layout_gravity="center" android:layout_margin="@dimen/main_padding"
+		android:layout_weight=".5" android:orientation="vertical">
+		<Button android:id="@+id/WhatButton"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:layout_margin="@dimen/main_padding"
+			android:text="@string/what_label"></Button>
+		<TextView android:id="@+id/DateLabel"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:text="@string/date_label"></TextView>
+		<net.exclaimindustries.tools.DateButton
+			android:id="@+id/DateButton" android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" exclaim:date_format="long_date" />
+
+		<CheckBox android:id="@+id/TodayBox" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:layout_gravity="center"
+			android:text="@string/always_today_label" />
+
+		<TextView android:id="@+id/GlobalhashLabel"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:text="@string/globalhash_label"
+			android:textSize="@dimen/input_graticule_fontsize" android:visibility="gone"></TextView>
+
+	</LinearLayout>
+	<LinearLayout android:id="@+id/WideColumn2"
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:layout_gravity="center" android:layout_margin="@dimen/main_padding"
+		android:layout_weight=".5" android:orientation="vertical">
+		<TextView android:id="@+id/GraticuleLabel"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:text="@string/graticule_label"></TextView>
+		<LinearLayout android:id="@+id/GraticuleRow"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:orientation="horizontal">
+
+			<EditText android:id="@+id/Latitude" android:layout_width="@dimen/input_graticule_width"
+				android:layout_height="wrap_content" android:layout_gravity="center_vertical"
+				android:layout_marginRight="@dimen/main_padding" android:digits="0123456789-"
+				android:hint="@string/hint_lat" android:inputType="numberSigned"
+				android:maxLength="4"
+				android:maxWidth="@dimen/input_graticule_width"
+				android:saveEnabled="true" android:selectAllOnFocus="true"
+				android:textSize="@dimen/input_graticule_fontsize"></EditText>
+			<EditText android:id="@+id/Longitude" android:layout_width="@dimen/input_graticule_width"
+				android:layout_height="wrap_content" android:layout_gravity="center_vertical"
+				android:layout_marginLeft="@dimen/main_padding" android:digits="0123456789-"
+				android:hint="@string/hint_lon" android:inputType="numberSigned"
+				android:maxLength="4"
+				android:maxWidth="@dimen/input_graticule_width"
+				android:saveEnabled="true" android:selectAllOnFocus="true"
+				android:textSize="@dimen/input_graticule_fontsize"></EditText>
+		</LinearLayout>
+		<CheckBox android:id="@+id/AutoBox"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:drawableLeft="@drawable/refresh"
+			android:text="@string/closest_label"></CheckBox>
+		<Button android:id="@+id/MapButton"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:drawableLeft="@drawable/map"
+			android:text="@string/gratmap_label"></Button>
+
+		<Button android:id="@+id/GoButton"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal" android:layout_margin="@dimen/main_padding"
+			android:width="@dimen/button_go_width" android:text="@string/go_label"></Button>
+
+	</LinearLayout>
+
+
+</LinearLayout>
