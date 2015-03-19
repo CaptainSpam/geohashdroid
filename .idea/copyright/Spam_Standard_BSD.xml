@@ -1,0 +1,9 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="notice" value="&amp;#36;file.fileName&#10;Copyright (C) &amp;#36;today.year Nicholas Killewald&#10;&#10;This file is distributed under the terms of the BSD license.&#10;The source package should have a LICENSE file at the toplevel." />
+    <option name="keyword" value="Copyright" />
+    <option name="allowReplaceKeyword" value="" />
+    <option name="myName" value="Spam Standard BSD" />
+    <option name="myLocal" value="true" />
+  </copyright>
+</component>

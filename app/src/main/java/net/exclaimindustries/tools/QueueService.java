@@ -26,7 +26,7 @@ import android.util.Log;
 
 /**
  * <p>
- * A <code>QueueService</code> is similar in theory to an {@link IntentService},
+ * A <code>QueueService</code> is similar in theory to an {@link android.app.IntentService},
  * with the exception that the <code>Intent</code> is stored in a queue and
  * dealt with that way.  This also means the queue can be observed and iterated
  * as need be to, for instance, get a list of currently-waiting things to
@@ -69,7 +69,7 @@ public abstract class QueueService extends Service {
         /**
          * Queue should pause until resumed later.  Useful for temporary
          * errors.  The queue will not be emptied, and the Intent which caused
-         * this pause won't be removed (though see {@link COMMAND_RESUME_SKIP_FIRST}).
+         * this pause won't be removed (though see {@link #COMMAND_RESUME_SKIP_FIRST}).
          */
         PAUSE,
         /**
@@ -230,19 +230,14 @@ public abstract class QueueService extends Service {
     public int getSize() {
         return mQueue.size();
     }
-    
+
     @Override
-    public void onStart(Intent intent, int startId) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
         // Here's a trick I picked up from IntentService...
         Message msg = mServiceHandler.obtainMessage();
         msg.arg1 = startId;
         msg.obj = intent;
         mServiceHandler.sendMessage(msg);
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        onStart(intent, startId);
         
         // We're not sticky.  We don't want intents re-sent and we call stopSelf
         // whenever we want to stop entirely.
@@ -307,8 +302,9 @@ public abstract class QueueService extends Service {
                     mQueue.remove();
                 }
                 doNewThread();
-            } else if(command == COMMAND_ABORT) {
-                // Simply empty the queue (but call the callback first).
+            } else {
+                // This is a COMMAND_ABORT.  Simply empty the queue (but call
+                // the callback first).
                 Log.d(DEBUG_TAG, "Emptying out the queue (removing " + mQueue.size() + " Intents)...");
                 onQueueEmpty(false);
                 mQueue.clear();
@@ -338,8 +334,6 @@ public abstract class QueueService extends Service {
                 doNewThread();
             }
         }
-        
-        return;
     }
     
     private void doNewThread() {
@@ -431,7 +425,7 @@ public abstract class QueueService extends Service {
      * to be processed.  This will not be called on the main thread.  There will
      * be no callback on successful processing of an individual Intent, but
      * {@link #onQueuePause(Intent)} will be called if the queue is paused, and
-     * onQueueEmpty will be called at the end of all processing.
+     * {@link #onQueueEmpty(boolean)} will be called at the end of all processing.
      * 
      * @param i Intent to be processed
      * @return a ReturnCode indicating what the queue should do next
@@ -451,7 +445,7 @@ public abstract class QueueService extends Service {
      * <p>
      * This gets called if the queue needs to be paused for some reason.  The
      * Intent that caused the pause will be included.  The thread will be killed
-     * after this callback returns.  However, {@link isPaused()} will return
+     * after this callback returns.  However, {@link #isPaused()} will return
      * false if called during this callback.  Try not to block it.
      * </p>
      * 
@@ -475,9 +469,9 @@ public abstract class QueueService extends Service {
      * <p>
      * This is called right after the queue is done processing and right before
      * the thread is killed and isn't paused.  The boolean indicates if
-     * processing was complete.  If false, it means a {@link #STOP} was received
-     * or {@link #COMMAND_ABORT} was sent.  The queue will be emptied AFTER this
-     * method returns.
+     * processing was complete.  If false, it means a {@link ReturnCode#STOP}
+     * was received or {@link #COMMAND_ABORT} was sent.  The queue will be
+     * emptied AFTER this method returns.
      * </p>
      * 
      * <p>

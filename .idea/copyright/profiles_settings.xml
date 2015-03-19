@@ -1,3 +1,11 @@
 <component name="CopyrightManager">
-  <settings default="" />
+  <settings default="Spam Standard BSD">
+    <module2copyright>
+      <element module="Project Files" copyright="Spam Standard BSD" />
+    </module2copyright>
+    <LanguageOptions name="XML">
+      <option name="fileTypeOverride" value="1" />
+      <option name="prefixLines" value="false" />
+    </LanguageOptions>
+  </settings>
 </component>

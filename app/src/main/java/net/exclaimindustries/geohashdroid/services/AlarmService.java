@@ -428,7 +428,6 @@ public class AlarmService extends WakefulIntentService {
                         // done!  Yay!
                         Log.d(DEBUG_TAG, "The 30W response!  We're done!");
                         clearNotification();
-                        return;
                     }
                 }
             } else {
@@ -437,7 +436,6 @@ public class AlarmService extends WakefulIntentService {
                 // We just need to do it.
                 Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
                 sendRequest(GHDConstants.DUMMY_YESTERDAY);
-                return;
             }
         } else {
             // Stop doing this!

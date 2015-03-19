@@ -53,8 +53,8 @@ public class BitmapTools {
             double scaledByWidthRatio = ((double)maxWidth) / (double)bitmap.getWidth();
             double scaledByHeightRatio = ((double)maxHeight) / (double)bitmap.getHeight();
 
-            int newWidth = bitmap.getWidth();
-            int newHeight = bitmap.getHeight();
+            int newWidth;
+            int newHeight;
 
             if (bitmap.getHeight() * scaledByWidthRatio <= maxHeight) {
                 // Scale it by making the width the max, as scaling the
