@@ -9,9 +9,8 @@ gen/
 .directory
 
 app/build/*
-.idea/*
-.gradle/*
-import-summary.txt
-local.properties
-gradle/*
-build/*
+/.idea/workspace.xml
+/.idea/libraries
+.gradle
+/local.properties
+/build
