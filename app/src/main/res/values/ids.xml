@@ -12,4 +12,8 @@
          This one should pop up in that case but isn't a queue-stopping error,
          so it might be up with other notifications. -->
     <item name="wiki_image_error_notification" type="id" />
+    <!-- Notification ID for any wiki errors BESIDES "something went wrong with
+         an image upload".  This one should have a PendingIntent attached to
+         help solve the problem (i.e. set a username, update password, etc). -->
+    <item name="wiki_error_notification" type="id" />
 </resources>

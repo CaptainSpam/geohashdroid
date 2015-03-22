@@ -15,6 +15,7 @@ import java.util.Calendar;
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -58,7 +59,6 @@ public class WikiService extends QueueService {
     private static final String DEBUG_TAG = "WikiService";
 
     private NotificationManager mNotificationManager;
-    private Notification.Builder mNotificationBuilder;
     private WakeLock mWakeLock;
     
     /**
@@ -95,7 +95,6 @@ public class WikiService extends QueueService {
      */
     public static final String EXTRA_LOCATION = "net.exclaimindustries.geohashdroid.EXTRA_LOCATION";
 
-    @SuppressLint("NewApi")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -104,15 +103,8 @@ public class WikiService extends QueueService {
         PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WikiService");
         
-        // Also, get the NotificationManager on standby with a builder.
+        // Also, get the NotificationManager on standby.
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        
-        mNotificationBuilder = new Notification.Builder(this)
-            .setSmallIcon(R.drawable.geohashing_logo_notification)
-            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.geohashing_logo));
-        
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            mNotificationBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
     }
     
     @Override
@@ -217,12 +209,12 @@ public class WikiService extends QueueService {
 
 
     private void showActiveNotification() {
-        mNotificationBuilder.setAutoCancel(false)
+        Notification.Builder builder = getFreshNotificationBuilder()
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_title))
                 .setContentText("");
 
-        mNotificationManager.notify(R.id.wiki_working_notification, mNotificationBuilder.build());
+        mNotificationManager.notify(R.id.wiki_working_notification, builder.build());
     }
 
     private void removeActiveNotification() {
@@ -236,25 +228,53 @@ public class WikiService extends QueueService {
         // not going to touch it past this.  Also, the string says "one or more
         // images", so that'll cover it if we somehow get LOTS of broken image
         // URIs.
-        mNotificationBuilder.setAutoCancel(true)
+        Notification.Builder builder = getFreshNotificationBuilder()
+                .setAutoCancel(true)
                 .setOngoing(false)
                 .setContentTitle(getString(R.string.wiki_notification_image_error_title))
                 .setContentText(getString(R.string.wiki_notification_image_error_content));
 
-        mNotificationManager.notify(R.id.wiki_image_error_notification, mNotificationBuilder.build());
+        mNotificationManager.notify(R.id.wiki_image_error_notification, builder.build());
     }
 
     private void showWaitingForConnectionNotification() {
-        mNotificationBuilder.setAutoCancel(false)
+        Notification.Builder builder = getFreshNotificationBuilder()
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
                 .setContentText("");
 
-        mNotificationManager.notify(R.id.wiki_waiting_notification, mNotificationBuilder.build());
+        mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
     }
 
     private void hideWaitingForConnectionNotification() {
         mNotificationManager.cancel(R.id.wiki_waiting_notification);
+    }
+
+    private void showPausingErrorNotification(String reason, PendingIntent pendingIntent) {
+        // This one gets its own PendingIntent (preferably something that'll
+        // help solve the problem, like a username prompt).
+        Notification.Builder builder = getFreshNotificationBuilder()
+                .setAutoCancel(true)
+                .setContentTitle(getString(R.string.wiki_notification_error_title))
+                .setContentText(reason)
+                .setContentIntent(pendingIntent);
+
+        mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
+    }
+
+    @SuppressLint("NewApi")
+    private Notification.Builder getFreshNotificationBuilder() {
+        // This just returns a fresh new Notification.Builder with the default
+        // images.  We're resetting everything on each notification anyway, so
+        // sharing the object is sort of a waste.
+        Notification.Builder builder = new Notification.Builder(this)
+                .setSmallIcon(R.drawable.geohashing_logo_notification)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.geohashing_logo));
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
+
+        return builder;
     }
 
     private ImageInfo readImageInfo(Uri uri, Location locationIfNoneSet) {
