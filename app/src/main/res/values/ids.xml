@@ -7,4 +7,9 @@
     <!-- Notification ID for when we're waiting for a connection for the wiki or
          some other form of input. -->
     <item name="wiki_waiting_notification" type="id" />
+    <!-- Notification ID for when something went wrong with an image upload that
+         can be summed up as "MediaStore doesn't know what we're talking about".
+         This one should pop up in that case but isn't a queue-stopping error,
+         so it might be up with other notifications. -->
+    <item name="wiki_image_error_notification" type="id" />
 </resources>

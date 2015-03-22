@@ -69,4 +69,7 @@
 	<string name="pref_wiki_submit_message">Submit</string>
 	
 	<string name="wiki_notification_title">Submitting wiki updates&#8230;</string>
+    <string name="wiki_notification_waiting_for_connection_title">Waiting for a network connection&#8230;</string>
+    <string name="wiki_notification_image_error_title">Error uploading wiki image</string>
+    <string name="wiki_notification_image_error_content">One or more images couldn\'t be accessed to be uploaded.</string>
 </resources>

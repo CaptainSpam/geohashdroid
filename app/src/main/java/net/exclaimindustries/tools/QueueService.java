@@ -263,7 +263,7 @@ public abstract class QueueService extends Service {
             int command = intent.getIntExtra(COMMAND_EXTRA, -1);
             
             if(!isPaused()) {
-                Log.w(DEBUG_TAG, "The queue isn't paused!  You can't send a command NOW!");
+                Log.w(DEBUG_TAG, "The queue isn't paused, ignoring the command...");
                 return;
             }
             
