@@ -16,8 +16,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.location.Location;
@@ -54,6 +57,21 @@ public class WikiService extends QueueService {
         public String filename;
         public Location location;
         public long timestamp;
+    }
+
+    public static class WikiServiceConnectivityListener extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Ding!  Are we back yet?
+            if(AndroidUtil.isConnected(context)) {
+                // Aha!  We're up!  Send off a command to resume the queue!
+                Intent i = new Intent(context, WikiService.class);
+                i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
+                context.startService(i);
+            }
+
+        }
     }
 
     private static final String DEBUG_TAG = "WikiService";
@@ -244,10 +262,14 @@ public class WikiService extends QueueService {
                 .setContentText("");
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
+
+        // Make sure the connectivity listener's waiting for a connection.
+        AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, true);
     }
 
     private void hideWaitingForConnectionNotification() {
         mNotificationManager.cancel(R.id.wiki_waiting_notification);
+        AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
     }
 
     private void showPausingErrorNotification(String reason, PendingIntent pendingIntent) {

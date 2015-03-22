@@ -2,6 +2,7 @@ package net.exclaimindustries.tools;
 
 import java.util.List;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -68,5 +69,23 @@ public class AndroidUtil {
     public static boolean isConnected(Context context) {
         NetworkInfo networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
+    }
+
+    /**
+     * Enables or disables a given component class.  So, like a manifest-defined
+     * BroadcastReceiver or whatnot.
+     *
+     * @param context the Context to which the component belongs
+     * @param cls the component's class
+     * @param enabled true to enable, false to disable
+     */
+    public static void setPackageComponentEnabled(Context context, Class<?> cls, boolean enabled) {
+        ComponentName receiver = new ComponentName(context, cls);
+        PackageManager pm = context.getPackageManager();
+
+        pm.setComponentEnabledSetting(receiver,
+                (enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED),
+                PackageManager.DONT_KILL_APP);
     }
 }

@@ -7,27 +7,28 @@
  */
 package net.exclaimindustries.geohashdroid.services;
 
-import java.text.DateFormat;
-import java.util.Calendar;
-import java.util.TimeZone;
-import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
-import net.exclaimindustries.geohashdroid.util.Graticule;
-import net.exclaimindustries.geohashdroid.util.Info;
-import net.exclaimindustries.tools.AndroidUtil;
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
+
 import com.commonsware.cwac.wakeful.WakefulIntentService;
+
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.tools.AndroidUtil;
+
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 /**
  * <p>
@@ -246,19 +247,6 @@ public class AlarmService extends WakefulIntentService {
         mNotificationManager.cancel(R.id.alarm_notification);
     }
     
-    private void setNetworkReceiver(boolean enabled) {
-        // The NetworkReceiver is set in the manifest to receive anything
-        // related to the network, but it defaults to disabled.  This'll just
-        // turn it on or off at the package level as need be.
-        ComponentName receiver = new ComponentName(this, NetworkReceiver.class);
-        PackageManager pm = getPackageManager();
-        
-        pm.setComponentEnabledSetting(receiver,
-                (enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED),
-                PackageManager.DONT_KILL_APP);
-    }
-    
     private void snooze() {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 30);
@@ -321,7 +309,7 @@ public class AlarmService extends WakefulIntentService {
         // network receiver.  If we're still in trouble network-wise, it'll go
         // right back on when we check in a second.
         if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
-            setNetworkReceiver(false);
+            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
         }
         
         if(intent.getAction().equals(STOCK_ALARM_OFF)) {
@@ -330,7 +318,7 @@ public class AlarmService extends WakefulIntentService {
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
-            setNetworkReceiver(false);
+            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
             clearNotification();
         } else if(intent.getAction().equals(STOCK_ALARM_ON)) {
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
@@ -391,7 +379,7 @@ public class AlarmService extends WakefulIntentService {
                     // No connection means we just set up the receiver and wait.
                     // And wait.  And wait.
                     Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
-                    setNetworkReceiver(true);
+                    AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, true);
                     clearNotification();
                     return;
                 }

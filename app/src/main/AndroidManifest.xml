@@ -107,6 +107,10 @@
             android:name=".services.AlarmService"
             android:label="@string/title_alarmservice" >
         </service>
+        <service
+            android:name=".services.WikiService"
+            android:label="@string/title_wikiservice" >
+        </service>
 
         <receiver
             android:name=".services.AlarmService$StockReceiver"
@@ -126,6 +130,14 @@
         <receiver
             android:name=".services.AlarmService$StockAlarmReceiver"
             android:exported="false" >
+        </receiver>
+        <receiver
+            android:name=".services.WikiService$WikiServiceConnectivityListener"
+            android:enabled="false"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
         </receiver>
 
         <activity
