@@ -8,19 +8,13 @@
 
 package net.exclaimindustries.geohashdroid.services;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Calendar;
-
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.location.Location;
@@ -33,11 +27,20 @@ import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.QueueService;
 
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.Calendar;
 /**
  * <code>WikiService</code> is a background service that handles all wiki
  * communication.  Note that you still need to come up with the actual DATA
@@ -209,14 +212,150 @@ public class WikiService extends QueueService {
 
     @Override
     protected void serializeToDisk(Intent i, OutputStream os) {
-        // TODO Auto-generated method stub
-        
+        // We'll encode one line per object, with the last lines reserved for
+        // the entire message (the only thing of these that can have multiple
+        // lines).
+        OutputStreamWriter osw = new OutputStreamWriter(os);
+        StringBuilder builder = new StringBuilder();
+
+        // Always write out the \n, even if it's null.  An empty line will be
+        // deserialized as a null.  Yes, even if that'll cause an error later.
+
+        // The date can come in as a long.
+        Calendar c = (Calendar)i.getParcelableExtra(EXTRA_TIMESTAMP);
+        if(c != null)
+            builder.append(c.getTimeInMillis());
+        builder.append('\n');
+
+        // The location is just two doubles.  Split 'em with a colon.
+        Location loc = (Location)i.getParcelableExtra(EXTRA_LOCATION);
+        if(loc != null)
+            builder.append(Double.toString(loc.getLatitude()))
+                    .append(':')
+                    .append(Double.toString(loc.getLongitude()));
+        builder.append('\n');
+
+        // The image is just a URI.  Easy so far.
+        Uri uri = (Uri)i.getParcelableExtra(EXTRA_IMAGE);
+        if(uri != null)
+            builder.append(uri.toString());
+        builder.append('\n');
+
+        // And now comes Info.  It encompasses two doubles (the destination),
+        // a Date (the date of the expedition), and a Graticule (two ints
+        // and two booleans).  The Graticule part can be null if this is a
+        // globalhash.
+        Info info = (Info)i.getParcelableExtra(EXTRA_INFO);
+        if(info != null) {
+            builder.append(Double.toString(info.getLatitude()))
+                    .append(':')
+                    .append(Double.toString(info.getLongitude()))
+                    .append(':')
+                    .append(Long.toString(info.getDate().getTime()))
+                    .append(':');
+
+            if(!info.isGlobalHash()) {
+                Graticule g = info.getGraticule();
+                builder.append(Integer.toString(g.getLatitude()))
+                        .append(':')
+                        .append(g.isSouth() ? '1' : '0')
+                        .append(':')
+                        .append(Integer.toString(g.getLongitude()))
+                        .append(':')
+                        .append((g.isWest() ? '1' : '0'));
+            }
+        }
+        builder.append('\n');
+
+        // The rest of it is the message.
+        String message = i.getStringExtra(EXTRA_MESSAGE);
+        if(message != null)
+            builder.append(message);
+
+        // Right... let's write it out.
+        try {
+            osw.write(builder.toString());
+        } catch (IOException e) {
+            // If we got an exception, we're in deep trouble.
+            Log.e(DEBUG_TAG, "Exception when serializing an Intent!", e);
+        }
     }
 
     @Override
     protected Intent deserializeFromDisk(InputStream is) {
-        // TODO Auto-generated method stub
-        return null;
+        // Now we go the other way around.
+        InputStreamReader isr = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(isr);
+        Intent toReturn = new Intent();
+
+        try {
+            // Date, as a long.
+            String read = br.readLine();
+            if(read != null && !read.isEmpty()) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTimeInMillis(Long.parseLong(read));
+                toReturn.putExtra(EXTRA_TIMESTAMP, cal);
+            }
+
+            // Location, as two doubles.
+            read = br.readLine();
+            if(read != null && !read.isEmpty()) {
+                String parts[] = read.split(":");
+                Location loc = new Location("");
+                loc.setLatitude(Double.parseDouble(parts[0]));
+                loc.setLongitude(Double.parseDouble(parts[1]));
+                toReturn.putExtra(EXTRA_LOCATION, loc);
+            }
+
+            // Image URI, as a string.
+            read = br.readLine();
+            if(read != null && !read.isEmpty()) {
+                Uri file = Uri.parse(read);
+                toReturn.putExtra(EXTRA_IMAGE, file);
+            }
+
+            // The Info object, as a mess of things.
+            read = br.readLine();
+            if(read != null && !read.isEmpty()) {
+                String parts[] = read.split(":");
+                double lat = Double.parseDouble(parts[0]);
+                double lon = Double.parseDouble(parts[1]);
+                Calendar cal = Calendar.getInstance();
+                cal.setTimeInMillis(Long.parseLong(parts[2]));
+
+                Graticule grat = null;
+
+                // If there's less than seven elements, this is a null Graticule
+                // and thus a globalhash.  Otherwise...
+                if(parts.length >= 7) {
+                    int glat = Integer.parseInt(parts[3]);
+                    boolean gsouth = parts[4].equals("1");
+                    int glon = Integer.parseInt(parts[5]);
+                    boolean gwest = parts[6].equals("1");
+                    grat = new Graticule(glat, gsouth, glon, gwest);
+                }
+
+                // And now we can form an Info.
+                toReturn.putExtra(EXTRA_INFO, new Info(lat, lon, grat, cal));
+            }
+
+            // Finally, the message.  This is just all data to the end of the
+            // stream.
+            read = br.readLine();
+            StringBuilder sb = new StringBuilder();
+            while(read != null) {
+                sb.append(read).append('\n');
+                read = br.readLine();
+            }
+            toReturn.putExtra(EXTRA_MESSAGE, sb.toString());
+
+            // There!  Rebuilt!
+            return toReturn;
+
+        } catch (IOException e) {
+            Log.e(DEBUG_TAG, "Exception when deserializing an Intent!" , e);
+            return null;
+        }
     }
 
     @Override
