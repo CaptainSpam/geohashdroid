@@ -15,6 +15,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.location.Location;
@@ -29,10 +30,13 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.wiki.WikiException;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.QueueService;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,6 +45,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Calendar;
+
 /**
  * <code>WikiService</code> is a background service that handles all wiki
  * communication.  Note that you still need to come up with the actual DATA
@@ -62,6 +67,11 @@ public class WikiService extends QueueService {
         public long timestamp;
     }
 
+    /**
+     * This listens for the connectivity broadcasts so we know if it's safe to
+     * kick the queue back in action after a disconnect.  Well... I guess not so
+     * much "safe" as "possible".
+     */
     public static class WikiServiceConnectivityListener extends BroadcastReceiver {
 
         @Override
@@ -144,38 +154,88 @@ public class WikiService extends QueueService {
         Calendar timestamp = (Calendar)i.getSerializableExtra(EXTRA_TIMESTAMP);
         Uri imageLocation = (Uri)i.getParcelableExtra(EXTRA_IMAGE);
 
+        // Prep an HttpClient for later...
+        HttpClient client = new DefaultHttpClient();
+
+        // To Preferences!
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+        String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
+
         // If you're missing something vital, bail out.
         if(info == null || message == null || timestamp == null) {
             Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
             return ReturnCode.CONTINUE;
         }
 
-        // Let's say there's an image specified.
-        ImageInfo imageInfo;
-        if(imageLocation != null) {
-            // If so, we can try to look it up on the system.
-            imageInfo = readImageInfo(imageLocation, loc);
-
-            // But, if said info remains null, we've got a problem.  The user
-            // wanted an image uploaded, but we can't do that, so we have to
-            // abandon this intent.  However, I don't think that's a showstopper
-            // in terms of continuing the queue.
-            if(imageInfo == null) {
-                Log.e(DEBUG_TAG, "The user was somehow allowed to choose an image that can't be accessed via MediaStore!");
-                showImageErrorNotification();
-                return ReturnCode.CONTINUE;
+        try {
+            // If we got a username/password combo, try to log in.
+            if(!username.isEmpty() && !password.isEmpty()) {
+                WikiUtils.login(client, username, password);
             }
 
-            // Now, the location that we're going to send for the image SHOULD
-            // match up with where the user thinks they are, so we'll read what
-            // got stuffed into the ImageInfo.  Note that we just gave it the
-            // user's current location in the event that MediaStore doesn't have
-            // any idea, either, so we're not going to replace good data with a
-            // null, if said good data exists.
-            loc = imageInfo.location;
+            // Let's say there's an image specified.
+            ImageInfo imageInfo;
+            if (imageLocation != null) {
+                // If so, see if the user's even specified a login.  The wiki does
+                // not allow anonymous uploads.
+
+                if (username.equals("")) {
+                    // Aww.  Failure.
+                    // TODO: Need a real PendingIntent here!
+                    showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(), null, null, null);
+                    return ReturnCode.PAUSE;
+                }
+
+                // If that's all set, we can try to look it up on the system.
+                imageInfo = readImageInfo(imageLocation, loc);
+
+                // But, if said info remains null, we've got a problem.  The user
+                // wanted an image uploaded, but we can't do that, so we have to
+                // abandon this intent.  However, I don't think that's a showstopper
+                // in terms of continuing the queue.
+                if (imageInfo == null) {
+                    Log.e(DEBUG_TAG, "The user was somehow allowed to choose an image that can't be accessed via MediaStore!");
+                    showImageErrorNotification();
+                    return ReturnCode.CONTINUE;
+                }
+
+                // Now, the location that we're going to send for the image SHOULD
+                // match up with where the user thinks they are, so we'll read what
+                // got stuffed into the ImageInfo.  Note that we just gave it the
+                // user's current location in the event that MediaStore doesn't have
+                // any idea, either, so we're not going to replace good data with a
+                // null, if said good data exists.
+                loc = imageInfo.location;
+
+                // Make sure the image doesn't already exist.  If it does, we
+                // can skip the entire "shrink image, annotate it, and upload
+                // it" steps.
+                if(!WikiUtils.doesWikiPageExist(client, getImageWikiName(info, imageInfo, username))) {
+                    // TODO: Create bitmap and upload it.
+                }
+            }
+
+            return ReturnCode.CONTINUE;
+        } catch (WikiException we) {
+            // TODO: Handle wiki exceptions.
+        } catch (Exception e) {
+            // Okay, first off, are we still connected?  An Exception will get
+            // thrown if the connection just goes poof while we're trying to do
+            // something.
+            if(!AndroidUtil.isConnected(this)) {
+                // We're not!  Go to disconnected mode and wait.
+                showWaitingForConnectionNotification();
+                return ReturnCode.PAUSE;
+            } else {
+                // Otherwise, we're kinda stumped.  Maybe the user will know
+                // what to do?
+                // TODO: Handle other exceptions.
+            }
         }
 
-        return ReturnCode.CONTINUE;
+        // We shouldn't be here.
+        return ReturnCode.PAUSE;
     }
 
     @Override
@@ -497,11 +557,9 @@ public class WikiService extends QueueService {
         return toReturn;
     }
 
-    private String getImageWikiName(Info info, ImageInfo imageInfo) {
-        // We better have made at least two checks to make sure this is actually
-        // defined (once in the Activity, once before we decided to upload the
-        // image in the first place)...
-        String username = getSharedPreferences(GHDConstants.PREFS_BASE, 0).getString(GHDConstants.PREF_WIKI_USER, "ERROR");
+    private String getImageWikiName(Info info, ImageInfo imageInfo, String username) {
+        // Just to be clear, this is the wiki page name (expedition and all),
+        // the username, and the image's timestamp (as millis past the epoch).
         return WikiUtils.getWikiPageName(info) + "_" + username + "_" + imageInfo.timestamp + ".jpg";
     }
 }
