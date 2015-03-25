@@ -347,10 +347,11 @@ public class WikiService extends QueueService {
         }
         builder.append('\n');
 
-        // The rest of it is the message.
+        // The rest of it is the message.  We'll URI-encode it so it comes out
+        // as a single string without line breaks.
         String message = i.getStringExtra(EXTRA_MESSAGE);
         if(message != null)
-            builder.append(message);
+            builder.append(Uri.encode(message));
 
         // Right... let's write it out.
         try {
@@ -419,15 +420,10 @@ public class WikiService extends QueueService {
                 toReturn.putExtra(EXTRA_INFO, new Info(lat, lon, grat, cal));
             }
 
-            // Finally, the message.  This is just all data to the end of the
-            // stream.
+            // Finally, the message.  This is just one URI-encoded string.
             read = br.readLine();
-            StringBuilder sb = new StringBuilder();
-            while(read != null) {
-                sb.append(read).append('\n');
-                read = br.readLine();
-            }
-            toReturn.putExtra(EXTRA_MESSAGE, sb.toString());
+            if(read != null && !read.isEmpty())
+                toReturn.putExtra(EXTRA_MESSAGE, Uri.decode(read));
 
             // There!  Rebuilt!
             return toReturn;
