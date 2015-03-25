@@ -17,7 +17,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -65,6 +64,25 @@ public class WikiService extends QueueService {
         public String filename;
         public Location location;
         public long timestamp;
+    }
+
+    /**
+     * This is only here because {@link Notification.Action} doesn't exist in
+     * API 16, which is what I'm targeting.  Darn!  It works astonishingly
+     * similar to it, if by that you accept simply calling the API 16 version of
+     * {@link Notification.Builder#addAction(int, CharSequence, android.app.PendingIntent)}
+     * with the appropriate data to be "astonishingly similar", which I do.
+     */
+    private class NotificationAction {
+        public int icon;
+        public PendingIntent actionIntent;
+        public CharSequence title;
+
+        public NotificationAction(int icon, PendingIntent actionIntent, CharSequence title) {
+            this.icon = icon;
+            this.actionIntent = actionIntent;
+            this.title = title;
+        }
     }
 
     /**
@@ -122,7 +140,9 @@ public class WikiService extends QueueService {
 
     /** 
      * The user's current geographic coordinates.  Should be a {@link Location}.
-     * If not given, will assume the user's location is/was unknown.
+     * If not given, will assume the user's location is/was unknown.  If posting
+     * an image, any location metadata stored in that image will override this,
+     * but if no such data exists there, this will be used instead.
      */
     public static final String EXTRA_LOCATION = "net.exclaimindustries.geohashdroid.EXTRA_LOCATION";
 
@@ -420,7 +440,6 @@ public class WikiService extends QueueService {
 
     @Override
     protected boolean resumeOnNewIntent() {
-        // TODO: If we're waiting on clearing up an error, don't resume.
         return false;
     }
 
@@ -471,14 +490,24 @@ public class WikiService extends QueueService {
         AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
     }
 
-    private void showPausingErrorNotification(String reason, PendingIntent pendingIntent) {
-        // This one gets its own PendingIntent (preferably something that'll
-        // help solve the problem, like a username prompt).
+    private void showPausingErrorNotification(String reason,
+                                              NotificationAction action1,
+                                              NotificationAction action2,
+                                              NotificationAction action3) {
+        // This one (hopefully) gets its own PendingIntent (preferably something
+        // that'll help solve the problem, like a username prompt).
         Notification.Builder builder = getFreshNotificationBuilder()
                 .setAutoCancel(true)
                 .setContentTitle(getString(R.string.wiki_notification_error_title))
-                .setContentText(reason)
-                .setContentIntent(pendingIntent);
+                .setContentText(reason);
+
+        if (action1 != null) {
+            builder.setContentIntent(action1.actionIntent);
+            builder.addAction(action1.icon, action1.title, action1.actionIntent);
+        }
+
+        if (action2 != null) builder.addAction(action2.icon, action2.title, action2.actionIntent);
+        if (action3 != null) builder.addAction(action3.icon, action3.title, action3.actionIntent);
 
         mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
     }
@@ -489,8 +518,7 @@ public class WikiService extends QueueService {
         // images.  We're resetting everything on each notification anyway, so
         // sharing the object is sort of a waste.
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.geohashing_logo_notification)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.geohashing_logo));
+                .setSmallIcon(R.drawable.geohashing_logo_notification);
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             builder.setVisibility(Notification.VISIBILITY_PUBLIC);
