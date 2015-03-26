@@ -16,13 +16,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
-import android.provider.MediaStore;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -30,6 +28,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.wiki.WikiException;
+import net.exclaimindustries.geohashdroid.wiki.WikiImageUtils;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.QueueService;
@@ -54,18 +53,6 @@ import java.util.Calendar;
  * @author Nicholas Killewald
  */
 public class WikiService extends QueueService {
-
-    /**
-     * This is just a convenient holder for the various info related to an
-     * image.
-     */
-    private class ImageInfo {
-        public Uri uri;
-        public String filename;
-        public Location location;
-        public long timestamp;
-    }
-
     /**
      * This is only here because {@link Notification.Action} doesn't exist in
      * API 16, which is what I'm targeting.  Darn!  It works astonishingly
@@ -195,7 +182,7 @@ public class WikiService extends QueueService {
             }
 
             // Let's say there's an image specified.
-            ImageInfo imageInfo;
+            WikiImageUtils.ImageInfo imageInfo;
             if (imageLocation != null) {
                 // If so, see if the user's even specified a login.  The wiki does
                 // not allow anonymous uploads.
@@ -208,7 +195,7 @@ public class WikiService extends QueueService {
                 }
 
                 // If that's all set, we can try to look it up on the system.
-                imageInfo = readImageInfo(imageLocation, loc);
+                imageInfo = WikiImageUtils.readImageInfo(this, imageLocation, loc);
 
                 // But, if said info remains null, we've got a problem.  The user
                 // wanted an image uploaded, but we can't do that, so we have to
@@ -231,7 +218,7 @@ public class WikiService extends QueueService {
                 // Make sure the image doesn't already exist.  If it does, we
                 // can skip the entire "shrink image, annotate it, and upload
                 // it" steps.
-                if(!WikiUtils.doesWikiPageExist(client, getImageWikiName(info, imageInfo, username))) {
+                if(!WikiUtils.doesWikiPageExist(client, WikiImageUtils.getImageWikiName(info, imageInfo, username))) {
                     // TODO: Create bitmap and upload it.
                 }
             }
@@ -439,7 +426,6 @@ public class WikiService extends QueueService {
         return false;
     }
 
-
     private void showActiveNotification() {
         Notification.Builder builder = getFreshNotificationBuilder()
                 .setOngoing(true)
@@ -520,70 +506,5 @@ public class WikiService extends QueueService {
             builder.setVisibility(Notification.VISIBILITY_PUBLIC);
 
         return builder;
-    }
-
-    private ImageInfo readImageInfo(Uri uri, Location locationIfNoneSet) {
-        // We're hoping this is something that MediaStore understands.  If not,
-        // or if the image doesn't exist anyway, we're returning null, which is
-        // interpreted by the intent handler to mean there's no image here, so
-        // an error should be thrown.
-        ImageInfo toReturn = null;
-
-        if(uri != null) {
-            Cursor cursor;
-            cursor = getContentResolver().query(uri, new String[]
-                            { MediaStore.Images.ImageColumns.DATA,
-                                    MediaStore.Images.ImageColumns.LATITUDE,
-                                    MediaStore.Images.ImageColumns.LONGITUDE,
-                                    MediaStore.Images.ImageColumns.DATE_TAKEN },
-                    null, null, null);
-
-            if(cursor == null || cursor.getCount() < 1) {
-                if(cursor != null) cursor.close();
-                return null;
-            }
-
-            cursor.moveToFirst();
-
-            toReturn = new ImageInfo();
-            toReturn.uri = uri;
-            toReturn.filename = cursor.getString(0);
-            toReturn.timestamp = cursor.getLong(3);
-
-            // These two could very well be null or empty.  Nothing wrong with
-            // that.  But if they're good, make a Location out of them.
-            String lat = cursor.getString(1);
-            String lon = cursor.getString(2);
-
-            Location toSet;
-            try {
-                double llat = Double.parseDouble(lat);
-                double llon = Double.parseDouble(lon);
-                toSet = new Location("");
-                toSet.setLatitude(llat);
-                toSet.setLongitude(llon);
-            } catch (Exception ex) {
-                // If we get an exception, we got it because of the number
-                // parser.  Assume it's invalid and we're using the user's
-                // current location, if that's even known (that might ALSO be
-                // null, in which case we just don't have any clue where the
-                // user is, which seems a bit counterintuitive to how
-                // Geohashing is supposed to work).
-                toSet = locationIfNoneSet;
-            }
-
-            // Now toss the location into the info.
-            toReturn.location = toSet;
-
-            cursor.close();
-        }
-
-        return toReturn;
-    }
-
-    private String getImageWikiName(Info info, ImageInfo imageInfo, String username) {
-        // Just to be clear, this is the wiki page name (expedition and all),
-        // the username, and the image's timestamp (as millis past the epoch).
-        return WikiUtils.getWikiPageName(info) + "_" + username + "_" + imageInfo.timestamp + ".jpg";
     }
 }
