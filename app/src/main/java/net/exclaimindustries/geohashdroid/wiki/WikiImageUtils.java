@@ -10,11 +10,21 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
 import android.provider.MediaStore;
 
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.tools.BitmapTools;
+
+import java.io.ByteArrayOutputStream;
+import java.text.DecimalFormat;
 
 /**
  * <code>WikiImageUtils</code> contains static methods that do stuff to
@@ -25,6 +35,18 @@ import net.exclaimindustries.geohashdroid.util.Info;
  * @author Nicholas Killewald
  */
 public class WikiImageUtils {
+    /** The largest width we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_WIDTH = 800;
+    /** The largest height we'll allow to be uploaded. */
+    private static final int MAX_UPLOAD_HEIGHT = 600;
+
+    private static final int INFOBOX_MARGIN = 16;
+    private static final int INFOBOX_PADDING = 8;
+
+    private static Paint mBackgroundPaint;
+    private static Paint mTextPaint;
+    private static DecimalFormat mDistFormat = new DecimalFormat("###.######");
+
     /**
      * This is just a convenient holder for the various info related to an
      * image.  It's used when making image calls.
@@ -120,5 +142,133 @@ public class WikiImageUtils {
         }
 
         return toReturn;
+    }
+
+    /**
+     * Loads, shrinks, stamps, and JPEGifies an image for the wiki.  Call this
+     * to get a byte array, then shove that out the door.  Do it quick, too, as
+     * this might get sort of big on memory use.
+     *
+     * @param context a Context for getting necessary paints and resources
+     * @param info an Info object for determining the distance to the destination
+     * @param imageInfo ImageInfo containing image stuff to retrieve
+     * @param drawInfobox true to draw the infobox, false to just shrink and compress
+     * @return a byte array of JPEG data, or null if something went wrong
+     */
+    public static byte[] createWikiImage(Context context, Info info, ImageInfo imageInfo, boolean drawInfobox) {
+        // First, we want to scale the image to cut down on memory use and
+        // upload time. The Geohashing wiki tends to frown upon images over
+        // 150k, so scaling and compressing are the way to go.
+        Bitmap bitmap = BitmapTools
+                .createRatioPreservedDownscaledBitmapFromFile(
+                        imageInfo.filename, MAX_UPLOAD_WIDTH,
+                        MAX_UPLOAD_HEIGHT, true);
+
+        // If the Bitmap wound up null, we're in trouble.
+        if(bitmap == null) return null;
+
+        // Then, put the infobox up if that's what we're into.
+        if(drawInfobox)
+            drawInfobox(context, info, imageInfo, bitmap);
+
+        // Finally, compress it and away it goes!
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
+        byte[] toReturn = bytes.toByteArray();
+        bitmap.recycle();
+        return toReturn;
+    }
+
+    /**
+     * Puts the handy infobox on a Bitmap.
+     *
+     * @param context a Context, for resources
+     * @param info an Info object for determining the distance to the destination
+     * @param imageInfo some ImageInfo
+     * @param bitmap the Bitmap (must be read/write, will be edited)
+     * @throws java.lang.IllegalArgumentException if you tried to pass an immutable Bitmap
+     */
+    public static void drawInfobox(Context context, Info info, ImageInfo imageInfo, Bitmap bitmap) {
+        if (!bitmap.isMutable())
+            throw new IllegalArgumentException("The Bitmap has to be mutable in order to draw an infobox on it!");
+
+        // PAINT!
+        makePaints(context);
+
+        // First, we need to draw something.  Get a Canvas.
+        Canvas c = new Canvas(bitmap);
+
+        if (imageInfo.location != null) {
+            // Assemble all our data.  Our four strings will be the final
+            // destination, our current location, and the distance.
+            String infoTo = context.getString(R.string.infobox_final) + " " + UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            String infoYou = context.getString(R.string.infobox_you) + " " + UnitConverter.makeFullCoordinateString(context, imageInfo.location, false, UnitConverter.OUTPUT_LONG);
+            String infoDist = context.getString(R.string.infobox_dist) + " " + UnitConverter.makeDistanceString(context, mDistFormat, info.getDistanceInMeters(imageInfo.location));
+
+            // Then, to the render method!
+            String[] strings = {infoTo, infoYou, infoDist};
+            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+        } else {
+            // Otherwise, just throw up an unknown.
+            String[] strings = {context.getString(R.string.location_unknown)};
+            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+        }
+    }
+
+    private static void makePaints(Context context) {
+        // These are for efficiency's sake so we don't rebuild paints uselessly.
+        if(mBackgroundPaint == null) {
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setStyle(Paint.Style.FILL);
+            mBackgroundPaint.setColor(context.getResources().getColor(R.color.infobox_background));
+        }
+
+        if(mTextPaint == null) {
+            mTextPaint = new Paint();
+            mTextPaint.setColor(context.getResources().getColor(R.color.infobox_text));
+            mTextPaint.setTextSize(context.getResources().getDimension(R.dimen.infobox_picture_fontsize));
+            mTextPaint.setAntiAlias(true);
+        }
+    }
+
+    private static void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint)
+    {
+        // We need SOME strings.  If we've got nothing, bail out.
+        if(strings.length < 1) return;
+
+        // First, init our variables.  This is as good a place as any to do so.
+        Rect textBounds = new Rect();
+        int[] heights = new int[strings.length];
+        int totalHeight = INFOBOX_MARGIN * 2;
+        int longestWidth = 0;
+
+        // Now, loop through the strings, adding to the height and keeping track
+        // of the longest width.
+        int i = 0;
+        for(String s : strings) {
+            textPaint.getTextBounds(s, 0, s.length(), textBounds);
+            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
+            totalHeight += textBounds.height();
+            heights[i] = textBounds.height();
+            i++;
+        }
+
+        // Now, we have us a rectangle.  Draw that.
+        Rect drawBounds =  new Rect(c.getWidth() - longestWidth - (INFOBOX_MARGIN * 2),
+                0,
+                c.getWidth(),
+                totalHeight);
+
+        c.drawRect(drawBounds, backgroundPaint);
+
+        // Now, place each of the strings.  We'll assume the topmost one is in
+        // index 0.  They should all be left-justified, too.
+        i = 0;
+        int curHeight = 0;
+        for(String s : strings) {
+            c.drawText(s, drawBounds.left + INFOBOX_MARGIN, INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight, textPaint);
+            curHeight += heights[i];
+            i++;
+        }
     }
 }

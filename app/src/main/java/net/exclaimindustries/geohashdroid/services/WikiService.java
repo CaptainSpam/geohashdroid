@@ -219,7 +219,10 @@ public class WikiService extends QueueService {
                 // can skip the entire "shrink image, annotate it, and upload
                 // it" steps.
                 if(!WikiUtils.doesWikiPageExist(client, WikiImageUtils.getImageWikiName(info, imageInfo, username))) {
-                    // TODO: Create bitmap and upload it.
+                    // Get us a byte array!  We'll be uploading this soon.
+                    byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, true);
+
+                    // TODO: Keep going...
                 }
             }
 
