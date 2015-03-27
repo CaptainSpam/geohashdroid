@@ -29,7 +29,14 @@ public class WikiException extends Exception {
     public String getMessage() {
         return "Wiki exception, text ID " + mTextId + " (you shouldn't see this)";
     }
-    
+
+    /**
+     * Gets the ID of the text string associated with this wiki exception.
+     * Conveniently, that's an int AND it's unique, allowing us to use that as
+     * an indentifier for just what error happened in the first place!  Say!
+     *
+     * @return the text ID of the exception's cause
+     */
     public int getErrorTextId() {
         return mTextId;
     }

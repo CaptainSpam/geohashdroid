@@ -73,4 +73,9 @@
     <string name="wiki_notification_image_error_title">Error uploading wiki image</string>
     <string name="wiki_notification_image_error_content">One or more images couldn\'t be accessed to be uploaded.</string>
     <string name="wiki_notification_error_title">Error posting to the wiki</string>
+
+    <string name="wiki_notification_general_error">There was an unknown error submitting something to the wiki.</string>
+    <string name="wiki_notification_action_retry">Retry</string>
+    <string name="wiki_notification_action_skip">Skip</string>
+    <string name="wiki_notification_action_abort">Abort</string>
 </resources>

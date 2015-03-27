@@ -199,8 +199,9 @@ public class WikiService extends QueueService {
         // one, unlike the previous one, produces an interruption so the user
         // can enter in a username and password.
         if(imageLocation != null && username.isEmpty()) {
-            // TODO: Need a real PendingIntent here!
-            showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(), null, null, null);
+            // TODO: Need a real PendingIntent to update login data here!
+            showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(),
+                    resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
             return ReturnCode.PAUSE;
         }
 
@@ -309,7 +310,9 @@ public class WikiService extends QueueService {
 
             return ReturnCode.CONTINUE;
         } catch (WikiException we) {
-            // TODO: Handle wiki exceptions.
+            // In the event of a water landing, life preservers will be handed
+            // out at resolveWikiExceptionActions.
+            showPausingErrorNotification(getText(we.getErrorTextId()).toString(), resolveWikiExceptionActions(we));
         } catch (Exception e) {
             // Okay, first off, are we still connected?  An Exception will get
             // thrown if the connection just goes poof while we're trying to do
@@ -321,7 +324,7 @@ public class WikiService extends QueueService {
             } else {
                 // Otherwise, we're kinda stumped.  Maybe the user will know
                 // what to do?
-                // TODO: Handle other exceptions.
+                showPausingErrorNotification(getText(R.string.wiki_notification_general_error).toString(), resolveWikiExceptionActions(null));
             }
         }
 
@@ -556,10 +559,7 @@ public class WikiService extends QueueService {
         AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
     }
 
-    private void showPausingErrorNotification(String reason,
-                                              NotificationAction action1,
-                                              NotificationAction action2,
-                                              NotificationAction action3) {
+    private void showPausingErrorNotification(String reason, NotificationAction[] actions) {
         // This one (hopefully) gets its own PendingIntent (preferably something
         // that'll help solve the problem, like a username prompt).
         Notification.Builder builder = getFreshNotificationBuilder()
@@ -567,13 +567,13 @@ public class WikiService extends QueueService {
                 .setContentTitle(getString(R.string.wiki_notification_error_title))
                 .setContentText(reason);
 
-        if (action1 != null) {
-            builder.setContentIntent(action1.actionIntent);
-            builder.addAction(action1.icon, action1.title, action1.actionIntent);
+        if (actions.length >= 1 && actions[0] != null) {
+            builder.setContentIntent(actions[0].actionIntent);
+            builder.addAction(actions[0].icon, actions[0].title, actions[0].actionIntent);
         }
 
-        if (action2 != null) builder.addAction(action2.icon, action2.title, action2.actionIntent);
-        if (action3 != null) builder.addAction(action3.icon, action3.title, action3.actionIntent);
+        if (actions.length >= 2 && actions[1] != null) builder.addAction(actions[1].icon, actions[1].title, actions[1].actionIntent);
+        if (actions.length >= 3 && actions[2] != null) builder.addAction(actions[2].icon, actions[2].title, actions[2].actionIntent);
 
         mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
     }
@@ -617,5 +617,49 @@ public class WikiService extends QueueService {
 
         // Mash it all together.
         return before + galleryEntry + after;
+    }
+
+    private NotificationAction[] resolveWikiExceptionActions(WikiException we) {
+        // This'll get the (up to) three NotificationActions associated with a
+        // given WikiException (identified by string ID).
+        NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
+
+        if(we == null) {
+            // However, if the exception's null, that means it isn't from the
+            // wiki and we didn't handle it otherwise.  We've got a decent idea
+            // what to do with that, since it's the only reliable things we can
+            // do: Retry, Skip, or Abort.
+            toReturn[0] = new NotificationAction(
+                    0, // TODO: Real icons!
+                    PendingIntent.getService(this,
+                            0,
+                            new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME),
+                            PendingIntent.FLAG_UPDATE_CURRENT),
+                    getText(R.string.wiki_notification_action_retry)
+            );
+
+            toReturn[0] = new NotificationAction(
+                    0,
+                    PendingIntent.getService(this,
+                            0,
+                            new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME_SKIP_FIRST),
+                            PendingIntent.FLAG_UPDATE_CURRENT),
+                    getText(R.string.wiki_notification_action_skip)
+            );
+
+            toReturn[0] = new NotificationAction(
+                    0,
+                    PendingIntent.getService(this,
+                            0,
+                            new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_ABORT),
+                            PendingIntent.FLAG_UPDATE_CURRENT),
+                    getText(R.string.wiki_notification_action_abort)
+            );
+        } else {
+            switch(we.getErrorTextId()) {
+                // TODO: A switch statement.
+            }
+        }
+        return toReturn;
     }
 }
