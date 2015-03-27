@@ -40,6 +40,13 @@ public class WikiImageUtils {
     /** The largest height we'll allow to be uploaded. */
     private static final int MAX_UPLOAD_HEIGHT = 600;
 
+    /**
+     * Amount of time until we don't consider this to be a "live" picture.
+     * Currently 15 minutes.  Note that there's no timeout for a "retro"
+     * picture, as that's determined by when the user started the trek.
+     */
+    private static final int LIVE_TIMEOUT = 900000;
+
     private static final int INFOBOX_MARGIN = 16;
     private static final int INFOBOX_PADDING = 8;
 
@@ -231,8 +238,7 @@ public class WikiImageUtils {
         }
     }
 
-    private static void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint)
-    {
+    private static void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint) {
         // We need SOME strings.  If we've got nothing, bail out.
         if(strings.length < 1) return;
 
@@ -269,6 +275,30 @@ public class WikiImageUtils {
             c.drawText(s, drawBounds.left + INFOBOX_MARGIN, INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight, textPaint);
             curHeight += heights[i];
             i++;
+        }
+    }
+
+    /**
+     * Gets the live/retro prefix for an image to upload to the wiki.  Note that
+     * this might be an empty string (it's possible to have a non-live,
+     * non-retro image).
+     *
+     * @param context a Context, for translation purposes
+     * @param imageInfo the requisite ImageInfo
+     * @param info the requisite Info
+     * @return a prefix tag
+     */
+    public static String getImagePrefixTag(Context context, ImageInfo imageInfo, Info info) {
+        if(info.isRetroHash()) {
+            return context.getText(R.string.wiki_post_picture_summary_retro).toString();
+        } else if(System.currentTimeMillis() - imageInfo.timestamp < LIVE_TIMEOUT) {
+            // If the picture was WITHIN the timeout, post it with the
+            // live title.  If not (and it's not retro), don't put any
+            // title on it.
+            return context.getText(R.string.wiki_post_picture_summary).toString();
+        } else {
+            // If it's neither live nor retro, just return a blank.
+            return "";
         }
     }
 }

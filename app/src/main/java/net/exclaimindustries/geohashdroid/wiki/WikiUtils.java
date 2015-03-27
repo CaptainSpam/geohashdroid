@@ -14,8 +14,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -44,6 +47,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import android.content.Context;
+import android.location.Location;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -60,7 +64,17 @@ public class WikiUtils {
   // The most recent request issued by WikiUtils.  This allows the abort()
   // method to work.
   private static HttpUriRequest mLastRequest;
-  
+
+  /** This format is used for all latitude/longitude texts in the wiki. */
+  public static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
+
+  /**
+   * This format is used for all latitude/longitude <i>links</i> in the wiki.
+   * This differs from mLatLonFormat in that it doesn't clip values to four
+   * decimal points.
+   */
+  protected static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
+
   /**
    * Aborts the current wiki request.  Well, technically, it's the most recent
    * wiki request.  If it's already done, nothing happens.  This will, of
@@ -581,4 +595,27 @@ public class WikiUtils {
       }
   }
 
+    /**
+     * Makes a location tag for the wiki that links to OpenStreetMap.  Or just
+     * returns an empty string if you gave it a null location.  That's entirely
+     * valid; if the user's location isn't known, the tag should be empty.
+     *
+     * @param loc the Location
+     * @return an OpenStreetMap wiki tag
+     */
+    public static String makeLocationTag(Location loc) {
+        if(loc != null) {
+            return " [http://www.openstreetmap.org/?lat="
+                    + mLatLonLinkFormat.format(loc.getLatitude())
+                    + "&lon="
+                    + mLatLonLinkFormat.format(loc.getLongitude())
+                    + "&zoom=16&layers=B000FTF @"
+                    + mLatLonFormat.format(loc.getLatitude())
+                    + ","
+                    + mLatLonFormat.format(loc.getLongitude())
+                    + "]";
+        } else {
+            return "";
+        }
+    }
 }

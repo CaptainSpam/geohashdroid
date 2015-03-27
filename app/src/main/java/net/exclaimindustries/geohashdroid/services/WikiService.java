@@ -43,6 +43,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <code>WikiService</code> is a background service that handles all wiki
@@ -57,7 +60,7 @@ public class WikiService extends QueueService {
      * This is only here because {@link Notification.Action} doesn't exist in
      * API 16, which is what I'm targeting.  Darn!  It works astonishingly
      * similar to it, if by that you accept simply calling the API 16 version of
-     * {@link Notification.Builder#addAction(int, CharSequence, android.app.PendingIntent)}
+     * {@link Notification.Builder#addAction(int, CharSequence, PendingIntent)}
      * with the appropriate data to be "astonishingly similar", which I do.
      */
     private class NotificationAction {
@@ -96,6 +99,11 @@ public class WikiService extends QueueService {
 
     private NotificationManager mNotificationManager;
     private WakeLock mWakeLock;
+
+    /** Matches the gallery section. */
+    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
+    /** Matches the gallery section header. */
+    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
     
     /**
      * The {@link Info} object for the current expedition.
@@ -133,6 +141,16 @@ public class WikiService extends QueueService {
      */
     public static final String EXTRA_LOCATION = "net.exclaimindustries.geohashdroid.EXTRA_LOCATION";
 
+    /**
+     * Whether or not the current location should be included with any upload.
+     * That is, if this is false, the location won't be appended to messages and
+     * infoboxes on images will claim the location is unknown.  Though the same
+     * effect can be achieved in a message post by not passing in
+     * {@link #EXTRA_LOCATION}, this also overrides any location metadata in
+     * images.
+     */
+    public static final String EXTRA_INCLUDE_LOCATION = "net.exclaimindustries.geohashdroid.EXTRA_INCLUDE_LOCATION";
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -160,6 +178,7 @@ public class WikiService extends QueueService {
         String message = i.getStringExtra(EXTRA_MESSAGE);
         Calendar timestamp = (Calendar)i.getSerializableExtra(EXTRA_TIMESTAMP);
         Uri imageLocation = (Uri)i.getParcelableExtra(EXTRA_IMAGE);
+        boolean includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
 
         // Prep an HttpClient for later...
         HttpClient client = new DefaultHttpClient();
@@ -175,55 +194,117 @@ public class WikiService extends QueueService {
             return ReturnCode.CONTINUE;
         }
 
+        // Also, if there's an image specified, make sure there's also a
+        // username.  The wiki does not allow anonymous image uploads.  This
+        // one, unlike the previous one, produces an interruption so the user
+        // can enter in a username and password.
+        if(imageLocation != null && username.isEmpty()) {
+            // TODO: Need a real PendingIntent here!
+            showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(), null, null, null);
+            return ReturnCode.PAUSE;
+        }
+
+        // Location becomes null if we're not including it.  Nothing should need
+        // to care.
+        if(!includeLocation) loc = null;
+
         try {
-            // If we got a username/password combo, try to log in.
+            // If we got a username/password combo, try to log in.  This throws
+            // a WikiException if the login fails.
             if(!username.isEmpty() && !password.isEmpty()) {
                 WikiUtils.login(client, username, password);
             }
 
-            // Let's say there's an image specified.
-            WikiImageUtils.ImageInfo imageInfo;
+            // Prep a page.  We want a populated formfields for later.
+            HashMap<String, String> formfields = new HashMap<String, String>();
+            String expedition = WikiUtils.getWikiPageName(info);
+
+            // This will be null if the page didn't exist to begin with.
+            String page = WikiUtils.getWikiPage(client, expedition, formfields);
+
+            // And if it IS null (or empty), then we ought to make said page.
+            if(page == null || page.trim().isEmpty()) {
+                // Aha!
+                WikiUtils.putWikiPage(client, expedition,
+                        WikiUtils.getWikiExpeditionTemplate(info, this),
+                        formfields);
+
+                // And once it's there, we pull it back, as we'll be futzing
+                // about with it some more.
+                page = WikiUtils.getWikiPage(client, expedition, formfields);
+            }
+
+            // I know this is making a monstrous, ugly method that's just a big
+            // if statement, but I tried breaking this down into more specific
+            // methods for image and not-image uploads, found there wasn't
+            // enough in common between them, and wound up with methods with
+            // ten or so arguments.  If anyone else has a better idea, feel free
+            // to suggest.
             if (imageLocation != null) {
-                // If so, see if the user's even specified a login.  The wiki does
-                // not allow anonymous uploads.
-
-                if (username.equals("")) {
-                    // Aww.  Failure.
-                    // TODO: Need a real PendingIntent here!
-                    showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(), null, null, null);
-                    return ReturnCode.PAUSE;
-                }
-
-                // If that's all set, we can try to look it up on the system.
+                // Let's say there's an image specified.  So, we try to look it
+                // up on the system.
+                WikiImageUtils.ImageInfo imageInfo;
                 imageInfo = WikiImageUtils.readImageInfo(this, imageLocation, loc);
 
-                // But, if said info remains null, we've got a problem.  The user
-                // wanted an image uploaded, but we can't do that, so we have to
-                // abandon this intent.  However, I don't think that's a showstopper
-                // in terms of continuing the queue.
+                // But, if said info remains null, we've got a problem.  The
+                // user wanted an image uploaded, but we can't do that, so we
+                // have to abandon this intent.  However, I don't think that's a
+                // showstopper in terms of continuing the queue.
                 if (imageInfo == null) {
                     Log.e(DEBUG_TAG, "The user was somehow allowed to choose an image that can't be accessed via MediaStore!");
                     showImageErrorNotification();
                     return ReturnCode.CONTINUE;
                 }
 
-                // Now, the location that we're going to send for the image SHOULD
-                // match up with where the user thinks they are, so we'll read what
-                // got stuffed into the ImageInfo.  Note that we just gave it the
-                // user's current location in the event that MediaStore doesn't have
-                // any idea, either, so we're not going to replace good data with a
-                // null, if said good data exists.
-                loc = imageInfo.location;
+                // Now, the location that we're going to send for the image
+                // SHOULD match up with where the user thinks they are, so we'll
+                // read what got stuffed into the ImageInfo.  Note that we just
+                // gave it the user's current location in the event that
+                // MediaStore doesn't have any idea, either, so we're not going
+                // to replace good data with a null, if said good data exists.
+                if(includeLocation)
+                    loc = imageInfo.location;
+
+                // Get the image's filename, too.  Well, that is, the name it'll
+                // have on the wiki.
+                String wikiName = WikiImageUtils.getImageWikiName(info, imageInfo, username);
 
                 // Make sure the image doesn't already exist.  If it does, we
                 // can skip the entire "shrink image, annotate it, and upload
                 // it" steps.
-                if(!WikiUtils.doesWikiPageExist(client, WikiImageUtils.getImageWikiName(info, imageInfo, username))) {
+                if(!WikiUtils.doesWikiPageExist(client, wikiName)) {
                     // Get us a byte array!  We'll be uploading this soon.
                     byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, true);
 
-                    // TODO: Keep going...
+                    // And by "soon", I mean "right now", because that byte
+                    // array takes up a decent amount of memory.
+                    String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
+                    WikiUtils.putWikiImage(client, wikiName, description, formfields, image);
                 }
+
+                // Good, good.  Now, let's get some tags for posting.
+                String locationTag = WikiUtils.makeLocationTag(loc);
+                String prefixTag = WikiImageUtils.getImagePrefixTag(this, imageInfo, info);
+
+                // The message is now going to be surrounded by tags.
+                message = message.trim() + locationTag;
+
+                // And the gallery entry is the name of the file plus that
+                // message.
+                String galleryEntry = "\nImage:" + wikiName + "|" + message + "\n";
+
+                // Then, add the gallery entry into the page...
+                page = addGalleryEntryToPage(page, galleryEntry);
+
+                // ...make a summary...
+                formfields.put("summary", prefixTag + message);
+
+                // ...and out it goes!
+                WikiUtils.putWikiPage(client, expedition, page, formfields);
+
+            } else {
+                // If we DON'T have an image, it's just a plain message.
+                // TODO: Do so!
             }
 
             return ReturnCode.CONTINUE;
@@ -509,5 +590,32 @@ public class WikiService extends QueueService {
             builder.setVisibility(Notification.VISIBILITY_PUBLIC);
 
         return builder;
+    }
+
+    private String addGalleryEntryToPage(String page, String galleryEntry) {
+        String before;
+        String after;
+
+        Matcher galleryq = RE_GALLERY.matcher(page);
+        if (galleryq.matches()) {
+            before = galleryq.group(1) + galleryq.group(2);
+            after = galleryq.group(3);
+        } else {
+            // If we didn't match the gallery, find the Photos section
+            // and create a new gallery in it.
+            Matcher photosq = RE_GALLERY_SECTION.matcher(page);
+            if(photosq.matches()) {
+                before = photosq.group(1) + "\n<gallery>";
+                after = "</gallery>\n" + photosq.group(2);
+            } else {
+                // If we STILL can't find it, just tack it on to the end
+                // of the page.
+                before = page + "\n<gallery>";
+                after = "</gallery>\n";
+            }
+        }
+
+        // Mash it all together.
+        return before + galleryEntry + after;
     }
 }
