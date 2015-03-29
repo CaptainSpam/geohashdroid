@@ -31,6 +31,7 @@ import net.exclaimindustries.geohashdroid.wiki.WikiException;
 import net.exclaimindustries.geohashdroid.wiki.WikiImageUtils;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
+import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.QueueService;
 
 import org.apache.http.client.HttpClient;
@@ -104,6 +105,8 @@ public class WikiService extends QueueService {
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
     /** Matches the gallery section header. */
     private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
+    /** Matches the expedition section. */
+    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
     
     /**
      * The {@link Info} object for the current expedition.
@@ -304,8 +307,47 @@ public class WikiService extends QueueService {
                 WikiUtils.putWikiPage(client, expedition, page, formfields);
 
             } else {
-                // If we DON'T have an image, it's just a plain message.
-                // TODO: Do so!
+                // If we DON'T have an image, it's just a plain message.  That's
+                // a lot easier than an image, but the posting's different,
+                // slightly.
+                String locationTag = WikiUtils.makeLocationTag(loc);
+
+                // The summary gets a prefix depending on if it's a retro or
+                // live post.  Unlike images, "live" always applies if it's not
+                // a retrohash.
+                String summaryPrefix;
+                if(info.isRetroHash())
+                    summaryPrefix = getText(R.string.wiki_post_message_summary_retro).toString();
+                else
+                    summaryPrefix = getText(R.string.wiki_post_message_summary).toString();
+
+                formfields.put("summary", summaryPrefix + " " + message);
+
+                // And now, insert text where need be on the page.
+                String before;
+                String after;
+
+                Matcher expeditionq = RE_EXPEDITION.matcher(page);
+                if (expeditionq.matches()) {
+                    before = expeditionq.group(1) + expeditionq.group(2);
+                    after = expeditionq.group(3);
+                } else {
+                    // If the expedition section doesn't exist, well, just slap
+                    // it onto the end of the page.  This shouldn't happen
+                    // unless someone's mucking about with the page on the web.
+                    before = page;
+                    after = "";
+                }
+
+                String localtime = DateTools.getWikiDateString(timestamp);
+
+                // Attach requisite tags to the message...
+                message = "\n*" + message + "  -- ~~~" + locationTag + " "
+                        + localtime + "\n";
+
+                // And go!
+                WikiUtils.putWikiPage(client, expedition, before + message
+                        + after, formfields);
             }
 
             return ReturnCode.CONTINUE;
