@@ -56,7 +56,7 @@ public class HashBuilder {
     
     // This is used as the lock to prevent multiple requests from happening at
     // once.  This really shouldn't ever happen, but just in case.
-    private static Object locker = new Object();
+    private static final Object locker = new Object();
     
     private static final String DEBUG_TAG = "HashBuilder";
     
@@ -270,7 +270,7 @@ public class HashBuilder {
             return mLastObject;
         }
         
-        private String fetchStock(Calendar sCal) throws FileNotFoundException, IOException {
+        private String fetchStock(Calendar sCal) throws IOException {
             // Now, generate a string for the URL.
             String sMonthStr;
             String sDayStr;
@@ -381,9 +381,9 @@ public class HashBuilder {
             BufferedReader buff = new BufferedReader(new InputStreamReader(stream));
 
             // Load it up...
-            StringBuffer tempstring = new StringBuffer();
+            StringBuilder tempstring = new StringBuilder();
             char bean[] = new char[1024];
-            int read = 0;
+            int read;
             while ((read = buff.read(bean)) != -1) {
                 tempstring.append(bean, 0, read);
             }
@@ -447,7 +447,7 @@ public class HashBuilder {
      * for instance, stop existing if the app is destroyed to reclaim memory.
      * 
      * @param c Context with which StockStoreDatabase will be initialized.
-     * @return
+     * @return a new StockStoreDatabase object
      */
     private static synchronized StockStoreDatabase getStore(Context c) {
         if(mStore == null) {
@@ -548,8 +548,7 @@ public class HashBuilder {
      * Puts the given data into the quick cache.  Note that the Calendar object
      * is the date of the stock, not the date of the expedition.
      * 
-     * @param sCal stock calendar to store
-     * @param stock stock value to store
+     * @param i Info to store
      */
     private static void quickCache(Info i) {
         // Slide over!
@@ -656,7 +655,7 @@ public class HashBuilder {
      *                                   the same side of the 30W line, or one
      *                                   of the Graticules in question
      *                                   represents a globalhash.
-     * @return
+     * @return a new, improved Info object
      */
     protected static Info cloneInfo(Info i, Graticule g) {
         if(i.isGlobalHash() || g == null)

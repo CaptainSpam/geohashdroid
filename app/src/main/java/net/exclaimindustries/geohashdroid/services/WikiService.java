@@ -180,7 +180,7 @@ public class WikiService extends QueueService {
         Location loc = (Location)i.getSerializableExtra(EXTRA_LOCATION);
         String message = i.getStringExtra(EXTRA_MESSAGE);
         Calendar timestamp = (Calendar)i.getSerializableExtra(EXTRA_TIMESTAMP);
-        Uri imageLocation = (Uri)i.getParcelableExtra(EXTRA_IMAGE);
+        Uri imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
         boolean includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
 
         // Prep an HttpClient for later...
@@ -220,7 +220,7 @@ public class WikiService extends QueueService {
             }
 
             // Prep a page.  We want a populated formfields for later.
-            HashMap<String, String> formfields = new HashMap<String, String>();
+            HashMap<String, String> formfields = new HashMap<>();
             String expedition = WikiUtils.getWikiPageName(info);
 
             // This will be null if the page didn't exist to begin with.
@@ -424,7 +424,7 @@ public class WikiService extends QueueService {
         builder.append('\n');
 
         // The location is just two doubles.  Split 'em with a colon.
-        Location loc = (Location)i.getParcelableExtra(EXTRA_LOCATION);
+        Location loc = i.getParcelableExtra(EXTRA_LOCATION);
         if(loc != null)
             builder.append(Double.toString(loc.getLatitude()))
                     .append(':')
@@ -432,7 +432,7 @@ public class WikiService extends QueueService {
         builder.append('\n');
 
         // The image is just a URI.  Easy so far.
-        Uri uri = (Uri)i.getParcelableExtra(EXTRA_IMAGE);
+        Uri uri = i.getParcelableExtra(EXTRA_IMAGE);
         if(uri != null)
             builder.append(uri.toString());
         builder.append('\n');
@@ -441,7 +441,7 @@ public class WikiService extends QueueService {
         // a Date (the date of the expedition), and a Graticule (two ints
         // and two booleans).  The Graticule part can be null if this is a
         // globalhash.
-        Info info = (Info)i.getParcelableExtra(EXTRA_INFO);
+        Info info = i.getParcelableExtra(EXTRA_INFO);
         if(info != null) {
             builder.append(Double.toString(info.getLatitude()))
                     .append(':')

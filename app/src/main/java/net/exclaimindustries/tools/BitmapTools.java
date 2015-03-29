@@ -155,9 +155,6 @@ public class BitmapTools {
 
         // If the original is more wide than tall but the second isn't, we can
         // reverse it.  Same with the other way around.
-        if((inWidth < inHeight && outWidth > outHeight) || (inWidth > inHeight && outWidth < outHeight))
-            return true;
-        else
-            return false;
+        return (inWidth < inHeight && outWidth > outHeight) || (inWidth > inHeight && outWidth < outHeight);
     }
 }

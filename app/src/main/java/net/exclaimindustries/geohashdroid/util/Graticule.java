@@ -69,8 +69,8 @@ public class Graticule implements Parcelable {
             mSouth = true;
         if (point.getLongitudeE6() < 0)
             mWest = true;
-        setLatitude(Math.abs((int)(point.getLatitudeE6() / 1000000)));
-        setLongitude(Math.abs((int)(point.getLongitudeE6() / 1000000)));
+        setLatitude(Math.abs(point.getLatitudeE6() / 1000000));
+        setLongitude(Math.abs(point.getLongitudeE6() / 1000000));
     }
 
     /**
@@ -127,14 +127,8 @@ public class Graticule implements Parcelable {
      *            longitude to set
      */
     public Graticule(double latitude, double longitude) {
-        if (latitude < 0)
-            mSouth = true;
-        else
-            mSouth = false;
-        if (longitude < 0)
-            mWest = true;
-        else
-            mWest = false;
+        mSouth = latitude < 0;
+        mWest = longitude < 0;
         this.setLatitude(Math.abs((int)latitude));
         this.setLongitude(Math.abs((int)longitude));
     }
@@ -154,16 +148,10 @@ public class Graticule implements Parcelable {
      */
     public Graticule(String latitude, String longitude)
             throws NullPointerException, NumberFormatException {
-        if (latitude.charAt(0) == '-')
-            mSouth = true;
-        else
-            mSouth = false;
-        if (longitude.charAt(0) == '-')
-            mWest = true;
-        else
-            mWest = false;
-        this.setLatitude(Math.abs(new Integer(latitude)));
-        this.setLongitude(Math.abs(new Integer(longitude)));
+        mSouth = latitude.charAt(0) == '-';
+        mWest = longitude.charAt(0) == '-';
+        this.setLatitude(Math.abs(Integer.valueOf(latitude)));
+        this.setLongitude(Math.abs(Integer.valueOf(longitude)));
     }
 
     /**
@@ -376,7 +364,7 @@ public class Graticule implements Parcelable {
             }
         } else {
             if(useNegativeValues) {
-                return new Integer(mLatitude).toString();                
+                return Integer.valueOf(mLatitude).toString();
             } else {
                 return mLatitude + "N";
             }
@@ -417,7 +405,7 @@ public class Graticule implements Parcelable {
             }
         } else {
             if(useNegativeValues) {
-                return new Integer(mLongitude).toString();
+                return Integer.valueOf(mLongitude).toString();
             } else {
                 return mLongitude + "E";
             }
@@ -531,11 +519,8 @@ public class Graticule implements Parcelable {
         // If everything matches up, these are identical. Two int checks and
         // two boolean checks are probably a lot faster than two String checks,
         // right?
-        if (g.getLatitude() != getLatitude()
+        return !(g.getLatitude() != getLatitude()
                 || g.getLongitude() != getLongitude()
-                || g.isSouth() != isSouth() || g.isWest() != isWest())
-            return false;
-        else
-            return true;
+                || g.isSouth() != isSouth() || g.isWest() != isWest());
     }
 }

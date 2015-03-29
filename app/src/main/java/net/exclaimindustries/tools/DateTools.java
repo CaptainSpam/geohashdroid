@@ -30,8 +30,7 @@ public class DateTools {
      * @return a YYYYMMDD string
      */
     public static String getDateString(Calendar c) {
-        String date = DATE_FORMAT.format(c.getTime());
-        return date;
+        return DATE_FORMAT.format(c.getTime());
     }
     
     /**
@@ -43,8 +42,7 @@ public class DateTools {
     public static String getHyphenatedDateString(Calendar c) {
         // Turns out the SimpleDateFormat class does all the tricky work for me.
         // Huh.
-        String date = HYPHENATED_DATE_FORMAT.format(c.getTime());
-        return date;
+        return HYPHENATED_DATE_FORMAT.format(c.getTime());
     }
     
     /**
@@ -60,7 +58,6 @@ public class DateTools {
      * @return a wiki-signature-like date string
      */
     public static String getWikiDateString(Calendar c) {
-        String date = WIKI_DATE_FORMAT.format(c.getTime());
-        return date;
+        return WIKI_DATE_FORMAT.format(c.getTime());
     }
 }

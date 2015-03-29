@@ -161,10 +161,7 @@ public class WikiUtils {
       
       // "invalid" or "missing" both resolve to the same answer: No.  Anything
       // else means yes.
-      if(pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing"))
-          return false;
-      else
-          return true;
+      return pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing");
   }
   
   /**
@@ -252,7 +249,7 @@ public class WikiUtils {
 
     HttpPost httppost = new HttpPost(WIKI_API_URL);
     
-    ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
+    ArrayList <NameValuePair> nvps = new ArrayList <>();
     nvps.add(new BasicNameValuePair("action", "edit"));
     nvps.add(new BasicNameValuePair("title", pagename));
     nvps.add(new BasicNameValuePair("text", content));
@@ -290,7 +287,7 @@ public class WikiUtils {
     HttpPost httppost = new HttpPost(WIKI_API_URL);
     
     // First, we need an edit token.  Let's get one.
-    ArrayList <NameValuePair> tnvps = new ArrayList <NameValuePair>();
+    ArrayList <NameValuePair> tnvps = new ArrayList <>();
     tnvps.add(new BasicNameValuePair("action", "query"));
     tnvps.add(new BasicNameValuePair("prop", "info"));
     tnvps.add(new BasicNameValuePair("intoken", "edit"));
@@ -348,7 +345,7 @@ public class WikiUtils {
   public static void login(HttpClient httpclient, String wpName, String wpPassword) throws Exception {
     HttpPost httppost =  new HttpPost(WIKI_API_URL);
 
-    ArrayList <NameValuePair> nvps = new ArrayList <NameValuePair>();
+    ArrayList <NameValuePair> nvps = new ArrayList <>();
     nvps.add(new BasicNameValuePair("action", "login"));
     nvps.add(new BasicNameValuePair("lgname", wpName));
     nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
@@ -383,7 +380,7 @@ public class WikiUtils {
         
         httppost =  new HttpPost(WIKI_API_URL);
         
-        nvps = new ArrayList <NameValuePair>();
+        nvps = new ArrayList <>();
         nvps.add(new BasicNameValuePair("action", "login"));
         nvps.add(new BasicNameValuePair("lgname", wpName));
         nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
@@ -411,7 +408,6 @@ public class WikiUtils {
     // us nonsense and we've got a right to throw an exception.
     if(result.equals("Success")) {
         Log.d(DEBUG_TAG, "Success!");
-        return;
     } else {
         Log.d(DEBUG_TAG, "FAILURE!");
         throw new WikiException(getErrorTextId(result));
@@ -433,50 +429,79 @@ public class WikiUtils {
       
       // First, general errors.  These are the only general ones we care about;
       // there's more, but those aren't likely to come up.
-      if(code.equals("unsupportednamespace"))
-          error = R.string.wiki_error_illegal_namespace;
-      else if(code.equals("protectednamespace-interface") || code.equals("protectednamespace")
-              || code.equals("customcssjsprotected") || code.equals("cascadeprotected")
-              || code.equals("protectedpage"))
-          error = R.string.wiki_error_protected;
-      else if(code.equals("confirmemail"))
-          error = R.string.wiki_error_email_confirm;
-      else if(code.equals("permissiondenied"))
-          error = R.string.wiki_error_permission_denied;
-      else if(code.equals("blocked") || code.equals("autoblocked"))
-          error = R.string.wiki_error_blocked;
-      else if(code.equals("ratelimited"))
-          error = R.string.wiki_error_rate_limit;
-      else if(code.equals("readonly"))
-          error = R.string.wiki_error_read_only;
-      
-      // Then, login errors.  These come from the result attribute.
-      else if(code.equals("Illegal") || code.equals("NoName") || code.equals("CreateBlocked"))
-          error = R.string.wiki_error_bad_username;
-      else if(code.equals("EmptyPass") || code.equals("WrongPass") || code.equals("WrongPluginPass"))
-          error = R.string.wiki_error_bad_password;
-      else if(code.equals("Throttled"))
-          error = R.string.wiki_error_throttled;
-      
-      // Next, edit errors.  These come from the error element, code attribute.
-      else if(code.equals("protectedtitle"))
-          error = R.string.wiki_error_protected;
-      else if(code.equals("cantcreate") || code.equals("cantcreate-anon"))
-          error = R.string.wiki_error_no_create;
-      else if(code.equals("spamdetected"))
-          error = R.string.wiki_error_spam;
-      else if(code.equals("filtered"))
-          error = R.string.wiki_error_filtered;
-      else if(code.equals("contenttoobig"))
-          error = R.string.wiki_error_too_big;
-      else if(code.equals("noedit") || code.equals("noedit-anon"))
-          error = R.string.wiki_error_no_edit;
-      else if(code.equals("editconflict"))
-          error = R.string.wiki_error_conflict;
-      
-      // If all else fails, log what we got.
-      else
-          Log.d(DEBUG_TAG, "Unknown error code came back: " + code);
+      switch (code) {
+          case "unsupportednamespace":
+              error = R.string.wiki_error_illegal_namespace;
+              break;
+          case "protectednamespace-interface":
+          case "protectednamespace":
+          case "customcssjsprotected":
+          case "cascadeprotected":
+          case "protectedpage":
+              error = R.string.wiki_error_protected;
+              break;
+          case "confirmemail":
+              error = R.string.wiki_error_email_confirm;
+              break;
+          case "permissiondenied":
+              error = R.string.wiki_error_permission_denied;
+              break;
+          case "blocked":
+          case "autoblocked":
+              error = R.string.wiki_error_blocked;
+              break;
+          case "ratelimited":
+              error = R.string.wiki_error_rate_limit;
+              break;
+          case "readonly":
+              error = R.string.wiki_error_read_only;
+              break;
+
+          // Then, login errors.  These come from the result attribute.
+          case "Illegal":
+          case "NoName":
+          case "CreateBlocked":
+              error = R.string.wiki_error_bad_username;
+              break;
+          case "EmptyPass":
+          case "WrongPass":
+          case "WrongPluginPass":
+              error = R.string.wiki_error_bad_password;
+              break;
+          case "Throttled":
+              error = R.string.wiki_error_throttled;
+              break;
+
+          // Next, edit errors.  These come from the error element, code attribute.
+          case "protectedtitle":
+              error = R.string.wiki_error_protected;
+              break;
+          case "cantcreate":
+          case "cantcreate-anon":
+              error = R.string.wiki_error_no_create;
+              break;
+          case "spamdetected":
+              error = R.string.wiki_error_spam;
+              break;
+          case "filtered":
+              error = R.string.wiki_error_filtered;
+              break;
+          case "contenttoobig":
+              error = R.string.wiki_error_too_big;
+              break;
+          case "noedit":
+          case "noedit-anon":
+              error = R.string.wiki_error_no_edit;
+              break;
+          case "editconflict":
+              error = R.string.wiki_error_conflict;
+              break;
+
+          // If all else fails, log what we got.
+          default:
+              Log.d(DEBUG_TAG, "Unknown error code came back: " + code);
+              break;
+      }
       
       return error;
   }
@@ -544,7 +569,7 @@ public class WikiUtils {
           
           // Now, read in each line and do all substitutions on it.
           String input;
-          StringBuffer toReturn = new StringBuffer();
+          StringBuilder toReturn = new StringBuilder();
           try {
               while((input = br.readLine()) != null) {
                   input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));

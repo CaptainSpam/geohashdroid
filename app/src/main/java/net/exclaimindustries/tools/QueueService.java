@@ -118,7 +118,7 @@ public abstract class QueueService extends Service {
         super();
         
         // Give us a queue!
-        mQueue = new ConcurrentLinkedQueue<Intent>();
+        mQueue = new ConcurrentLinkedQueue<>();
         
         // And we're not paused by default.
         mIsPaused = false;

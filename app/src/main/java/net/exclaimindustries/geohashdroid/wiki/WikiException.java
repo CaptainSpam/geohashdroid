@@ -18,7 +18,7 @@ package net.exclaimindustries.geohashdroid.wiki;
 public class WikiException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    private int mTextId;
+    private int mTextId = -1;
     
     public WikiException(int textId) {
         super();

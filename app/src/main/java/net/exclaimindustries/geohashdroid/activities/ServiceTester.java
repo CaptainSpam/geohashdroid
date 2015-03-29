@@ -44,7 +44,7 @@ public class ServiceTester extends Activity {
         public void onReceive(Context context, Intent intent) {
             // Ding!  Message received!
             int requestId = intent.getIntExtra(StockService.EXTRA_REQUEST_ID, -1);
-            Info info = (Info)intent.getParcelableExtra(StockService.EXTRA_INFO);
+            Info info = intent.getParcelableExtra(StockService.EXTRA_INFO);
             int responseCode = intent.getIntExtra(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
             int responseFlags = intent.getIntExtra(StockService.EXTRA_RESPONSE_FLAGS, 0);
             

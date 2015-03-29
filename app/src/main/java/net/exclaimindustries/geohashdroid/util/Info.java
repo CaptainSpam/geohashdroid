@@ -284,8 +284,8 @@ public class Info implements Parcelable {
         // that doesn't have a provider.
         Location loc = new Location("");
 
-        loc.setLatitude((float)(point.getLatitudeE6() / 1000000.0f));
-        loc.setLongitude((float)(point.getLongitudeE6() / 1000000.0f));
+        loc.setLatitude(point.getLatitudeE6() / 1000000.0f);
+        loc.setLongitude(point.getLongitudeE6() / 1000000.0f);
 
         return loc;
     }
@@ -377,7 +377,7 @@ public class Info implements Parcelable {
         // Same order!  Go!
         mLatitude = in.readDouble();
         mLongitude = in.readDouble();
-        mGraticule = (Graticule)(in.readParcelable(Graticule.class.getClassLoader()));
+        mGraticule = in.readParcelable(Graticule.class.getClassLoader());
 
         mDate = Calendar.getInstance();
 
@@ -402,9 +402,6 @@ public class Info implements Parcelable {
         // Yes, this means that if the hash is in the future, mRetroHash will
         // be false.  The only way that can happen is if this is a weekend hash
         // and we're checking on Friday or something.
-        if(cal.before(today))
-            mRetroHash = true;
-        else
-            mRetroHash = false;
+        mRetroHash = cal.before(today);
     }
 }
