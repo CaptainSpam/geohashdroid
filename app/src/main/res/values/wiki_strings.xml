@@ -73,6 +73,8 @@
     <string name="wiki_notification_image_error_title">Error uploading wiki image</string>
     <string name="wiki_notification_image_error_content">One or more images couldn\'t be accessed to be uploaded.</string>
     <string name="wiki_notification_error_title">Error posting to the wiki</string>
+    <string name="wiki_notification_throttle_title">Wiki posts are on standby</string>
+    <string name="wiki_notification_throttle_content">Waiting a minute before retrying...</string>
 
     <string name="wiki_notification_general_error">There was an unknown error submitting something to the wiki.</string>
     <string name="wiki_notification_action_retry">Retry</string>

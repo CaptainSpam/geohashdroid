@@ -9,6 +9,7 @@
 package net.exclaimindustries.geohashdroid.services;
 
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -99,6 +100,7 @@ public class WikiService extends QueueService {
     private static final String DEBUG_TAG = "WikiService";
 
     private NotificationManager mNotificationManager;
+    private AlarmManager mAlarmManager;
     private WakeLock mWakeLock;
 
     /** Matches the gallery section. */
@@ -107,7 +109,10 @@ public class WikiService extends QueueService {
     private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
     /** Matches the expedition section. */
     private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
-    
+
+    /** How long we wait (in millis) before retrying a throttled edit. */
+    private static final long THROTTLE_DELAY = 60000;
+
     /**
      * The {@link Info} object for the current expedition.
      */
@@ -164,6 +169,9 @@ public class WikiService extends QueueService {
         
         // Also, get the NotificationManager on standby.
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+
+        // How alarming.  We need the AlarmManager.
+        mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
     }
     
     @Override
@@ -202,7 +210,6 @@ public class WikiService extends QueueService {
         // one, unlike the previous one, produces an interruption so the user
         // can enter in a username and password.
         if(imageLocation != null && username.isEmpty()) {
-            // TODO: Need a real PendingIntent to update login data here!
             showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(),
                     resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
             return ReturnCode.PAUSE;
@@ -352,9 +359,18 @@ public class WikiService extends QueueService {
 
             return ReturnCode.CONTINUE;
         } catch (WikiException we) {
-            // In the event of a water landing, life preservers will be handed
-            // out at resolveWikiExceptionActions.
-            showPausingErrorNotification(getText(we.getErrorTextId()).toString(), resolveWikiExceptionActions(we));
+            // There's two possible exceptions we want to keep an eye on, both
+            // of them related to throttling.  Since we're potentially posting
+            // numerous edits one right after another (i.e. if the user's been
+            // away from a network connection and has ten or so live updates
+            // queued up), throttling IS possible, and that can be handled by
+            // waiting it out for a minute or so.
+            if(we.getErrorTextId() == R.string.wiki_error_throttled || we.getErrorTextId() == R.string.wiki_error_rate_limit) {
+                showThrottleNotification();
+            } else {
+                // Otherwise, throw a normal notification.
+                showPausingErrorNotification(getText(we.getErrorTextId()).toString(), resolveWikiExceptionActions(we));
+            }
         } catch (Exception e) {
             // Okay, first off, are we still connected?  An Exception will get
             // thrown if the connection just goes poof while we're trying to do
@@ -382,6 +398,7 @@ public class WikiService extends QueueService {
         // If we're starting, that means we're not waiting anymore.  Makes
         // sense.
         hideWaitingForConnectionNotification();
+        hideThrottleNotification();
 
         // Plus, throw up a NEW Notification.  This one should stick around
         // until we're done, one way or another.
@@ -620,6 +637,29 @@ public class WikiService extends QueueService {
         mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
     }
 
+    private void showThrottleNotification() {
+        // Throttling just means we wait a minute before we try again.  The user
+        // is free to force the issue, however.
+        Notification.Builder builder = getFreshNotificationBuilder()
+                .setAutoCancel(true)
+                .setOngoing(true)
+                .setContentTitle(getText(R.string.wiki_notification_throttle_title))
+                .setContentText(getText(R.string.wiki_notification_throttle_content))
+                .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME));
+
+        mNotificationManager.notify(R.id.wiki_throttle_notification, builder.build());
+
+        // Also, get the alarm ready.
+        mAlarmManager.set(AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + THROTTLE_DELAY,
+                getBasicCommandIntent(QueueService.COMMAND_RESUME));
+    }
+
+    private void hideThrottleNotification() {
+        mNotificationManager.cancel(R.id.wiki_throttle_notification);
+        mAlarmManager.cancel(getBasicCommandIntent(QueueService.COMMAND_RESUME));
+    }
+
     @SuppressLint("NewApi")
     private Notification.Builder getFreshNotificationBuilder() {
         // This just returns a fresh new Notification.Builder with the default
@@ -703,5 +743,13 @@ public class WikiService extends QueueService {
             }
         }
         return toReturn;
+    }
+
+    private PendingIntent getBasicCommandIntent(int command) {
+        // This will just call back to the service with the given command.
+        return PendingIntent.getService(this,
+                0,
+                new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, command),
+                PendingIntent.FLAG_UPDATE_CURRENT);
     }
 }

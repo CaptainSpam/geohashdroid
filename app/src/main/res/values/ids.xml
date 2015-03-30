@@ -16,4 +16,6 @@
          an image upload".  This one should have a PendingIntent attached to
          help solve the problem (i.e. set a username, update password, etc). -->
     <item name="wiki_error_notification" type="id" />
+    <!-- Notification ID for the wiki throttling our edits. -->
+    <item name="wiki_throttle_notification" type="id" />
 </resources>
