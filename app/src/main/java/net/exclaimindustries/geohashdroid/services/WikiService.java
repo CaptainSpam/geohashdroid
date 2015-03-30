@@ -704,44 +704,42 @@ public class WikiService extends QueueService {
     private NotificationAction[] resolveWikiExceptionActions(WikiException we) {
         // This'll get the (up to) three NotificationActions associated with a
         // given WikiException (identified by string ID).
+        int id = -1;
+
+        if(we != null)
+            id = we.getErrorTextId();
+
         NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
+        switch(id) {
+            // TODO: As many IDs that don't have the standard responses!
+            case R.string.wiki_conn_anon_pic_error:
+            case R.string.wiki_error_bad_password:
+            case R.string.wiki_error_bad_username:
+                // TODO: Need a real PendingIntent to update login data here!
+                break;
+            default:
+                // As a general case (or if a null was passed in), we just use
+                // the standard retry, skip, or abort choices.  This works for a
+                // surprising amount of cases, it turns out.  Simplicity wins!
+                toReturn[0] = new NotificationAction(
+                        0, // TODO: Real icons!
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME),
+                        getText(R.string.wiki_notification_action_retry)
+                );
 
-        if(we == null) {
-            // However, if the exception's null, that means it isn't from the
-            // wiki and we didn't handle it otherwise.  We've got a decent idea
-            // what to do with that, since it's the only reliable things we can
-            // do: Retry, Skip, or Abort.
-            toReturn[0] = new NotificationAction(
-                    0, // TODO: Real icons!
-                    PendingIntent.getService(this,
-                            0,
-                            new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME),
-                            PendingIntent.FLAG_UPDATE_CURRENT),
-                    getText(R.string.wiki_notification_action_retry)
-            );
+                toReturn[0] = new NotificationAction(
+                        0,
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
+                        getText(R.string.wiki_notification_action_skip)
+                );
 
-            toReturn[0] = new NotificationAction(
-                    0,
-                    PendingIntent.getService(this,
-                            0,
-                            new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME_SKIP_FIRST),
-                            PendingIntent.FLAG_UPDATE_CURRENT),
-                    getText(R.string.wiki_notification_action_skip)
-            );
-
-            toReturn[0] = new NotificationAction(
-                    0,
-                    PendingIntent.getService(this,
-                            0,
-                            new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_ABORT),
-                            PendingIntent.FLAG_UPDATE_CURRENT),
-                    getText(R.string.wiki_notification_action_abort)
-            );
-        } else {
-            switch(we.getErrorTextId()) {
-                // TODO: A switch statement.
-            }
+                toReturn[0] = new NotificationAction(
+                        0,
+                        getBasicCommandIntent(QueueService.COMMAND_ABORT),
+                        getText(R.string.wiki_notification_action_abort)
+                );
         }
+
         return toReturn;
     }
 
