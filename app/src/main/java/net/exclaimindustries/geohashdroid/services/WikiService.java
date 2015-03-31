@@ -721,23 +721,11 @@ public class WikiService extends QueueService {
                 // As a general case (or if a null was passed in), we just use
                 // the standard retry, skip, or abort choices.  This works for a
                 // surprising amount of cases, it turns out.  Simplicity wins!
-                toReturn[0] = new NotificationAction(
-                        0, // TODO: Real icons!
-                        getBasicCommandIntent(QueueService.COMMAND_RESUME),
-                        getText(R.string.wiki_notification_action_retry)
-                );
+                toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
 
-                toReturn[0] = new NotificationAction(
-                        0,
-                        getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
-                        getText(R.string.wiki_notification_action_skip)
-                );
+                toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
 
-                toReturn[0] = new NotificationAction(
-                        0,
-                        getBasicCommandIntent(QueueService.COMMAND_ABORT),
-                        getText(R.string.wiki_notification_action_abort)
-                );
+                toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
         }
 
         return toReturn;
@@ -749,5 +737,30 @@ public class WikiService extends QueueService {
                 0,
                 new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, command),
                 PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    private NotificationAction getBasicNotificationAction(int command) {
+        switch(command) {
+            case COMMAND_RESUME:
+                return new NotificationAction(
+                        0, // TODO: Real icons!
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME),
+                        getText(R.string.wiki_notification_action_retry)
+                );
+            case COMMAND_RESUME_SKIP_FIRST:
+                return new NotificationAction(
+                        0,
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
+                        getText(R.string.wiki_notification_action_skip)
+                );
+            case COMMAND_ABORT:
+                return new NotificationAction(
+                        0,
+                        getBasicCommandIntent(QueueService.COMMAND_ABORT),
+                        getText(R.string.wiki_notification_action_abort)
+                );
+            default:
+                return null;
+        }
     }
 }
