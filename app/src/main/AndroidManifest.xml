@@ -48,6 +48,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".activities.LoginPromptDialog"
+            android:label="@string/title_logindialog"
+            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog"
+            android:launchMode="singleInstance">
+        </activity>
+
         <activity
             android:name="MainMap"
             android:label="@string/map_activity_title"

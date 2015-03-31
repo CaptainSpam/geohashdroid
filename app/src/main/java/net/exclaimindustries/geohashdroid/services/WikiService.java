@@ -25,6 +25,7 @@ import android.os.PowerManager.WakeLock;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.activities.LoginPromptDialog;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -711,11 +712,19 @@ public class WikiService extends QueueService {
 
         NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
         switch(id) {
-            // TODO: As many IDs that don't have the standard responses!
             case R.string.wiki_conn_anon_pic_error:
             case R.string.wiki_error_bad_password:
             case R.string.wiki_error_bad_username:
-                // TODO: Need a real PendingIntent to update login data here!
+                toReturn[0] = new NotificationAction(
+                        0, // TODO: Real icon!
+                        PendingIntent.getActivity(this,
+                                0,
+                                new Intent(this, LoginPromptDialog.class),
+                                PendingIntent.FLAG_UPDATE_CURRENT),
+                        getText(R.string.wiki_notification_action_update_login)
+                );
+
+                toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
                 break;
             default:
                 // As a general case (or if a null was passed in), we just use

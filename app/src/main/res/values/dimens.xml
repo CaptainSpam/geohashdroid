@@ -55,4 +55,5 @@
 	     no matter what happens. -->
 	<dimen name="infobox_picture_fontsize">6pt</dimen>
 
+    <dimen name="standard_padding">8dp</dimen>
 </resources>
