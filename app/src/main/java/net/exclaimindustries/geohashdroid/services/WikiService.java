@@ -716,7 +716,7 @@ public class WikiService extends QueueService {
             case R.string.wiki_error_bad_password:
             case R.string.wiki_error_bad_username:
                 toReturn[0] = new NotificationAction(
-                        0, // TODO: Real icon!
+                        R.drawable.ic_action_edit,
                         PendingIntent.getActivity(this,
                                 0,
                                 new Intent(this, LoginPromptDialog.class),
@@ -752,19 +752,19 @@ public class WikiService extends QueueService {
         switch(command) {
             case COMMAND_RESUME:
                 return new NotificationAction(
-                        0, // TODO: Real icons!
+                        R.drawable.ic_action_refresh,
                         getBasicCommandIntent(QueueService.COMMAND_RESUME),
                         getText(R.string.wiki_notification_action_retry)
                 );
             case COMMAND_RESUME_SKIP_FIRST:
                 return new NotificationAction(
-                        0,
+                        R.drawable.ic_action_next,
                         getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
                         getText(R.string.wiki_notification_action_skip)
                 );
             case COMMAND_ABORT:
                 return new NotificationAction(
-                        0,
+                        R.drawable.ic_action_cancel,
                         getBasicCommandIntent(QueueService.COMMAND_ABORT),
                         getText(R.string.wiki_notification_action_abort)
                 );
