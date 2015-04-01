@@ -8,11 +8,21 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.WikiService;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.tools.QueueService;
 
 /**
  * This is a simple dialog prompt that asks for a new username/password combo
@@ -21,9 +31,86 @@ import net.exclaimindustries.geohashdroid.services.WikiService;
  * service to kick back in again.
  */
 public class LoginPromptDialog extends Activity {
+    private Button mOkay;
+
+    private EditText mUsername;
+    private EditText mPassword;
+
+    private TextWatcher mWatcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            // Nothing.
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            // Also nothing.
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            // Something!
+            mOkay.setEnabled(!mPassword.getText().toString().isEmpty() && !mUsername.getText().toString().isEmpty());
+        }
+    };
+
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.logindialog);
+
+        // Widgets!
+        mOkay = (Button)findViewById(R.id.okay);
+        Button cancel = (Button) findViewById(R.id.cancel);
+
+        mUsername = (EditText)findViewById(R.id.input_username);
+        mPassword = (EditText)findViewById(R.id.input_password);
+
+        // The okay and cancel buttons are easy to figure out.
+        cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+        mOkay.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("CommitPrefEdits")
+            @Override
+            public void onClick(View v) {
+                // Dispatch new settings!
+                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+
+                SharedPreferences.Editor edit = prefs.edit();
+
+                // We're pretty sure the okay button should only be enabled if
+                // there's input in both fields.
+                edit.putString(GHDConstants.PREF_WIKI_USER, mUsername.getText().toString());
+                edit.putString(GHDConstants.PREF_WIKI_PASS, mPassword.getText().toString());
+
+                // Commit's a good idea here.  Sure, chances are the background
+                // operation will finish before WikiService kicks back in, but
+                // we should make sure.
+                edit.commit();
+
+                // Then, tell WikiService it can get back to work.
+                Intent in = new Intent(LoginPromptDialog.this, WikiService.class)
+                        .putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
+                startService(in);
+
+                // And we're done here.
+                finish();
+            }
+        });
+
+        // Then, both the text boxes need to track whether or not Okay should be
+        // on.
+        mPassword.addTextChangedListener(mWatcher);
+        mUsername.addTextChangedListener(mWatcher);
+
+        // Also, those fields should be populated with data.
+        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        mUsername.setText(prefs.getString(GHDConstants.PREF_WIKI_USER, ""));
+        mPassword.setText(prefs.getString(GHDConstants.PREF_WIKI_PASS, ""));
     }
 }

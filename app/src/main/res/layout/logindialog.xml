@@ -26,7 +26,8 @@
             android:id="@+id/input_username"
             android:ems="10"
             android:hint="@string/pref_wikiusername_hint"
-            android:layout_margin="@dimen/standard_padding"/>
+            android:layout_margin="@dimen/standard_padding"
+            android:inputType="textNoSuggestions"/>
     </LinearLayout>
 
     <LinearLayout
