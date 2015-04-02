@@ -169,7 +169,7 @@ public class WikiUtils {
 
         // "invalid" or "missing" both resolve to the same answer: No.  Anything
         // else means yes.
-        return pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing");
+        return !(pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing"));
     }
 
     /**
@@ -479,6 +479,9 @@ public class WikiUtils {
             case "CreateBlocked":
                 error = R.string.wiki_error_bad_username;
                 break;
+            case "NotExists":
+                error = R.string.wiki_error_username_nonexistant;
+                break;
             case "EmptyPass":
             case "WrongPass":
             case "WrongPluginPass":
@@ -573,7 +576,7 @@ public class WikiUtils {
      * TODO: The wiki doesn't appear to have an Expedition template for
      * globalhashing yet.
      * </p>
-     * 
+     *
      * @param info Info from which an Expedition template will be generated
      * @param c    Context so we can grab the globalhash template if we need it
      * @return said template
