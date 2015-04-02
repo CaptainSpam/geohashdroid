@@ -49,6 +49,7 @@
 	<string name="wiki_error_rate_limit">You\'re posting way too fast.  Slow down a bit and try again in a few minutes.</string>
 	<string name="wiki_error_read_only">The wiki is in read-only mode right now.  Try again later.</string>
 	<string name="wiki_error_bad_username">That username is invalid.</string>
+    <string name="wiki_error_username_nonexistant">That username doesn\'t exist.</string>
 	<string name="wiki_error_bad_password">Your password is incorrect.</string>
 	<string name="wiki_error_throttled">You\'ve tried to log in too many times.  Please wait around five minutes and try again.</string>
 	<string name="wiki_error_invalid_page">The wiki couldn\'t find that page because the page\'s name is invalid.</string>
@@ -80,5 +81,5 @@
     <string name="wiki_notification_action_retry">Retry</string>
     <string name="wiki_notification_action_skip">Skip</string>
     <string name="wiki_notification_action_abort">Abort</string>
-    <string name="wiki_notification_action_update_login">Update Login</string>
+    <string name="wiki_notification_action_update_login">Update</string>
 </resources>

@@ -17,6 +17,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -137,8 +138,6 @@ public class WikiService extends QueueService {
      * MediaStore.  It'll be looking for DATA, LATITUDE, LONGITUDE, and
      * DATE_TAKEN from MediaStore.Images.ImageColumns.  Can be ignored if
      * there's no image to upload.
-     *
-     * TODO: Maybe some more flexible way of fetching an image?  Dunno.
      */
     public static final String EXTRA_IMAGE = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE";
 
@@ -185,12 +184,25 @@ public class WikiService extends QueueService {
         }
 
         // Hey, there, Intent.  Got some extras for me?
-        Info info = (Info)i.getSerializableExtra(EXTRA_INFO);
-        Location loc = (Location)i.getSerializableExtra(EXTRA_LOCATION);
-        String message = i.getStringExtra(EXTRA_MESSAGE);
-        Calendar timestamp = (Calendar)i.getSerializableExtra(EXTRA_TIMESTAMP);
-        Uri imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
-        boolean includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
+        Info info;
+        Location loc;
+        String message;
+        Calendar timestamp;
+        Uri imageLocation;
+        boolean includeLocation;
+
+        try {
+            info = i.getParcelableExtra(EXTRA_INFO);
+            loc = i.getParcelableExtra(EXTRA_LOCATION);
+            message = i.getStringExtra(EXTRA_MESSAGE);
+            timestamp = (Calendar) i.getSerializableExtra(EXTRA_TIMESTAMP);
+            imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
+            includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
+        } catch(ClassCastException cce) {
+            // If any of those threw a CCE, bail out.
+            Log.e(DEBUG_TAG, "ClassCastException!  Check your casts!", cce);
+            return ReturnCode.CONTINUE;
+        }
 
         // Prep an HttpClient for later...
         HttpClient client = new DefaultHttpClient();
@@ -372,6 +384,8 @@ public class WikiService extends QueueService {
                 // Otherwise, throw a normal notification.
                 showPausingErrorNotification(getText(we.getErrorTextId()).toString(), resolveWikiExceptionActions(we));
             }
+
+            return ReturnCode.PAUSE;
         } catch (Exception e) {
             // Okay, first off, are we still connected?  An Exception will get
             // thrown if the connection just goes poof while we're trying to do
@@ -379,16 +393,14 @@ public class WikiService extends QueueService {
             if(!AndroidUtil.isConnected(this)) {
                 // We're not!  Go to disconnected mode and wait.
                 showWaitingForConnectionNotification();
-                return ReturnCode.PAUSE;
             } else {
                 // Otherwise, we're kinda stumped.  Maybe the user will know
                 // what to do?
                 showPausingErrorNotification(getText(R.string.wiki_notification_general_error).toString(), resolveWikiExceptionActions(null));
             }
-        }
 
-        // We shouldn't be here.
-        return ReturnCode.PAUSE;
+            return ReturnCode.PAUSE;
+        }
     }
 
     @Override
@@ -400,6 +412,7 @@ public class WikiService extends QueueService {
         // sense.
         hideWaitingForConnectionNotification();
         hideThrottleNotification();
+        hidePausingErrorNotification();
 
         // Plus, throw up a NEW Notification.  This one should stick around
         // until we're done, one way or another.
@@ -420,77 +433,80 @@ public class WikiService extends QueueService {
         // Done!  Wakelock go away now.
         if(mWakeLock.isHeld()) mWakeLock.release();
 
-        // Notification go boom, too.
+        // Notifications go boom, too.
         removeActiveNotification();
+
+        // We might get an abort during pause, so...
+        hidePausingErrorNotification();
     }
 
     @Override
     protected void serializeToDisk(Intent i, OutputStream os) {
-        // We'll encode one line per object, with the last lines reserved for
-        // the entire message (the only thing of these that can have multiple
-        // lines).
-        OutputStreamWriter osw = new OutputStreamWriter(os);
-        StringBuilder builder = new StringBuilder();
-
-        // Always write out the \n, even if it's null.  An empty line will be
-        // deserialized as a null.  Yes, even if that'll cause an error later.
-
-        // The date can come in as a long.
-        Calendar c = (Calendar)i.getParcelableExtra(EXTRA_TIMESTAMP);
-        if(c != null)
-            builder.append(c.getTimeInMillis());
-        builder.append('\n');
-
-        // The location is just two doubles.  Split 'em with a colon.
-        Location loc = i.getParcelableExtra(EXTRA_LOCATION);
-        if(loc != null)
-            builder.append(Double.toString(loc.getLatitude()))
-                    .append(':')
-                    .append(Double.toString(loc.getLongitude()));
-        builder.append('\n');
-
-        // The image is just a URI.  Easy so far.
-        Uri uri = i.getParcelableExtra(EXTRA_IMAGE);
-        if(uri != null)
-            builder.append(uri.toString());
-        builder.append('\n');
-
-        // And now comes Info.  It encompasses two doubles (the destination),
-        // a Date (the date of the expedition), and a Graticule (two ints
-        // and two booleans).  The Graticule part can be null if this is a
-        // globalhash.
-        Info info = i.getParcelableExtra(EXTRA_INFO);
-        if(info != null) {
-            builder.append(Double.toString(info.getLatitude()))
-                    .append(':')
-                    .append(Double.toString(info.getLongitude()))
-                    .append(':')
-                    .append(Long.toString(info.getDate().getTime()))
-                    .append(':');
-
-            if(!info.isGlobalHash()) {
-                Graticule g = info.getGraticule();
-                builder.append(Integer.toString(g.getLatitude()))
-                        .append(':')
-                        .append(g.isSouth() ? '1' : '0')
-                        .append(':')
-                        .append(Integer.toString(g.getLongitude()))
-                        .append(':')
-                        .append((g.isWest() ? '1' : '0'));
-            }
-        }
-        builder.append('\n');
-
-        // The rest of it is the message.  We'll URI-encode it so it comes out
-        // as a single string without line breaks.
-        String message = i.getStringExtra(EXTRA_MESSAGE);
-        if(message != null)
-            builder.append(Uri.encode(message));
-
-        // Right... let's write it out.
         try {
+            // We'll encode one line per object, mashing the message into one
+            // URI-encoded line.
+            OutputStreamWriter osw = new OutputStreamWriter(os);
+            StringBuilder builder = new StringBuilder();
+
+            // Always write out the \n, even if it's null.  An empty line will
+            // be deserialized as a null.  Yes, even if that'll cause an error
+            // later.
+
+            // The date can come in as a long.
+            Calendar c = (Calendar)i.getParcelableExtra(EXTRA_TIMESTAMP);
+            if(c != null)
+                builder.append(c.getTimeInMillis());
+            builder.append('\n');
+
+            // The location is just two doubles.  Split 'em with a colon.
+            Location loc = i.getParcelableExtra(EXTRA_LOCATION);
+            if(loc != null)
+                builder.append(Double.toString(loc.getLatitude()))
+                        .append(':')
+                        .append(Double.toString(loc.getLongitude()));
+            builder.append('\n');
+
+            // The image is just a URI.  Easy so far.
+            Uri uri = i.getParcelableExtra(EXTRA_IMAGE);
+            if(uri != null)
+                builder.append(uri.toString());
+            builder.append('\n');
+
+            // And now comes Info.  It encompasses two doubles (the
+            // destination), a Date (the date of the expedition), and a
+            // Graticule (two ints and two booleans).  The Graticule part can be
+            // null if this is a globalhash.
+            Info info = i.getParcelableExtra(EXTRA_INFO);
+            if(info != null) {
+                builder.append(Double.toString(info.getLatitude()))
+                        .append(':')
+                        .append(Double.toString(info.getLongitude()))
+                        .append(':')
+                        .append(Long.toString(info.getDate().getTime()))
+                        .append(':');
+
+                if(!info.isGlobalHash()) {
+                    Graticule g = info.getGraticule();
+                    builder.append(Integer.toString(g.getLatitude()))
+                            .append(':')
+                            .append(g.isSouth() ? '1' : '0')
+                            .append(':')
+                            .append(Integer.toString(g.getLongitude()))
+                            .append(':')
+                            .append((g.isWest() ? '1' : '0'));
+                }
+            }
+            builder.append('\n');
+
+            // The rest of it is the message.  We'll URI-encode it so it comes
+            // out as a single string without line breaks.
+            String message = i.getStringExtra(EXTRA_MESSAGE);
+            if(message != null)
+                builder.append(Uri.encode(message));
+
+            // Right... let's write it out.
             osw.write(builder.toString());
-        } catch (IOException e) {
+        } catch (Exception e) {
             // If we got an exception, we're in deep trouble.
             Log.e(DEBUG_TAG, "Exception when serializing an Intent!", e);
         }
@@ -623,7 +639,6 @@ public class WikiService extends QueueService {
         // This one (hopefully) gets its own PendingIntent (preferably something
         // that'll help solve the problem, like a username prompt).
         Notification.Builder builder = getFreshNotificationBuilder()
-                .setAutoCancel(true)
                 .setContentTitle(getString(R.string.wiki_notification_error_title))
                 .setContentText(reason);
 
@@ -636,6 +651,10 @@ public class WikiService extends QueueService {
         if (actions.length >= 3 && actions[2] != null) builder.addAction(actions[2].icon, actions[2].title, actions[2].actionIntent);
 
         mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
+    }
+
+    private void hidePausingErrorNotification() {
+        mNotificationManager.cancel(R.id.wiki_error_notification);
     }
 
     private void showThrottleNotification() {
@@ -667,7 +686,8 @@ public class WikiService extends QueueService {
         // images.  We're resetting everything on each notification anyway, so
         // sharing the object is sort of a waste.
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.geohashing_logo_notification);
+                .setSmallIcon(R.drawable.geohashing_logo_notification)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             builder.setVisibility(Notification.VISIBILITY_PUBLIC);
@@ -715,6 +735,7 @@ public class WikiService extends QueueService {
             case R.string.wiki_conn_anon_pic_error:
             case R.string.wiki_error_bad_password:
             case R.string.wiki_error_bad_username:
+            case R.string.wiki_error_username_nonexistant:
                 toReturn[0] = new NotificationAction(
                         R.drawable.ic_action_edit,
                         PendingIntent.getActivity(this,

@@ -14,6 +14,7 @@ import com.commonsware.cwac.wakeful.WakefulIntentService;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import android.app.Activity;
@@ -21,6 +22,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -102,6 +104,9 @@ public class ServiceTester extends Activity {
         
         Button alarmon = (Button)findViewById(R.id.alarmon);
         Button alarmoff = (Button)findViewById(R.id.alarm_off);
+
+        Button wikimessage = (Button)findViewById(R.id.wiki_message);
+        Button wikiimage = (Button)findViewById(R.id.wiki_image);
         
         // Each button will just fire off an Intent for StockService to handle.
         non30w.setOnClickListener(new OnClickListener() {
@@ -162,11 +167,53 @@ public class ServiceTester extends Activity {
                 WakefulIntentService.sendWakefulWork(ServiceTester.this, i);
             }
         });
+
+        wikimessage.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(ServiceTester.this, WikiService.class);
+                long time = System.currentTimeMillis();
+                i.putExtra(WikiService.EXTRA_MESSAGE, "Current time: " + time)
+                        .putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance())
+                        .putExtra(WikiService.EXTRA_INFO, new Info(34.2346, -74.23866, StockService.DUMMY_TODAY, Calendar.getInstance()));
+
+                startService(i);
+            }
+        });
+
+        wikiimage.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(
+                        new Intent(
+                                Intent.ACTION_PICK,
+                                android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI),
+                        0);
+            }
+        });
         
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(StockService.ACTION_STOCK_RESULT);
     }
-    
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == 0) {
+            if(data != null) {
+                Uri uri = data.getData();
+
+                Intent i = new Intent(ServiceTester.this, WikiService.class);
+                long time = System.currentTimeMillis();
+                i.putExtra(WikiService.EXTRA_MESSAGE, "Image time: " + time)
+                        .putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance())
+                        .putExtra(WikiService.EXTRA_INFO, new Info(34.2346, -74.23866, StockService.DUMMY_TODAY, Calendar.getInstance()))
+                        .putExtra(WikiService.EXTRA_IMAGE, uri);
+
+                startService(i);
+            }
+        }
+    }
+
     @Override
     protected void onResume() {
         registerReceiver(mBroadcastReceiver, mIntentFilter);

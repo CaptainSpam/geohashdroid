@@ -66,4 +66,22 @@
         android:layout_height="wrap_content"
         android:text="Alarm count goes here" />
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wiki Message"
+            android:id="@+id/wiki_message"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wiki Image"
+            android:id="@+id/wiki_image"/>
+    </LinearLayout>
+
 </LinearLayout>
