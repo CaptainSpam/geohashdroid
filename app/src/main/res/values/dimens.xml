@@ -53,7 +53,7 @@
 	<!-- This one really really doesn't depend on dpi or whatnot, as this is
 	     directly going into an image that'll always be a fairly similar size
 	     no matter what happens. -->
-	<dimen name="infobox_picture_fontsize">6pt</dimen>
+	<dimen name="infobox_picture_fontsize">20px</dimen>
 
     <dimen name="standard_padding">8dp</dimen>
 </resources>

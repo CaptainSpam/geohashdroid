@@ -180,7 +180,7 @@ public class WikiImageUtils {
 
         // Finally, compress it and away it goes!
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 75, bytes);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, bytes);
         byte[] toReturn = bytes.toByteArray();
         bitmap.recycle();
         return toReturn;
