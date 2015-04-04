@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:defaultValue=""
+        android:dialogTitle="@string/pref_wikiusername_dialogtitle"
+        android:key="WikiUserName"
+        android:persistent="true"
+        android:title="@string/pref_wikiusername_title" />
+    <EditTextPreference
+        android:defaultValue=""
+        android:dialogTitle="@string/pref_wikipassword_dialogtitle"
+        android:key="WikiPassword"
+        android:persistent="true"
+        android:summary="@string/pref_wikipassword_summary"
+        android:title="@string/pref_wikipassword_title" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="WikiUsePhoneTime"
+        android:persistent="true"
+        android:summaryOff="@string/pref_wikiphonetime_off"
+        android:summaryOn="@string/pref_wikiphonetime_on"
+        android:title="@string/pref_wikiphonetime_title" >
+    </CheckBoxPreference>
+</PreferenceScreen>

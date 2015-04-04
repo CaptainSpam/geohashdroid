@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="AutoZoom"
+        android:persistent="true"
+        android:summaryOff="@string/pref_autozoom_off"
+        android:summaryOn="@string/pref_autozoom_on"
+        android:title="@string/pref_autozoom_title" />
+
+    <ListPreference
+        android:defaultValue="Small"
+        android:dialogTitle="@string/pref_infobox_dialogtitle"
+        android:entries="@array/pref_infobox_entries"
+        android:entryValues="@array/pref_infobox_values"
+        android:key="InfoBoxSize"
+        android:persistent="true"
+        android:title="@string/pref_infobox_title" />
+    <ListPreference
+        android:defaultValue="Metric"
+        android:dialogTitle="@string/pref_units_dialogtitle"
+        android:entries="@array/pref_units_entries"
+        android:entryValues="@array/pref_units_values"
+        android:key="Units"
+        android:persistent="true"
+        android:title="@string/pref_units_title" />
+    <ListPreference
+        android:defaultValue="Degrees"
+        android:dialogTitle="@string/pref_coordunits_dialogtitle"
+        android:entries="@array/pref_coordunits_entries"
+        android:entryValues="@array/pref_coordunits_values"
+        android:key="CoordUnits"
+        android:persistent="true"
+        android:title="@string/pref_coordunits_title" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="NearbyPoints"
+        android:persistent="true"
+        android:summaryOff="@string/pref_nearbypoints_off"
+        android:summaryOn="@string/pref_nearbypoints_on"
+        android:title="@string/pref_nearbypoints_title" />
+</PreferenceScreen>
