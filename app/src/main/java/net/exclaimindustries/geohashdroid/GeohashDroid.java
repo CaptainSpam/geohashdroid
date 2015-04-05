@@ -306,13 +306,7 @@ public class GeohashDroid extends Activity {
             editor.putBoolean(GHDConstants.PREF_CLOSEST, false);
             toReturn = true;
         }
-        
-        // The phone time checkbox defaults to off.
-        if(!prefs.contains(GHDConstants.PREF_WIKI_PHONE_TIME)) {
-            editor.putBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
-            toReturn = true;
-        }
-        
+
         // The Today checkbox defaults to off.
         if(!prefs.contains(GHDConstants.PREF_TODAY)) {
             editor.putBoolean(GHDConstants.PREF_TODAY, false);

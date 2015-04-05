@@ -164,7 +164,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
             SharedPreferences prefs = getSharedPreferences(
                     GHDConstants.PREFS_BASE, 0);
             
-            boolean phoneTime = prefs.getBoolean(GHDConstants.PREF_WIKI_PHONE_TIME, false);
+            boolean phoneTime = true;
 
             try {
                 HttpClient httpclient = new DefaultHttpClient();

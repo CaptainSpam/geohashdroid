@@ -16,12 +16,4 @@
         android:title="@string/pref_wikipassword_title"
         android:singleLine="true"
         android:password="true" />
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="WikiUsePhoneTime"
-        android:persistent="true"
-        android:summaryOff="@string/pref_wikiphonetime_off"
-        android:summaryOn="@string/pref_wikiphonetime_on"
-        android:title="@string/pref_wikiphonetime_title" >
-    </CheckBoxPreference>
 </PreferenceScreen>
