@@ -16,6 +16,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import net.exclaimindustries.tools.DateTools;
 
@@ -314,7 +315,7 @@ public class StockStoreDatabase {
      */
     public synchronized void cleanup() {
         synchronized(mDatabase) {
-        	SharedPreferences prefs = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
         	
         	Log.d(DEBUG_TAG, "Pruning database...");
         	try {

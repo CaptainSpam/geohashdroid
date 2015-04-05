@@ -13,6 +13,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -79,7 +80,7 @@ public class LoginPromptDialog extends Activity {
             @Override
             public void onClick(View v) {
                 // Dispatch new settings!
-                SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(LoginPromptDialog.this);
 
                 SharedPreferences.Editor edit = prefs.edit();
 
@@ -109,7 +110,7 @@ public class LoginPromptDialog extends Activity {
         mUsername.addTextChangedListener(mWatcher);
 
         // Also, those fields should be populated with data.
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         mUsername.setText(prefs.getString(GHDConstants.PREF_WIKI_USER, ""));
         mPassword.setText(prefs.getString(GHDConstants.PREF_WIKI_PASS, ""));
     }

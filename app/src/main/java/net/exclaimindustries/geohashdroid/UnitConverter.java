@@ -15,6 +15,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 /**
@@ -66,13 +67,12 @@ public class UnitConverter {
     public static String makeDistanceString(Context c, DecimalFormat df,
             float distance) {
         // First, get the current unit preference.
-        SharedPreferences prefs = c.getSharedPreferences(
-                GHDConstants.PREFS_BASE, 0);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
         String units = prefs.getString(GHDConstants.PREF_DIST_UNITS, GHDConstants.PREFVAL_DIST_METRIC);
 
         // Second, run the conversion.
         if (units.equals(GHDConstants.PREFVAL_DIST_METRIC)) {
-            // Meters are easy, if not only for the fact that, by default, the
+            // Meters are easy, if only for the fact that, by default, the
             // Location object returns distances in meters. And the fact that
             // it's in powers of ten.
             if (distance >= 1000) {
@@ -266,8 +266,7 @@ public class UnitConverter {
      */
     public static String getCoordUnitPreference(Context c) {
         // Units GO!!!
-        SharedPreferences prefs = c.getSharedPreferences(
-                GHDConstants.PREFS_BASE, 0);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
         return prefs.getString(GHDConstants.PREF_COORD_UNITS, "Degrees");
     }
 }

@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -208,7 +209,7 @@ public class WikiService extends QueueService {
         HttpClient client = new DefaultHttpClient();
 
         // To Preferences!
-        SharedPreferences prefs = getSharedPreferences(GHDConstants.PREFS_BASE, 0);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
         String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 

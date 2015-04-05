@@ -11,6 +11,7 @@ import net.exclaimindustries.geohashdroid.R;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 /**
@@ -58,7 +59,7 @@ public class ClosenessActor {
     public ClosenessActor(Context c) {
         mContext = c;
         
-        mBeenThere = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0).getBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, false);
+        mBeenThere = PreferenceManager.getDefaultSharedPreferences(c).getBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, false);
     }
     
     /**
@@ -66,7 +67,7 @@ public class ClosenessActor {
      * reported closeness.
      */
     public void reset() {
-        SharedPreferences.Editor editor = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0).edit();
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(mContext).edit();
         editor.putBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, false);
         editor.commit();
         mBeenThere = false;
@@ -88,7 +89,7 @@ public class ClosenessActor {
         if(isCloseEnough(info, loc)) {
             // Let's abuse the preferences system to give us an effectively
             // static boolean!
-            SharedPreferences.Editor editor = mContext.getSharedPreferences(GHDConstants.PREFS_BASE, 0).edit();
+            SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(mContext).edit();
             editor.putBoolean(GHDConstants.PREF_CLOSENESS_REPORTED, true);
             editor.commit();
             mBeenThere = true;
