@@ -65,18 +65,14 @@
             android:layout_height="wrap_content"
             android:text="@string/cancel_label"
             android:id="@+id/cancel"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_marginLeft="@dimen/standard_padding"
-            android:layout_marginRight="@dimen/standard_padding"/>
+            style="@style/GeohashDroid.Button.Borderless"/>
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/ok_label"
             android:id="@+id/okay"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_marginLeft="@dimen/standard_padding"
-            android:layout_marginRight="@dimen/standard_padding"/>
+            style="@style/GeohashDroid.Button.Borderless"/>
     </LinearLayout>
 
 </LinearLayout>

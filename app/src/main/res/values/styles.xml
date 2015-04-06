@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- This is for the buttons on the dialogs.  They're kinda-sorta like the
+         Lollipop dialog buttons, in a way, but then again, not. -->
+    <style name="GeohashDroid.Button.Borderless" parent="android:Widget.DeviceDefault.Light.Button.Borderless.Small">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">#009688</item>
+    </style>
+</resources>
