@@ -8,6 +8,8 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -15,10 +17,13 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
+import net.exclaimindustries.geohashdroid.util.GHDBasicDialogBuilder;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
 
 import java.util.List;
 
@@ -28,6 +33,8 @@ import java.util.List;
  * time around, right?  That certainly won't be confusing!
  */
 public class PreferencesActivity extends PreferenceActivity {
+    private AlertDialog mCurrentDialog;
+
     /**
      * This largely comes from Android Studio's default Setting Activity wizard
      * thingamajig.  It conveniently updates preferences with summaries.
@@ -51,8 +58,7 @@ public class PreferencesActivity extends PreferenceActivity {
                                 ? listPreference.getEntries()[index]
                                 : null);
             } else {
-                // Eh, just use the string value.  Chances are if we got here, I
-                // did something wrong.
+                // Eh, just use the string value.  That's simple enough.
                 preference.setSummary(stringValue);
             }
             return true;
@@ -155,6 +161,60 @@ public class PreferencesActivity extends PreferenceActivity {
                 }
 
             });
+
+            // Cache wiping is more a button than a preference, per se.
+            findPreference("_stockWipe").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    GHDBasicDialogBuilder builder = new GHDBasicDialogBuilder(getActivity());
+                    builder.setMessage(R.string.pref_stockwipe_dialog_text)
+                            .setTitle(R.string.pref_stockwipe_title)
+                            .setPositiveButton(getString(R.string.dialog_stockwipe_yes), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // Well, you heard the orders!
+                                    dialog.dismiss();
+
+                                    if(HashBuilder.deleteCache(getActivity())) {
+                                        Toast.makeText(
+                                                getActivity(),
+                                                R.string.toast_stockwipe_success,
+                                                Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(
+                                                getActivity(),
+                                                R.string.toast_stockwipe_failure,
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            })
+                            .setNegativeButton(getString(R.string.dialog_stockwipe_no), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            });
+
+                    AlertDialog d = builder.show();
+                    ((PreferencesActivity)getActivity()).setCurrentDialog(d);
+
+                    return true;
+                }
+            });
         }
+    }
+
+    @Override
+    protected void onPause() {
+        // We really need to do something about that dialog (if it's up), else
+        // it'll just leak a window all over the place.
+        if(mCurrentDialog != null && mCurrentDialog.isShowing())
+            mCurrentDialog.dismiss();
+
+        super.onPause();
+    }
+
+    private void setCurrentDialog(AlertDialog dialog) {
+        mCurrentDialog = dialog;
     }
 }
