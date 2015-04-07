@@ -21,9 +21,11 @@ import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
+import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDBasicDialogBuilder;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.tools.QueueService;
 
 import java.util.List;
 
@@ -114,12 +116,58 @@ public class PreferencesActivity extends PreferenceActivity {
      * getting your wiki password wrong.
      */
     public static class WikiPreferenceFragment extends PreferenceFragment {
+        /**
+         * This keeps track of whether or not the wiki username and/or password
+         * have changed.  If so, we need to ask WikiService to resume itself, as
+         * the user might've come here to resolve a bad login error.
+         */
+        private boolean mHasChanged = false;
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref_wiki);
 
-            bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_WIKI_USER));
+            // Unfortunately, we can't use the otherwise-common binding method
+            // for username and password, owing to the extra boolean we need to
+            // track.  Worse, since we don't want to update the summary for
+            // password (for obvious reasons), we can't even share the same
+            // object between the two preferences.  Well, we CAN, but that won't
+            // really buy us much in terms of efficiency.
+            Preference usernamePref = findPreference(GHDConstants.PREF_WIKI_USER);
+            usernamePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    preference.setSummary(newValue.toString());
+                    mHasChanged = true;
+                    return true;
+                }
+            });
+            usernamePref.setSummary(PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(GHDConstants.PREF_WIKI_USER, ""));
+
+            findPreference(GHDConstants.PREF_WIKI_PASS).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    mHasChanged = true;
+                    return true;
+                }
+            });
+        }
+
+        @Override
+        public void onStop() {
+            // If something changed, tell WikiService to kick back in.  Don't
+            // worry; if WikiService isn't paused, this won't do anything, and
+            // if it's stopped for any other reason, it'll stop again when this
+            // comes in.
+            if(mHasChanged) {
+                mHasChanged = false;
+                Intent i = new Intent(getActivity(), WikiService.class);
+                i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
+                getActivity().startService(i);
+            }
+
+            super.onStop();
         }
     }
 
