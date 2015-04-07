@@ -12,7 +12,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-import net.exclaimindustries.geohashdroid.PreferenceEditScreen;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.ClosenessActor;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -352,22 +351,6 @@ public abstract class WikiBaseActivity extends LocationAwareActivity implements 
         // stops.
         if(mWikiConnectionThread != null && mWikiConnectionThread.isAlive())
             mConnectionHandler.abort();
-    }
-
-
-    @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        super.onMenuItemSelected(featureId, item);
-        
-        switch(item.getItemId()) {
-            case MENU_SETTINGS: {
-                // Pop up our settings window!
-                startActivity(new Intent(this, PreferenceEditScreen.class));
-                return true;
-            }
-        }
-        
-        return false;
     }
 
     @Override

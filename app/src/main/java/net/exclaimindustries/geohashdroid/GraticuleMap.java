@@ -185,11 +185,6 @@ public class GraticuleMap extends MapActivity implements
                 finish();
                 return true;
             }
-            case MENU_SETTINGS: {
-                // Settings! Now!
-                startActivity(new Intent(this, PreferenceEditScreen.class));
-                return true;
-            }
         }
 
         return false;

@@ -718,11 +718,6 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 startActivity(i);
                 return true;
             }
-            case MENU_SETTINGS: {
-                // Pop up our settings window!
-                startActivity(new Intent(this, PreferenceEditScreen.class));
-                return true;
-            }
             case MENU_RECENTER_DESTINATION: {
                 // This one's easy. Just pop over to the final destination,
                 // current zoom level.

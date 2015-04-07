@@ -239,10 +239,6 @@ public class GeohashDroid extends Activity {
         super.onMenuItemSelected(featureId, item);
 
         switch (item.getItemId()) {
-            case MENU_SETTINGS:
-                // Pop up our settings window!
-                startActivity(new Intent(this, PreferenceEditScreen.class));
-                return true;
             case MENU_ABOUT:
                 showDialog(DIALOG_ABOUT);
                 return true;

@@ -140,11 +140,6 @@ public class DetailedInfoScreen extends LocationAwareActivity {
         super.onMenuItemSelected(featureId, item);
 
         switch (item.getItemId()) {
-            case MENU_SETTINGS: {
-                // Pop up our settings window!
-                startActivity(new Intent(this, PreferenceEditScreen.class));
-                return true;
-            }
             case MENU_SEND_TO_MAPS: {
                 // Send out the final destination's latitude and longitude to
                 // the Maps app (or anything else listening for this intent).
