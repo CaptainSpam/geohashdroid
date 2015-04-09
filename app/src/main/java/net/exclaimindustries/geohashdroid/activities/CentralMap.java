@@ -8,7 +8,11 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import net.exclaimindustries.geohashdroid.R;
 
@@ -24,5 +28,28 @@ public class CentralMap extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.centralmap);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // TODO: This will later change when we need to switch between
+        // expedition and select-a-graticule modes.
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.centralmap, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.action_preferences:
+                // Preferences!  To the Preferencemobile!
+                Intent i = new Intent(this, PreferencesActivity.class);
+                startActivity(i);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }
