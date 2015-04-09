@@ -11,6 +11,8 @@
 <string name="title_wikiservice">GHD Wiki Service</string>
 <string name="title_logindialog">Update Wiki Login</string>
 <string name="title_preferences">Preferences</string>
+<string name="title_about">About Geohash Droid</string>
+<string name="title_versionhistory">Version History</string>
 
 <string name="graticule_label">Graticule:</string>
 <string name="date_label">Date:</string>
