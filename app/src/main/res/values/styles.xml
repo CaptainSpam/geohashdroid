@@ -8,4 +8,13 @@
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">#009688</item>
     </style>
+
+    <!-- This is for any Activity-that-looks-like-a-dialog. -->
+    <style name="GeohashDroidDialog">
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">20dp</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/geohashing_logo_background</item>
+    </style>
 </resources>

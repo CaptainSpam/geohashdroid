@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools"
-              android:orientation="vertical"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:padding="20dp"
-              android:background="@drawable/geohashing_logo_background"
+              style="@style/GeohashDroidDialog"
               tools:context=".activities.LoginPromptDialog">
 
     <LinearLayout
