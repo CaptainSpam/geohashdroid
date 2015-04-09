@@ -23,6 +23,8 @@ import net.exclaimindustries.geohashdroid.R;
  * exists on the legacy branch.
  */
 public class CentralMap extends Activity {
+    private boolean mSelectAGraticule = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,10 +34,12 @@ public class CentralMap extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // TODO: This will later change when we need to switch between
-        // expedition and select-a-graticule modes.
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.centralmap, menu);
+
+        if(mSelectAGraticule)
+            inflater.inflate(R.menu.centralmap_selectagraticule, menu);
+        else
+            inflater.inflate(R.menu.centralmap_expedition, menu);
 
         return true;
     }
