@@ -13,5 +13,15 @@
         android:layout_gravity="center"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        tools:ignore="RtlHardcoded"/>
+        tools:ignore="RtlHardcoded"
+        />
+
+    <view
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        class="net.exclaimindustries.geohashdroid.widgets.ErrorBanner"
+        android:id="@+id/error_banner"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="@dimen/standard_padding"/>
 </RelativeLayout>

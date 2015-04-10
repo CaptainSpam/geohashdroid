@@ -56,4 +56,6 @@
 	<dimen name="infobox_picture_fontsize">20px</dimen>
 
     <dimen name="standard_padding">8dp</dimen>
+
+    <dimen name="error_banner_height">64dp</dimen>
 </resources>
