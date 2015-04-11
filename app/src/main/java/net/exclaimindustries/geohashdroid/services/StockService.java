@@ -70,7 +70,7 @@ public class StockService extends WakefulIntentService {
     
     /**
      * Key for an ID extra on the response.  This isn't actually used and is not
-     * required, but whatever is stored here (so long as it's an int) will be
+     * required, but whatever is stored here (so long as it's a long) will be
      * put in the broadcast Intent when done.  If this isn't specified, it will
      * come back as -1.
      */
@@ -168,7 +168,7 @@ public class StockService extends WakefulIntentService {
         if(!intent.hasExtra(EXTRA_GRATICULE) || !intent.hasExtra(EXTRA_DATE)) return;
         
         // Maybe we have a request ID!
-        int requestId = intent.getIntExtra(EXTRA_REQUEST_ID, -1);
+        long requestId = intent.getLongExtra(EXTRA_REQUEST_ID, -1);
 
         // Maybe we have flags!
         int flags = intent.getIntExtra(EXTRA_REQUEST_FLAGS, 0);
@@ -229,7 +229,7 @@ public class StockService extends WakefulIntentService {
         }
     }
     
-    private void dispatchIntent(int responseCode, int requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info) {
+    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
         

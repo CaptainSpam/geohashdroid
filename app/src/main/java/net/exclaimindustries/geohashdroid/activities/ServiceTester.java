@@ -231,9 +231,7 @@ public class ServiceTester extends Activity {
         Intent i = new Intent(StockService.ACTION_STOCK_REQUEST);
         i.setClass(this, StockService.class);
         
-        // I know this is not at all what you should be doing with a long, but
-        // what it DOES do is give me SOMETHING that changes every millisecond.
-        int now = (int)Calendar.getInstance().getTimeInMillis();
+        long now = Calendar.getInstance().getTimeInMillis();
         
         i.putExtra(StockService.EXTRA_DATE, cal);
         i.putExtra(StockService.EXTRA_REQUEST_ID, now);

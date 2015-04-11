@@ -11,16 +11,22 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.commonsware.cwac.wakeful.WakefulIntentService;
+
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+
+import java.util.Calendar;
 
 /**
  * CentralMap replaces MainMap as the map display.  Unlike MainMap, it also
@@ -34,10 +40,10 @@ public class CentralMap extends Activity {
 
     private ErrorBanner mBanner;
 
-    private BroadcastReceiver mStockReceiver = new BroadcastReceiver() {
-        private int mWaitingOnThisOne = -1;
+    private class StockReceiver extends BroadcastReceiver {
+        private long mWaitingOnThisOne = -1;
 
-        public void setWaitingId(int id) {
+        public void setWaitingId(long id) {
             mWaitingOnThisOne = id;
         }
 
@@ -46,7 +52,7 @@ public class CentralMap extends Activity {
             // A stock result arrives!  Let's make sure it's really what we're
             // looking for.  We're assuming this is already an
             // ACTION_STOCK_RESULT, else this would just be broken.
-            int reqId = intent.getIntExtra(StockService.EXTRA_REQUEST_ID, -1);
+            long reqId = intent.getLongExtra(StockService.EXTRA_REQUEST_ID, -1);
             if(reqId != mWaitingOnThisOne) return;
 
             // Well, it's what we're looking for.  What was the result?
@@ -80,7 +86,9 @@ public class CentralMap extends Activity {
                     break;
             }
         }
-    };
+    }
+
+    private StockReceiver mStockReceiver;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -89,6 +97,27 @@ public class CentralMap extends Activity {
         setContentView(R.layout.centralmap);
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
+        mStockReceiver = new StockReceiver();
+    }
+
+    @Override
+    protected void onPause() {
+        // The receiver goes right off as soon as we pause.
+        unregisterReceiver(mStockReceiver);
+
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // The receiver goes on during onResume, even though we might not be
+        // waiting for anything yet.
+        IntentFilter filt = new IntentFilter();
+        filt.addAction(StockService.ACTION_STOCK_RESULT);
+
+        registerReceiver(mStockReceiver, filt);
     }
 
     @Override
@@ -119,5 +148,23 @@ public class CentralMap extends Activity {
     private void setInfo(Info info) {
         // TODO: Something
         mCurrentInfo = info;
+    }
+
+    private void requestStock(Graticule g, Calendar cal, int flags) {
+        // Make sure the banner's going away!
+        mBanner.animateBanner(false);
+
+        // As a request ID, we'll use the current date.
+        long date = cal.getTimeInMillis();
+
+        Intent i = new Intent(this, StockService.class)
+                .putExtra(StockService.EXTRA_DATE, cal)
+                .putExtra(StockService.EXTRA_GRATICULE, g)
+                .putExtra(StockService.EXTRA_REQUEST_ID, date)
+                .putExtra(StockService.EXTRA_REQUEST_FLAGS, flags);
+
+        mStockReceiver.setWaitingId(date);
+
+        WakefulIntentService.sendWakefulWork(this, i);
     }
 }
