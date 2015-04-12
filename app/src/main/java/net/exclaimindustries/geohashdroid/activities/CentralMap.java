@@ -75,20 +75,17 @@ public class CentralMap extends Activity {
                     setInfo((Info)intent.getParcelableExtra(StockService.EXTRA_INFO));
                     break;
                 case StockService.RESPONSE_NOT_POSTED_YET:
-                    // TODO: Error response
-                    mBanner.setText("NOT POSTED YET!");
+                    mBanner.setText(getString(R.string.error_not_yet_posted));
                     mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                     mBanner.animateBanner(true);
                     break;
                 case StockService.RESPONSE_NO_CONNECTION:
-                    // TODO: Also error response
-                    mBanner.setText("YOU CAN HAS NO CONNECTION YET!");
+                    mBanner.setText(getString(R.string.error_no_connection));
                     mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                     mBanner.animateBanner(true);
                     break;
                 case StockService.RESPONSE_NETWORK_ERROR:
-                    // TODO: Again, error response
-                    mBanner.setText("RRRRRRRRRG STUPID NETWORK");
+                    mBanner.setText(getString(R.string.error_server_failure));
                     mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                     mBanner.animateBanner(true);
                     break;

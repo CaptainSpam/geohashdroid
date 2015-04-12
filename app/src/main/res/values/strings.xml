@@ -49,6 +49,7 @@
 <string name="error_search_failed">Couldn\'t figure out your graticule.  Make sure GPS and/or wireless network location sensing are enabled in Settings and you are in range of either.</string>
 <string name="error_not_yet_posted">There hasn\'t been a stock price posted for that date.</string>
 <string name="error_server_failure">There was a problem talking to the stock price server.  Please try again later.</string>
+<string name="error_no_connection">You\'re not connected to the internet.</string>
 
 <string name="map_activity_title">The Map</string>
 <string name="gratmap_activity_title">Tap your graticule</string>
