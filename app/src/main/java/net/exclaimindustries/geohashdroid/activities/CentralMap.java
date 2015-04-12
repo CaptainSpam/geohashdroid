@@ -12,6 +12,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.view.Menu;
@@ -234,11 +235,22 @@ public class CentralMap extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
-            case R.id.action_preferences:
+            case R.id.action_whatisthis: {
+                // The everfamous and much-beloved "What's Geohashing?" button,
+                // because honestly, this IS sort of confusing if you're
+                // expecting something for geocaching.
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
+                i.setData(Uri.parse("http://wiki.xkcd.com/geohashing/How_it_works"));
+                startActivity(i);
+                return true;
+            }
+            case R.id.action_preferences: {
                 // Preferences!  To the Preferencemobile!
                 Intent i = new Intent(this, PreferencesActivity.class);
                 startActivity(i);
                 return true;
+            }
             default:
                 return super.onOptionsItemSelected(item);
         }
