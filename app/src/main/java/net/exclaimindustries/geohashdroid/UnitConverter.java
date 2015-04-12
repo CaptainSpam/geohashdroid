@@ -42,12 +42,12 @@ public class UnitConverter {
     // decimal delimiter to be a period instead of a comma.  Coordinates, as far
     // as I can tell, are always represented with a period, even if the country
     // in question uses commas.
-    protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("###.000", new DecimalFormatSymbols(Locale.US));
-    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("###.00000", new DecimalFormatSymbols(Locale.US));
-    protected static final DecimalFormat DETAIL_FORMAT = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat SHORT_FORMAT = new DecimalFormat("##0.000", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat LONG_FORMAT = new DecimalFormat("##0.00000", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat DETAIL_FORMAT = new DecimalFormat("##0.00000000", new DecimalFormatSymbols(Locale.US));
     
-    protected static final DecimalFormat SHORT_SECONDS_FORMAT = new DecimalFormat("###.00", new DecimalFormatSymbols(Locale.US));
-    protected static final DecimalFormat LONG_SECONDS_FORMAT = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat SHORT_SECONDS_FORMAT = new DecimalFormat("##0.00", new DecimalFormatSymbols(Locale.US));
+    protected static final DecimalFormat LONG_SECONDS_FORMAT = new DecimalFormat("##0.0000", new DecimalFormatSymbols(Locale.US));
     
     private static final String DEBUG_TAG = "UnitConverter";
 
