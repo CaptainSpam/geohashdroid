@@ -67,6 +67,11 @@
 
 <string name="send_to_maps_point_name">Geohash for %1$s</string>
 
+<string name="marker_title_today_hashpoint">Today\'s Geohash point</string>
+<string name="marker_title_today_globalpoint">Today\'s Globalhash point</string>
+<string name="marker_title_retro_hashpoint">Geohash point for %1$s</string>
+<string name="marker_title_retro_globalpoint">Globalhash point for %1$s</string>
+
 <string name="toast_close_enough">You\'re there!  This is as close to the point as GPS accuracy gets.  Yay!</string>
 
 <string name="menu_item_recenter_normalview">Fit both on screen</string>

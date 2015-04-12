@@ -165,7 +165,7 @@ public class StockService extends WakefulIntentService {
         // WakeLock stuff!  You're even off the main thread, too, so I don't
         // have to spawn a new thread to not screw up the UI!  So let's get that
         // data right in hand, shall we?
-        if(!intent.hasExtra(EXTRA_GRATICULE) || !intent.hasExtra(EXTRA_DATE)) return;
+        if(!intent.hasExtra(EXTRA_DATE)) return;
         
         // Maybe we have a request ID!
         long requestId = intent.getLongExtra(EXTRA_REQUEST_ID, -1);
@@ -178,8 +178,9 @@ public class StockService extends WakefulIntentService {
         
         // Oh, man, can we ever parcelize a Graticule!
         Parcelable p = intent.getParcelableExtra(EXTRA_GRATICULE);
-        
-        if(!(p instanceof Graticule)) return;
+
+        // Remember, the Graticule MIGHT be null if it's a globalhash.
+        if(p != null && !(p instanceof Graticule)) return;
         Graticule graticule = (Graticule)p;
         
         // Calendar, well, we can't parcelize that, but we CAN serialize it,

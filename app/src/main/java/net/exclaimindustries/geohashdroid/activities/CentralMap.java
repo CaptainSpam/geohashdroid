@@ -19,13 +19,21 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.UnitConverter;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 
+import java.text.DateFormat;
 import java.util.Calendar;
 
 /**
@@ -37,6 +45,8 @@ import java.util.Calendar;
 public class CentralMap extends Activity {
     private boolean mSelectAGraticule = false;
     private Info mCurrentInfo;
+    private Marker mDestination;
+    private GoogleMap mMap;
 
     private ErrorBanner mBanner;
 
@@ -98,6 +108,10 @@ public class CentralMap extends Activity {
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
         mStockReceiver = new StockReceiver();
+
+        // Grab the map for later.
+        MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
+        mMap = mapFrag.getMap();
     }
 
     @Override
@@ -118,6 +132,16 @@ public class CentralMap extends Activity {
         filt.addAction(StockService.ACTION_STOCK_RESULT);
 
         registerReceiver(mStockReceiver, filt);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        // If we're coming back from somewhere, reset the marker.  This is just
+        // in case the user changes coordinate preferences, as the marker only
+        // updates its internal info when it's created.
+        setInfo(mCurrentInfo);
     }
 
     @Override
@@ -146,8 +170,54 @@ public class CentralMap extends Activity {
     }
 
     private void setInfo(Info info) {
-        // TODO: Something
         mCurrentInfo = info;
+
+        // In any case, a new Info means the old one's invalid, so the old
+        // Marker goes away.
+        if(mDestination != null) {
+            mDestination.remove();
+        }
+
+        // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
+        // let's assume a null Info here means we just don't render anything.
+        if(mCurrentInfo != null) {
+            // We need a marker!  And that marker needs a title.  And that title
+            // depends on globalhashiness and retroness.
+            String title;
+
+            if(!info.isRetroHash()) {
+                // Non-retro hashes don't have today's date on them.  They just
+                // have "today's [something]".
+                if(info.isGlobalHash()) {
+                    title = getString(R.string.marker_title_today_globalpoint);
+                } else {
+                    title = getString(R.string.marker_title_today_hashpoint);
+                }
+            } else {
+                // Retro hashes, however, need a date string.
+                String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
+
+                if(info.isGlobalHash()) {
+                    title = getString(R.string.marker_title_retro_globalpoint, date);
+                } else {
+                    title = getString(R.string.marker_title_retro_hashpoint, date);
+                }
+            }
+
+            // The snippet's just the coordinates in question.  Further details
+            // will go in the infobox.
+            String snippet = UnitConverter.makeFullCoordinateString(this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+
+            // Under the current marker image, the anchor is the very bottom,
+            // halfway across.  Presumably, that's what the default icon also
+            // uses, but we're not concerned with the default icon, now, are we?
+            mDestination = mMap.addMarker(new MarkerOptions()
+                .position(new LatLng(info.getLatitude(), info.getLongitude()))
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
+                .anchor(0.5f, 1.0f)
+                .title(title)
+                .snippet(snippet));
+        }
     }
 
     private void requestStock(Graticule g, Calendar cal, int flags) {
