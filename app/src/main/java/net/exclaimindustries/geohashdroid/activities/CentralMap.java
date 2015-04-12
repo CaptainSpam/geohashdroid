@@ -308,6 +308,19 @@ public class CentralMap extends Activity {
                 .anchor(0.5f, 1.0f)
                 .title(title)
                 .snippet(snippet));
+
+            // Now, the Mercator projection that the map uses clips at around
+            // 85 degrees north and south.  If that's where the point is (if
+            // that's the Globalhash or if the user legitimately lives in
+            // Antarctica), we'll still try to draw it, but we'll throw up a
+            // warning that the marker might not show up.  Sure is a good thing
+            // an extreme south Globalhash showed up when I was testing this,
+            // else I honestly might've forgot.
+            if(Math.abs(info.getLatitude()) > 85) {
+                mBanner.setErrorStatus(ErrorBanner.Status.WARNING);
+                mBanner.setText(getString(R.string.warning_outside_of_projection));
+                mBanner.animateBanner(true);
+            }
         }
     }
 
