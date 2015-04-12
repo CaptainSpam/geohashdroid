@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -101,6 +102,13 @@ public class CentralMap extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Load up!
+        if(savedInstanceState != null) {
+            if(savedInstanceState.containsKey("info")) {
+                mCurrentInfo = savedInstanceState.getParcelable("info");
+            }
+        }
+
         setContentView(R.layout.centralmap);
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
@@ -132,13 +140,23 @@ public class CentralMap extends Activity {
     }
 
     @Override
-    protected void onRestart() {
+    protected void onStart() {
         super.onRestart();
 
         // If we're coming back from somewhere, reset the marker.  This is just
         // in case the user changes coordinate preferences, as the marker only
         // updates its internal info when it's created.
         setInfo(mCurrentInfo);
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Also, keep the latest Info around.
+        // TODO: Later, we'll need to know NOT to reload the Info at startup
+        // time.  Determine the correct way to determine that.
+        outState.putParcelable("info", mCurrentInfo);
     }
 
     @Override
