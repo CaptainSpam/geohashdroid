@@ -309,6 +309,14 @@ public class CentralMap extends Activity {
                 .title(title)
                 .snippet(snippet));
 
+            // With an Info in hand, we can also change the title.
+            StringBuilder newTitle = new StringBuilder();
+            if(info.isGlobalHash()) newTitle.append(getString(R.string.title_part_globalhash));
+            else newTitle.append(info.getGraticule().getLatitudeString(false)).append(' ').append(info.getGraticule().getLongitudeString(false));
+            newTitle.append(", ");
+            newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(info.getDate()));
+            setTitle(newTitle.toString());
+
             // Now, the Mercator projection that the map uses clips at around
             // 85 degrees north and south.  If that's where the point is (if
             // that's the Globalhash or if the user legitimately lives in
@@ -321,6 +329,9 @@ public class CentralMap extends Activity {
                 mBanner.setText(getString(R.string.warning_outside_of_projection));
                 mBanner.animateBanner(true);
             }
+        } else {
+            // Otherwise, make sure the title's back to normal.
+            setTitle(R.string.app_name);
         }
     }
 

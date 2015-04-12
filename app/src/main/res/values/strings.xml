@@ -14,6 +14,8 @@
 <string name="title_about">About Geohash Droid</string>
 <string name="title_versionhistory">Version History</string>
 
+<string name="title_part_globalhash">Globalhash</string>
+
 <string name="graticule_label">Graticule:</string>
 <string name="date_label">Date:</string>
 <string name="what_label">What\'s Geohashing?</string>
