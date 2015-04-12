@@ -224,7 +224,7 @@ public class WikiService extends QueueService {
         // one, unlike the previous one, produces an interruption so the user
         // can enter in a username and password.
         if(imageLocation != null && username.isEmpty()) {
-            showPausingErrorNotification(getText(R.string.wiki_conn_anon_pic_error).toString(),
+            showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
                     resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
             return ReturnCode.PAUSE;
         }
@@ -338,9 +338,9 @@ public class WikiService extends QueueService {
                 // a retrohash.
                 String summaryPrefix;
                 if(info.isRetroHash())
-                    summaryPrefix = getText(R.string.wiki_post_message_summary_retro).toString();
+                    summaryPrefix = getString(R.string.wiki_post_message_summary_retro);
                 else
-                    summaryPrefix = getText(R.string.wiki_post_message_summary).toString();
+                    summaryPrefix = getString(R.string.wiki_post_message_summary);
 
                 formfields.put("summary", summaryPrefix + " " + message);
 
@@ -383,7 +383,7 @@ public class WikiService extends QueueService {
                 showThrottleNotification();
             } else {
                 // Otherwise, throw a normal notification.
-                showPausingErrorNotification(getText(we.getErrorTextId()).toString(), resolveWikiExceptionActions(we));
+                showPausingErrorNotification(getString(we.getErrorTextId()), resolveWikiExceptionActions(we));
             }
 
             return ReturnCode.PAUSE;
@@ -397,7 +397,7 @@ public class WikiService extends QueueService {
             } else {
                 // Otherwise, we're kinda stumped.  Maybe the user will know
                 // what to do?
-                showPausingErrorNotification(getText(R.string.wiki_notification_general_error).toString(), resolveWikiExceptionActions(null));
+                showPausingErrorNotification(getString(R.string.wiki_notification_general_error), resolveWikiExceptionActions(null));
             }
 
             return ReturnCode.PAUSE;
@@ -664,8 +664,8 @@ public class WikiService extends QueueService {
         Notification.Builder builder = getFreshNotificationBuilder()
                 .setAutoCancel(true)
                 .setOngoing(true)
-                .setContentTitle(getText(R.string.wiki_notification_throttle_title))
-                .setContentText(getText(R.string.wiki_notification_throttle_content))
+                .setContentTitle(getString(R.string.wiki_notification_throttle_title))
+                .setContentText(getString(R.string.wiki_notification_throttle_content))
                 .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
         mNotificationManager.notify(R.id.wiki_throttle_notification, builder.build());
@@ -743,7 +743,7 @@ public class WikiService extends QueueService {
                                 0,
                                 new Intent(this, LoginPromptDialog.class),
                                 PendingIntent.FLAG_UPDATE_CURRENT),
-                        getText(R.string.wiki_notification_action_update_login)
+                        getString(R.string.wiki_notification_action_update_login)
                 );
 
                 toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
@@ -776,19 +776,19 @@ public class WikiService extends QueueService {
                 return new NotificationAction(
                         R.drawable.ic_action_refresh,
                         getBasicCommandIntent(QueueService.COMMAND_RESUME),
-                        getText(R.string.wiki_notification_action_retry)
+                        getString(R.string.wiki_notification_action_retry)
                 );
             case COMMAND_RESUME_SKIP_FIRST:
                 return new NotificationAction(
                         R.drawable.ic_action_next,
                         getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
-                        getText(R.string.wiki_notification_action_skip)
+                        getString(R.string.wiki_notification_action_skip)
                 );
             case COMMAND_ABORT:
                 return new NotificationAction(
                         R.drawable.ic_action_cancel,
                         getBasicCommandIntent(QueueService.COMMAND_ABORT),
-                        getText(R.string.wiki_notification_action_abort)
+                        getString(R.string.wiki_notification_action_abort)
                 );
             default:
                 return null;
