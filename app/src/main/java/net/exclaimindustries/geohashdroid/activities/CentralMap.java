@@ -22,6 +22,8 @@ import android.view.View;
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -48,6 +50,7 @@ public class CentralMap extends Activity {
     private Info mCurrentInfo;
     private Marker mDestination;
     private GoogleMap mMap;
+    private boolean mMapIsReady = false;
 
     private ErrorBanner mBanner;
 
@@ -114,9 +117,66 @@ public class CentralMap extends Activity {
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
         mStockReceiver = new StockReceiver();
 
-        // Grab the map for later.
+        // Get a map ready.  We'll know when we've got it.  Oh, we'll know.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
-        mMap = mapFrag.getMap();
+        mapFrag.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                mMap = googleMap;
+
+                // I could swear you could do this in XML...
+                UiSettings set = mMap.getUiSettings();
+
+                // The My Location button has to go off, as we're going to have the
+                // infobox right around there.
+                set.setMyLocationButtonEnabled(false);
+
+                mMap.setMyLocationEnabled(true);
+
+                // Now, set the flag that tells everything else we're ready.
+                // We'll need this because we're calling the very methods that
+                // depend on it, as noted in the next comment.
+                mMapIsReady = true;
+
+                // The entire point of this async callback is that we don't have
+                // any clue when it COULD come back.  This means, in theory,
+                // that it MIGHT come back after the user asks for a stock or
+                // whatnot, meaning an Info is waiting to be acted upon.  In
+                // fact, the user might've also asked for Select-A-Graticule
+                // mode.
+                if(mSelectAGraticule) {
+                    // TODO: Make Select-A-Graticule mode.
+                } else {
+                    setInfo(mCurrentInfo);
+                }
+            }
+        });
+
+        findViewById(R.id.test_1).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Graticule g = new Graticule(38, false, 84, true);
+                Calendar c = Calendar.getInstance();
+                requestStock(g, c, StockService.FLAG_USER_INITIATED);
+            }
+        });
+        findViewById(R.id.test_2).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Graticule g = new Graticule(38, false, 84, true);
+                Calendar c = Calendar.getInstance();
+                c.add(Calendar.DAY_OF_MONTH, -3);
+                requestStock(g, c, StockService.FLAG_USER_INITIATED);
+            }
+        });
+        findViewById(R.id.test_3).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar c = Calendar.getInstance();
+                c.add(Calendar.DAY_OF_MONTH, 1);
+                requestStock(null, c, StockService.FLAG_USER_INITIATED);
+            }
+        });
     }
 
     @Override
@@ -186,6 +246,10 @@ public class CentralMap extends Activity {
 
     private void setInfo(Info info) {
         mCurrentInfo = info;
+
+        // If we're not ready for the map yet, give up.  When we DO get ready,
+        // we'll be called again.
+        if(!mMapIsReady) return;
 
         // In any case, a new Info means the old one's invalid, so the old
         // Marker goes away.
