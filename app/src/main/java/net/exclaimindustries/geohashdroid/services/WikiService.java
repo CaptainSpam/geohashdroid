@@ -17,7 +17,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -687,8 +686,7 @@ public class WikiService extends QueueService {
         // images.  We're resetting everything on each notification anyway, so
         // sharing the object is sort of a waste.
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.geohashing_logo_notification)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
+                .setSmallIcon(R.drawable.geohashing_logo_notification);
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             builder.setVisibility(Notification.VISIBILITY_PUBLIC);
