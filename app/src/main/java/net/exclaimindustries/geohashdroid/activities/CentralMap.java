@@ -18,7 +18,6 @@ import android.support.annotation.NonNull;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.maps.GoogleMap;
@@ -150,32 +149,6 @@ public class CentralMap extends Activity {
                 } else {
                     setInfo(mCurrentInfo);
                 }
-            }
-        });
-
-        findViewById(R.id.test_1).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Graticule g = new Graticule(38, false, 84, true);
-                Calendar c = Calendar.getInstance();
-                requestStock(g, c, StockService.FLAG_USER_INITIATED);
-            }
-        });
-        findViewById(R.id.test_2).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Graticule g = new Graticule(38, false, 84, true);
-                Calendar c = Calendar.getInstance();
-                c.add(Calendar.DAY_OF_MONTH, -3);
-                requestStock(g, c, StockService.FLAG_USER_INITIATED);
-            }
-        });
-        findViewById(R.id.test_3).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Calendar c = Calendar.getInstance();
-                c.add(Calendar.DAY_OF_MONTH, 1);
-                requestStock(null, c, StockService.FLAG_USER_INITIATED);
             }
         });
     }
