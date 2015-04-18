@@ -12,20 +12,30 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -35,6 +45,7 @@ import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -45,12 +56,15 @@ import java.util.Calendar;
  * make so much sense later when MainMap is little more than a class that only
  * exists on the legacy branch.
  */
-public class CentralMap extends Activity {
+public class CentralMap extends Activity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+    private static final String DEBUG_TAG = "CentralMap";
+
     private boolean mSelectAGraticule = false;
     private Info mCurrentInfo;
     private Marker mDestination;
     private GoogleMap mMap;
     private boolean mMapIsReady = false;
+    private GoogleApiClient mGoogleClient;
 
     private ErrorBanner mBanner;
 
@@ -113,6 +127,14 @@ public class CentralMap extends Activity {
         }
 
         setContentView(R.layout.centralmap);
+
+        // We deal with locations, so we deal with the GoogleApiClient.  It'll
+        // connect during onStart.
+        mGoogleClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
         mStockReceiver = new StockReceiver();
@@ -177,10 +199,16 @@ public class CentralMap extends Activity {
     protected void onStart() {
         super.onRestart();
 
-        // If we're coming back from somewhere, reset the marker.  This is just
-        // in case the user changes coordinate preferences, as the marker only
-        // updates its internal info when it's created.
-        setInfo(mCurrentInfo);
+        // Service up!
+        mGoogleClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        // Service down!
+        mGoogleClient.disconnect();
+
+        super.onStop();
     }
 
     @Override
@@ -191,6 +219,7 @@ public class CentralMap extends Activity {
         // TODO: Later, we'll need to know NOT to reload the Info at startup
         // time.  Determine the correct way to determine that.
         outState.putParcelable("info", mCurrentInfo);
+
     }
 
     @Override
@@ -229,7 +258,7 @@ public class CentralMap extends Activity {
         }
     }
 
-    private void setInfo(Info info) {
+    private void setInfo(final Info info) {
         mCurrentInfo = info;
 
         // If we're not ready for the map yet, give up.  When we DO get ready,
@@ -245,63 +274,103 @@ public class CentralMap extends Activity {
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.
         if(mCurrentInfo != null) {
-            // We need a marker!  And that marker needs a title.  And that title
-            // depends on globalhashiness and retroness.
-            String title;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // We need a marker!  And that marker needs a title.  And
+                    // that title depends on globalhashiness and retroness.
+                    String title;
 
-            if(!info.isRetroHash()) {
-                // Non-retro hashes don't have today's date on them.  They just
-                // have "today's [something]".
-                if(info.isGlobalHash()) {
-                    title = getString(R.string.marker_title_today_globalpoint);
-                } else {
-                    title = getString(R.string.marker_title_today_hashpoint);
+                    if(!info.isRetroHash()) {
+                        // Non-retro hashes don't have today's date on them.
+                        // They just have "today's [something]".
+                        if(info.isGlobalHash()) {
+                            title = getString(R.string.marker_title_today_globalpoint);
+                        } else {
+                            title = getString(R.string.marker_title_today_hashpoint);
+                        }
+                    } else {
+                        // Retro hashes, however, need a date string.
+                        String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
+
+                        if(info.isGlobalHash()) {
+                            title = getString(R.string.marker_title_retro_globalpoint, date);
+                        } else {
+                            title = getString(R.string.marker_title_retro_hashpoint, date);
+                        }
+                    }
+
+                    // The snippet's just the coordinates in question.  Further
+                    // details will go in the infobox.
+                    String snippet = UnitConverter.makeFullCoordinateString(CentralMap.this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+
+                    // Under the current marker image, the anchor is the very
+                    // bottom, halfway across.  Presumably, that's what the
+                    // default icon also uses, but we're not concerned with the
+                    // default icon, now, are we?
+                    mDestination = mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(info.getLatitude(), info.getLongitude()))
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
+                            .anchor(0.5f, 1.0f)
+                            .title(title)
+                            .snippet(snippet));
+
+                    // With an Info in hand, we can also change the title.
+                    StringBuilder newTitle = new StringBuilder();
+                    if(info.isGlobalHash()) newTitle.append(getString(R.string.title_part_globalhash));
+                    else newTitle.append(info.getGraticule().getLatitudeString(false)).append(' ').append(info.getGraticule().getLongitudeString(false));
+                    newTitle.append(", ");
+                    newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(info.getDate()));
+                    setTitle(newTitle.toString());
+
+                    // Now, the Mercator projection that the map uses clips at
+                    // around 85 degrees north and south.  If that's where the
+                    // point is (if that's the Globalhash or if the user
+                    // legitimately lives in Antarctica), we'll still try to
+                    // draw it, but we'll throw up a warning that the marker
+                    // might not show up.  Sure is a good thing an extreme south
+                    // Globalhash showed up when I was testing this, else I
+                    // honestly might've forgot.
+                    if(Math.abs(info.getLatitude()) > 85) {
+                        mBanner.setErrorStatus(ErrorBanner.Status.WARNING);
+                        mBanner.setText(getString(R.string.warning_outside_of_projection));
+                        mBanner.animateBanner(true);
+                    }
+
+                    // Finally, try to zoom the map to where it needs to be,
+                    // assuming we're connected to the APIs and have a location.
+                    // Note that when the APIs connect, this'll be called, so we
+                    // don't need to set up a callback or whatnot.
+                    if(mGoogleClient != null && mGoogleClient.isConnected()) {
+                        Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
+
+                        // Also, we want the last known location to be at least
+                        // SANELY recent.
+                        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+                            zoomToIdeal(lastKnown);
+                        } else {
+                            // Otherwise, wait for the first update and use that
+                            // for an initial zoom.
+                            mBanner.setErrorStatus(ErrorBanner.Status.NORMAL);
+                            mBanner.setText(getText(R.string.search_label).toString());
+                            mBanner.animateBanner(true);
+                            LocationRequest lRequest = LocationRequest.create();
+                            lRequest.setInterval(1000);
+                            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, new LocationListener() {
+                                @Override
+                                public void onLocationChanged(Location location) {
+                                    // Got it!
+                                    LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
+                                    mBanner.animateBanner(false);
+                                    zoomToIdeal(location);
+                                }
+                            });
+                        }
+                    }
                 }
-            } else {
-                // Retro hashes, however, need a date string.
-                String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
+            });
 
-                if(info.isGlobalHash()) {
-                    title = getString(R.string.marker_title_retro_globalpoint, date);
-                } else {
-                    title = getString(R.string.marker_title_retro_hashpoint, date);
-                }
-            }
-
-            // The snippet's just the coordinates in question.  Further details
-            // will go in the infobox.
-            String snippet = UnitConverter.makeFullCoordinateString(this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
-
-            // Under the current marker image, the anchor is the very bottom,
-            // halfway across.  Presumably, that's what the default icon also
-            // uses, but we're not concerned with the default icon, now, are we?
-            mDestination = mMap.addMarker(new MarkerOptions()
-                .position(new LatLng(info.getLatitude(), info.getLongitude()))
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
-                .anchor(0.5f, 1.0f)
-                .title(title)
-                .snippet(snippet));
-
-            // With an Info in hand, we can also change the title.
-            StringBuilder newTitle = new StringBuilder();
-            if(info.isGlobalHash()) newTitle.append(getString(R.string.title_part_globalhash));
-            else newTitle.append(info.getGraticule().getLatitudeString(false)).append(' ').append(info.getGraticule().getLongitudeString(false));
-            newTitle.append(", ");
-            newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(info.getDate()));
-            setTitle(newTitle.toString());
-
-            // Now, the Mercator projection that the map uses clips at around
-            // 85 degrees north and south.  If that's where the point is (if
-            // that's the Globalhash or if the user legitimately lives in
-            // Antarctica), we'll still try to draw it, but we'll throw up a
-            // warning that the marker might not show up.  Sure is a good thing
-            // an extreme south Globalhash showed up when I was testing this,
-            // else I honestly might've forgot.
-            if(Math.abs(info.getLatitude()) > 85) {
-                mBanner.setErrorStatus(ErrorBanner.Status.WARNING);
-                mBanner.setText(getString(R.string.warning_outside_of_projection));
-                mBanner.animateBanner(true);
-            }
         } else {
             // Otherwise, make sure the title's back to normal.
             setTitle(R.string.app_name);
@@ -324,5 +393,53 @@ public class CentralMap extends Activity {
         mStockReceiver.setWaitingId(date);
 
         WakefulIntentService.sendWakefulWork(this, i);
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        // If we're coming back from somewhere, reset the marker.  This is just
+        // in case the user changes coordinate preferences, as the marker only
+        // updates its internal info when it's created.
+        setInfo(mCurrentInfo);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        // Since the location API doesn't appear to connect back to the network,
+        // I'm not sure I need to do anything special here.  I'm not even
+        // entirely convinced the connection CAN become suspended after it's
+        // made unless things are completely hosed.
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        // I'm not really certain how this can fail to connect, and so I'm not
+        // really certain what to do if it does.
+    }
+
+    private void zoomToIdeal(Location current) {
+        // Where "current" means the user's current location, and we're zooming
+        // relative to the final destination, if we have it yet.  Let's check
+        // that latter part first.
+        if(mCurrentInfo == null) {
+            Log.i(DEBUG_TAG, "zoomToIdeal was called before an Info was set, ignoring...");
+            return;
+        }
+
+        if(mGoogleClient == null || !mGoogleClient.isConnected()) {
+            Log.i(DEBUG_TAG, "zoomToIdeal was called when the Google API client wasn't connected, ignoring...");
+            return;
+        }
+
+        // As a side note, yes, I COULD probably mash this all down to one line,
+        // but I want this to be readable later without headaches.
+        LatLngBounds bounds = LatLngBounds.builder()
+                .include(new LatLng(current.getLatitude(), current.getLongitude()))
+                .include(new LatLng(mCurrentInfo.getLatitude(), mCurrentInfo.getLongitude()))
+                .build();
+
+        CameraUpdate cam = CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
+
+        mMap.animateCamera(cam);
     }
 }

@@ -20,7 +20,7 @@
 <string name="date_label">Date:</string>
 <string name="what_label">What\'s Geohashing?</string>
 
-<string name="search_label">Attempting to determine your location&#8230;</string>
+<string name="search_label">Waiting for your location&#8230;</string>
 
 <string name="search_title">Searching&#8230;</string>
 <string name="go_label">Go!</string>

@@ -58,4 +58,5 @@
     <dimen name="standard_padding">8dp</dimen>
 
     <dimen name="error_banner_height">64dp</dimen>
+    <dimen name="map_zoom_padding">64dp</dimen>
 </resources>
