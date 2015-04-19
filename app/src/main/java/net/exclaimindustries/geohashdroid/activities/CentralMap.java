@@ -77,38 +77,51 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            // A stock result arrives!  Let's make sure it's really what we're
-            // looking for.  We're assuming this is already an
-            // ACTION_STOCK_RESULT, else this would just be broken.
+            // A stock result arrives!  Let's get data!  That oughta tell us
+            // whether or not we're even going to bother with it.
+            int reqFlags = intent.getIntExtra(StockService.EXTRA_REQUEST_FLAGS, 0);
             long reqId = intent.getLongExtra(StockService.EXTRA_REQUEST_ID, -1);
-            if(reqId != mWaitingOnThisOne) return;
 
-            // Well, it's what we're looking for.  What was the result?
+            // Now, if the flags state this was from the alarm or somewhere else
+            // we weren't expecting, give up now.  We don't want it.
+            if((reqFlags & StockService.FLAG_ALARM) != 0) return;
+
+            // Only check the ID if this was user-initiated.  If the user didn't
+            // initiate it, we might be getting responses back in bunches,
+            // meaning that ID checking will be useless.
+            if((reqFlags & StockService.FLAG_USER_INITIATED) != 0 && reqId != mWaitingOnThisOne) return;
+
+            // Well, it's what we're looking for.  What was the result?  The
+            // default is RESPONSE_NETWORK_ERROR, as not getting a response code
+            // is a Bad Thing(tm).
             int responseCode = intent.getIntExtra(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
 
-            switch(responseCode) {
-                case StockService.RESPONSE_OKAY:
-                    // Hey, would you look at that, it actually worked!  So, get
-                    // the Info out of it and fire it away!
-                    setInfo((Info)intent.getParcelableExtra(StockService.EXTRA_INFO));
-                    break;
-                case StockService.RESPONSE_NOT_POSTED_YET:
-                    mBanner.setText(getString(R.string.error_not_yet_posted));
-                    mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
-                    mBanner.animateBanner(true);
-                    break;
-                case StockService.RESPONSE_NO_CONNECTION:
-                    mBanner.setText(getString(R.string.error_no_connection));
-                    mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
-                    mBanner.animateBanner(true);
-                    break;
-                case StockService.RESPONSE_NETWORK_ERROR:
-                    mBanner.setText(getString(R.string.error_server_failure));
-                    mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
-                    mBanner.animateBanner(true);
-                    break;
-                default:
-                    break;
+            if(responseCode == StockService.RESPONSE_OKAY) {
+                // Hey, would you look at that, it actually worked!  So, get
+                // the Info out of it and fire it away!
+                setInfo((Info)intent.getParcelableExtra(StockService.EXTRA_INFO));
+            } else if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
+                // ONLY notify the user of an error if they specifically
+                // requested this stock.
+                switch(responseCode) {
+                    case StockService.RESPONSE_NOT_POSTED_YET:
+                        mBanner.setText(getString(R.string.error_not_yet_posted));
+                        mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
+                        mBanner.animateBanner(true);
+                        break;
+                    case StockService.RESPONSE_NO_CONNECTION:
+                        mBanner.setText(getString(R.string.error_no_connection));
+                        mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
+                        mBanner.animateBanner(true);
+                        break;
+                    case StockService.RESPONSE_NETWORK_ERROR:
+                        mBanner.setText(getString(R.string.error_server_failure));
+                        mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
+                        mBanner.animateBanner(true);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }
@@ -390,7 +403,8 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
                 .putExtra(StockService.EXTRA_REQUEST_ID, date)
                 .putExtra(StockService.EXTRA_REQUEST_FLAGS, flags);
 
-        mStockReceiver.setWaitingId(date);
+        if((flags & StockService.FLAG_USER_INITIATED) != 0)
+            mStockReceiver.setWaitingId(date);
 
         WakefulIntentService.sendWakefulWork(this, i);
     }
