@@ -456,14 +456,32 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
     private void addNearbyPoint(Info info) {
         // This will get called repeatedly up to eight times (in rare cases,
         // five times) when we ask for nearby points.  All we need to do is put
-        // those points on the map, stuff them in the map,
+        // those points on the map, and stuff them in the map.  Two different
+        // varieties of map.
         synchronized(mNearbyPoints) {
+            // The title might be a wee bit unwieldy, as it also has to include
+            // the graticule's location.  We DO know that this isn't a
+            // Globalhash, though.
+            String title;
+            String gratString = info.getGraticule().getLatitudeString(false) + " " + info.getGraticule().getLongitudeString(false);
+            if(info.isRetroHash()) {
+                title = getString(R.string.marker_title_nearby_retro_hashpoint,
+                        DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate()),
+                        gratString);
+            } else {
+                title = getString(R.string.marker_title_nearby_today_hashpoint,
+                        gratString);
+            }
+
+            // Snippet!  Snippet good.
+            String snippet = UnitConverter.makeFullCoordinateString(CentralMap.this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+
             Marker nearby = mMap.addMarker(new MarkerOptions()
                     .position(new LatLng(info.getLatitude(), info.getLongitude()))
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination_disabled))
                     .anchor(0.5f, 1.0f)
-                    .title("TEMPORARY TITLE TEXT!")
-                    .snippet("TEMPORARY SNIPPET TEXT!"));
+                    .title(title)
+                    .snippet(snippet));
 
             mNearbyPoints.put(nearby, info);
 
