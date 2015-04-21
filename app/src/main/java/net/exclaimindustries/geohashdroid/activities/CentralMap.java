@@ -12,14 +12,17 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.ConnectionResult;
@@ -42,6 +45,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
 import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
@@ -49,6 +53,8 @@ import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * CentralMap replaces MainMap as the map display.  Unlike MainMap, it also
@@ -65,6 +71,11 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
     private GoogleMap mMap;
     private boolean mMapIsReady = false;
     private GoogleApiClient mGoogleClient;
+
+    // This will hold all the nearby points we come up with.  They'll be
+    // removed any time we get a new Info in.  It's a map so that we have a
+    // quick way to switch to a new Info without having to call StockService.
+    private final Map<Marker, Info> mNearbyPoints = new HashMap<>();
 
     private ErrorBanner mBanner;
 
@@ -98,8 +109,14 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
 
             if(responseCode == StockService.RESPONSE_OKAY) {
                 // Hey, would you look at that, it actually worked!  So, get
-                // the Info out of it and fire it away!
-                setInfo((Info)intent.getParcelableExtra(StockService.EXTRA_INFO));
+                // the Info out of it and fire it away to the corresponding
+                // method.
+                Info received = intent.getParcelableExtra(StockService.EXTRA_INFO);
+
+                if((reqFlags & StockService.FLAG_NEARBY_POINT) != 0)
+                    addNearbyPoint(received);
+                else
+                    setInfo(received);
             } else if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
                 // ONLY notify the user of an error if they specifically
                 // requested this stock.
@@ -284,6 +301,14 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
             mDestination.remove();
         }
 
+        // Plus, all the nearby markers go away, if there's any there.
+        synchronized(mNearbyPoints) {
+            for(Marker m : mNearbyPoints.keySet()) {
+                m.remove();
+            }
+            mNearbyPoints.clear();
+        }
+
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.
         if(mCurrentInfo != null) {
@@ -350,6 +375,44 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
                         mBanner.animateBanner(true);
                     }
 
+                    // If the user wants the nearby points (AND this isn't a
+                    // Globalhash), we need to request them.  Now, the way we're
+                    // going to do this may seem inefficient, firing off (up to)
+                    // eight more Intents to StockService, but it covers the
+                    // bizarre cases of people trying to Geohash directly on the
+                    // 30W or 180E/W lines, as well as any oddities related to
+                    // the zero graticules.  Besides, it's best to keep
+                    // StockService simple.  The cache will ensure the points
+                    // will come back promptly in the general case.
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+                    if(!info.isGlobalHash() && prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true)) {
+                        Graticule g = info.getGraticule();
+
+                        for(int i = -1; i <= 1; i++) {
+                            for(int j = -1; j <= 1; j++) {
+                                // Zero and zero isn't a nearby point, that's
+                                // the very point we're at right now!
+                                if(i == 0 && j == 0) continue;
+
+                                // If the user's truly adventurous enough to go
+                                // to the 90N/S graticules, there aren't any
+                                // nearby points north/south of where they are.
+                                // Also, the nearby points aren't going to be
+                                // drawn anyway due to the projection, but hey,
+                                // that's nitpicking.
+                                if(Math.abs((g.isSouth() ? -1 : 1) * g.getLatitude() + i) > 90)
+                                    continue;
+
+                                // Make a new Graticule, properly offset...
+                                Graticule offset = Graticule.createOffsetFrom(g, i, j);
+
+                                // ...and make the request, WITH the appropriate
+                                // flag set.
+                                requestStock(offset, info.getCalendar(), StockService.FLAG_AUTO_INITIATED | StockService.FLAG_NEARBY_POINT);
+                            }
+                        }
+                    }
+
                     // Finally, try to zoom the map to where it needs to be,
                     // assuming we're connected to the APIs and have a location.
                     // Note that when the APIs connect, this'll be called, so we
@@ -387,6 +450,25 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
         } else {
             // Otherwise, make sure the title's back to normal.
             setTitle(R.string.app_name);
+        }
+    }
+
+    private void addNearbyPoint(Info info) {
+        // This will get called repeatedly up to eight times (in rare cases,
+        // five times) when we ask for nearby points.  All we need to do is put
+        // those points on the map, stuff them in the map,
+        synchronized(mNearbyPoints) {
+            Marker nearby = mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(info.getLatitude(), info.getLongitude()))
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination_disabled))
+                    .anchor(0.5f, 1.0f)
+                    .title("TEMPORARY TITLE TEXT!")
+                    .snippet("TEMPORARY SNIPPET TEXT!"));
+
+            mNearbyPoints.put(nearby, info);
+
+            // TODO: The marker should do something when tapped!  Or maybe its
+            // info window should.  One of the two.
         }
     }
 

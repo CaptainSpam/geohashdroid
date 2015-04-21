@@ -124,6 +124,13 @@ public class StockService extends WakefulIntentService {
      * hasn't overridden the expedition with a new date or Graticule.
      */
     public static final int FLAG_AUTO_INITIATED = 0x4;
+    /**
+     * Flag meaning this request was part of a check for nearby points.  This is
+     * only used by CentralMap when requesting the cluster of nearby points to
+     * the selected Graticule.  Therefore, use of this SHOULD imply
+     * {@link #FLAG_AUTO_INITIATED}.
+     */
+    public static final int FLAG_NEARBY_POINT = 0x8;
 
     /**
      * Flag meaning this response was found in the cache.  If not set, it was
