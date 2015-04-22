@@ -62,7 +62,9 @@ import java.util.Map;
  * make so much sense later when MainMap is little more than a class that only
  * exists on the legacy branch.
  */
-public class CentralMap extends Activity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class CentralMap
+        extends Activity
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnInfoWindowClickListener {
     private static final String DEBUG_TAG = "CentralMap";
 
     private boolean mSelectAGraticule = false;
@@ -71,6 +73,7 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
     private GoogleMap mMap;
     private boolean mMapIsReady = false;
     private GoogleApiClient mGoogleClient;
+    private AlertDialog mCurrentDialog;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -184,6 +187,7 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
                 set.setMyLocationButtonEnabled(false);
 
                 mMap.setMyLocationEnabled(true);
+                mMap.setOnInfoWindowClickListener(CentralMap.this);
 
                 // Now, set the flag that tells everything else we're ready.
                 // We'll need this because we're calling the very methods that
@@ -209,6 +213,10 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
     protected void onPause() {
         // The receiver goes right off as soon as we pause.
         unregisterReceiver(mStockReceiver);
+
+        // Get rid of that dialog, too.
+        if(mCurrentDialog != null && mCurrentDialog.isShowing())
+            mCurrentDialog.dismiss();
 
         super.onPause();
     }
@@ -484,9 +492,6 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
                     .snippet(snippet));
 
             mNearbyPoints.put(nearby, info);
-
-            // TODO: The marker should do something when tapped!  Or maybe its
-            // info window should.  One of the two.
         }
     }
 
@@ -555,5 +560,50 @@ public class CentralMap extends Activity implements GoogleApiClient.ConnectionCa
         CameraUpdate cam = CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
 
         mMap.animateCamera(cam);
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        // If a nearby marker's info window was clicked, that means we can
+        // switch to another point.
+        if(mNearbyPoints.containsKey(marker)) {
+            final Info newInfo = mNearbyPoints.get(marker);
+
+            // Ask first!  Get the current location (if possible) and prompt the
+            // user with a distance.
+            Location lastKnown = null;
+            if(mGoogleClient != null && mGoogleClient.isConnected())
+                lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
+
+            String message;
+            if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+                message = getString(R.string.dialog_switch_graticule_text,
+                        UnitConverter.makeDistanceString(this,
+                                UnitConverter.DISTANCE_FORMAT_SHORT,
+                                lastKnown.distanceTo(newInfo.getFinalLocation())));
+            } else {
+                message = getString(R.string.dialog_switch_graticule_unknown);
+            }
+
+            GHDBasicDialogBuilder builder = new GHDBasicDialogBuilder(this);
+            builder.setMessage(message)
+                    .setTitle(newInfo.getGraticule().getLatitudeString(false) + " " + newInfo.getGraticule().getLongitudeString(false))
+                    .setPositiveButton(getString(R.string.dialog_switch_graticule_okay), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Well, you heard the orders!
+                            dialog.dismiss();
+                            setInfo(newInfo);
+                        }
+                    })
+                    .setNegativeButton(getString(R.string.dialog_switch_graticule_cancel), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+
+            mCurrentDialog = builder.show();
+        }
     }
 }

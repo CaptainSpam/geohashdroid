@@ -48,7 +48,10 @@ public class UnitConverter {
     
     protected static final DecimalFormat SHORT_SECONDS_FORMAT = new DecimalFormat("##0.00", new DecimalFormatSymbols(Locale.US));
     protected static final DecimalFormat LONG_SECONDS_FORMAT = new DecimalFormat("##0.0000", new DecimalFormatSymbols(Locale.US));
-    
+
+    /** The standard short-form distance format. */
+    public static final DecimalFormat DISTANCE_FORMAT_SHORT = new DecimalFormat("###.###");
+
     private static final String DEBUG_TAG = "UnitConverter";
 
     /**

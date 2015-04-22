@@ -37,8 +37,8 @@
     <string name="darn_label">Darn!</string>
     <string name="close_label">Close</string>
 
-    <string name="dialog_switch_graticule_okay">Yes, change to this one</string>
-    <string name="dialog_switch_graticule_cancel">No, keep what I have</string>
+    <string name="dialog_switch_graticule_okay">Yes, change</string>
+    <string name="dialog_switch_graticule_cancel">No, stay here</string>
 
     <string name="dialog_switch_graticule_text">The point for that graticule is %1$s from your current location.  Do you want to switch to it?</string>
     <string name="dialog_switch_graticule_unknown">Do you want to switch to this graticule?</string>
