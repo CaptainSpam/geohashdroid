@@ -8,6 +8,7 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.app.Activity;
+import android.app.DialogFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -44,6 +45,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -64,8 +66,13 @@ import java.util.Map;
  */
 public class CentralMap
         extends Activity
-        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnInfoWindowClickListener {
+        implements GoogleApiClient.ConnectionCallbacks,
+            GoogleApiClient.OnConnectionFailedListener,
+            GoogleMap.OnInfoWindowClickListener,
+            NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback {
     private static final String DEBUG_TAG = "CentralMap";
+
+    private static final String NEARBY_DIALOG = "nearbyDialog";
 
     private boolean mSelectAGraticule = false;
     private Info mCurrentInfo;
@@ -73,7 +80,6 @@ public class CentralMap
     private GoogleMap mMap;
     private boolean mMapIsReady = false;
     private GoogleApiClient mGoogleClient;
-    private AlertDialog mCurrentDialog;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -213,10 +219,6 @@ public class CentralMap
     protected void onPause() {
         // The receiver goes right off as soon as we pause.
         unregisterReceiver(mStockReceiver);
-
-        // Get rid of that dialog, too.
-        if(mCurrentDialog != null && mCurrentDialog.isShowing())
-            mCurrentDialog.dismiss();
 
         super.onPause();
     }
@@ -575,35 +577,15 @@ public class CentralMap
             if(mGoogleClient != null && mGoogleClient.isConnected())
                 lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
 
-            String message;
-            if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
-                message = getString(R.string.dialog_switch_graticule_text,
-                        UnitConverter.makeDistanceString(this,
-                                UnitConverter.DISTANCE_FORMAT_SHORT,
-                                lastKnown.distanceTo(newInfo.getFinalLocation())));
-            } else {
-                message = getString(R.string.dialog_switch_graticule_unknown);
-            }
-
-            GHDBasicDialogBuilder builder = new GHDBasicDialogBuilder(this);
-            builder.setMessage(message)
-                    .setTitle(newInfo.getGraticule().getLatitudeString(false) + " " + newInfo.getGraticule().getLongitudeString(false))
-                    .setPositiveButton(getString(R.string.dialog_switch_graticule_okay), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // Well, you heard the orders!
-                            dialog.dismiss();
-                            setInfo(newInfo);
-                        }
-                    })
-                    .setNegativeButton(getString(R.string.dialog_switch_graticule_cancel), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-
-            mCurrentDialog = builder.show();
+            // Then, we've got a fragment that'll do this sort of work for us.
+            DialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, lastKnown);
+            frag.show(getFragmentManager(), NEARBY_DIALOG);
         }
+    }
+
+    @Override
+    public void nearbyGraticuleClicked(Info info) {
+        // Info!
+        setInfo(info);
     }
 }

@@ -165,11 +165,21 @@ public class GHDBasicDialogBuilder {
      * Shows the AlertDialog.  Which is to say, calls show() on the internal
      * builder.
      *
-     * @return the newly-created AlertDialog
+     * @return the newly-shown AlertDialog
      */
     public AlertDialog show() {
         mDialog = mBuilder.show();
 
         return mDialog;
+    }
+
+    /**
+     * Returns a newly-created AlertDialog.  This DOESN'T call show() on the
+     * internal builder.  Crucial difference.
+     *
+     * @return the newly-created AlertDialog
+     */
+    public AlertDialog create() {
+        return mBuilder.create();
     }
 }
