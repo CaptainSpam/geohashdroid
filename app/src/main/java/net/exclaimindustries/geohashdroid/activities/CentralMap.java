@@ -14,11 +14,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Point;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -38,6 +40,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -69,6 +72,7 @@ public class CentralMap
         implements GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener,
             GoogleMap.OnInfoWindowClickListener,
+            GoogleMap.OnCameraChangeListener,
             NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback {
     private static final String DEBUG_TAG = "CentralMap";
 
@@ -80,6 +84,8 @@ public class CentralMap
     private GoogleMap mMap;
     private boolean mMapIsReady = false;
     private GoogleApiClient mGoogleClient;
+
+    private DisplayMetrics mMetrics;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -167,6 +173,11 @@ public class CentralMap
 
         setContentView(R.layout.centralmap);
 
+        // Get our metrics set up ONCE so we're not doing this setup every time
+        // a camera update comes in.
+        mMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(mMetrics);
+
         // We deal with locations, so we deal with the GoogleApiClient.  It'll
         // connect during onStart.
         mGoogleClient = new GoogleApiClient.Builder(this)
@@ -194,6 +205,7 @@ public class CentralMap
 
                 mMap.setMyLocationEnabled(true);
                 mMap.setOnInfoWindowClickListener(CentralMap.this);
+                mMap.setOnCameraChangeListener(CentralMap.this);
 
                 // Now, set the flag that tells everything else we're ready.
                 // We'll need this because we're calling the very methods that
@@ -494,6 +506,12 @@ public class CentralMap
                     .snippet(snippet));
 
             mNearbyPoints.put(nearby, info);
+
+            // Finally, make sure it should be visible.  Do this per-marker, as
+            // we're not always sure we've got the full set of eight (edge case
+            // involving the poles) or if all of them will come in at the same
+            // time (edge cases involving 30W or 180E/W).
+            checkMarkerVisibility(nearby);
         }
     }
 
@@ -580,6 +598,48 @@ public class CentralMap
             // Then, we've got a fragment that'll do this sort of work for us.
             DialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, lastKnown);
             frag.show(getFragmentManager(), NEARBY_DIALOG);
+        }
+    }
+
+    @Override
+    public void onCameraChange(CameraPosition cameraPosition) {
+        // We're going to check visibility on each marker individually.  This
+        // might make some of them vanish while others remain on, owing to our
+        // good friend the Pythagorean Theorem and neat Mercator projection
+        // tricks.
+        for(Marker m : mNearbyPoints.keySet())
+            checkMarkerVisibility(m);
+    }
+
+    private void checkMarkerVisibility(Marker m) {
+        // On a camera change, we need to determine if the nearby markers
+        // (assuming they exist to begin with) need to be drawn.  If they're too
+        // far away, they'll get in a jumbled mess with the final destination
+        // flag, and we don't want that.  This is more or less similar to the
+        // clustering support in the Google Maps API v2 utilities, but since we
+        // always know the markers will be in a very specific cluster, we can
+        // just simplify it all into this.
+
+        // First, if we're not in the middle of an expedition, don't worry about
+        // it.
+        if(mCurrentInfo != null) {
+            // Figure out how far this marker is from the final point.  Hooray
+            // for Pythagoras!
+            Point dest = mMap.getProjection().toScreenLocation(mDestination.getPosition());
+            Point mark = mMap.getProjection().toScreenLocation(m.getPosition());
+
+            // toScreenLocation gives us values as screen pixels, not display
+            // pixels.  Let's convert that to display pixels for sanity's sake.
+            double dist = Math.sqrt(Math.pow((dest.x - mark.x), 2) + Math.pow(dest.y - mark.y, 2)) / mMetrics.density;
+
+            boolean visible = true;
+
+            // 50dp should be roughly enough.  If I need to change this later,
+            // it's going to be because the images will scale by pixel density.
+            if(dist < 50)
+                visible = false;
+
+            m.setVisible(visible);
         }
     }
 
