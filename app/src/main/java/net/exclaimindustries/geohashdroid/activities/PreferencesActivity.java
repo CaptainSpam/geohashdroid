@@ -8,7 +8,8 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
-import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -35,8 +36,6 @@ import java.util.List;
  * time around, right?  That certainly won't be confusing!
  */
 public class PreferencesActivity extends PreferenceActivity {
-    private AlertDialog mCurrentDialog;
-
     /**
      * This largely comes from Android Studio's default Setting Activity wizard
      * thingamajig.  It conveniently updates preferences with summaries.
@@ -175,6 +174,47 @@ public class PreferencesActivity extends PreferenceActivity {
      * These preferences are outcasts, and nobody likes them.
      */
     public static class OtherPreferenceFragment extends PreferenceFragment {
+        private static final String WIPE_DIALOG = "wipeDialog";
+
+        /**
+         * This is the {@link DialogFragment} that shows up when the user wants
+         * to wipe the stock cache, just to make really really sure the user
+         * really wants to do so.
+         */
+        public static class WipeCacheDialogFragment extends DialogFragment {
+            @Override
+            public Dialog onCreateDialog(Bundle savedInstanceState) {
+                return new GHDBasicDialogBuilder(getActivity()).setMessage(R.string.pref_stockwipe_dialog_text)
+                        .setTitle(R.string.pref_stockwipe_title)
+                        .setPositiveButton(getString(R.string.dialog_stockwipe_yes), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // Well, you heard the orders!
+                                dismiss();
+
+                                if(HashBuilder.deleteCache(getActivity())) {
+                                    Toast.makeText(
+                                            getActivity(),
+                                            R.string.toast_stockwipe_success,
+                                            Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(
+                                            getActivity(),
+                                            R.string.toast_stockwipe_failure,
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        })
+                        .setNegativeButton(getString(R.string.dialog_stockwipe_no), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dismiss();
+                            }
+                        })
+                        .create();
+            }
+        }
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -214,55 +254,11 @@ public class PreferencesActivity extends PreferenceActivity {
             findPreference("_stockWipe").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
-                    GHDBasicDialogBuilder builder = new GHDBasicDialogBuilder(getActivity());
-                    builder.setMessage(R.string.pref_stockwipe_dialog_text)
-                            .setTitle(R.string.pref_stockwipe_title)
-                            .setPositiveButton(getString(R.string.dialog_stockwipe_yes), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    // Well, you heard the orders!
-                                    dialog.dismiss();
-
-                                    if(HashBuilder.deleteCache(getActivity())) {
-                                        Toast.makeText(
-                                                getActivity(),
-                                                R.string.toast_stockwipe_success,
-                                                Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Toast.makeText(
-                                                getActivity(),
-                                                R.string.toast_stockwipe_failure,
-                                                Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            })
-                            .setNegativeButton(getString(R.string.dialog_stockwipe_no), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            });
-
-                    AlertDialog d = builder.show();
-                    ((PreferencesActivity)getActivity()).setCurrentDialog(d);
-
+                    WipeCacheDialogFragment frag = new WipeCacheDialogFragment();
+                    frag.show(getFragmentManager(), WIPE_DIALOG);
                     return true;
                 }
             });
         }
-    }
-
-    @Override
-    protected void onPause() {
-        // We really need to do something about that dialog (if it's up), else
-        // it'll just leak a window all over the place.
-        if(mCurrentDialog != null && mCurrentDialog.isShowing())
-            mCurrentDialog.dismiss();
-
-        super.onPause();
-    }
-
-    private void setCurrentDialog(AlertDialog dialog) {
-        mCurrentDialog = dialog;
     }
 }
