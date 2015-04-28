@@ -79,6 +79,7 @@ public class CentralMap
     private static final String NEARBY_DIALOG = "nearbyDialog";
 
     private boolean mSelectAGraticule = false;
+    private boolean mWaitingOnInitialZoom = false;
     private Info mCurrentInfo;
     private Marker mDestination;
     private GoogleMap mMap;
@@ -160,6 +161,17 @@ public class CentralMap
 
     private StockReceiver mStockReceiver;
 
+    private LocationListener mInitialZoomListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            // Got it!
+            mWaitingOnInitialZoom = false;
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
+            mBanner.animateBanner(false);
+            zoomToIdeal(location);
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -232,6 +244,11 @@ public class CentralMap
         // The receiver goes right off as soon as we pause.
         unregisterReceiver(mStockReceiver);
 
+        // Also, stop listening for the initial zoom if we haven't received it
+        // yet.
+        if(mGoogleClient != null)
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mInitialZoomListener);
+
         super.onPause();
     }
 
@@ -243,6 +260,12 @@ public class CentralMap
         // waiting for anything yet.
         IntentFilter filt = new IntentFilter();
         filt.addAction(StockService.ACTION_STOCK_RESULT);
+
+        // On resume, if we were waiting on a location update before, do it
+        // again.  This'll only kick in if onStop wasn't called, since onStart
+        // fires off a setInfo, which in turn does the location update.
+        if(mWaitingOnInitialZoom)
+            doInitialZoom();
 
         registerReceiver(mStockReceiver, filt);
     }
@@ -259,6 +282,10 @@ public class CentralMap
     protected void onStop() {
         // Service down!
         mGoogleClient.disconnect();
+
+        // Also, don't bother with the initial zoom.  onStart will do setInfo,
+        // which will in turn do that.
+        mWaitingOnInitialZoom = false;
 
         super.onStop();
     }
@@ -440,31 +467,7 @@ public class CentralMap
                     // Note that when the APIs connect, this'll be called, so we
                     // don't need to set up a callback or whatnot.
                     if(mGoogleClient != null && mGoogleClient.isConnected()) {
-                        Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
-
-                        // Also, we want the last known location to be at least
-                        // SANELY recent.
-                        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
-                            zoomToIdeal(lastKnown);
-                        } else {
-                            // Otherwise, wait for the first update and use that
-                            // for an initial zoom.
-                            mBanner.setErrorStatus(ErrorBanner.Status.NORMAL);
-                            mBanner.setText(getText(R.string.search_label).toString());
-                            mBanner.animateBanner(true);
-                            LocationRequest lRequest = LocationRequest.create();
-                            lRequest.setInterval(1000);
-                            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-                            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, new LocationListener() {
-                                @Override
-                                public void onLocationChanged(Location location) {
-                                    // Got it!
-                                    LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
-                                    mBanner.animateBanner(false);
-                                    zoomToIdeal(location);
-                                }
-                            });
-                        }
+                        doInitialZoom();
                     }
                 }
             });
@@ -647,5 +650,25 @@ public class CentralMap
     public void nearbyGraticuleClicked(Info info) {
         // Info!
         setInfo(info);
+    }
+
+    private void doInitialZoom() {
+        Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
+
+        // We want the last known location to be at least SANELY recent.
+        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+            zoomToIdeal(lastKnown);
+        } else {
+            // Otherwise, wait for the first update and use that for an initial
+            // zoom.
+            mWaitingOnInitialZoom = true;
+            mBanner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            mBanner.setText(getText(R.string.search_label).toString());
+            mBanner.animateBanner(true);
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mInitialZoomListener);
+        }
     }
 }
