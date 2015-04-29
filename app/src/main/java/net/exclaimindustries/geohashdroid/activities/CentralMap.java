@@ -78,12 +78,18 @@ public class CentralMap
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
 
+    // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
+    // If we're still waiting on initial zoom between pauses.
     private boolean mWaitingOnInitialZoom = false;
+    // If we already did the initial zoom for this expedition.
+    private boolean mAlreadyDidInitialZoom = false;
+    // If the map's ready.
+    private boolean mMapIsReady = false;
+
     private Info mCurrentInfo;
     private Marker mDestination;
     private GoogleMap mMap;
-    private boolean mMapIsReady = false;
     private GoogleApiClient mGoogleClient;
 
     private DisplayMetrics mMetrics;
@@ -131,8 +137,10 @@ public class CentralMap
 
                 if((reqFlags & StockService.FLAG_NEARBY_POINT) != 0)
                     addNearbyPoint(received);
-                else
+                else {
+                    mAlreadyDidInitialZoom = false;
                     setInfo(received);
+                }
             } else if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
                 // ONLY notify the user of an error if they specifically
                 // requested this stock.
@@ -166,6 +174,7 @@ public class CentralMap
         public void onLocationChanged(Location location) {
             // Got it!
             mWaitingOnInitialZoom = false;
+            mAlreadyDidInitialZoom = true;
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
             mBanner.animateBanner(false);
             zoomToIdeal(location);
@@ -180,6 +189,10 @@ public class CentralMap
         if(savedInstanceState != null) {
             if(savedInstanceState.containsKey("info")) {
                 mCurrentInfo = savedInstanceState.getParcelable("info");
+            }
+
+            if(savedInstanceState.containsKey("alreadyZoomed")) {
+                mAlreadyDidInitialZoom = savedInstanceState.getBoolean("alreadyZoomed", false);
             }
         }
 
@@ -299,6 +312,8 @@ public class CentralMap
         // time.  Determine the correct way to determine that.
         outState.putParcelable("info", mCurrentInfo);
 
+        // Keep the already-zoomed flag, too.
+        outState.putBoolean("alreadyZoomed", mAlreadyDidInitialZoom);
     }
 
     @Override
@@ -655,8 +670,11 @@ public class CentralMap
     private void doInitialZoom() {
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
 
+        if(mAlreadyDidInitialZoom) return;
+
         // We want the last known location to be at least SANELY recent.
         if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+            mAlreadyDidInitialZoom = true;
             zoomToIdeal(lastKnown);
         } else {
             // Otherwise, wait for the first update and use that for an initial
