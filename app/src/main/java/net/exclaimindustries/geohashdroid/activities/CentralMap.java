@@ -285,7 +285,7 @@ public class CentralMap
 
     @Override
     protected void onStart() {
-        super.onRestart();
+        super.onStart();
 
         // Service up!
         mGoogleClient.connect();
@@ -670,7 +670,10 @@ public class CentralMap
     private void doInitialZoom() {
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
 
-        if(mAlreadyDidInitialZoom) return;
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean autoZoom = prefs.getBoolean(GHDConstants.PREF_AUTOZOOM, true);
+
+        if(mAlreadyDidInitialZoom && !autoZoom) return;
 
         // We want the last known location to be at least SANELY recent.
         if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {

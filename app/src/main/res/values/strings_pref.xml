@@ -4,9 +4,9 @@
     <string name="pref_cat_other">Other options</string>
     <string name="pref_cat_wiki">Wiki options</string>
 
-    <string name="pref_autozoom_title">Auto-zoom</string>
-    <string name="pref_autozoom_on">Automatically zoom as you move (manual zooming overrides this)</string>
-    <string name="pref_autozoom_off">Only zoom manually</string>
+    <string name="pref_autozoom_title">Auto-rezoom to ideal view</string>
+    <string name="pref_autozoom_on">Re-zoom any time the map is (re)loaded</string>
+    <string name="pref_autozoom_off">Only re-zoom when changing the expedition</string>
 
     <string name="pref_remembergraticule_title">Auto-fill last graticule</string>
     <string name="pref_remembergraticule_on">When starting the program, fill in the last graticule used</string>
