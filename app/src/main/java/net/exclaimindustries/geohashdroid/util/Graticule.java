@@ -523,4 +523,9 @@ public class Graticule implements Parcelable {
                 || g.getLongitude() != getLongitude()
                 || g.isSouth() != isSouth() || g.isWest() != isWest());
     }
+
+    @Override
+    public String toString() {
+        return "Graticule for " + getLatitudeString(false) + " " + getLongitudeString(false);
+    }
 }
