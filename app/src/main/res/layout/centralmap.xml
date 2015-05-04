@@ -24,4 +24,13 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_margin="@dimen/standard_padding"/>
+
+    <fragment
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:name="net.exclaimindustries.geohashdroid.fragments.GraticulePickerFragment"
+        android:id="@+id/fragment"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        tools:layout="@layout/graticulepicker"/>
 </RelativeLayout>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:background="@android:color/white"
+              android:gravity="center_horizontal"
+              android:orientation="vertical"
+              android:padding="@dimen/standard_padding">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/grat_lat"
+            android:layout_width="@dimen/input_graticule_width"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="@dimen/input_graticule_margin"
+            android:digits="0123456789-"
+            android:hint="@string/hint_lat"
+            android:inputType="numberSigned"
+            android:maxLength="4"
+            android:saveEnabled="true"
+            android:selectAllOnFocus="true"
+            android:textSize="@dimen/input_graticule_fontsize"/>
+
+        <EditText
+            android:id="@+id/grat_lon"
+            android:layout_width="@dimen/input_graticule_width"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="@dimen/input_graticule_margin"
+            android:digits="0123456789-"
+            android:hint="@string/hint_lon"
+            android:inputType="numberSigned"
+            android:maxLength="4"
+            android:saveEnabled="true"
+            android:selectAllOnFocus="true"
+            android:textSize="@dimen/input_graticule_fontsize"/>
+
+        <CheckBox
+            android:id="@+id/grat_globalhash"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="@string/globalhash_label"/>
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/grat_closest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:drawableLeft="@drawable/refresh"
+        android:drawablePadding="@dimen/input_graticule_closest_icon_margin"
+        android:drawableStart="@drawable/refresh"
+        android:text="@string/closest_label"/>
+
+</LinearLayout>

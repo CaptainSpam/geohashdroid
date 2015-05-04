@@ -25,7 +25,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.ConnectionResult;
@@ -48,6 +47,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.fragments.GraticulePickerFragment;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
@@ -70,10 +70,11 @@ import java.util.Map;
 public class CentralMap
         extends Activity
         implements GoogleApiClient.ConnectionCallbacks,
-            GoogleApiClient.OnConnectionFailedListener,
-            GoogleMap.OnInfoWindowClickListener,
-            GoogleMap.OnCameraChangeListener,
-            NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback {
+                   GoogleApiClient.OnConnectionFailedListener,
+                   GoogleMap.OnInfoWindowClickListener,
+                   GoogleMap.OnCameraChangeListener,
+                   NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
+                   GraticulePickerFragment.GraticulePickerListener {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
@@ -691,5 +692,15 @@ public class CentralMap
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mInitialZoomListener);
         }
+    }
+
+    @Override
+    public void updateGraticule(Graticule g) {
+        Log.d(DEBUG_TAG, "New Graticule: " + (g == null ? "Globalhash!" : g.toString()));
+    }
+
+    @Override
+    public void findClosest() {
+        Log.d(DEBUG_TAG, "BEEP");
     }
 }

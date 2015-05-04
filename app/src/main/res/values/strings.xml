@@ -28,7 +28,7 @@
     <string name="ok_label">Okay</string>
     <string name="gratmap_go_label">Use this one</string>
     <string name="backtomap_label">Back to the map</string>
-    <string name="closest_label">Use Closest</string>
+    <string name="closest_label">Find Closest</string>
     <string name="globalhash_label">Globalhash!</string>
     <string name="gratmap_label">Pick From Map</string>
     <string name="always_today_label">Today</string>
