@@ -13,6 +13,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -60,11 +61,14 @@ public class ErrorBanner extends LinearLayout {
         });
 
         // On startup, we want to make sure the view is off-screen until we're
-        // told different.  But, we can't just use setBannerVisible, as we
-        // haven't gone through layout yet, meaning we don't actually have a
-        // height.  So...
-        setTranslationY(-context.getResources().getDimension(R.dimen.error_banner_height));
-        setAlpha(0.0f);
+        // told different.
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // Got a height!  Hopefully.
+                setBannerVisible(false);
+            }
+        });
     }
 
     /**
