@@ -260,7 +260,7 @@ public class CentralMap
 
         // Also, stop listening for the initial zoom if we haven't received it
         // yet.
-        if(mGoogleClient != null)
+        if(mGoogleClient != null && mGoogleClient.isConnected())
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mInitialZoomListener);
 
         super.onPause();
@@ -558,7 +558,8 @@ public class CentralMap
         // If we're coming back from somewhere, reset the marker.  This is just
         // in case the user changes coordinate preferences, as the marker only
         // updates its internal info when it's created.
-        setInfo(mCurrentInfo);
+        if(!isFinishing())
+            setInfo(mCurrentInfo);
     }
 
     @Override
@@ -702,5 +703,10 @@ public class CentralMap
     @Override
     public void findClosest() {
         Log.d(DEBUG_TAG, "BEEP");
+    }
+
+    @Override
+    public void graticulePickerClosing() {
+        Log.d(DEBUG_TAG, "CLOSING NOW...");
     }
 }

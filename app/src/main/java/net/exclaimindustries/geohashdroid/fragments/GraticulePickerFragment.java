@@ -16,10 +16,12 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -58,6 +60,13 @@ public class GraticulePickerFragment
          * results of said search (assuming it can get such a result).
          */
         void findClosest();
+
+        /**
+         * Called when the picker is closing.  For now, this just means when
+         * the close button is pressed.  In the future, it might also mean if
+         * it gets swipe-to-dismiss'd.
+         */
+        void graticulePickerClosing();
     }
 
     @Nullable
@@ -72,6 +81,7 @@ public class GraticulePickerFragment
         mLon = (EditText)v.findViewById(R.id.grat_lon);
         mGlobal = (CheckBox)v.findViewById(R.id.grat_globalhash);
         Button closest = (Button) v.findViewById(R.id.grat_closest);
+        ImageButton close = (ImageButton)v.findViewById(R.id.close);
 
         // And how ARE they magical?  Well, like this.  First, any time the
         // boxes are updated, send out a new Graticule to the Activity.
@@ -116,12 +126,32 @@ public class GraticulePickerFragment
             }
         });
 
-        // Finally, the Find Closest button.  That one we foist off on the
-        // calling Activity.
+        // Then, the Find Closest button.  That one we foist off on the calling
+        // Activity.
         closest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 ((GraticulePickerListener) getActivity()).findClosest();
+            }
+        });
+
+        // The close button needs to, well, close.
+        close.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                animateFragment(false);
+                ((GraticulePickerListener) getActivity()).graticulePickerClosing();
+            }
+        });
+
+        // At create time like this, we also want to make sure the view is
+        // hidden if need be.  Here's a neat trick I picked up...
+        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // TODO: Don't do this if we're reloading the view and we WANT
+                // it visible!
+                setFragmentVisible(false);
             }
         });
 
@@ -173,5 +203,35 @@ public class GraticulePickerFragment
 
         // And we're done, so unset the flag.
         mExternalUpdate = false;
+    }
+
+    public void animateFragment(boolean visible) {
+        View v = getView();
+        if(v == null) return;
+
+        if(!visible) {
+            // Slide out!
+            v.animate().translationY(v.getHeight()).alpha(0.0f);
+        } else {
+            // Slide in!
+            v.animate().translationY(0.0f).alpha(1.0f);
+        }
+    }
+
+    public void setFragmentVisible(boolean visible) {
+        View v = getView();
+        if(v == null) return;
+
+        if(!visible) {
+            // The translation should be negative the height of the view, which
+            // should neatly hide it away while allowing it to slide back in
+            // later if need be.
+            v.setTranslationY(v.getHeight());
+            v.setAlpha(0.0f);
+        } else {
+            // Otherwise, it goes back to its normal spot.
+            v.setTranslationY(0.0f);
+            v.setAlpha(1.0f);
+        }
     }
 }

@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:background="@android:color/white"
-              android:gravity="center_horizontal"
-              android:orientation="vertical"
-              android:padding="@dimen/standard_padding">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="@dimen/standard_padding"
+                tools:showIn="@layout/centralmap">
 
     <LinearLayout
+        android:id="@+id/latlonrow"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:layout_gravity="center_horizontal"
         android:orientation="horizontal">
 
@@ -54,10 +58,22 @@
         android:id="@+id/grat_closest"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/latlonrow"
+        android:layout_centerHorizontal="true"
         android:layout_gravity="center_horizontal"
         android:drawableLeft="@drawable/refresh"
         android:drawablePadding="@dimen/input_graticule_closest_icon_margin"
         android:drawableStart="@drawable/refresh"
         android:text="@string/closest_label"/>
 
-</LinearLayout>
+    <ImageButton
+        android:id="@+id/close"
+        style="@style/GeohashDroid.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/grat_closest"
+        android:layout_alignRight="@+id/latlonrow"
+        android:layout_gravity="center_vertical"
+        android:contentDescription="@string/close_label"
+        android:src="@drawable/ic_action_cancel"/>
+</RelativeLayout>
