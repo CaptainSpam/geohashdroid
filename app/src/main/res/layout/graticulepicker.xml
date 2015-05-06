@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
+<view xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@android:color/white"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
                 android:padding="@dimen/standard_padding"
-                tools:showIn="@layout/centralmap">
+                class="net.exclaimindustries.geohashdroid.widgets.AnimatedRelativeLayout">
 
     <LinearLayout
         android:id="@+id/latlonrow"
@@ -76,4 +75,4 @@
         android:layout_gravity="center_vertical"
         android:contentDescription="@string/close_label"
         android:src="@drawable/ic_action_cancel"/>
-</RelativeLayout>
+</view>

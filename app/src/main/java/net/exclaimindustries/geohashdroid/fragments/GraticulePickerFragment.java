@@ -16,7 +16,6 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -64,7 +63,8 @@ public class GraticulePickerFragment
         /**
          * Called when the picker is closing.  For now, this just means when
          * the close button is pressed.  In the future, it might also mean if
-         * it gets swipe-to-dismiss'd.
+         * it gets swipe-to-dismiss'd.  Note that this Fragment won't do its own
+         * dismissal.  You need to handle that yourself.
          */
         void graticulePickerClosing();
     }
@@ -74,7 +74,7 @@ public class GraticulePickerFragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
 
-        View v = inflater.inflate(R.layout.graticulepicker, container, true);
+        View v = inflater.inflate(R.layout.graticulepicker, container, false);
 
         // Here come the widgets.  Each is magical and unique.
         mLat = (EditText)v.findViewById(R.id.grat_lat);
@@ -139,19 +139,7 @@ public class GraticulePickerFragment
         close.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                animateFragment(false);
                 ((GraticulePickerListener) getActivity()).graticulePickerClosing();
-            }
-        });
-
-        // At create time like this, we also want to make sure the view is
-        // hidden if need be.  Here's a neat trick I picked up...
-        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // TODO: Don't do this if we're reloading the view and we WANT
-                // it visible!
-                setFragmentVisible(false);
             }
         });
 
@@ -203,35 +191,5 @@ public class GraticulePickerFragment
 
         // And we're done, so unset the flag.
         mExternalUpdate = false;
-    }
-
-    public void animateFragment(boolean visible) {
-        View v = getView();
-        if(v == null) return;
-
-        if(!visible) {
-            // Slide out!
-            v.animate().translationY(v.getHeight()).alpha(0.0f);
-        } else {
-            // Slide in!
-            v.animate().translationY(0.0f).alpha(1.0f);
-        }
-    }
-
-    public void setFragmentVisible(boolean visible) {
-        View v = getView();
-        if(v == null) return;
-
-        if(!visible) {
-            // The translation should be negative the height of the view, which
-            // should neatly hide it away while allowing it to slide back in
-            // later if need be.
-            v.setTranslationY(v.getHeight());
-            v.setAlpha(0.0f);
-        } else {
-            // Otherwise, it goes back to its normal spot.
-            v.setTranslationY(0.0f);
-            v.setAlpha(1.0f);
-        }
     }
 }

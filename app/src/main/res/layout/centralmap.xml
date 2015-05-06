@@ -25,13 +25,12 @@
         android:layout_centerHorizontal="true"
         android:layout_margin="@dimen/standard_padding"/>
 
-    <fragment
+    <FrameLayout
+        android:id="@+id/graticulepicker"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:name="net.exclaimindustries.geohashdroid.fragments.GraticulePickerFragment"
-        android:id="@+id/graticulepicker"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_margin="@dimen/standard_padding"
-        tools:layout="@layout/graticulepicker"/>
+        android:layout_margin="@dimen/standard_padding"/>
+
 </RelativeLayout>

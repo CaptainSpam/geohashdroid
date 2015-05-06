@@ -9,6 +9,8 @@ package net.exclaimindustries.geohashdroid.activities;
 
 import android.app.Activity;
 import android.app.DialogFragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -78,6 +80,7 @@ public class CentralMap
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
+    private static final String GRATICULE_PICKER_STACK = "GraticulePickerStack";
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -195,6 +198,10 @@ public class CentralMap
             if(savedInstanceState.containsKey("alreadyZoomed")) {
                 mAlreadyDidInitialZoom = savedInstanceState.getBoolean("alreadyZoomed", false);
             }
+
+            if(savedInstanceState.containsKey("selectAGraticule")) {
+                mSelectAGraticule = savedInstanceState.getBoolean("selectAGraticule", false);
+            }
         }
 
         setContentView(R.layout.centralmap);
@@ -245,7 +252,7 @@ public class CentralMap
                 // fact, the user might've also asked for Select-A-Graticule
                 // mode.
                 if(mSelectAGraticule) {
-                    // TODO: Make Select-A-Graticule mode.
+                    enterSelectAGraticuleMode(false);
                 } else {
                     setInfo(mCurrentInfo);
                 }
@@ -313,8 +320,9 @@ public class CentralMap
         // time.  Determine the correct way to determine that.
         outState.putParcelable("info", mCurrentInfo);
 
-        // Keep the already-zoomed flag, too.
+        // Keep the various flags, too.
         outState.putBoolean("alreadyZoomed", mAlreadyDidInitialZoom);
+        outState.putBoolean("selectAGraticule", mSelectAGraticule);
     }
 
     @Override
@@ -332,6 +340,16 @@ public class CentralMap
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
+            case R.id.action_selectagraticule: {
+                // It's Select-A-Graticule Mode!  At long last!
+                enterSelectAGraticuleMode(true);
+                return true;
+            }
+            case R.id.action_exitgraticule: {
+                // We've left Select-A-Graticule for whatever reason.
+                exitSelectAGraticuleMode();
+                return true;
+            }
             case R.id.action_whatisthis: {
                 // The everfamous and much-beloved "What's Geohashing?" button,
                 // because honestly, this IS sort of confusing if you're
@@ -695,6 +713,52 @@ public class CentralMap
         }
     }
 
+    private void enterSelectAGraticuleMode(boolean addFragment) {
+        mSelectAGraticule = true;
+        invalidateOptionsMenu();
+
+        // We might not need the fragment to be added if the back stack has
+        // been restored from somewhere.
+        if(addFragment) {
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.setCustomAnimations(R.animator.slide_in_from_bottom,
+                    R.animator.slide_out_to_bottom,
+                    R.animator.slide_in_from_bottom,
+                    R.animator.slide_out_to_bottom);
+
+            GraticulePickerFragment gpf = new GraticulePickerFragment();
+            transaction.replace(R.id.graticulepicker, gpf, "GraticulePicker");
+            transaction.addToBackStack(GRATICULE_PICKER_STACK);
+            transaction.commit();
+        }
+
+        // TODO: Set up the map's interactivity, too.
+    }
+
+    private void exitSelectAGraticuleMode() {
+        if(!mSelectAGraticule) return;
+
+        mSelectAGraticule = false;
+        invalidateOptionsMenu();
+
+        getFragmentManager().popBackStack(GRATICULE_PICKER_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        // TODO: Restore map back to expedition mode, too.
+    }
+
+    @Override
+    public void onBackPressed() {
+        // If we're in Select-A-Graticule, pressing back will send us back to
+        // expedition mode.  This seems obvious, especially when the default
+        // implementation will close the graticule fragment anyway when the back
+        // stack is popped, but we also need to do the other stuff like change
+        // the menu back, stop the tap-the-map selections, etc.
+        if(mSelectAGraticule)
+            exitSelectAGraticuleMode();
+        else
+            super.onBackPressed();
+    }
+
     @Override
     public void updateGraticule(Graticule g) {
         Log.d(DEBUG_TAG, "New Graticule: " + (g == null ? "Globalhash!" : g.toString()));
@@ -707,6 +771,6 @@ public class CentralMap
 
     @Override
     public void graticulePickerClosing() {
-        Log.d(DEBUG_TAG, "CLOSING NOW...");
+        exitSelectAGraticuleMode();
     }
 }
