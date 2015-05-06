@@ -15,6 +15,7 @@ import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.maps.GeoPoint;
 
 /**
@@ -162,8 +163,18 @@ public class Info implements Parcelable {
     }
 
     /**
+     * Returns the final destination as a LatLng object, convenient for the Maps
+     * v2 API.
+     *
+     * @return a LatLng based on the data obtained from the connection
+     */
+    public LatLng getFinalDestinationLatLng() {
+        return new LatLng(getLatitude(), getLongitude());
+    }
+
+    /**
      * Returns the final destination as a Location object, which isn't quite as
-     * useful as a GeoPoint object, but you never know, it could come in handy.
+     * useful as a LatLng object, but you never know, it could come in handy.
      * 
      * @return a providerless Location based on the data obtained from the
      *         connection
@@ -227,6 +238,17 @@ public class Info implements Parcelable {
     public float getDistanceInMeters(GeoPoint point) {
         return locationFromGeoPoint(point).distanceTo(getFinalLocation());
     }
+
+    /**
+     * Gets the distance, in meters, from the given LatLng and the final
+     * destination.
+     *
+     * @param latLng LatLng to compare
+     * @return the distance, in meters, to the final destination
+     */
+    public float getDistanceInMeters(LatLng latLng) {
+        return locationFromLatLng(latLng).distanceTo(getFinalLocation());
+    }
     
     /**
      * Returns a calendar representing the date from which the stock price was
@@ -286,6 +308,15 @@ public class Info implements Parcelable {
 
         loc.setLatitude(point.getLatitudeE6() / 1000000.0f);
         loc.setLongitude(point.getLongitudeE6() / 1000000.0f);
+
+        return loc;
+    }
+
+    private static Location locationFromLatLng(LatLng latLng) {
+        Location loc = new Location("");
+
+        loc.setLatitude(latLng.latitude);
+        loc.setLongitude(latLng.longitude);
 
         return loc;
     }

@@ -430,7 +430,7 @@ public class CentralMap
                     // default icon also uses, but we're not concerned with the
                     // default icon, now, are we?
                     mDestination = mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(info.getLatitude(), info.getLongitude()))
+                            .position(info.getFinalDestinationLatLng())
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
                             .anchor(0.5f, 1.0f)
                             .title(title)
@@ -536,7 +536,7 @@ public class CentralMap
             String snippet = UnitConverter.makeFullCoordinateString(CentralMap.this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
 
             Marker nearby = mMap.addMarker(new MarkerOptions()
-                    .position(new LatLng(info.getLatitude(), info.getLongitude()))
+                    .position(info.getFinalDestinationLatLng())
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination_disabled))
                     .anchor(0.5f, 1.0f)
                     .title(title)
@@ -612,7 +612,7 @@ public class CentralMap
         // but I want this to be readable later without headaches.
         LatLngBounds bounds = LatLngBounds.builder()
                 .include(new LatLng(current.getLatitude(), current.getLongitude()))
-                .include(new LatLng(mCurrentInfo.getLatitude(), mCurrentInfo.getLongitude()))
+                .include(mCurrentInfo.getFinalDestinationLatLng())
                 .build();
 
         CameraUpdate cam = CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
