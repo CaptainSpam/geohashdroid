@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid.util;
 
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.maps.GeoPoint;
 
 import android.location.Location;
@@ -40,37 +42,32 @@ public class Graticule implements Parcelable {
     private boolean mWest = false;
     
     /**
-     * Constructs a new Graticule with the given Location object. This seems
-     * like it's most likely what you want, but in the current version of this,
-     * the Graticule is most likely made through the int constructor due to how
-     * the information is gathered in the main interface.
+     * Constructs a new Graticule with the given Location object.
      * 
-     * @param location
-     *            Location to make a new Graticule out of
+     * @param location Location to make a new Graticule out of
      */
     public Graticule(Location location) {
-        if (location.getLatitude() < 0)
-            mSouth = true;
-        if (location.getLongitude() < 0)
-            mWest = true;
-        this.setLatitude(Math.abs((int)location.getLatitude()));
-        this.setLongitude(Math.abs((int)location.getLongitude()));
+        this(location.getLatitude(), location.getLongitude());
     }
 
     /**
      * Constructs a new Graticule with the given GeoPoint object. Similar deal
      * to the Location version of this.
-     * 
-     * @param point
-     *            GeoPoint to make a new Graticule out of
+     *
+     * @param point GeoPoint to make a new Graticule out of
      */
     public Graticule(GeoPoint point) {
-        if (point.getLatitudeE6() < 0)
-            mSouth = true;
-        if (point.getLongitudeE6() < 0)
-            mWest = true;
-        setLatitude(Math.abs(point.getLatitudeE6() / 1000000));
-        setLongitude(Math.abs(point.getLongitudeE6() / 1000000));
+        this(point.getLatitudeE6() / 1000000f, point.getLongitudeE6() / 1000000f);
+    }
+
+    /**
+     * Constructs a new Graticule with the given LatLng object, because GeoPoint
+     * isn't good enough for the v2 API anymore, apparently.
+     *
+     * @param latLng LatLng to make a new Graticule out of
+     */
+    public Graticule(LatLng latLng) {
+        this(latLng.latitude, latLng.longitude);
     }
 
     /**
@@ -91,14 +88,10 @@ public class Graticule implements Parcelable {
      * This will also ignore any negatives in your inputs (-75 will become 75).
      * </p>
      * 
-     * @param latitude
-     *            latitude to set
-     * @param south
-     *            true if south, false if north
-     * @param longitude
-     *            longitude to set
-     * @param west
-     *            true if west, false if east
+     * @param latitude latitude to set
+     * @param south true if south, false if north
+     * @param longitude longitude to set
+     * @param west true if west, false if east
      */
     public Graticule(int latitude, boolean south, int longitude, boolean west) {
         this.mSouth = south;
@@ -121,10 +114,8 @@ public class Graticule implements Parcelable {
      * GPS gives you a direct zero.
      * </p>
      * 
-     * @param latitude
-     *            latitude to set
-     * @param longitude
-     *            longitude to set
+     * @param latitude latitude to set
+     * @param longitude longitude to set
      */
     public Graticule(double latitude, double longitude) {
         mSouth = latitude < 0;
@@ -137,14 +128,10 @@ public class Graticule implements Parcelable {
      * Constructs a new Graticule with the given String forms of the latitude
      * and longitude.
      * 
-     * @param latitude
-     *            latitude to set
-     * @param longitude
-     *            longitude to set
-     * @throws NullPointerException
-     *             either of the input strings were empty
-     * @throws NumberFormatException
-     *             either of the input strings weren't numbers
+     * @param latitude latitude to set
+     * @param longitude longitude to set
+     * @throws NullPointerException either of the input strings were empty
+     * @throws NumberFormatException either of the input strings weren't numbers
      */
     public Graticule(String latitude, String longitude)
             throws NullPointerException, NumberFormatException {
@@ -173,14 +160,10 @@ public class Graticule implements Parcelable {
      * equator.
      * </p>
      *
-     * @param g
-     *            Graticule to copy
-     * @param latOff
-     *            number of degrees north to offset (negative is south)
-     * @param lonOff
-     *            number of degrees east to offset (negative is west)
-     * @return
-     *             a brand spakin' new Graticule, offset as per suggestion
+     * @param g Graticule to copy
+     * @param latOff number of degrees north to offset (negative is south)
+     * @param lonOff number of degrees east to offset (negative is west)
+     * @return a brand spankin' new Graticule, offset as per suggestion
      */
     public static Graticule createOffsetFrom(Graticule g, int latOff, int lonOff) {
         // We already have all the data we need from the old Graticule.  But,
@@ -436,8 +419,7 @@ public class Graticule implements Parcelable {
      * @return a GeoPoint representing the center of this Graticule.
      */
     public GeoPoint getCenter() {
-        int lat;
-        int lon;
+        int lat, lon;
 
         // The concept of "center" changes when we're dealing with negative
         // graticules. So...
@@ -455,6 +437,29 @@ public class Graticule implements Parcelable {
 
         return new GeoPoint(lat, lon);
     }
+
+    /**
+     * Returns the center of this Graticule as a LatLng.
+     *
+     * @return a LatLng representing the center of this Graticule.
+     */
+    public LatLng getCenterLatLng() {
+        double lat, lon;
+
+        if(isSouth()) {
+            lat = -getLatitude() - 0.5;
+        } else {
+            lat = getLatitude() + 0.5;
+        }
+
+        if(isWest()) {
+            lon = -getLongitude() - 0.5;
+        } else {
+            lon = getLongitude() + 0.5;
+        }
+
+        return new LatLng(lat, lon);
+    }
     
     /**
      * Grab the top-left GeoPoint of this Graticule.  Or, well, the northwest.
@@ -462,8 +467,7 @@ public class Graticule implements Parcelable {
      * @return a GeoPoint representing the top-left corner of this Graticule
      */
     public GeoPoint getTopLeft() {
-        int top;
-        int left;
+        int top, left;
         
         if (isSouth()) {
             top = (-1 * getLatitude()) * 1000000;
@@ -486,8 +490,8 @@ public class Graticule implements Parcelable {
      * @return a GeoPoint representing the bottom-right corner of this Graticule
      */
     public GeoPoint getBottomRight() {
-        int bottom;
-        int right;
+        int bottom, right;
+
         if (isSouth()) {
             bottom = (-1 * (getLatitude() + 1)) * 1000000;
         } else {
@@ -501,6 +505,43 @@ public class Graticule implements Parcelable {
         }
         
         return new GeoPoint(bottom, right);
+    }
+
+    /**
+     * Make a Maps v2 PolygonOptions out of this Graticule.  You can then style
+     * it yourself and toss it into a map as need be.
+     *
+     * @return a PolygonOptions set up as this Graticule sits.
+     */
+    public PolygonOptions getPolygon() {
+        PolygonOptions toReturn = new PolygonOptions();
+
+        int top, left, bottom, right;
+
+        if(isSouth()) {
+            bottom = -getLatitude() - 1;
+            top = -getLatitude();
+        } else {
+            bottom = getLatitude();
+            top = getLatitude() + 1;
+        }
+
+        if(isWest()) {
+            right = -getLongitude() - 1;
+            left = -getLongitude();
+        } else {
+            right = getLongitude();
+            left = getLongitude() + 1;
+        }
+
+        // Now, draw the polygon.  Er... make the options.
+        toReturn.add(new LatLng(top, left))
+                .add(new LatLng(top, right))
+                .add(new LatLng(bottom, right))
+                .add(new LatLng(bottom, left));
+
+        // Shove this into a GoogleMap, and style it as need be.
+        return toReturn;
     }
 
     /*
