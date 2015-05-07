@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<view xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@android:color/white"
-                android:gravity="center_horizontal"
-                android:orientation="vertical"
-                android:padding="@dimen/standard_padding"
-                android:layout_marginBottom="@dimen/standard_padding"
-                class="net.exclaimindustries.geohashdroid.widgets.AnimatedRelativeLayout">
+<view class="net.exclaimindustries.geohashdroid.widgets.AnimatedRelativeLayout"
+      xmlns:android="http://schemas.android.com/apk/res/android"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginBottom="@dimen/standard_padding"
+      android:background="@android:color/white"
+      android:clickable="true"
+      android:gravity="center_horizontal"
+      android:orientation="vertical"
+      android:padding="@dimen/standard_padding">
 
     <LinearLayout
         android:id="@+id/latlonrow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_gravity="center_horizontal"
         android:orientation="horizontal">
 
         <EditText
@@ -25,6 +25,7 @@
             android:layout_margin="@dimen/input_graticule_margin"
             android:digits="0123456789-"
             android:hint="@string/hint_lat"
+            android:imeOptions="flagNoExtractUi|actionNext"
             android:inputType="numberSigned"
             android:maxLength="4"
             android:saveEnabled="true"
@@ -39,41 +40,47 @@
             android:layout_margin="@dimen/input_graticule_margin"
             android:digits="0123456789-"
             android:hint="@string/hint_lon"
+            android:imeOptions="flagNoExtractUi|actionDone"
             android:inputType="numberSigned"
             android:maxLength="4"
             android:saveEnabled="true"
             android:selectAllOnFocus="true"
             android:textSize="@dimen/input_graticule_fontsize"/>
 
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/buttonrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/latlonrow"
+        android:baselineAligned="true"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/grat_closest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/refresh"
+            android:drawablePadding="@dimen/input_graticule_closest_icon_margin"
+            android:drawableStart="@drawable/refresh"
+            android:text="@string/closest_label"/>
+
         <CheckBox
             android:id="@+id/grat_globalhash"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
             android:text="@string/globalhash_label"/>
-
     </LinearLayout>
 
-    <Button
-        android:id="@+id/grat_closest"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/latlonrow"
-        android:layout_centerHorizontal="true"
-        android:layout_gravity="center_horizontal"
-        android:drawableLeft="@drawable/refresh"
-        android:drawablePadding="@dimen/input_graticule_closest_icon_margin"
-        android:drawableStart="@drawable/refresh"
-        android:text="@string/closest_label"/>
 
     <ImageButton
         android:id="@+id/close"
         style="@style/GeohashDroid.Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/grat_closest"
-        android:layout_alignRight="@+id/latlonrow"
-        android:layout_gravity="center_vertical"
+        android:layout_alignRight="@+id/buttonrow"
+        android:layout_alignTop="@+id/latlonrow"
         android:contentDescription="@string/close_label"
         android:src="@drawable/ic_action_cancel"/>
 </view>
