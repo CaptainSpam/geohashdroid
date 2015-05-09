@@ -57,6 +57,12 @@
             android:theme="@android:style/Theme.DeviceDefault.Light.Dialog" >
         </activity>
         <activity
+            android:name=".activities.VersionHistoryDialog"
+            android:label="@string/title_versionhistory"
+            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog" >
+
+        </activity>
+        <activity
             android:name=".MainMap"
             android:label="@string/map_activity_title"
             android:theme="@style/Theme.NoBackground.NoTitleBar" >
@@ -135,15 +141,6 @@
             </intent-filter>
         </receiver>
 
-        <activity
-            android:name=".activities.ServiceTester"
-            android:label="GHD Service Tester" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".activities.PreferencesActivity"
             android:label="@string/title_preferences" >
