@@ -131,6 +131,11 @@ public class StockService extends WakefulIntentService {
      * {@link #FLAG_AUTO_INITIATED}.
      */
     public static final int FLAG_NEARBY_POINT = 0x8;
+    /**
+     * Flag meaning this request came from Select-A-Graticule mode.  CentralMap
+     * should know what to do with it.
+     */
+    public static final int FLAG_SELECT_A_GRATICULE = 0x10;
 
     /**
      * Flag meaning this response was found in the cache.  If not set, it was

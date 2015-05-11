@@ -191,5 +191,8 @@ public class GraticulePickerFragment
 
         // And we're done, so unset the flag.
         mExternalUpdate = false;
+
+        // NOW we can dispatch the change.
+        dispatchGraticule();
     }
 }

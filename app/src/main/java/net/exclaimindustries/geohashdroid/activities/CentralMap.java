@@ -46,6 +46,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
@@ -75,6 +77,7 @@ public class CentralMap
                    GoogleApiClient.OnConnectionFailedListener,
                    GoogleMap.OnInfoWindowClickListener,
                    GoogleMap.OnCameraChangeListener,
+                   GoogleMap.OnMapClickListener,
                    NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
                    GraticulePickerFragment.GraticulePickerListener {
     private static final String DEBUG_TAG = "CentralMap";
@@ -93,10 +96,22 @@ public class CentralMap
 
     private Info mCurrentInfo;
     private Marker mDestination;
+    private Polygon mGraticuleOutline;
     private GoogleMap mMap;
     private GoogleApiClient mGoogleClient;
 
     private DisplayMetrics mMetrics;
+
+    // This is either the current expedition Graticule (same as in mCurrentInfo)
+    // or the last-selected Graticule in Select-A-Graticule mode (needed if we
+    // need to reconstruct from an onDestroy()).
+    private Graticule mLastGraticule;
+    private Calendar mLastCalendar;
+
+    // Because a null Graticule is considered to be the Globalhash indicator, we
+    // need a boolean to keep track of whether we're actually in a Globalhash or
+    // if we just don't have a Graticule yet.
+    private boolean mGlobalhash;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -142,8 +157,11 @@ public class CentralMap
                 if((reqFlags & StockService.FLAG_NEARBY_POINT) != 0)
                     addNearbyPoint(received);
                 else {
+                    boolean selectAGraticule = (reqFlags & StockService.FLAG_SELECT_A_GRATICULE) != 0;
                     mAlreadyDidInitialZoom = false;
                     setInfo(received);
+
+                    if(!selectAGraticule) drawNearbyPoints();
                 }
             } else if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
                 // ONLY notify the user of an error if they specifically
@@ -185,23 +203,30 @@ public class CentralMap
         }
     };
 
+    private LocationListener mFindClosestListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            // Okay, NOW we have a location.
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
+            mBanner.animateBanner(false);
+            applyFoundGraticule(location);
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         // Load up!
         if(savedInstanceState != null) {
-            if(savedInstanceState.containsKey("info")) {
-                mCurrentInfo = savedInstanceState.getParcelable("info");
-            }
+            mCurrentInfo = savedInstanceState.getParcelable("info");
+            mAlreadyDidInitialZoom = savedInstanceState.getBoolean("alreadyZoomed", false);
+            mSelectAGraticule = savedInstanceState.getBoolean("selectAGraticule", false);
+            mGlobalhash = savedInstanceState.getBoolean("globalhash", false);
 
-            if(savedInstanceState.containsKey("alreadyZoomed")) {
-                mAlreadyDidInitialZoom = savedInstanceState.getBoolean("alreadyZoomed", false);
-            }
+            mLastGraticule = savedInstanceState.getParcelable("lastGraticule");
 
-            if(savedInstanceState.containsKey("selectAGraticule")) {
-                mSelectAGraticule = savedInstanceState.getBoolean("selectAGraticule", false);
-            }
+            mLastCalendar = (Calendar)savedInstanceState.getSerializable("lastCalendar");
         }
 
         setContentView(R.layout.centralmap);
@@ -255,6 +280,7 @@ public class CentralMap
                     enterSelectAGraticuleMode(false);
                 } else {
                     setInfo(mCurrentInfo);
+                    drawNearbyPoints();
                 }
             }
         });
@@ -265,10 +291,12 @@ public class CentralMap
         // The receiver goes right off as soon as we pause.
         unregisterReceiver(mStockReceiver);
 
-        // Also, stop listening for the initial zoom if we haven't received it
-        // yet.
-        if(mGoogleClient != null && mGoogleClient.isConnected())
+        // Also, stop listening if we still haven't found what we're looking
+        // for.
+        if(mGoogleClient != null && mGoogleClient.isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mInitialZoomListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mFindClosestListener);
+        }
 
         super.onPause();
     }
@@ -323,6 +351,11 @@ public class CentralMap
         // Keep the various flags, too.
         outState.putBoolean("alreadyZoomed", mAlreadyDidInitialZoom);
         outState.putBoolean("selectAGraticule", mSelectAGraticule);
+        outState.putBoolean("globalhash", mGlobalhash);
+
+        // And some additional data.
+        outState.putParcelable("lastGraticule", mLastGraticule);
+        outState.putSerializable("lastCalendar", mLastCalendar);
     }
 
     @Override
@@ -371,6 +404,27 @@ public class CentralMap
         }
     }
 
+    private void removeDestinationPoint() {
+        if(mDestination != null) {
+            mDestination.remove();
+
+            // Since the API says the behavior of ALL methods on Marker are
+            // not defined after remove() is called, we're going to null out
+            // the marker immediately so we don't try to call anything on it
+            // again, even if it's just remove() again.
+            mDestination = null;
+        }
+    }
+
+    private void removeNearbyPoints() {
+        synchronized(mNearbyPoints) {
+            for(Marker m : mNearbyPoints.keySet()) {
+                m.remove();
+            }
+            mNearbyPoints.clear();
+        }
+    }
+
     private void setInfo(final Info info) {
         mCurrentInfo = info;
 
@@ -380,17 +434,7 @@ public class CentralMap
 
         // In any case, a new Info means the old one's invalid, so the old
         // Marker goes away.
-        if(mDestination != null) {
-            mDestination.remove();
-        }
-
-        // Plus, all the nearby markers go away, if there's any there.
-        synchronized(mNearbyPoints) {
-            for(Marker m : mNearbyPoints.keySet()) {
-                m.remove();
-            }
-            mNearbyPoints.clear();
-        }
+        removeDestinationPoint();
 
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.
@@ -398,43 +442,12 @@ public class CentralMap
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    // We need a marker!  And that marker needs a title.  And
-                    // that title depends on globalhashiness and retroness.
-                    String title;
+                    // Marker!
+                    addDestinationPoint(info);
 
-                    if(!info.isRetroHash()) {
-                        // Non-retro hashes don't have today's date on them.
-                        // They just have "today's [something]".
-                        if(info.isGlobalHash()) {
-                            title = getString(R.string.marker_title_today_globalpoint);
-                        } else {
-                            title = getString(R.string.marker_title_today_hashpoint);
-                        }
-                    } else {
-                        // Retro hashes, however, need a date string.
-                        String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
-
-                        if(info.isGlobalHash()) {
-                            title = getString(R.string.marker_title_retro_globalpoint, date);
-                        } else {
-                            title = getString(R.string.marker_title_retro_hashpoint, date);
-                        }
-                    }
-
-                    // The snippet's just the coordinates in question.  Further
-                    // details will go in the infobox.
-                    String snippet = UnitConverter.makeFullCoordinateString(CentralMap.this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
-
-                    // Under the current marker image, the anchor is the very
-                    // bottom, halfway across.  Presumably, that's what the
-                    // default icon also uses, but we're not concerned with the
-                    // default icon, now, are we?
-                    mDestination = mMap.addMarker(new MarkerOptions()
-                            .position(info.getFinalDestinationLatLng())
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
-                            .anchor(0.5f, 1.0f)
-                            .title(title)
-                            .snippet(snippet));
+                    // Stash current data for later.
+                    mLastGraticule = info.getGraticule();
+                    mLastCalendar = info.getCalendar();
 
                     // With an Info in hand, we can also change the title.
                     StringBuilder newTitle = new StringBuilder();
@@ -458,50 +471,12 @@ public class CentralMap
                         mBanner.animateBanner(true);
                     }
 
-                    // If the user wants the nearby points (AND this isn't a
-                    // Globalhash), we need to request them.  Now, the way we're
-                    // going to do this may seem inefficient, firing off (up to)
-                    // eight more Intents to StockService, but it covers the
-                    // bizarre cases of people trying to Geohash directly on the
-                    // 30W or 180E/W lines, as well as any oddities related to
-                    // the zero graticules.  Besides, it's best to keep
-                    // StockService simple.  The cache will ensure the points
-                    // will come back promptly in the general case.
-                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
-                    if(!info.isGlobalHash() && prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true)) {
-                        Graticule g = info.getGraticule();
-
-                        for(int i = -1; i <= 1; i++) {
-                            for(int j = -1; j <= 1; j++) {
-                                // Zero and zero isn't a nearby point, that's
-                                // the very point we're at right now!
-                                if(i == 0 && j == 0) continue;
-
-                                // If the user's truly adventurous enough to go
-                                // to the 90N/S graticules, there aren't any
-                                // nearby points north/south of where they are.
-                                // Also, the nearby points aren't going to be
-                                // drawn anyway due to the projection, but hey,
-                                // that's nitpicking.
-                                if(Math.abs((g.isSouth() ? -1 : 1) * g.getLatitude() + i) > 90)
-                                    continue;
-
-                                // Make a new Graticule, properly offset...
-                                Graticule offset = Graticule.createOffsetFrom(g, i, j);
-
-                                // ...and make the request, WITH the appropriate
-                                // flag set.
-                                requestStock(offset, info.getCalendar(), StockService.FLAG_AUTO_INITIATED | StockService.FLAG_NEARBY_POINT);
-                            }
-                        }
-                    }
-
                     // Finally, try to zoom the map to where it needs to be,
                     // assuming we're connected to the APIs and have a location.
                     // Note that when the APIs connect, this'll be called, so we
                     // don't need to set up a callback or whatnot.
                     if(mGoogleClient != null && mGoogleClient.isConnected()) {
-                        doInitialZoom();
+//                        doInitialZoom();
                     }
                 }
             });
@@ -509,6 +484,47 @@ public class CentralMap
         } else {
             // Otherwise, make sure the title's back to normal.
             setTitle(R.string.app_name);
+        }
+    }
+
+    private void drawNearbyPoints() {
+        if(mCurrentInfo == null) return;
+
+        removeNearbyPoints();
+
+        // If the user wants the nearby points (AND this isn't a Globalhash), we
+        // need to request them.  Now, the way we're going to do this may seem
+        // inefficient, firing off (up to) eight more Intents to StockService,
+        // but it covers the bizarre cases of people trying to Geohash directly
+        // on the 30W or 180E/W lines, as well as any oddities related to the
+        // zero graticules.  Besides, it's best to keep StockService simple.
+        // The cache will ensure the points will come back promptly in the
+        // general case.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+        if(!mCurrentInfo.isGlobalHash() && prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true)) {
+            Graticule g = mCurrentInfo.getGraticule();
+
+            for(int i = -1; i <= 1; i++) {
+                for(int j = -1; j <= 1; j++) {
+                    // Zero and zero isn't a nearby point, that's the very point
+                    // we're at right now!
+                    if(i == 0 && j == 0) continue;
+
+                    // If the user's truly adventurous enough to go to the 90N/S
+                    // graticules, there aren't any nearby points north/south of
+                    // where they are.  Also, the nearby points aren't going to
+                    // be drawn anyway due to the projection, but hey, that's
+                    // nitpicking.
+                    if(Math.abs((g.isSouth() ? -1 : 1) * g.getLatitude() + i) > 90)
+                        continue;
+
+                    // Make a new Graticule, properly offset...
+                    Graticule offset = Graticule.createOffsetFrom(g, i, j);
+
+                    // ...and make the request, WITH the appropriate flag set.
+                    requestStock(offset, mCurrentInfo.getCalendar(), StockService.FLAG_AUTO_INITIATED | StockService.FLAG_NEARBY_POINT);
+                }
+            }
         }
     }
 
@@ -552,6 +568,49 @@ public class CentralMap
         }
     }
 
+    private void addDestinationPoint(Info info) {
+        // Clear any old destination marker first.
+        removeDestinationPoint();
+
+        // We need a marker!  And that marker needs a title.  And
+        // that title depends on globalhashiness and retroness.
+        String title;
+
+        if(!info.isRetroHash()) {
+            // Non-retro hashes don't have today's date on them.
+            // They just have "today's [something]".
+            if(info.isGlobalHash()) {
+                title = getString(R.string.marker_title_today_globalpoint);
+            } else {
+                title = getString(R.string.marker_title_today_hashpoint);
+            }
+        } else {
+            // Retro hashes, however, need a date string.
+            String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
+
+            if(info.isGlobalHash()) {
+                title = getString(R.string.marker_title_retro_globalpoint, date);
+            } else {
+                title = getString(R.string.marker_title_retro_hashpoint, date);
+            }
+        }
+
+        // The snippet's just the coordinates in question.  Further
+        // details will go in the infobox.
+        String snippet = UnitConverter.makeFullCoordinateString(CentralMap.this, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+
+        // Under the current marker image, the anchor is the very
+        // bottom, halfway across.  Presumably, that's what the
+        // default icon also uses, but we're not concerned with the
+        // default icon, now, are we?
+        mDestination = mMap.addMarker(new MarkerOptions()
+                .position(info.getFinalDestinationLatLng())
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
+                .anchor(0.5f, 1.0f)
+                .title(title)
+                .snippet(snippet));
+    }
+
     private void requestStock(Graticule g, Calendar cal, int flags) {
         // Make sure the banner's going away!
         mBanner.animateBanner(false);
@@ -576,8 +635,11 @@ public class CentralMap
         // If we're coming back from somewhere, reset the marker.  This is just
         // in case the user changes coordinate preferences, as the marker only
         // updates its internal info when it's created.
-        if(!isFinishing())
+        if(!isFinishing()) {
             setInfo(mCurrentInfo);
+            if(!mSelectAGraticule)
+                drawNearbyPoints();
+        }
     }
 
     @Override
@@ -649,6 +711,62 @@ public class CentralMap
             checkMarkerVisibility(m);
     }
 
+    @Override
+    public void onMapClick(LatLng latLng) {
+        // Click!
+        GraticulePickerFragment frag = (GraticulePickerFragment)getFragmentManager().findFragmentById(R.id.graticulepicker);
+
+        // I don't know how we'd get a null here, but just in case...
+        if(frag == null) return;
+
+        // Okay, so now we've got a Graticule.  Well, we will right here:
+        Graticule g = new Graticule(latLng);
+
+        // Outline!
+        outlineGraticule(g);
+
+        // Update the fragment as well.
+        frag.setNewGraticule(g);
+    }
+
+    private void outlineGraticule(Graticule g) {
+        if(mGraticuleOutline != null)
+            mGraticuleOutline.remove();
+
+        mLastGraticule = g;
+
+        if(g == null) return;
+
+        // And with that Graticule, we can get a Polygon.
+        PolygonOptions opts = g.getPolygon()
+                .strokeColor(getResources().getColor(R.color.graticule_stroke))
+                .strokeWidth(2)
+                .fillColor(getResources().getColor(R.color.graticule_fill));
+
+        if(mMap != null) {
+            mGraticuleOutline = mMap.addPolygon(opts);
+
+            // Also, move the map.  Zoom in as need be, cover an area of
+            // roughly... oh... two graticules in any direction.
+            final double CLOSENESS = 2.5;
+            LatLngBounds.Builder builder = LatLngBounds.builder();
+            LatLng basePoint = g.getCenterLatLng();
+            LatLng point = new LatLng(basePoint.latitude - CLOSENESS, basePoint.longitude - CLOSENESS);
+            builder.include(point);
+
+            point = new LatLng(basePoint.latitude - CLOSENESS, basePoint.longitude + CLOSENESS);
+            builder.include(point);
+
+            point = new LatLng(basePoint.latitude + CLOSENESS, basePoint.longitude + CLOSENESS);
+            builder.include(point);
+
+            point = new LatLng(basePoint.latitude + CLOSENESS, basePoint.longitude - CLOSENESS);
+            builder.include(point);
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 0));
+        }
+    }
+
     private void checkMarkerVisibility(Marker m) {
         // On a camera change, we need to determine if the nearby markers
         // (assuming they exist to begin with) need to be drawn.  If they're too
@@ -685,6 +803,7 @@ public class CentralMap
     public void nearbyGraticuleClicked(Info info) {
         // Info!
         setInfo(info);
+        drawNearbyPoints();
     }
 
     private void doInitialZoom() {
@@ -717,6 +836,9 @@ public class CentralMap
         mSelectAGraticule = true;
         invalidateOptionsMenu();
 
+        removeDestinationPoint();
+        removeNearbyPoints();
+
         // We might not need the fragment to be added if the back stack has
         // been restored from somewhere.
         if(addFragment) {
@@ -727,23 +849,46 @@ public class CentralMap
                     R.animator.slide_out_to_bottom);
 
             GraticulePickerFragment gpf = new GraticulePickerFragment();
+
+            // Toss in the current Graticule so the thing knows where to start.
+            Bundle args = new Bundle();
+            args.putParcelable("starterGraticule", mLastGraticule);
+            gpf.setArguments(args);
+
             transaction.replace(R.id.graticulepicker, gpf, "GraticulePicker");
             transaction.addToBackStack(GRATICULE_PICKER_STACK);
             transaction.commit();
+        } else {
+            setInfo(mCurrentInfo);
         }
 
-        // TODO: Set up the map's interactivity, too.
+        // Highlight the last graticule.  This might be the last active
+        // expedition, it might be from a rotation, whatever the case, put the
+        // outline around it.
+        outlineGraticule(mLastGraticule);
+
+        mMap.setOnMapClickListener(this);
     }
 
     private void exitSelectAGraticuleMode() {
         if(!mSelectAGraticule) return;
 
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mFindClosestListener);
+
         mSelectAGraticule = false;
         invalidateOptionsMenu();
+        drawNearbyPoints();
 
         getFragmentManager().popBackStack(GRATICULE_PICKER_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 
-        // TODO: Restore map back to expedition mode, too.
+        // Clean up after ourselves, too...
+        mMap.setOnMapClickListener(null);
+        if(mGraticuleOutline != null)
+            mGraticuleOutline.remove();
+        mGraticuleOutline = null;
+
+        mLastGraticule = null;
+        mLastCalendar = null;
     }
 
     @Override
@@ -761,16 +906,49 @@ public class CentralMap
 
     @Override
     public void updateGraticule(Graticule g) {
-        Log.d(DEBUG_TAG, "New Graticule: " + (g == null ? "Globalhash!" : g.toString()));
+        // Outline!
+        outlineGraticule(g);
+
+        // Stock!
+        requestStock(g, Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_SELECT_A_GRATICULE);
     }
 
     @Override
     public void findClosest() {
-        Log.d(DEBUG_TAG, "BEEP");
+        // Same as with the initial zoom, only we're setting a Graticule.
+        Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(mGoogleClient);
+
+        // We want the last known location to be at least SANELY recent.
+        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+            applyFoundGraticule(lastKnown);
+        } else {
+            // This shouldn't be called OFTEN, but it'll probably be called.
+            mBanner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            mBanner.setText(getText(R.string.search_label).toString());
+            mBanner.animateBanner(true);
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mFindClosestListener);
+        }
     }
 
     @Override
     public void graticulePickerClosing() {
         exitSelectAGraticuleMode();
+
+        doInitialZoom();
+    }
+
+    private void applyFoundGraticule(Location loc) {
+        // Oh, and make sure the fragment still exists.  If it doesn't, we've
+        // left Select-A-Graticule, and I'm not sure how this was called.
+        GraticulePickerFragment gpf = (GraticulePickerFragment)getFragmentManager().findFragmentById(R.id.graticulepicker);
+
+        if(gpf != null) {
+            Graticule g = new Graticule(loc);
+            gpf.setNewGraticule(g);
+            outlineGraticule(g);
+        }
     }
 }
