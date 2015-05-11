@@ -62,37 +62,6 @@
             android:theme="@android:style/Theme.DeviceDefault.Light.Dialog" >
 
         </activity>
-        <activity
-            android:name=".MainMap"
-            android:label="@string/map_activity_title"
-            android:theme="@style/Theme.NoBackground.NoTitleBar" >
-        </activity>
-        <activity
-            android:name=".GraticuleMap"
-            android:label="@string/gratmap_activity_title"
-            android:theme="@style/Theme.NoBackground" >
-            <intent-filter>
-                <action android:name="net.exclaimindustries.geohashdroid.PICK_GRATICULE" >
-                </action>
-
-                <category android:name="android.intent.category.DEFAULT" >
-                </category>
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".DetailedInfoScreen"
-            android:label="@string/detail_activity_title" >
-        </activity>
-        <activity
-            android:name=".StockGrabber"
-            android:label="@string/standby_title"
-            android:theme="@android:style/Theme.Dialog" />
-        <activity
-            android:name=".LocationGrabber"
-            android:label="@string/standby_title"
-            android:theme="@android:style/Theme.Dialog" >
-        </activity>
-
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="@string/api_map_key_v2" />
