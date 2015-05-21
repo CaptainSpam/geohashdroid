@@ -22,6 +22,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -83,7 +84,7 @@ public class CentralMap
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
-    private static final String GRATICULE_PICKER_STACK = "GraticulePickerStack";
+    public static final String GRATICULE_PICKER_STACK = "GraticulePickerStack";
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -119,6 +120,170 @@ public class CentralMap
     private final Map<Marker, Info> mNearbyPoints = new HashMap<>();
 
     private ErrorBanner mBanner;
+
+    /**
+     * A <code>CentralMapMode</code> is a set of behaviors that happen whenever
+     * some corresponding event occurs in {@link CentralMap}.
+     */
+    public abstract static class CentralMapMode {
+        /** Bundle key for the current Graticule. */
+        public final static String GRATICULE = "graticule";
+        /** Bundle key for the current date, as a Calendar. */
+        public final static String CALENDAR = "calendar";
+        /**
+         * Bundle key for a boolean indicating that, if the Graticule is null,
+         * this was actually a Globalhash, not just a request with an empty
+         * Graticule.
+         */
+        public final static String GLOBALHASH = "globalhash";
+        /**
+         * Bundle key for the current Info.  In cases where this can be given,
+         * the Graticule, Calendar, and boolean indicating a Globalhash can be
+         * implied from it.
+         */
+        public final static String INFO = "info";
+
+        /** The current GoogleMap object. */
+        protected GoogleMap mMap;
+        /** The calling CentralMap Activity. */
+        protected CentralMap mCentralMap;
+
+        /** The current destination Marker. */
+        protected Marker mDestination;
+
+        /**
+         * Sets the {@link GoogleMap} this mode deals with.  When implementing
+         * this, make sure to actually do something with it like subscribe to
+         * events as the mode needs them if you're not doing so in
+         * {@link #init(Bundle)}.
+         *
+         * @param map that map
+         */
+        public void setMap(GoogleMap map) {
+            mMap = map;
+        }
+
+        /**
+         * Sets the {@link CentralMap} to which this will talk back.
+         *
+         * @param centralMap that CentralMap
+         */
+        public void setCentralMap(CentralMap centralMap) {
+            mCentralMap = centralMap;
+        }
+
+        /**
+         * Gets the current GoogleApiClient held by CentralMap.  This will
+         * return null if the client isn't usable (not connected, null itself,
+         * etc).
+         *
+         * @return the current GoogleApiClient
+         */
+        @Nullable
+        protected final GoogleApiClient getGoogleClient() {
+            if(mCentralMap != null) {
+                GoogleApiClient gClient = mCentralMap.getGoogleClient();
+                if(gClient != null && gClient.isConnected())
+                    return gClient;
+                else
+                    return null;
+            } else {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * Does whatever init tomfoolery is needed for this class, using the
+         * given Bundle of stuff.  You're probably best calling this AFTER
+         * {@link #setMap(GoogleMap)} and {@link #setCentralMap(CentralMap)} are
+         * called.
+         * </p>
+         *
+         * @param bundle a bunch of stuff, or null if there's no stuff to be had
+         */
+        public abstract void init(@Nullable Bundle bundle);
+
+        /**
+         * Does whatever cleanup rigmarole is needed for this class, such as
+         * unsubscribing to all those subscriptions you set up in {@link #setMap(GoogleMap)}
+         * or {@link #init(Bundle)}.  If a Bundle is given, state data should be
+         * written to it.  It might be used to recreate the mode, but it can
+         * also be used to write out result data in the case of
+         * Select-A-Graticule mode.
+         *
+         * @param bundle a Bundle in which state data can be written (may be null)
+         */
+        public abstract void cleanUp(@Nullable Bundle bundle);
+
+        /**
+         * Called when a new Info has come in from StockService.
+         *
+         * @param info that Info
+         * @param flags the request flags that were sent with it
+         */
+        public abstract void handleInfo(Info info, int flags);
+
+        /**
+         * Draws a final destination point on the map given the appropriate
+         * Info.  This also removes any old point that might've been around.
+         *
+         * @param info the new Info
+         */
+        protected void addDestinationPoint(Info info) {
+            // Clear any old destination marker first.
+            removeDestinationPoint();
+
+            if(info == null) return;
+
+            // We need a marker!  And that marker needs a title.  And that title
+            // depends on globalhashiness and retroness.
+            String title;
+
+            if(!info.isRetroHash()) {
+                // Non-retro hashes don't have today's date on them.  They just
+                // have "today's [something]".
+                if(info.isGlobalHash()) {
+                    title = mCentralMap.getString(R.string.marker_title_today_globalpoint);
+                } else {
+                    title = mCentralMap.getString(R.string.marker_title_today_hashpoint);
+                }
+            } else {
+                // Retro hashes, however, need a date string.
+                String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
+
+                if(info.isGlobalHash()) {
+                    title = mCentralMap.getString(R.string.marker_title_retro_globalpoint, date);
+                } else {
+                    title = mCentralMap.getString(R.string.marker_title_retro_hashpoint, date);
+                }
+            }
+
+            // The snippet's just the coordinates in question.  Further details
+            // will go in the infobox.
+            String snippet = UnitConverter.makeFullCoordinateString(mCentralMap, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+
+            // Under the current marker image, the anchor is the very bottom,
+            // halfway across.  Presumably, that's what the default icon also
+            // uses, but we're not concerned with the default icon, now, are we?
+            mDestination = mMap.addMarker(new MarkerOptions()
+                    .position(info.getFinalDestinationLatLng())
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
+                    .anchor(0.5f, 1.0f)
+                    .title(title)
+                    .snippet(snippet));
+        }
+
+        /**
+         * Removes the destination point, if one exists.
+         */
+        protected void removeDestinationPoint() {
+            if(mDestination != null) {
+                mDestination.remove();
+                mDestination = null;
+            }
+        }
+    }
 
     private class StockReceiver extends BroadcastReceiver {
         private long mWaitingOnThisOne = -1;
@@ -611,7 +776,7 @@ public class CentralMap
                 .snippet(snippet));
     }
 
-    private void requestStock(Graticule g, Calendar cal, int flags) {
+    public void requestStock(Graticule g, Calendar cal, int flags) {
         // Make sure the banner's going away!
         mBanner.animateBanner(false);
 
@@ -950,5 +1115,25 @@ public class CentralMap
             gpf.setNewGraticule(g);
             outlineGraticule(g);
         }
+    }
+
+    /**
+     * Gets the {@link ErrorBanner} we currently hold.  This is mostly for the
+     * {@link CentralMapMode} classes.
+     *
+     * @return the current ErrorBanner
+     */
+    public ErrorBanner getErrorBanner() {
+        return mBanner;
+    }
+
+    /**
+     * Gets the {@link GoogleApiClient} we currently hold.  There's no guarantee
+     * it's connected at this point, so be careful.
+     *
+     * @return the current GoogleApiClient
+     */
+    public GoogleApiClient getGoogleClient() {
+        return mGoogleClient;
     }
 }
