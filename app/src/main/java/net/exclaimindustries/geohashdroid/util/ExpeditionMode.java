@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -54,6 +55,7 @@ public class ExpeditionMode
     private static final String DEBUG_TAG = "ExpeditionMode";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
+    private static final String NEARBY_POINTS = "nearbyPoints";
 
     private boolean mInitComplete = false;
 
@@ -90,6 +92,25 @@ public class ExpeditionMode
         mMap.setOnInfoWindowClickListener(this);
         mMap.setOnCameraChangeListener(this);
 
+        // Do we have a Bundle to un-Bundlify?
+        if(bundle != null) {
+            mCurrentInfo = bundle.getParcelable(INFO);
+            setInfo(mCurrentInfo);
+
+            Parcelable[] nearbys = bundle.getParcelableArray(NEARBY_POINTS);
+
+            // mCurrentInfo also has to be not-null, as we can't have nearby
+            // points if we don't have a point to begin with.  This is mostly a
+            // sanity check.
+            if(mCurrentInfo != null && nearbys != null) {
+                for(Parcelable inf : nearbys) {
+                    if(inf instanceof Info) {
+                        handleInfo((Info)inf, StockService.FLAG_NEARBY_POINT);
+                    }
+                }
+            }
+        }
+
         mInitComplete = true;
     }
 
@@ -103,6 +124,18 @@ public class ExpeditionMode
         // And the listens.
         mMap.setOnInfoWindowClickListener(null);
         mMap.setOnCameraChangeListener(null);
+
+        // Now, if there's a Bundle handy, stash away the last Info we knew
+        // about, as well as all the nearby points (the latter just for the sake
+        // of efficiency, so we can load them back up without making calls to
+        // StockService).  If we have anything at all, it'll always be an Info.
+        // If we don't have one, we weren't displaying anything, and thus don't
+        // need to stash a Calendar, Graticule, etc.
+        if(bundle != null) {
+            bundle.putParcelable(INFO, mCurrentInfo);
+            Parcelable[] arr = new Parcelable[] {};
+            bundle.putParcelableArray(NEARBY_POINTS, mNearbyPoints.values().toArray(arr));
+        }
     }
 
     @Override
