@@ -31,11 +31,31 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
  */
 public class GraticulePickerFragment
         extends Fragment {
+    /**
+     * Bundle key for a starter Graticule.  Note that the Graticule should be
+     * restored automatically in the case of a state change.
+     */
+    public final static String GRATICULE = "starterGraticule";
+    /**
+     * Bundle key for the globalhash checkbox.  Including both this and the
+     * Graticule key is a valid action; it'll just mean the input boxes are
+     * pre-filled and disabled.
+     */
+    public final static String GLOBALHASH = "globalHash";
+
+    // So we know the difference between coming back from a saved instance and
+    // starting fresh.  Starting fresh, we should be looking at arguments.  From
+    // an instance, we should go from the rebuilt EditTexts and checkbox, as
+    // those get stashed with the instance state.
+    private final static String INSTANCE_SAVED = "instanceSaved";
+
     private EditText mLat;
     private EditText mLon;
     private CheckBox mGlobal;
 
     private boolean mExternalUpdate;
+
+    private GraticulePickerListener mListener;
 
     /**
      * The interface of choice for when GraticuleInputFragment needs to talk
@@ -51,7 +71,7 @@ public class GraticulePickerFragment
          *
          * @param g the new Graticule (null if it's a globalhash)
          */
-        void updateGraticule(Graticule g);
+        void updateGraticule(@Nullable Graticule g);
 
         /**
          * Called when the user presses the "Find Closest" button.  Later on,
@@ -131,7 +151,8 @@ public class GraticulePickerFragment
         closest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ((GraticulePickerListener) getActivity()).findClosest();
+                if(mListener != null)
+                    mListener.findClosest();
             }
         });
 
@@ -139,34 +160,67 @@ public class GraticulePickerFragment
         close.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ((GraticulePickerListener) getActivity()).graticulePickerClosing();
+                if(mListener != null)
+                    mListener.graticulePickerClosing();
             }
         });
 
+        // That said, we need some default values.
+        if(savedInstanceState.getBoolean(INSTANCE_SAVED, false)) {
+            // If we're NOT coming back from a saved instance, check the
+            // arguments.
+            Bundle args = getArguments();
+
+            Graticule g = args.getParcelable(GRATICULE);
+            boolean global = args.getBoolean(GLOBALHASH, false);
+
+            if(g != null) {
+                mLat.setText(g.getLatitudeString(true));
+                mLon.setText(g.getLongitudeString(true));
+            }
+
+            mGlobal.setChecked(global);
+        }
+
         return v;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Also, since we ARE saving an instance state, mark that down as a
+        // boolean.  After the UI is rebuilt, we can use those values as the
+        // active data, not the arguments.
+        outState.putBoolean(INSTANCE_SAVED, true);
     }
 
     private void dispatchGraticule() {
         Graticule toSend;
 
+        try {
+            toSend = buildGraticule();
+        } catch (Exception e) {
+            // If an exception is thrown, we don't have valid input.
+            return;
+        }
+
+        // If we got here, we can send it on its merry way!
+        if(mListener != null)
+            mListener.updateGraticule(toSend);
+    }
+
+    private Graticule buildGraticule() throws NullPointerException, NumberFormatException {
         // First, read the inputs.
         if(mGlobal.isChecked()) {
             // A checked globalhash means we always send a null Graticule, no
             // matter what the inputs say, even if those inputs are invalid.
-            toSend = null;
+            return null;
         } else {
             // Otherwise, make a Graticule.  The constructor will throw as need
             // be.
-            try {
-                toSend = new Graticule(mLat.getText().toString(), mLon.getText().toString());
-            } catch (Exception e) {
-                // If there's any problem, we've got bogus input.
-                return;
-            }
+            return new Graticule(mLat.getText().toString(), mLon.getText().toString());
         }
-
-        // If we got here, we can send it on its merry way!
-        ((GraticulePickerListener)getActivity()).updateGraticule(toSend);
     }
 
     /**
@@ -194,5 +248,40 @@ public class GraticulePickerFragment
 
         // NOW we can dispatch the change.
         dispatchGraticule();
+    }
+
+    /**
+     * Sets the {@link GraticulePickerListener}.  If this is either null or
+     * never called, this whole Fragment won't do much.
+     *
+     * @param listener the new listener
+     */
+    public void setListener(GraticulePickerListener listener) {
+        mListener = listener;
+    }
+
+    /**
+     * Gets the currently-input Graticule.  This will return null if there's no
+     * valid input yet OR if the Globalhash checkbox is ticked, so make sure to
+     * also check {@link #isGlobalhash()}.
+     *
+     * @return the current Graticule, or null
+     */
+    public Graticule getGraticule() {
+        try {
+            return buildGraticule();
+        } catch(Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Gets whether or not Globalhash is ticked.  Note that if this is false, it
+     * doesn't necessarily mean there's a valid Graticule in the inputs.
+     *
+     * @return true if global, false if not
+     */
+    public boolean isGlobalhash() {
+        return mGlobal.isChecked();
     }
 }

@@ -10,9 +10,13 @@ package net.exclaimindustries.geohashdroid.util;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -24,6 +28,8 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.fragments.GraticulePickerFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.LocationUtil;
 
 import java.util.Calendar;
 
@@ -47,6 +53,16 @@ public class SelectAGraticuleMode
 
     private Calendar mCalendar;
 
+    private LocationListener mFindClosestListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            // Okay, NOW we have a location.
+            LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
+            mCentralMap.getErrorBanner().animateBanner(false);
+            applyFoundGraticule(location);
+        }
+    };
+
     @Override
     public void init(@Nullable Bundle bundle) {
         // Hi, map!
@@ -55,7 +71,8 @@ public class SelectAGraticuleMode
         // The fragment might already be there if the Activity's being rebuilt.
         // If not, we need to place it there.
         FragmentManager manager = mCentralMap.getFragmentManager();
-        if(manager.findFragmentById(R.id.graticulepicker) == null) {
+        mFrag = (GraticulePickerFragment)manager.findFragmentById(R.id.graticulepicker);
+        if(mFrag == null) {
             // If we need to build the fragment, we might also want whatever
             // graticule the user started with.
             Graticule g = null;
@@ -107,12 +124,25 @@ public class SelectAGraticuleMode
             transaction.commit();
         }
 
+        // So, with the fragment in hand, it should have its previous state, if
+        // any, still in place.  Meaning we can just ask it for what was last
+        // selected and redraw it.
+        Graticule lastPicked = mFrag.getGraticule();
+
+        if(lastPicked != null || mFrag.isGlobalhash()) {
+            updateGraticule(lastPicked);
+        }
+
         mInitComplete = true;
     }
 
     @Override
     public void cleanUp(@Nullable Bundle bundle) {
+        super.cleanUp(bundle);
 
+        // Bye, map!
+        mMap.setOnMapClickListener(null);
+        if(mPolygon != null) mPolygon.remove();
     }
 
     @Override
@@ -121,7 +151,10 @@ public class SelectAGraticuleMode
             // If we get an Info in, plant a flag where it needs to be.
             addDestinationPoint(info);
 
-            // TODO: Also, zoom to the point if it's a Globalhash.
+            // If it's a globalhash, zip right off to it.
+            if(mMap != null && info != null && info.isGlobalHash()) {
+                zoomToPoint(info.getFinalDestinationLatLng());
+            }
         }
     }
 
@@ -146,18 +179,47 @@ public class SelectAGraticuleMode
 
     @Override
     public void findClosest() {
+        // Same as with the initial zoom, only we're setting a Graticule.
+        Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
 
+        // We want the last known location to be at least SANELY recent.
+        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+            applyFoundGraticule(lastKnown);
+        } else {
+            // This shouldn't be called OFTEN, but it'll probably be called.
+            ErrorBanner banner = mCentralMap.getErrorBanner();
+            banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.animateBanner(true);
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mFindClosestListener);
+        }
     }
 
     @Override
     public void graticulePickerClosing() {
+        mCentralMap.exitSelectAGraticuleMode();
+    }
 
+    private void applyFoundGraticule(Location loc) {
+        // Oh, and make sure the fragment still exists.  If it doesn't, we've
+        // left Select-A-Graticule, and I'm not sure how this was called.
+        if(mFrag != null) {
+            Graticule g = new Graticule(loc);
+            mFrag.setNewGraticule(g);
+            outlineGraticule(g);
+        }
     }
 
     private void outlineGraticule(Graticule g) {
+        // If we had an outline, remove it.
         if(mPolygon != null)
             mPolygon.remove();
 
+        // A null Graticule means either there's no valid input or we're in
+        // globalhash mode, so we just don't draw the outline at all.
         if(g == null) return;
 
         // And with that Graticule, we can get a Polygon.
@@ -169,23 +231,27 @@ public class SelectAGraticuleMode
         if(mMap != null) {
             mPolygon = mMap.addPolygon(opts);
 
-            // Also, move the map.  Zoom in as need be, cover an area of
-            // roughly... oh... two graticules in any direction.
-            LatLngBounds.Builder builder = LatLngBounds.builder();
-            LatLng basePoint = g.getCenterLatLng();
-            LatLng point = new LatLng(basePoint.latitude - CLOSENESS_Y_DOWN, basePoint.longitude - CLOSENESS_X);
-            builder.include(point);
-
-            point = new LatLng(basePoint.latitude - CLOSENESS_Y_DOWN, basePoint.longitude + CLOSENESS_X);
-            builder.include(point);
-
-            point = new LatLng(basePoint.latitude + CLOSENESS_Y_UP, basePoint.longitude + CLOSENESS_X);
-            builder.include(point);
-
-            point = new LatLng(basePoint.latitude + CLOSENESS_Y_UP, basePoint.longitude - CLOSENESS_X);
-            builder.include(point);
-
-            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 0));
+            zoomToPoint(g.getCenterLatLng());
         }
+    }
+
+    private void zoomToPoint(LatLng newPoint) {
+        // Zoom in as need be, cover an area of a couple graticules in any
+        // direction, leaving space for the graticule picker on the bottom of
+        // the screen.
+        LatLngBounds.Builder builder = LatLngBounds.builder();
+        LatLng point = new LatLng(newPoint.latitude - CLOSENESS_Y_DOWN, newPoint.longitude - CLOSENESS_X);
+        builder.include(point);
+
+        point = new LatLng(newPoint.latitude - CLOSENESS_Y_DOWN, newPoint.longitude + CLOSENESS_X);
+        builder.include(point);
+
+        point = new LatLng(newPoint.latitude + CLOSENESS_Y_UP, newPoint.longitude + CLOSENESS_X);
+        builder.include(point);
+
+        point = new LatLng(newPoint.latitude + CLOSENESS_Y_UP, newPoint.longitude - CLOSENESS_X);
+        builder.include(point);
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 0));
     }
 }

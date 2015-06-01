@@ -121,6 +121,8 @@ public class CentralMap
 
     private ErrorBanner mBanner;
 
+    private CentralMapMode mCurrentMode;
+
     /**
      * A <code>CentralMapMode</code> is a set of behaviors that happen whenever
      * some corresponding event occurs in {@link CentralMap}.
@@ -197,7 +199,7 @@ public class CentralMap
          * Does whatever init tomfoolery is needed for this class, using the
          * given Bundle of stuff.  You're probably best calling this AFTER
          * {@link #setMap(GoogleMap)} and {@link #setCentralMap(CentralMap)} are
-         * called.
+         * called and when the GoogleApiClient object is ready for use.
          * </p>
          *
          * @param bundle a bunch of stuff, or null if there's no stuff to be had
@@ -214,7 +216,10 @@ public class CentralMap
          *
          * @param bundle a Bundle in which state data can be written (may be null)
          */
-        public abstract void cleanUp(@Nullable Bundle bundle);
+        public void cleanUp(@Nullable Bundle bundle) {
+            // The marker always goes away, at the very least.
+            removeDestinationPoint();
+        }
 
         /**
          * Called when a new Info has come in from StockService.
@@ -1035,7 +1040,12 @@ public class CentralMap
         mMap.setOnMapClickListener(this);
     }
 
-    private void exitSelectAGraticuleMode() {
+    /**
+     * Tells Select-A-Graticule mode to exit, and does whatever's needed to make
+     * that work.  I could sure use a better way to do this other than making
+     * the method public...
+     */
+    public void exitSelectAGraticuleMode() {
         if(!mSelectAGraticule) return;
 
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mFindClosestListener);

@@ -14,6 +14,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
@@ -87,7 +88,7 @@ public class ExpeditionMode
     }
 
     @Override
-    public void init(Bundle bundle) {
+    public void init(@Nullable Bundle bundle) {
         // We listen to the map.  A lot.  For many, many reasons.
         mMap.setOnInfoWindowClickListener(this);
         mMap.setOnCameraChangeListener(this);
@@ -115,7 +116,9 @@ public class ExpeditionMode
     }
 
     @Override
-    public void cleanUp(Bundle bundle) {
+    public void cleanUp(@Nullable Bundle bundle) {
+        super.cleanUp(bundle);
+
         // First, get rid of the callbacks.
         GoogleApiClient gClient = getGoogleClient();
         if(gClient != null)
@@ -136,6 +139,10 @@ public class ExpeditionMode
             Parcelable[] arr = new Parcelable[] {};
             bundle.putParcelableArray(NEARBY_POINTS, mNearbyPoints.values().toArray(arr));
         }
+
+        // Remove the nearby points, too.  The superclass took care of the final
+        // destination marker for us.
+        removeNearbyPoints();
     }
 
     @Override

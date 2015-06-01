@@ -38,7 +38,19 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
          *
          * @param info Info of the new hashpoint
          */
-        public void nearbyGraticuleClicked(Info info);
+        void nearbyGraticuleClicked(Info info);
+    }
+
+    private NearbyGraticuleClickedCallback mCallback;
+
+    /**
+     * Sets the callback.  If this isn't set or is null, the dialog will sort of
+     * just disappear without telling anyone and logcat will yell at you.
+     *
+     * @param callback the new callback
+     */
+    public void setCallback(NearbyGraticuleClickedCallback callback) {
+        mCallback = callback;
     }
 
     /**
@@ -86,10 +98,10 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
                     public void onClick(DialogInterface dialog, int which) {
                         // Well, you heard the orders!
                         dismiss();
-                        if(getActivity() instanceof NearbyGraticuleClickedCallback)
-                            ((NearbyGraticuleClickedCallback)getActivity()).nearbyGraticuleClicked(info);
+                        if(mCallback != null)
+                            mCallback.nearbyGraticuleClicked(info);
                         else
-                            Log.e(DEBUG_TAG, "This Activity isn't implementing NearbyGraticuleClickedCallback!");
+                            Log.e(DEBUG_TAG, "You didn't specify a callback!");
                     }
                 })
                 .setNegativeButton(getString(R.string.dialog_switch_graticule_cancel), new DialogInterface.OnClickListener() {
