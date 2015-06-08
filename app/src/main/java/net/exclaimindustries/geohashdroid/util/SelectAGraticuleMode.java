@@ -44,8 +44,8 @@ public class SelectAGraticuleMode
         implements GoogleMap.OnMapClickListener,
                    GraticulePickerFragment.GraticulePickerListener {
     private static final double CLOSENESS_X = 2.5;
-    private static final double CLOSENESS_Y_UP = 1.5;
-    private static final double CLOSENESS_Y_DOWN = 3.5;
+    private static final double CLOSENESS_Y_UP = 2;
+    private static final double CLOSENESS_Y_DOWN = 3;
 
     private static final String GRATICULE_PICKER_STACK = "GraticulePickerStack";
 
@@ -132,14 +132,14 @@ public class SelectAGraticuleMode
             transaction.commit();
         }
 
-        // So, with the fragment in hand, it should have its previous state, if
-        // any, still in place.  Meaning we can just ask it for what was last
-        // selected and redraw it.  That takes precedence over the init Bundle.
-        Graticule lastPicked = mFrag.getGraticule();
-
-        if(lastPicked != null || mFrag.isGlobalhash()) {
-            updateGraticule(lastPicked);
-        }
+//        // So, with the fragment in hand, it should have its previous state, if
+//        // any, still in place.  Meaning we can just ask it for what was last
+//        // selected and redraw it.  That takes precedence over the init Bundle.
+//        Graticule lastPicked = mFrag.getGraticule();
+//
+//        if(lastPicked != null || mFrag.isGlobalhash()) {
+//            updateGraticule(lastPicked);
+//        }
 
         mInitComplete = true;
     }
@@ -157,6 +157,11 @@ public class SelectAGraticuleMode
         // Bye, map!
         mMap.setOnMapClickListener(null);
         if(mPolygon != null) mPolygon.remove();
+
+        // And bye, picker!
+        FragmentManager manager = mCentralMap.getFragmentManager();
+        if(manager.findFragmentById(R.id.graticulepicker) != null)
+            manager.popBackStack(GRATICULE_PICKER_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
     }
 
     @Override

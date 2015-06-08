@@ -43,12 +43,6 @@ public class GraticulePickerFragment
      */
     public final static String GLOBALHASH = "globalHash";
 
-    // So we know the difference between coming back from a saved instance and
-    // starting fresh.  Starting fresh, we should be looking at arguments.  From
-    // an instance, we should go from the rebuilt EditTexts and checkbox, as
-    // those get stashed with the instance state.
-    private final static String INSTANCE_SAVED = "instanceSaved";
-
     private EditText mLat;
     private EditText mLon;
     private CheckBox mGlobal;
@@ -166,7 +160,7 @@ public class GraticulePickerFragment
         });
 
         // That said, we need some default values.
-        if(savedInstanceState.getBoolean(INSTANCE_SAVED, false)) {
+        if(savedInstanceState != null) {
             // If we're NOT coming back from a saved instance, check the
             // arguments.
             Bundle args = getArguments();
@@ -183,16 +177,6 @@ public class GraticulePickerFragment
         }
 
         return v;
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        // Also, since we ARE saving an instance state, mark that down as a
-        // boolean.  After the UI is rebuilt, we can use those values as the
-        // active data, not the arguments.
-        outState.putBoolean(INSTANCE_SAVED, true);
     }
 
     private void dispatchGraticule() {
@@ -239,6 +223,7 @@ public class GraticulePickerFragment
             mGlobal.setChecked(true);
         } else {
             // Update text as need be.  Remember, negative zero IS valid!
+            mGlobal.setChecked(false);
             mLat.setText(g.getLatitudeString(true));
             mLon.setText(g.getLongitudeString(true));
         }
@@ -258,6 +243,8 @@ public class GraticulePickerFragment
      */
     public void setListener(GraticulePickerListener listener) {
         mListener = listener;
+
+        dispatchGraticule();
     }
 
     /**
