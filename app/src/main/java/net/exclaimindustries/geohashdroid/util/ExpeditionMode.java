@@ -17,6 +17,8 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -59,6 +61,7 @@ public class ExpeditionMode
     private static final String NEARBY_POINTS = "nearbyPoints";
 
     private boolean mInitComplete = false;
+    private boolean mWaitingOnInitialZoom = false;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -72,9 +75,15 @@ public class ExpeditionMode
         @Override
         public void onLocationChanged(Location location) {
             // Got it!
-            LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
-            mCentralMap.getErrorBanner().animateBanner(false);
-            zoomToIdeal(location);
+            mWaitingOnInitialZoom = false;
+
+            if(getGoogleClient() != null)
+                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
+
+            if(!isCleanedUp()) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+                zoomToIdeal(location);
+            }
         }
     };
 
@@ -143,6 +152,24 @@ public class ExpeditionMode
         // Remove the nearby points, too.  The superclass took care of the final
         // destination marker for us.
         removeNearbyPoints();
+    }
+
+    @Override
+    public void pause() {
+        // Stop listening!
+        LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mInitialZoomListener);
+    }
+
+    @Override
+    public void resume() {
+        // If need be, start listening again!
+        if(mWaitingOnInitialZoom)
+            doInitialZoom();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(MenuInflater inflater, Menu menu) {
+        inflater.inflate(R.menu.centralmap_expedition, menu);
     }
 
     @Override
@@ -381,6 +408,9 @@ public class ExpeditionMode
             LocationRequest lRequest = LocationRequest.create();
             lRequest.setInterval(1000);
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+            mWaitingOnInitialZoom = true;
+
             LocationServices.FusedLocationApi.requestLocationUpdates(gClient, lRequest, mInitialZoomListener);
         }
     }

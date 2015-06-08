@@ -13,6 +13,8 @@ import android.app.FragmentTransaction;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.view.Menu;
+import android.view.MenuInflater;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -45,6 +47,8 @@ public class SelectAGraticuleMode
     private static final double CLOSENESS_Y_UP = 1.5;
     private static final double CLOSENESS_Y_DOWN = 3.5;
 
+    private static final String GRATICULE_PICKER_STACK = "GraticulePickerStack";
+
     private Polygon mPolygon;
 
     private GraticulePickerFragment mFrag;
@@ -57,9 +61,13 @@ public class SelectAGraticuleMode
         @Override
         public void onLocationChanged(Location location) {
             // Okay, NOW we have a location.
-            LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
-            mCentralMap.getErrorBanner().animateBanner(false);
-            applyFoundGraticule(location);
+            if(getGoogleClient() != null)
+                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
+
+            if(!isCleanedUp()) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+                applyFoundGraticule(location);
+            }
         }
     };
 
@@ -120,13 +128,13 @@ public class SelectAGraticuleMode
             mFrag.setArguments(args);
 
             transaction.replace(R.id.graticulepicker, mFrag, "GraticulePicker");
-            transaction.addToBackStack(CentralMap.GRATICULE_PICKER_STACK);
+            transaction.addToBackStack(GRATICULE_PICKER_STACK);
             transaction.commit();
         }
 
         // So, with the fragment in hand, it should have its previous state, if
         // any, still in place.  Meaning we can just ask it for what was last
-        // selected and redraw it.
+        // selected and redraw it.  That takes precedence over the init Bundle.
         Graticule lastPicked = mFrag.getGraticule();
 
         if(lastPicked != null || mFrag.isGlobalhash()) {
@@ -140,9 +148,31 @@ public class SelectAGraticuleMode
     public void cleanUp(@Nullable Bundle bundle) {
         super.cleanUp(bundle);
 
+        if(bundle != null) {
+            bundle.putParcelable(GRATICULE, mFrag.getGraticule());
+            bundle.putBoolean(GLOBALHASH, mFrag.isGlobalhash());
+            bundle.putSerializable(CALENDAR, mCalendar);
+        }
+
         // Bye, map!
         mMap.setOnMapClickListener(null);
         if(mPolygon != null) mPolygon.remove();
+    }
+
+    @Override
+    public void pause() {
+        // Stop that listener!
+        LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mFindClosestListener);
+    }
+
+    @Override
+    public void resume() {
+        // Nothing needs doing on resume here.
+    }
+
+    @Override
+    public void onCreateOptionsMenu(MenuInflater inflater, Menu menu) {
+        inflater.inflate(R.menu.centralmap_selectagraticule, menu);
     }
 
     @Override
