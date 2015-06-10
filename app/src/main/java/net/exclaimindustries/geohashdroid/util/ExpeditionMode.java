@@ -14,6 +14,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -89,7 +90,7 @@ public class ExpeditionMode
     };
 
     @Override
-    public void setCentralMap(CentralMap centralMap) {
+    public void setCentralMap(@NonNull CentralMap centralMap) {
         super.setCentralMap(centralMap);
 
         // Build up our metrics, too.
@@ -187,9 +188,13 @@ public class ExpeditionMode
 
     @Override
     public void resume() {
+        if(!mInitComplete) return;
+
         // If need be, start listening again!
         if(mWaitingOnInitialZoom)
             doInitialZoom();
+        else
+            doReloadZoom();
     }
 
     @Override
@@ -409,6 +414,16 @@ public class ExpeditionMode
         mMap.animateCamera(cam);
     }
 
+    private void doReloadZoom() {
+        // This happens on every resume().  The only real difference is that
+        // this is protected by a preference, while initial zoom happens any
+        // time.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
+        boolean autoZoom = prefs.getBoolean(GHDConstants.PREF_AUTOZOOM, true);
+
+        if(autoZoom) doInitialZoom();
+    }
+
     private void doInitialZoom() {
         GoogleApiClient gClient = getGoogleClient();
 
@@ -416,11 +431,6 @@ public class ExpeditionMode
             Log.w(DEBUG_TAG, "Tried calling doInitialZoom() when the Google API client was null or not connected!");
 
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
-        boolean autoZoom = prefs.getBoolean(GHDConstants.PREF_AUTOZOOM, true);
-
-        if(!autoZoom) return;
 
         // We want the last known location to be at least SANELY recent.
         if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
