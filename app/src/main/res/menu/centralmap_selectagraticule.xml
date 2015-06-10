@@ -5,6 +5,10 @@
         android:title="@string/exit_graticule_label"
         android:showAsAction="always" />
     <item
+        android:id="@+id/action_date"
+        android:title="@string/date_label"
+        android:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_whatisthis"
         android:title="@string/what_label"
         android:showAsAction="never" />
