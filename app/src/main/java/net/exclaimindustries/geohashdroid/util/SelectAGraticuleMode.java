@@ -13,9 +13,11 @@ import android.app.FragmentTransaction;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -43,6 +45,8 @@ public class SelectAGraticuleMode
         extends CentralMap.CentralMapMode
         implements GoogleMap.OnMapClickListener,
                    GraticulePickerFragment.GraticulePickerListener {
+    private static final String DEBUG_TAG = "SelectAGraticuleMode";
+
     private static final double CLOSENESS_X = 2.5;
     private static final double CLOSENESS_Y_UP = 2;
     private static final double CLOSENESS_Y_DOWN = 3;
@@ -158,7 +162,9 @@ public class SelectAGraticuleMode
     @Override
     public void pause() {
         // Stop that listener!
-        LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mFindClosestListener);
+        GoogleApiClient gClient = getGoogleClient();
+        if(gClient != null)
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mFindClosestListener);
     }
 
     @Override
@@ -206,6 +212,13 @@ public class SelectAGraticuleMode
 
     @Override
     public void findClosest() {
+        GoogleApiClient gClient = getGoogleClient();
+
+        // TODO: I should really have a way to go on standby if this happens and
+        // redo the request once the connection comes in.
+        if(gClient == null)
+            Log.w(DEBUG_TAG, "Tried to call findClosest when the Google API Client was either null or not connected!");
+
         // Same as with the initial zoom, only we're setting a Graticule.
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
 

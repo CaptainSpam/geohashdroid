@@ -180,7 +180,9 @@ public class ExpeditionMode
     @Override
     public void pause() {
         // Stop listening!
-        LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mInitialZoomListener);
+        GoogleApiClient gClient = getGoogleClient();
+        if(gClient != null)
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
     }
 
     @Override
@@ -409,6 +411,9 @@ public class ExpeditionMode
 
     private void doInitialZoom() {
         GoogleApiClient gClient = getGoogleClient();
+
+        if(gClient == null)
+            Log.w(DEBUG_TAG, "Tried calling doInitialZoom() when the Google API client was null or not connected!");
 
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
 
