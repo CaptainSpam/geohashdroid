@@ -132,15 +132,6 @@ public class SelectAGraticuleMode
             transaction.commit();
         }
 
-//        // So, with the fragment in hand, it should have its previous state, if
-//        // any, still in place.  Meaning we can just ask it for what was last
-//        // selected and redraw it.  That takes precedence over the init Bundle.
-//        Graticule lastPicked = mFrag.getGraticule();
-//
-//        if(lastPicked != null || mFrag.isGlobalhash()) {
-//            updateGraticule(lastPicked);
-//        }
-
         mInitComplete = true;
     }
 
@@ -172,7 +163,8 @@ public class SelectAGraticuleMode
 
     @Override
     public void resume() {
-        // Nothing needs doing on resume here.
+        // Nothing needs doing on resume here.  The Find Closest thing can kick
+        // back in on the user's command.
     }
 
     @Override

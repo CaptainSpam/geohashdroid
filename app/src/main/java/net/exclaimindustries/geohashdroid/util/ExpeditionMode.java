@@ -43,6 +43,7 @@ import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -104,19 +105,41 @@ public class ExpeditionMode
 
         // Do we have a Bundle to un-Bundlify?
         if(bundle != null) {
-            mCurrentInfo = bundle.getParcelable(INFO);
-            setInfo(mCurrentInfo);
+            // We've either got a complete Info (highest priority) or a
+            // combination of Graticule, boolean, and Calendar.  So we can
+            // either start right back up from Info or we just make a call out
+            // to StockService.
+            //
+            // Well, okay, we can also have no data at all, in which case we do
+            // nothing but wait until the user goes to Select-A-Graticule to get
+            // things moving.
+            if(bundle.containsKey(INFO)) {
+                mCurrentInfo = bundle.getParcelable(INFO);
+                setInfo(mCurrentInfo);
 
-            Parcelable[] nearbys = bundle.getParcelableArray(NEARBY_POINTS);
+                Parcelable[] nearbys = bundle.getParcelableArray(NEARBY_POINTS);
 
-            // mCurrentInfo also has to be not-null, as we can't have nearby
-            // points if we don't have a point to begin with.  This is mostly a
-            // sanity check.
-            if(mCurrentInfo != null && nearbys != null) {
-                for(Parcelable inf : nearbys) {
-                    if(inf instanceof Info) {
-                        handleInfo((Info)inf, StockService.FLAG_NEARBY_POINT);
+                // mCurrentInfo also has to be not-null, as we can't have nearby
+                // points if we don't have a point to begin with.  This is mostly a
+                // sanity check.
+                if(mCurrentInfo != null && nearbys != null) {
+                    for(Parcelable inf : nearbys) {
+                        if(inf instanceof Info) {
+                            handleInfo((Info)inf, StockService.FLAG_NEARBY_POINT);
+                        }
                     }
+                }
+            } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
+                // We've got a request to make!  Chances are, StockService will
+                // have this in cache.
+                Graticule g = bundle.getParcelable(GRATICULE);
+                boolean global = bundle.getBoolean(GLOBALHASH, false);
+                Calendar cal = (Calendar)bundle.getSerializable(CALENDAR);
+
+                // We only go through with this if we have a Calendar and either
+                // a globalhash or a Graticule.
+                if(cal != null && (global || g != null)) {
+                    mCentralMap.requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED);
                 }
             }
         }

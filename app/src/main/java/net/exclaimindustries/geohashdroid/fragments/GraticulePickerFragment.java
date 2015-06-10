@@ -160,7 +160,7 @@ public class GraticulePickerFragment
         });
 
         // That said, we need some default values.
-        if(savedInstanceState != null) {
+        if(savedInstanceState == null) {
             // If we're NOT coming back from a saved instance, check the
             // arguments.
             Bundle args = getArguments();
