@@ -95,13 +95,14 @@ public class CentralMap
      * correspond to {@link CentralMap}'s onPause and onResume methods, there is
      * NOT a similar lifecycle in <code>CentralMapMode</code>.  That is,
      * {@link #pause()} and {@link #resume()} are NOT guaranteed to be called in
-     * any relation to {@link #init(Bundle)} or {@link #cleanUp(Bundle)}.  If
-     * there's never an onPause or onResume in the life of a CentralMapMode, it
-     * will NOT receive the corresponding calls, and will instead just get the
-     * {@link #init(Bundle)} and {@link #cleanUp(Bundle)} calls.
+     * any relation to {@link #init(Bundle)} or {@link #cleanUp()}.  If there's
+     * never an onPause or onResume in the life of a CentralMapMode, it will NOT
+     * receive the corresponding calls, and will instead just get the
+     * {@link #init(Bundle)} and {@link #cleanUp()} calls.
      * </p>
      */
     public abstract static class CentralMapMode {
+        protected boolean mInitComplete = false;
         private boolean mCleanedUp = false;
 
         /** Bundle key for the current Graticule. */
@@ -185,20 +186,26 @@ public class CentralMap
         /**
          * Does whatever cleanup rigmarole is needed for this class, such as
          * unsubscribing to all those subscriptions you set up in {@link #setMap(GoogleMap)}
-         * or {@link #init(Bundle)}.  If a Bundle is given, state data should be
-         * written to it.  It might be used to recreate the mode, but it can
-         * also be used to write out result data in the case of
-         * Select-A-Graticule mode.
-         *
-         * @param bundle a Bundle in which state data can be written (may be null)
+         * or {@link #init(Bundle)}.
          */
-        public void cleanUp(@Nullable Bundle bundle) {
+        public void cleanUp() {
             // The marker always goes away, at the very least.
             removeDestinationPoint();
 
             // Set the cleaned up flag, too.
             mCleanedUp = true;
         }
+
+        /**
+         * Stores the state of this mode into yonder Bundle.  This is NOT
+         * guaranteed to be followed by {@link #cleanUp()}, apparently.  Did not
+         * know that at first.  This is also where you write out any data that
+         * might be useful to other modes, such as the selected Graticule in
+         * SelectAGraticuleMode.
+         *
+         * @param bundle the Bundle to which to write data.
+         */
+        public abstract void onSaveInstanceState(@NonNull Bundle bundle);
 
         /**
          * Called when the Activity gets onPause().  Remember, the mode object
@@ -301,13 +308,24 @@ public class CentralMap
         }
 
         /**
-         * Returned whether or not {@link #cleanUp(Bundle)} has been called yet.
-         * If so, you should generally not call anything else.
+         * Returns whether or not {@link #cleanUp()} has been called yet.  If
+         * so, you should generally not call anything else.
          *
          * @return true if cleaned up, false if not
          */
-        protected final boolean isCleanedUp() {
+        public final boolean isCleanedUp() {
             return mCleanedUp;
+        }
+
+        /**
+         * Returns whether or not {@link #init(Bundle)} has finished.  If so,
+         * you probably shouldn't call init again, and are probably looking to
+         * call resume instead.
+         *
+         * @return true if init is complete, false if not
+         */
+        public final boolean isInitComplete() {
+            return mInitComplete;
         }
     }
 
@@ -460,9 +478,8 @@ public class CentralMap
         filt.addAction(StockService.ACTION_STOCK_RESULT);
         registerReceiver(mStockReceiver, filt);
 
-        // And mode back up.
-        if(mCurrentMode != null)
-            mCurrentMode.resume();
+        // The mode will resume itself once the client comes back in from
+        // onStart.
     }
 
     @Override
@@ -479,6 +496,14 @@ public class CentralMap
         mGoogleClient.disconnect();
 
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Make sure that mode's been cleaned up first.
+        mCurrentMode.cleanUp();
+
+        super.onDestroy();
     }
 
     @Override
@@ -502,7 +527,7 @@ public class CentralMap
         // Also, shut down the current mode.  We'll rebuild it later.
         if(mCurrentMode != null) {
             mLastModeBundle = new Bundle();
-            mCurrentMode.cleanUp(mLastModeBundle);
+            mCurrentMode.onSaveInstanceState(mLastModeBundle);
             outState.putBundle(LAST_MODE_BUNDLE, mLastModeBundle);
         }
     }
@@ -601,7 +626,8 @@ public class CentralMap
         // We can at least get a starter Graticule for Select-A-Graticule, if
         // Expedition had one yet.
         mLastModeBundle = new Bundle();
-        mCurrentMode.cleanUp(mLastModeBundle);
+        mCurrentMode.onSaveInstanceState(mLastModeBundle);
+        mCurrentMode.cleanUp();
         mCurrentMode = new SelectAGraticuleMode();
         doReadyChecks();
     }
@@ -618,7 +644,8 @@ public class CentralMap
         // The result can be retrieved from the Bundle and shoved right into
         // ExpeditionMode via doReadyChecks.
         mLastModeBundle = new Bundle();
-        mCurrentMode.cleanUp(mLastModeBundle);
+        mCurrentMode.onSaveInstanceState(mLastModeBundle);
+        mCurrentMode.cleanUp();
         mCurrentMode = new ExpeditionMode();
         doReadyChecks();
     }
@@ -642,10 +669,14 @@ public class CentralMap
         // This should be called any time the Google API client or MapFragment
         // become ready.  It'll check to see if both are up, starting the
         // current mode when so.
-        if(mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected()) {
-            mCurrentMode.setMap(mMap);
-            mCurrentMode.setCentralMap(this);
-            mCurrentMode.init(mLastModeBundle);
+        if(!mCurrentMode.isCleanedUp() && mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected()) {
+            if(mCurrentMode.isInitComplete()) {
+                mCurrentMode.resume();
+            } else {
+                mCurrentMode.setMap(mMap);
+                mCurrentMode.setCentralMap(this);
+                mCurrentMode.init(mLastModeBundle);
+            }
             invalidateOptionsMenu();
 
             return true;

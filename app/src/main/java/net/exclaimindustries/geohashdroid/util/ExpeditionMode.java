@@ -62,7 +62,6 @@ public class ExpeditionMode
     private static final String NEARBY_DIALOG = "nearbyDialog";
     private static final String NEARBY_POINTS = "nearbyPoints";
 
-    private boolean mInitComplete = false;
     private boolean mWaitingOnInitialZoom = false;
 
     // This will hold all the nearby points we come up with.  They'll be
@@ -149,8 +148,8 @@ public class ExpeditionMode
     }
 
     @Override
-    public void cleanUp(@Nullable Bundle bundle) {
-        super.cleanUp(bundle);
+    public void cleanUp() {
+        super.cleanUp();
 
         // First, get rid of the callbacks.
         GoogleApiClient gClient = getGoogleClient();
@@ -158,24 +157,27 @@ public class ExpeditionMode
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
 
         // And the listens.
-        mMap.setOnInfoWindowClickListener(null);
-        mMap.setOnCameraChangeListener(null);
-
-        // Now, if there's a Bundle handy, stash away the last Info we knew
-        // about, as well as all the nearby points (the latter just for the sake
-        // of efficiency, so we can load them back up without making calls to
-        // StockService).  If we have anything at all, it'll always be an Info.
-        // If we don't have one, we weren't displaying anything, and thus don't
-        // need to stash a Calendar, Graticule, etc.
-        if(bundle != null) {
-            bundle.putParcelable(INFO, mCurrentInfo);
-            Parcelable[] arr = new Parcelable[] {};
-            bundle.putParcelableArray(NEARBY_POINTS, mNearbyPoints.values().toArray(arr));
+        if(mMap != null) {
+            mMap.setOnInfoWindowClickListener(null);
+            mMap.setOnCameraChangeListener(null);
         }
 
         // Remove the nearby points, too.  The superclass took care of the final
         // destination marker for us.
         removeNearbyPoints();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle bundle) {
+        // At instance save time, stash away the last Info we knew about, as
+        // well as all the nearby points (the latter just for the sake of
+        // efficiency, so we can load them back up without making calls to
+        // StockService).  If we have anything at all, it'll always be an Info.
+        // If we don't have one, we weren't displaying anything, and thus don't
+        // need to stash a Calendar, Graticule, etc.
+        bundle.putParcelable(INFO, mCurrentInfo);
+        Parcelable[] arr = new Parcelable[] {};
+        bundle.putParcelableArray(NEARBY_POINTS, mNearbyPoints.values().toArray(arr));
     }
 
     @Override

@@ -58,8 +58,6 @@ public class SelectAGraticuleMode
 
     private GraticulePickerFragment mFrag;
 
-    private boolean mInitComplete = false;
-
     private Calendar mCalendar;
 
     private LocationListener mFindClosestListener = new LocationListener() {
@@ -141,23 +139,26 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    public void cleanUp(@Nullable Bundle bundle) {
-        super.cleanUp(bundle);
-
-        if(bundle != null) {
-            bundle.putParcelable(GRATICULE, mFrag.getGraticule());
-            bundle.putBoolean(GLOBALHASH, mFrag.isGlobalhash());
-            bundle.putSerializable(CALENDAR, mCalendar);
-        }
+    public void cleanUp() {
+        super.cleanUp();
 
         // Bye, map!
-        mMap.setOnMapClickListener(null);
-        if(mPolygon != null) mPolygon.remove();
+        if(mMap != null) {
+            mMap.setOnMapClickListener(null);
+            if(mPolygon != null) mPolygon.remove();
+        }
 
         // And bye, picker!
         FragmentManager manager = mCentralMap.getFragmentManager();
         if(manager.findFragmentById(R.id.graticulepicker) != null)
             manager.popBackStack(GRATICULE_PICKER_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle bundle) {
+        bundle.putParcelable(GRATICULE, mFrag.getGraticule());
+        bundle.putBoolean(GLOBALHASH, mFrag.isGlobalhash());
+        bundle.putSerializable(CALENDAR, mCalendar);
     }
 
     @Override
