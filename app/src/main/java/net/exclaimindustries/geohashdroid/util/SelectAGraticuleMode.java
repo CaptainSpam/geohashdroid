@@ -12,6 +12,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Menu;
@@ -293,5 +294,14 @@ public class SelectAGraticuleMode
         builder.include(point);
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 0));
+    }
+
+    @Override
+    public void changeCalendar(@NonNull Calendar newDate) {
+        // Unlike in ExpeditionMode, we can immediately set our concept of the
+        // current Calendar now.  It'll just wipe out the current point.
+        mCalendar = newDate;
+        if(mFrag.getGraticule() != null || mFrag.isGlobalhash())
+            updateGraticule(mFrag.getGraticule());
     }
 }

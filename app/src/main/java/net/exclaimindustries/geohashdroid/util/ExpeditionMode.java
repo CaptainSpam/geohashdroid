@@ -490,4 +490,14 @@ public class ExpeditionMode
         setInfo(info);
         doNearbyPoints();
     }
+
+    @Override
+    public void changeCalendar(@NonNull Calendar newDate) {
+        // New Calendar!  That means we ask for more stock data!  It doesn't
+        // necessarily mean a new point is coming in, but it does mean we're
+        // making a request, at least.  The StockService broadcast will let us
+        // know what's going on later.
+        if(mCurrentInfo != null)
+            mCentralMap.requestStock(mCurrentInfo.getGraticule(), newDate, StockService.FLAG_USER_INITIATED);
+    }
 }

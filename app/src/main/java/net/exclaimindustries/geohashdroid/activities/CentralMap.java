@@ -231,6 +231,16 @@ public class CentralMap
         public abstract void onCreateOptionsMenu(MenuInflater inflater, Menu menu);
 
         /**
+         * Called when a new Calendar comes in.  The modes should update as need
+         * be.  This should mean calling for a new Info from StockService, but
+         * NOT updating its own Info or concept of the current Calendar if there
+         * was a problem with the stock (i.e. it wasn't posted yet).
+         *
+         * @param newDate the new Calendar
+         */
+        public abstract void changeCalendar(@NonNull Calendar newDate);
+
+        /**
          * Draws a final destination point on the map given the appropriate
          * Info.  This also removes any old point that might've been around.
          *
