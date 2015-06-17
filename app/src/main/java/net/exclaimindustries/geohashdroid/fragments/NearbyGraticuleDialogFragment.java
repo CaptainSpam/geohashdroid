@@ -13,6 +13,8 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -60,11 +62,8 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
      * @param info the Info that this dialog will concern itself with
      * @param location the user's current Location (can be null)
      * @return a dialog
-     * @throws java.lang.IllegalArgumentException Info was null
      */
-    public static NearbyGraticuleDialogFragment newInstance(Info info, Location location) {
-        if(info == null) throw new IllegalArgumentException("You need to pass a non-null Info into newInstance()!");
-
+    public static NearbyGraticuleDialogFragment newInstance(@NonNull Info info, @Nullable Location location) {
         NearbyGraticuleDialogFragment frag = new NearbyGraticuleDialogFragment();
         Bundle args = new Bundle();
         args.putParcelable("info", info);

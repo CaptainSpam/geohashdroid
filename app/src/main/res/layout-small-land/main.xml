@@ -22,7 +22,7 @@
 
 		<CheckBox android:id="@+id/TodayBox" android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:layout_gravity="center"
-			android:text="@string/always_today_label" />
+			android:text="@string/today_label" />
 
 		<TextView android:id="@+id/GlobalhashLabel"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"

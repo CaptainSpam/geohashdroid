@@ -19,7 +19,7 @@
 			android:id="@+id/DateButton"
 			android:layout_gravity="center" exclaim:date_format="long_date" />
 		<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:text="@string/always_today_label" android:layout_gravity="center"
+			android:text="@string/today_label" android:layout_gravity="center"
 			android:id="@+id/TodayBox" />
 	</LinearLayout>
 	<TextView android:layout_width="wrap_content"

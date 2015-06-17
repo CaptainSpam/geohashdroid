@@ -57,14 +57,36 @@ public class GHDBasicDialogBuilder {
 
     /**
      * Constructs a new builder object.  This'll make an AlertDialog.Builder and
-     * set it up with the necessary standard layout stuff.
+     * set it up with the necessary standard layout stuff, assuming you've got
+     * a single text string to display.
      *
      * @param context the Context
      */
-    @SuppressLint("InflateParams")
     public GHDBasicDialogBuilder(Context context) {
+        this(context, R.layout.ghd_alert_dialog);
+    }
+
+    /**
+     * Constructs a new builder object, using the given resource ID as the view
+     * layout.
+     *
+     * @param context the Context
+     * @param layoutRes a resource ID to the view to use
+     */
+    @SuppressLint("InflateParams")
+    public GHDBasicDialogBuilder(Context context, int layoutRes) {
+        this(context, ((LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(layoutRes, null));
+    }
+
+    /**
+     * Constructs a new builder object.
+     *
+     * @param context the Context
+     * @param view the View to be used
+     */
+    public GHDBasicDialogBuilder(Context context, View view) {
         mBuilder = new AlertDialog.Builder(context, AlertDialog.THEME_DEVICE_DEFAULT_LIGHT);
-        mView = ((LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.ghd_alert_dialog, null);
+        mView = view;
         mBuilder.setView(mView);
 
         // We want the click handlers to at least LOOK like AlertDialog's stuff,
@@ -156,7 +178,9 @@ public class GHDBasicDialogBuilder {
      * @return this, for chaining purposes
      */
     public GHDBasicDialogBuilder setMessage(String text) {
-        ((TextView)mView.findViewById(R.id.message)).setText(text);
+        TextView message = ((TextView)mView.findViewById(R.id.message));
+        if(message != null)
+            message.setText(text);
 
         return this;
     }

@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -53,10 +54,12 @@ import java.util.Calendar;
 public class CentralMap
         extends Activity
         implements GoogleApiClient.ConnectionCallbacks,
-                   GoogleApiClient.OnConnectionFailedListener {
+                   GoogleApiClient.OnConnectionFailedListener,
+                   GHDDatePickerDialogFragment.GHDDatePickerCallback {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String LAST_MODE_BUNDLE = "lastModeBundle";
+    private static final String DATE_PICKER_DIALOG = "datePicker";
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -555,6 +558,22 @@ public class CentralMap
                 exitSelectAGraticuleMode();
                 return true;
             }
+            case R.id.action_date: {
+                // The date picker is common to all modes and is best handled by
+                // the Activity itself.  With that said, we can just use the
+                // basic DatePickerDialog, because I know from experience the
+                // DatePicker widget has a few... quirks.
+                if(mLastCalendar == null) {
+                    // Of course, we need a date to fill in.
+                    mLastCalendar = Calendar.getInstance();
+                }
+
+                GHDDatePickerDialogFragment frag = GHDDatePickerDialogFragment.newInstance(mLastCalendar);
+                frag.setCallback(this);
+                frag.show(getFragmentManager(), DATE_PICKER_DIALOG);
+
+                return true;
+            }
             case R.id.action_whatisthis: {
                 // The everfamous and much-beloved "What's Geohashing?" button,
                 // because honestly, this IS sort of confusing if you're
@@ -703,5 +722,12 @@ public class CentralMap
      */
     public GoogleApiClient getGoogleClient() {
         return mGoogleClient;
+    }
+
+    @Override
+    public void datePicked(Calendar picked) {
+        // Calendar!
+        mLastCalendar = picked;
+        mCurrentMode.changeCalendar(mLastCalendar);
     }
 }

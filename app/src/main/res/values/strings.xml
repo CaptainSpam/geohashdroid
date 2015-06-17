@@ -32,11 +32,13 @@
     <string name="closest_label">Find Closest</string>
     <string name="globalhash_label">Globalhash!</string>
     <string name="gratmap_label">Pick From Map</string>
-    <string name="always_today_label">Today</string>
+    <string name="today_label">Today</string>
 
     <string name="cancel_label">Cancel</string>
     <string name="darn_label">Darn!</string>
     <string name="close_label">Close</string>
+
+    <string name="dialog_date_picker_title">Select Date</string>
 
     <string name="dialog_switch_graticule_okay">Yes, change</string>
     <string name="dialog_switch_graticule_cancel">No, stay here</string>

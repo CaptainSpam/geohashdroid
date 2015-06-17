@@ -16,7 +16,7 @@
 		android:layout_gravity="center_horizontal" android:textSize="@dimen/input_graticule_fontsize"
 		android:padding="@dimen/button_date_padding" exclaim:date_format="long_date" />
 	<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
-		android:text="@string/always_today_label" android:layout_gravity="center_horizontal"
+		android:text="@string/today_label" android:layout_gravity="center_horizontal"
 		android:id="@+id/TodayBox" />
 	<TextView android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:id="@+id/GraticuleLabel"
