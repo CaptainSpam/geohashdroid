@@ -118,20 +118,7 @@ public class ExpeditionMode
             // things moving.
             if(bundle.containsKey(INFO)) {
                 mCurrentInfo = bundle.getParcelable(INFO);
-                setInfo(mCurrentInfo);
-
-                Parcelable[] nearbys = bundle.getParcelableArray(NEARBY_POINTS);
-
-                // mCurrentInfo also has to be not-null, as we can't have nearby
-                // points if we don't have a point to begin with.  This is mostly a
-                // sanity check.
-                if(mCurrentInfo != null && nearbys != null) {
-                    for(Parcelable inf : nearbys) {
-                        if(inf instanceof Info) {
-                            handleInfo((Info)inf, StockService.FLAG_NEARBY_POINT);
-                        }
-                    }
-                }
+                mCentralMap.requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
             } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
                 // We've got a request to make!  Chances are, StockService will
                 // have this in cache.
@@ -142,7 +129,7 @@ public class ExpeditionMode
                 // We only go through with this if we have a Calendar and either
                 // a globalhash or a Graticule.
                 if(cal != null && (global || g != null)) {
-                    mCentralMap.requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED);
+                    mCentralMap.requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 }
             }
         }
@@ -208,16 +195,11 @@ public class ExpeditionMode
     }
 
     @Override
-    public void handleInfo(Info info, int flags) {
+    public void handleInfo(Info info, Info[] nearby, int flags) {
         // PULL!
         if(mInitComplete) {
-            if((flags & StockService.FLAG_NEARBY_POINT) != 0) {
-                // It's a nearby point!
-                addNearbyPoint(info);
-            } else {
-                setInfo(info);
-                doNearbyPoints();
-            }
+            setInfo(info);
+            doNearbyPoints(nearby);
         }
     }
 
@@ -293,44 +275,13 @@ public class ExpeditionMode
         }
     }
 
-    private void doNearbyPoints() {
-        if(mCurrentInfo == null) return;
-
+    private void doNearbyPoints(Info[] nearby) {
         removeNearbyPoints();
 
-        // If the user wants the nearby points (AND this isn't a Globalhash), we
-        // need to request them.  Now, the way we're going to do this may seem
-        // inefficient, firing off (up to) eight more Intents to StockService,
-        // but it covers the bizarre cases of people trying to Geohash directly
-        // on the 30W or 180E/W lines, as well as any oddities related to the
-        // zero graticules.  Besides, it's best to keep StockService simple.
-        // The cache will ensure the points will come back promptly in the
-        // general case.
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
-        if(!mCurrentInfo.isGlobalHash() && prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true)) {
-            Graticule g = mCurrentInfo.getGraticule();
-
-            for(int i = -1; i <= 1; i++) {
-                for(int j = -1; j <= 1; j++) {
-                    // Zero and zero isn't a nearby point, that's the very point
-                    // we're at right now!
-                    if(i == 0 && j == 0) continue;
-
-                    // If the user's truly adventurous enough to go to the 90N/S
-                    // graticules, there aren't any nearby points north/south of
-                    // where they are.  Also, the nearby points aren't going to
-                    // be drawn anyway due to the projection, but hey, that's
-                    // nitpicking.
-                    if(Math.abs((g.isSouth() ? -1 : 1) * g.getLatitude() + i) > 90)
-                        continue;
-
-                    // Make a new Graticule, properly offset...
-                    Graticule offset = Graticule.createOffsetFrom(g, i, j);
-
-                    // ...and make the request, WITH the appropriate flag set.
-                    mCentralMap.requestStock(offset, mCurrentInfo.getCalendar(), StockService.FLAG_AUTO_INITIATED | StockService.FLAG_NEARBY_POINT);
-                }
-            }
+        // We should just be able to toss one point in for each Info here.
+        if(nearby != null) {
+            for(Info info : nearby)
+                addNearbyPoint(info);
         }
     }
 
@@ -492,8 +443,7 @@ public class ExpeditionMode
     @Override
     public void nearbyGraticuleClicked(Info info) {
         // Info!
-        setInfo(info);
-        doNearbyPoints();
+        mCentralMap.requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     @Override
@@ -503,6 +453,12 @@ public class ExpeditionMode
         // making a request, at least.  The StockService broadcast will let us
         // know what's going on later.
         if(mCurrentInfo != null)
-            mCentralMap.requestStock(mCurrentInfo.getGraticule(), newDate, StockService.FLAG_USER_INITIATED);
+            mCentralMap.requestStock(mCurrentInfo.getGraticule(), newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
+
+    private boolean needsNearbyPoints() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
+        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true);
+    }
+
 }

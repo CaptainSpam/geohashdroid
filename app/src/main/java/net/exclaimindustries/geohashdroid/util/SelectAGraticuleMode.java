@@ -183,7 +183,7 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    public void handleInfo(Info info, int flags) {
+    public void handleInfo(Info info, Info[] nearby, int flags) {
         if(mInitComplete) {
             // If we get an Info in, plant a flag where it needs to be.
             addDestinationPoint(info);

@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.Menu;
@@ -43,6 +44,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 
 import java.text.DateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 
 /**
@@ -226,11 +228,12 @@ public class CentralMap
 
         /**
          * Called when a new Info has come in from StockService.
-         *
+         * 
          * @param info that Info
+         * @param nearby any nearby Infos that may have been requested (can be null)
          * @param flags the request flags that were sent with it
          */
-        public abstract void handleInfo(Info info, int flags);
+        public abstract void handleInfo(Info info, @Nullable Info[] nearby, int flags);
 
         /**
          * Called when the menu needs to be built.
@@ -383,7 +386,12 @@ public class CentralMap
                 // the Info out of it and fire it away to the corresponding
                 // CentralMapMode.
                 Info received = intent.getParcelableExtra(StockService.EXTRA_INFO);
-                mCurrentMode.handleInfo(received, reqFlags);
+                Parcelable[] pArr = intent.getParcelableArrayExtra(StockService.EXTRA_NEARBY_POINTS);
+
+                Info[] nearby = null;
+                if(pArr != null)
+                    nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
+                mCurrentMode.handleInfo(received, nearby, reqFlags);
             } else if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
                 // ONLY notify the user of an error if they specifically
                 // requested this stock.

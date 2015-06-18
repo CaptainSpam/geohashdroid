@@ -7,18 +7,21 @@
  */
 package net.exclaimindustries.geohashdroid.services;
 
-import java.io.Serializable;
-import java.util.Calendar;
+import android.content.Intent;
+import android.os.Parcelable;
+
+import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.geohashdroid.util.HashBuilder.StockRunner;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.AndroidUtil;
-import android.content.Intent;
-import android.os.Parcelable;
 
-import com.commonsware.cwac.wakeful.WakefulIntentService;
+import java.io.Serializable;
+import java.util.Calendar;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * <p>
@@ -76,11 +79,13 @@ public class StockService extends WakefulIntentService {
      */
     public static final String EXTRA_REQUEST_ID = "net.exclaimindustries.geohashdroid.EXTRA_REQUEST_ID";
     /**
-     * Key for additional flags in the request.  These don't change how the
-     * request is handled, like the request ID, and will simply be passed back
-     * in the resulting broadcast Intent.  This helps BroadcastReceivers know
-     * what led to this request, which can come in handy if there's some case
-     * where you want to ignore responses the came from, say, the stock alarm.
+     * Key for additional flags in the request.  For the most part, these don't
+     * change how the request is handled, like the request ID, and will simply
+     * be passed back in the resulting broadcast Intent.  Some flags, however,
+     * like {@link #FLAG_INCLUDE_NEARBY_POINTS}, will add more data.  This helps
+     * BroadcastReceivers know what led to this request, which can come in handy
+     * if there's some case where you want to ignore responses the came from,
+     * say, the stock alarm.
      */
     public static final String EXTRA_REQUEST_FLAGS = "net.exclaimindustries.geohashdroid.EXTRA_REQUEST_FLAGS";
     /**
@@ -107,6 +112,14 @@ public class StockService extends WakefulIntentService {
      * Key for the response code extra.  This will be an int.
      */
     public static final String EXTRA_RESPONSE_CODE = "net.exclaimindustries.geohashdroid.EXTRA_RESPONSE_CODE";
+    /**
+     * Key for nearby points, if {@link #FLAG_INCLUDE_NEARBY_POINTS} was
+     * specified.  This will be an array of Info objects.  The order of the
+     * array is arbitrary.  There will usually be eight elements in it, though
+     * there may be fewer if the request is either at the poles or in rare
+     * 30W-related cases.
+     */
+    public static final String EXTRA_NEARBY_POINTS = "net.exclaimindustries.geohashdroid.EXTRA_NEARBY_POINTS";
     
     /**
      * Flag meaning this request came from the stock alarm around 9:30am EST.
@@ -136,6 +149,12 @@ public class StockService extends WakefulIntentService {
      * should know what to do with it.
      */
     public static final int FLAG_SELECT_A_GRATICULE = 0x10;
+
+    /**
+     * Flag meaning that, in addition to the point requested, the (up to) eight
+     * surrounding points should also be included in the response.
+     */
+    public static final int FLAG_INCLUDE_NEARBY_POINTS = 0x20;
 
     /**
      * Flag meaning this response was found in the cache.  If not set, it was
@@ -208,12 +227,15 @@ public class StockService extends WakefulIntentService {
         // If we got something, great!  Broadcast it right on out!
         if(info != null) {
             respFlags |= FLAG_CACHED;
-            dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info);
+            Info[] nearby = null;
+            if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
+                nearby = getNearbyPoints(cal, graticule);
+            dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info, nearby);
         } else {
             // Otherwise, we need to go to the web.
             if(!AndroidUtil.isConnected(this)) {
                 // ...if we CAN go to the web, that is.
-                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null);
+                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null);
             } else {
                 StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule, null);
                 runner.runStock();
@@ -224,11 +246,14 @@ public class StockService extends WakefulIntentService {
                 switch(result) {
                     case HashBuilder.StockRunner.ALL_OKAY:
                         // Hooray!  We win!  Dispatch an intent with the info.
-                        dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject());
+                        Info[] nearby = null;
+                        if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
+                            nearby = getNearbyPoints(cal, graticule);
+                        dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject(), nearby);
                         break;
                     case HashBuilder.StockRunner.ERROR_NOT_POSTED:
                         // Aw.  It's not posted yet.
-                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null);
+                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null, null);
                         break;
                     default:
                         // In all other cases, just assume it's a network error.
@@ -236,13 +261,13 @@ public class StockService extends WakefulIntentService {
                         // we got IDLE, BUSY, or ABORTED, none of which make any
                         // sense in this context, which means something went
                         // horribly, horribly wrong.
-                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null);
+                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null, null);
                 }
             }
         }
     }
     
-    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info) {
+    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
         
@@ -255,8 +280,65 @@ public class StockService extends WakefulIntentService {
         intent.putExtra(EXTRA_DATE, date);
         intent.putExtra(EXTRA_GRATICULE, graticule);
         intent.putExtra(EXTRA_INFO, info);
+        if(nearby != null && nearby.length != 0) {
+            intent.putExtra(EXTRA_NEARBY_POINTS, nearby);
+        }
         
         // And away it goes!
         sendBroadcast(intent);
+    }
+
+    private Info[] getNearbyPoints(Calendar cal, Graticule g) {
+        if(g == null) return new Info[0];
+
+        List<Info> infos = new LinkedList<>();
+
+        // Hopefully, each nearby point is available.  In addition to cases
+        // involving the poles, I *think* there's cases where a 30W point IS
+        // available, but a neighboring non-30W point ISN'T.  We'll just ignore
+        // those cases.
+        for(int i = -1; i <= 1; i++) {
+            for(int j = -1; j <= 1; j++) {
+                // Zero and zero isn't a nearby point, that's the very point
+                // we're at right now!
+                if(i == 0 && j == 0) continue;
+
+                // If the user's truly adventurous enough to go to the 90N/S
+                // graticules, there aren't any nearby points north/south of
+                // where they are.  Also, the nearby points aren't going to
+                // be drawn anyway due to the projection, but hey, that's
+                // nitpicking.
+                if(Math.abs((g.isSouth() ? -1 : 1) * g.getLatitude() + i) > 90)
+                    continue;
+
+                // Make a new Graticule, properly offset...
+                Graticule offset = Graticule.createOffsetFrom(g, i, j);
+
+                // ...then do the request.  Check the cache first!
+                Info info = HashBuilder.getStoredInfo(this, cal, offset);
+                if(info == null) {
+                    // It's not in the cache.  Try to make it be in the cache.
+                    StockRunner runner = HashBuilder.requestStockRunner(this, cal, offset, null);
+                    runner.runStock();
+
+                    if(runner.getStatus() == HashBuilder.StockRunner.ALL_OKAY) {
+                        // We've got a winner!
+                        info = runner.getLastResultObject();
+                    }
+                    // We'll just ignore it if not.  The user doesn't need to be
+                    // bugged about cache failures or whatnot, they already got
+                    // what they were looking for.
+                }
+
+                // Now, add that to the array, if it's not null...
+                if(info != null)
+                    infos.add(info);
+
+                // And continue on!
+            }
+        }
+
+        Info[] toReturn = new Info[8];
+        return infos.toArray(toReturn);
     }
 }
