@@ -103,6 +103,9 @@ public class ExpeditionMode
         mMap.setOnInfoWindowClickListener(this);
         mMap.setOnCameraChangeListener(this);
 
+        // Set a title to begin with.  We'll get a new one soon, hopefully.
+        setTitle(R.string.app_name);
+
         // Do we have a Bundle to un-Bundlify?
         if(bundle != null) {
             // We've either got a complete Info (highest priority) or a
@@ -364,7 +367,7 @@ public class ExpeditionMode
                         newTitle.append(info.getGraticule().getLatitudeString(false)).append(' ').append(info.getGraticule().getLongitudeString(false));
                     newTitle.append(", ");
                     newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(info.getDate()));
-                    mCentralMap.setTitle(newTitle.toString());
+                    setTitle(newTitle.toString());
 
                     // Now, the Mercator projection that the map uses clips at
                     // around 85 degrees north and south.  If that's where the
@@ -391,7 +394,7 @@ public class ExpeditionMode
 
         } else {
             // Otherwise, make sure the title's back to normal.
-            mCentralMap.setTitle(R.string.app_name);
+            setTitle(R.string.app_name);
         }
     }
 

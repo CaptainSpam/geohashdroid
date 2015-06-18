@@ -311,6 +311,24 @@ public class CentralMap
         }
 
         /**
+         * Sets the title of the map Activity using a String.
+         *
+         * @param title the new title
+         */
+        protected final void setTitle(String title) {
+            mCentralMap.setTitle(title);
+        }
+
+        /**
+         * Sets the title of the map Activity using a resource ID.
+         *
+         * @param resid the new title's resource ID
+         */
+        protected final void setTitle(int resid) {
+            mCentralMap.setTitle(resid);
+        }
+
+        /**
          * Returns whether or not {@link #cleanUp()} has been called yet.  If
          * so, you should generally not call anything else.
          *

@@ -135,6 +135,8 @@ public class SelectAGraticuleMode
             transaction.commit();
         }
 
+        setTitle(R.string.title_graticule_picker);
+
         mInitComplete = true;
     }
 
