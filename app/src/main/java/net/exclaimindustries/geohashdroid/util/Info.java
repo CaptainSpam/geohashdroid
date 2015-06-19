@@ -14,6 +14,8 @@ import java.util.GregorianCalendar;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.maps.GeoPoint;
@@ -434,5 +436,49 @@ public class Info implements Parcelable {
         // be false.  The only way that can happen is if this is a weekend hash
         // and we're checking on Friday or something.
         mRetroHash = cal.before(today);
+    }
+
+    /**
+     * Determines which Info of those given is closest to the also-given
+     * Location.  The presence of the single Info param is because this is
+     * generally called from the results of StockService with nearby points.
+     * Any of the Infos (the single or the array) may be null; if both are null,
+     * this will return null.
+     *
+     * @param loc Location to compare against
+     * @param info a single Info
+     * @param nearby a bunch of Infos
+     * @return the closest Info
+     */
+    @Nullable
+    public static Info measureClosest(@NonNull Location loc, @Nullable Info info, @Nullable Info[] nearby) {
+        if(nearby == null || nearby.length == 0) {
+            // If we were only given the single Info, return it, even if it's
+            // null.
+            return info;
+        }
+
+        Info nearest = null;
+        float bestDistance = Float.MAX_VALUE;
+
+        // First, if we got a single Info, start with that.
+        if(info != null) {
+            nearest = info;
+            bestDistance = loc.distanceTo(info.getFinalLocation());
+        }
+
+        // Now, loop through all the nearby Infos to see if any of those are any
+        // better.
+        for(Info i : nearby) {
+            float dist = loc.distanceTo(i.getFinalLocation());
+
+            if(dist < bestDistance) {
+                nearest = i;
+                bestDistance = dist;
+            }
+        }
+
+        // And hey presto, we've got us a winner!
+        return nearest;
     }
 }

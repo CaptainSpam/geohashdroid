@@ -228,12 +228,20 @@ public class CentralMap
 
         /**
          * Called when a new Info has come in from StockService.
-         * 
+         *
          * @param info that Info
          * @param nearby any nearby Infos that may have been requested (can be null)
          * @param flags the request flags that were sent with it
          */
         public abstract void handleInfo(Info info, @Nullable Info[] nearby, int flags);
+
+        /**
+         * Called when a stock lookup fails for some reason.
+         *
+         * @param reqFlags the flags used in the request
+         * @param responseCode the response code (won't be {@link StockService#RESPONSE_OKAY}, for obvious reasons)
+         */
+        public abstract void handleLookupFailure(int reqFlags, int responseCode);
 
         /**
          * Called when the menu needs to be built.
@@ -392,27 +400,32 @@ public class CentralMap
                 if(pArr != null)
                     nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
                 mCurrentMode.handleInfo(received, nearby, reqFlags);
-            } else if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
-                // ONLY notify the user of an error if they specifically
-                // requested this stock.
-                switch(responseCode) {
-                    case StockService.RESPONSE_NOT_POSTED_YET:
-                        mBanner.setText(getString(R.string.error_not_yet_posted));
-                        mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
-                        mBanner.animateBanner(true);
-                        break;
-                    case StockService.RESPONSE_NO_CONNECTION:
-                        mBanner.setText(getString(R.string.error_no_connection));
-                        mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
-                        mBanner.animateBanner(true);
-                        break;
-                    case StockService.RESPONSE_NETWORK_ERROR:
-                        mBanner.setText(getString(R.string.error_server_failure));
-                        mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
-                        mBanner.animateBanner(true);
-                        break;
-                    default:
-                        break;
+            } else  {
+                // Make sure the mode knows what's up first.
+                mCurrentMode.handleLookupFailure(reqFlags, responseCode);
+
+                if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
+                    // ONLY notify the user of an error if they specifically
+                    // requested this stock.
+                    switch(responseCode) {
+                        case StockService.RESPONSE_NOT_POSTED_YET:
+                            mBanner.setText(getString(R.string.error_not_yet_posted));
+                            mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
+                            mBanner.animateBanner(true);
+                            break;
+                        case StockService.RESPONSE_NO_CONNECTION:
+                            mBanner.setText(getString(R.string.error_no_connection));
+                            mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
+                            mBanner.animateBanner(true);
+                            break;
+                        case StockService.RESPONSE_NETWORK_ERROR:
+                            mBanner.setText(getString(R.string.error_server_failure));
+                            mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
+                            mBanner.animateBanner(true);
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         }

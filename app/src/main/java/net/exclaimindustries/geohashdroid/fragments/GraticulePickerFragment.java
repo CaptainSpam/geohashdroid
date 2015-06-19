@@ -46,6 +46,7 @@ public class GraticulePickerFragment
     private EditText mLat;
     private EditText mLon;
     private CheckBox mGlobal;
+    private Button mClosest;
 
     private boolean mExternalUpdate;
 
@@ -94,7 +95,7 @@ public class GraticulePickerFragment
         mLat = (EditText)v.findViewById(R.id.grat_lat);
         mLon = (EditText)v.findViewById(R.id.grat_lon);
         mGlobal = (CheckBox)v.findViewById(R.id.grat_globalhash);
-        Button closest = (Button) v.findViewById(R.id.grat_closest);
+        mClosest = (Button) v.findViewById(R.id.grat_closest);
         ImageButton close = (ImageButton)v.findViewById(R.id.close);
 
         // And how ARE they magical?  Well, like this.  First, any time the
@@ -142,9 +143,10 @@ public class GraticulePickerFragment
 
         // Then, the Find Closest button.  That one we foist off on the calling
         // Activity.
-        closest.setOnClickListener(new View.OnClickListener() {
+        mClosest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                v.setEnabled(false);
                 if(mListener != null)
                     mListener.findClosest();
             }
@@ -270,5 +272,13 @@ public class GraticulePickerFragment
      */
     public boolean isGlobalhash() {
         return mGlobal.isChecked();
+    }
+
+    /**
+     * Resets the Find Closest button after it's been triggered.  It'll be
+     * disabled otherwise.
+     */
+    public void resetFindClosest() {
+        mClosest.setEnabled(true);
     }
 }

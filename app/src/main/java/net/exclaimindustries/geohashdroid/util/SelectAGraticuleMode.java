@@ -60,10 +60,13 @@ public class SelectAGraticuleMode
 
     private Calendar mCalendar;
 
+    private Location mLastLocation;
+
     private LocationListener mFindClosestListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-            // Okay, NOW we have a location.
+            // Okay, NOW we have a location.  Don't call the clear method yet,
+            // though!  We've still got a lookup to do!
             if(getGoogleClient() != null)
                 LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
 
@@ -154,6 +157,9 @@ public class SelectAGraticuleMode
         FragmentManager manager = mCentralMap.getFragmentManager();
         if(manager.findFragmentById(R.id.graticulepicker) != null)
             manager.popBackStack(GRATICULE_PICKER_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        // Find Closest listener, you too!
+        clearFindClosest();
     }
 
     @Override
@@ -185,6 +191,20 @@ public class SelectAGraticuleMode
     @Override
     public void handleInfo(Info info, Info[] nearby, int flags) {
         if(mInitComplete) {
+            if((flags & StockService.FLAG_FIND_CLOSEST) != 0) {
+                // This is a result from Find Closest.  To the findermatron!
+                if(mLastLocation == null || mFrag == null) return;
+
+                Info nearest = Info.measureClosest(mLastLocation, info, nearby);
+                clearFindClosest();
+
+                // And that's our target!
+                if(nearest != null) {
+                    Graticule g = new Graticule(nearest.getFinalLocation());
+                    mFrag.setNewGraticule(g);
+                    outlineGraticule(g);
+                }
+            }
             // If we get an Info in, plant a flag where it needs to be.
             addDestinationPoint(info);
 
@@ -192,6 +212,15 @@ public class SelectAGraticuleMode
             if(mMap != null && info != null && info.isGlobalHash()) {
                 zoomToPoint(info.getFinalDestinationLatLng());
             }
+        }
+    }
+
+    @Override
+    public void handleLookupFailure(int reqFlags, int responseCode) {
+        // If this was a Find Closest lookup, we need to make sure the button on
+        // the fragment is re-enabled.
+        if((reqFlags & StockService.FLAG_FIND_CLOSEST) != 0) {
+            clearFindClosest();
         }
     }
 
@@ -248,13 +277,9 @@ public class SelectAGraticuleMode
     }
 
     private void applyFoundGraticule(Location loc) {
-        // Oh, and make sure the fragment still exists.  If it doesn't, we've
-        // left Select-A-Graticule, and I'm not sure how this was called.
-        if(mFrag != null) {
-            Graticule g = new Graticule(loc);
-            mFrag.setNewGraticule(g);
-            outlineGraticule(g);
-        }
+        // So, we found a location.  Good!  That's our start point.  Request!
+        mLastLocation = loc;
+        mCentralMap.requestStock(new Graticule(loc), mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
     }
 
     private void outlineGraticule(Graticule g) {
@@ -306,5 +331,15 @@ public class SelectAGraticuleMode
         mCalendar = newDate;
         if(mFrag.getGraticule() != null || mFrag.isGlobalhash())
             updateGraticule(mFrag.getGraticule());
+    }
+
+    private void clearFindClosest() {
+        if(getGoogleClient() != null)
+            LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mFindClosestListener);
+
+        if(mFrag != null)
+            mFrag.resetFindClosest();
+
+        mLastLocation = null;
     }
 }

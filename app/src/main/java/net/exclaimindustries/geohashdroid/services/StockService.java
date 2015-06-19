@@ -138,12 +138,11 @@ public class StockService extends WakefulIntentService {
      */
     public static final int FLAG_AUTO_INITIATED = 0x4;
     /**
-     * Flag meaning this request was part of a check for nearby points.  This is
-     * only used by CentralMap when requesting the cluster of nearby points to
-     * the selected Graticule.  Therefore, use of this SHOULD imply
-     * {@link #FLAG_AUTO_INITIATED}.
+     * Flag meaning this request is due to the user wanting to find the closest
+     * point to some location.  As you can tell from the value, this will imply
+     * {@link #FLAG_INCLUDE_NEARBY_POINTS}.
      */
-    public static final int FLAG_NEARBY_POINT = 0x8;
+    public static final int FLAG_FIND_CLOSEST = 0x28;
     /**
      * Flag meaning this request came from Select-A-Graticule mode.  CentralMap
      * should know what to do with it.

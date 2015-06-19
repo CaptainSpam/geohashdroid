@@ -203,6 +203,11 @@ public class ExpeditionMode
         }
     }
 
+    @Override
+    public void handleLookupFailure(int reqFlags, int responseCode) {
+        // Nothing here yet.
+    }
+
     private void addNearbyPoint(Info info) {
         // This will get called repeatedly up to eight times (in rare cases,
         // five times) when we ask for nearby points.  All we need to do is put
