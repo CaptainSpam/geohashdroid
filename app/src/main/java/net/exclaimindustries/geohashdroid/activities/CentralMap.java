@@ -197,6 +197,8 @@ public class CentralMap
             // The marker always goes away, at the very least.
             removeDestinationPoint();
 
+            if(mCentralMap != null) mCentralMap.getErrorBanner().animateBanner(false);
+
             // Set the cleaned up flag, too.
             mCleanedUp = true;
         }
@@ -635,10 +637,7 @@ public class CentralMap
     }
 
     public void requestStock(Graticule g, Calendar cal, int flags) {
-        // Make sure the banner's going away!
-        mBanner.animateBanner(false);
-
-        // As a request ID, we'll use the current date.
+        // As a request ID, we'll use the current date, because why not?
         long date = cal.getTimeInMillis();
 
         Intent i = new Intent(this, StockService.class)

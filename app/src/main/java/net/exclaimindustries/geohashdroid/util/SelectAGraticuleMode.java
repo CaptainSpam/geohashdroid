@@ -191,7 +191,9 @@ public class SelectAGraticuleMode
     @Override
     public void handleInfo(Info info, Info[] nearby, int flags) {
         if(mInitComplete) {
-            if((flags & StockService.FLAG_FIND_CLOSEST) != 0) {
+            if((flags & StockService.FLAG_FIND_CLOSEST) == StockService.FLAG_FIND_CLOSEST) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+
                 // This is a result from Find Closest.  To the findermatron!
                 if(mLastLocation == null || mFrag == null) return;
 
@@ -204,13 +206,14 @@ public class SelectAGraticuleMode
                     mFrag.setNewGraticule(g);
                     outlineGraticule(g);
                 }
-            }
-            // If we get an Info in, plant a flag where it needs to be.
-            addDestinationPoint(info);
+            } else {
+                // If we get an Info in, plant a flag where it needs to be.
+                addDestinationPoint(info);
 
-            // If it's a globalhash, zip right off to it.
-            if(mMap != null && info != null && info.isGlobalHash()) {
-                zoomToPoint(info.getFinalDestinationLatLng());
+                // If it's a globalhash, zip right off to it.
+                if(mMap != null && info != null && info.isGlobalHash()) {
+                    zoomToPoint(info.getFinalDestinationLatLng());
+                }
             }
         }
     }
@@ -219,7 +222,7 @@ public class SelectAGraticuleMode
     public void handleLookupFailure(int reqFlags, int responseCode) {
         // If this was a Find Closest lookup, we need to make sure the button on
         // the fragment is re-enabled.
-        if((reqFlags & StockService.FLAG_FIND_CLOSEST) != 0) {
+        if((reqFlags & StockService.FLAG_FIND_CLOSEST) != StockService.FLAG_FIND_CLOSEST) {
             clearFindClosest();
         }
     }
@@ -263,6 +266,7 @@ public class SelectAGraticuleMode
             ErrorBanner banner = mCentralMap.getErrorBanner();
             banner.setErrorStatus(ErrorBanner.Status.NORMAL);
             banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.setCloseVisible(false);
             banner.animateBanner(true);
             LocationRequest lRequest = LocationRequest.create();
             lRequest.setInterval(1000);
@@ -278,6 +282,12 @@ public class SelectAGraticuleMode
 
     private void applyFoundGraticule(Location loc) {
         // So, we found a location.  Good!  That's our start point.  Request!
+        ErrorBanner banner = mCentralMap.getErrorBanner();
+        banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+        banner.setText(mCentralMap.getText(R.string.stock_label).toString());
+        banner.setCloseVisible(false);
+        banner.animateBanner(true);
+
         mLastLocation = loc;
         mCentralMap.requestStock(new Graticule(loc), mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
     }

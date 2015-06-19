@@ -198,6 +198,7 @@ public class ExpeditionMode
     public void handleInfo(Info info, Info[] nearby, int flags) {
         // PULL!
         if(mInitComplete) {
+            mCentralMap.getErrorBanner().animateBanner(false);
             setInfo(info);
             doNearbyPoints(nearby);
         }
@@ -402,6 +403,7 @@ public class ExpeditionMode
             ErrorBanner banner = mCentralMap.getErrorBanner();
             banner.setErrorStatus(ErrorBanner.Status.NORMAL);
             banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.setCloseVisible(false);
             banner.animateBanner(true);
 
             LocationRequest lRequest = LocationRequest.create();

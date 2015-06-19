@@ -50,7 +50,7 @@
     <string name="error_title">Error</string>
     <string name="standby_title">Stand by&#8230;</string>
     <string name="location_unknown">Location unknown</string>
-    <string name="stock_label">Retrieving stock data&#8230;</string>
+    <string name="stock_label">Fetching stock data&#8230;</string>
     <string name="location_label">Attempting to determine your location&#8230;</string>
     <string name="error_search_failed">Couldn\'t figure out your graticule.  Make sure GPS and/or wireless network location sensing are enabled in Settings and you are in range of either.</string>
     <string name="error_not_yet_posted">There hasn\'t been a stock price posted for that date.</string>

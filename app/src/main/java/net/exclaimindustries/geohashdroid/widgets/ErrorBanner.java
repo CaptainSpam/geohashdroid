@@ -26,6 +26,7 @@ import net.exclaimindustries.geohashdroid.R;
  */
 public class ErrorBanner extends LinearLayout {
     private TextView mMessage;
+    private View mClose;
 
     /**
      * Use these in {@link #setErrorStatus(Status)} to set a premade
@@ -52,7 +53,8 @@ public class ErrorBanner extends LinearLayout {
         mMessage = (TextView)findViewById(R.id.error_text);
 
         // The button is always close.
-        findViewById(R.id.close).setOnClickListener(new OnClickListener() {
+        mClose = findViewById(R.id.close);
+        mClose.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 // Away it goes!
@@ -118,6 +120,7 @@ public class ErrorBanner extends LinearLayout {
         ((Activity)getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                setCloseVisible(true);
                 mMessage.setText(text);
             }
         });
@@ -153,7 +156,32 @@ public class ErrorBanner extends LinearLayout {
         ((Activity)getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                setCloseVisible(true);
                 setBackgroundColor(color);
+            }
+        });
+    }
+
+    /**
+     * <p>
+     * Sets the close button to be visible or not.  Making it invisible
+     * effectively makes the banner uncloseable from the UI.
+     * </p>
+     *
+     * <p>
+     * Note that, by design, {@link #setText(String)}, {@link #setBackgroundErrorColor(int)},
+     * and {@link #setErrorStatus(Status)} will automatically make this visible
+     * again, since those are typically called when making a new banner anyway.
+     * Make sure you hide the close button LAST.
+     * </p>
+     *
+     * @param visible true to make visible, false to hide
+     */
+    public void setCloseVisible(final boolean visible) {
+        ((Activity)getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mClose.setVisibility(visible ? View.VISIBLE : View.GONE);
             }
         });
     }
