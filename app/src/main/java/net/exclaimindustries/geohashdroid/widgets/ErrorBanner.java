@@ -28,6 +28,8 @@ public class ErrorBanner extends LinearLayout {
     private TextView mMessage;
     private View mClose;
 
+    private boolean mAlreadyLaidOut = false;
+
     /**
      * Use these in {@link #setErrorStatus(Status)} to set a premade
      * background for these sorts of errors.
@@ -68,7 +70,10 @@ public class ErrorBanner extends LinearLayout {
             @Override
             public void onGlobalLayout() {
                 // Got a height!  Hopefully.
-                setBannerVisible(false);
+                if(!mAlreadyLaidOut) {
+                    mAlreadyLaidOut = true;
+                    setBannerVisible(false);
+                }
             }
         });
     }
