@@ -12,7 +12,6 @@ import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -60,9 +59,11 @@ public class ExpeditionMode
     private static final String DEBUG_TAG = "ExpeditionMode";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
-    private static final String NEARBY_POINTS = "nearbyPoints";
+
+    public static final String DO_INITIAL_START = "doInitialStart";
 
     private boolean mWaitingOnInitialZoom = false;
+    private boolean mWaitingOnEmptyStart = false;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -71,6 +72,8 @@ public class ExpeditionMode
 
     private Info mCurrentInfo;
     private DisplayMetrics mMetrics;
+
+    private Location mInitialCheckLocation;
 
     private LocationListener mInitialZoomListener = new LocationListener() {
         @Override
@@ -84,6 +87,20 @@ public class ExpeditionMode
             if(!isCleanedUp()) {
                 mCentralMap.getErrorBanner().animateBanner(false);
                 zoomToIdeal(location);
+            }
+        }
+    };
+
+    private LocationListener mEmptyStartListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            if(getGoogleClient() != null)
+                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
+
+            // Second, ask for a stock using that location.
+            if(!isCleanedUp()) {
+                mInitialCheckLocation = location;
+                requestStock(new Graticule(location), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
             }
         }
     };
@@ -108,28 +125,34 @@ public class ExpeditionMode
 
         // Do we have a Bundle to un-Bundlify?
         if(bundle != null) {
-            // We've either got a complete Info (highest priority) or a
-            // combination of Graticule, boolean, and Calendar.  So we can
-            // either start right back up from Info or we just make a call out
-            // to StockService.
-            //
-            // Well, okay, we can also have no data at all, in which case we do
-            // nothing but wait until the user goes to Select-A-Graticule to get
-            // things moving.
-            if(bundle.containsKey(INFO)) {
-                mCurrentInfo = bundle.getParcelable(INFO);
-                mCentralMap.requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
-            } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
-                // We've got a request to make!  Chances are, StockService will
-                // have this in cache.
-                Graticule g = bundle.getParcelable(GRATICULE);
-                boolean global = bundle.getBoolean(GLOBALHASH, false);
-                Calendar cal = (Calendar)bundle.getSerializable(CALENDAR);
+            // And if we DO have a Bundle, does that Bundle simply tell us to
+            // perform the initial startup?
+            if(bundle.getBoolean(DO_INITIAL_START, false)) {
+                doEmptyStart();
+            } else {
+                // We've either got a complete Info (highest priority) or a
+                // combination of Graticule, boolean, and Calendar.  So we can
+                // either start right back up from Info or we just make a call
+                // out to StockService.
+                //
+                // Well, okay, we can also have no data at all, in which case we
+                // do nothing but wait until the user goes to Select-A-Graticule
+                // to get things moving.
+                if(bundle.containsKey(INFO)) {
+                    mCurrentInfo = bundle.getParcelable(INFO);
+                    requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
+                    // We've got a request to make!  Chances are, StockService
+                    // will have this in cache.
+                    Graticule g = bundle.getParcelable(GRATICULE);
+                    boolean global = bundle.getBoolean(GLOBALHASH, false);
+                    Calendar cal = (Calendar) bundle.getSerializable(CALENDAR);
 
-                // We only go through with this if we have a Calendar and either
-                // a globalhash or a Graticule.
-                if(cal != null && (global || g != null)) {
-                    mCentralMap.requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                    // We only go through with this if we have a Calendar and
+                    // either a globalhash or a Graticule.
+                    if(cal != null && (global || g != null)) {
+                        requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                    }
                 }
             }
         }
@@ -159,23 +182,27 @@ public class ExpeditionMode
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle bundle) {
-        // At instance save time, stash away the last Info we knew about, as
-        // well as all the nearby points (the latter just for the sake of
-        // efficiency, so we can load them back up without making calls to
-        // StockService).  If we have anything at all, it'll always be an Info.
-        // If we don't have one, we weren't displaying anything, and thus don't
-        // need to stash a Calendar, Graticule, etc.
+        // At instance save time, stash away the last Info we knew about.  If we
+        // have anything at all, it'll always be an Info.  If we don't have one,
+        // we weren't displaying anything, and thus don't need to stash a
+        // Calendar, Graticule, etc.
         bundle.putParcelable(INFO, mCurrentInfo);
-        Parcelable[] arr = new Parcelable[] {};
-        bundle.putParcelableArray(NEARBY_POINTS, mNearbyPoints.values().toArray(arr));
+
+        // Also, if we were in the middle of waiting on the empty start, write
+        // that out to the bundle.  It'll come back in and we can start the
+        // whole process anew.
+        if(mWaitingOnEmptyStart)
+            bundle.putBoolean(DO_INITIAL_START, true);
     }
 
     @Override
     public void pause() {
         // Stop listening!
         GoogleApiClient gClient = getGoogleClient();
-        if(gClient != null)
+        if(gClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
+        }
     }
 
     @Override
@@ -187,6 +214,10 @@ public class ExpeditionMode
             doInitialZoom();
         else
             doReloadZoom();
+
+        // Also if need be, try that empty start again!
+        if(mWaitingOnEmptyStart)
+            doEmptyStart();
     }
 
     @Override
@@ -199,8 +230,22 @@ public class ExpeditionMode
         // PULL!
         if(mInitComplete) {
             mCentralMap.getErrorBanner().animateBanner(false);
-            setInfo(info);
-            doNearbyPoints(nearby);
+
+            if(mWaitingOnEmptyStart) {
+                mWaitingOnEmptyStart = false;
+                // Coming in from the initial setup, we should have nearbys.
+                // Get the closest one.
+                Info inf = Info.measureClosest(mInitialCheckLocation, info, nearby);
+
+                // Presto!  We've got our Graticule AND Calendar!  Now, to make
+                // sure we've got all the nearbys set properly, ask StockService
+                // for the data again, this time using the best one.  We'll get
+                // it back in the else field quickly, as it's cached now.
+                requestStock(inf.getGraticule(), inf.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+            } else {
+                setInfo(info);
+                doNearbyPoints(nearby);
+            }
         }
     }
 
@@ -414,6 +459,24 @@ public class ExpeditionMode
 
             LocationServices.FusedLocationApi.requestLocationUpdates(gClient, lRequest, mInitialZoomListener);
         }
+    }
+
+    private void doEmptyStart() {
+        mWaitingOnEmptyStart = true;
+
+        // For an initial start, first things first, we ask for the current
+        // location.
+        ErrorBanner banner = mCentralMap.getErrorBanner();
+        banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+        banner.setText(mCentralMap.getText(R.string.search_label).toString());
+        banner.setCloseVisible(false);
+        banner.animateBanner(true);
+
+        LocationRequest lRequest = LocationRequest.create();
+        lRequest.setInterval(1000);
+        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mEmptyStartListener);
     }
 
     @Override

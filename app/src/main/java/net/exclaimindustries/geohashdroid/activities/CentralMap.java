@@ -46,6 +46,8 @@ import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * CentralMap replaces MainMap as the map display.  Unlike MainMap, it also
@@ -58,7 +60,7 @@ public class CentralMap
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
                    GHDDatePickerDialogFragment.GHDDatePickerCallback {
-    private static final String DEBUG_TAG = "CentralMap";
+//    private static final String DEBUG_TAG = "CentralMap";
 
     private static final String LAST_MODE_BUNDLE = "lastModeBundle";
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -380,10 +382,31 @@ public class CentralMap
     }
 
     private class StockReceiver extends BroadcastReceiver {
-        private long mWaitingOnThisOne = -1;
+        // This allows us to NOT blast out responses if the current mode didn't
+        // request it.
+        private Set<Long> mWaitingList;
 
-        public void setWaitingId(long id) {
-            mWaitingOnThisOne = id;
+        public StockReceiver() {
+            mWaitingList = new HashSet<>();
+        }
+
+        /**
+         * Adds the given ID to the waiting list.  If an ID comes back and it
+         * wasn't in the waiting list, it won't be dispatched to the modes.
+         *
+         * @param id the request ID
+         */
+        public void addToWaitingList(long id) {
+            mWaitingList.add(id);
+        }
+
+        /**
+         * Removes all waiting IDs from the list
+         */
+        public void clearWaitingList() {
+            // Yes, since we can have multiple IDs pointing to the same mode, we
+            // have to do it this way.
+            mWaitingList.clear();
         }
 
         @Override
@@ -392,42 +415,54 @@ public class CentralMap
             // whether or not we're even going to bother with it.
             int reqFlags = intent.getIntExtra(StockService.EXTRA_REQUEST_FLAGS, 0);
             long reqId = intent.getLongExtra(StockService.EXTRA_REQUEST_ID, -1);
+            Calendar cal = (Calendar)intent.getSerializableExtra(StockService.EXTRA_DATE);
 
             // Now, if the flags state this was from the alarm or somewhere else
             // we weren't expecting, give up now.  We don't want it.
             if((reqFlags & StockService.FLAG_ALARM) != 0) return;
-
-            // Only check the ID if this was user-initiated.  If the user didn't
-            // initiate it, we might be getting responses back in bunches,
-            // meaning that ID checking will be useless.
-            if((reqFlags & StockService.FLAG_USER_INITIATED) != 0 && reqId != mWaitingOnThisOne) return;
 
             // Well, it's what we're looking for.  What was the result?  The
             // default is RESPONSE_NETWORK_ERROR, as not getting a response code
             // is a Bad Thing(tm).
             int responseCode = intent.getIntExtra(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
 
+            // Since the mode switchers wipe all requests from a given mode, all
+            // we need for a mode match is whether or not the item exists in the
+            // waiting list.
+            boolean modeMatches = mWaitingList.remove(reqId);
+
             if(responseCode == StockService.RESPONSE_OKAY) {
                 // Hey, would you look at that, it actually worked!  So, get
                 // the Info out of it and fire it away to the corresponding
-                // CentralMapMode.
-                Info received = intent.getParcelableExtra(StockService.EXTRA_INFO);
-                Parcelable[] pArr = intent.getParcelableArrayExtra(StockService.EXTRA_NEARBY_POINTS);
+                // CentralMapMode, if applicable.
+                if(modeMatches) {
+                    Info received = intent.getParcelableExtra(StockService.EXTRA_INFO);
+                    Parcelable[] pArr = intent.getParcelableArrayExtra(StockService.EXTRA_NEARBY_POINTS);
 
-                Info[] nearby = null;
-                if(pArr != null)
-                    nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
-                mCurrentMode.handleInfo(received, nearby, reqFlags);
+                    Info[] nearby = null;
+                    if(pArr != null)
+                        nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
+                    mCurrentMode.handleInfo(received, nearby, reqFlags);
+                }
             } else  {
                 // Make sure the mode knows what's up first.
-                mCurrentMode.handleLookupFailure(reqFlags, responseCode);
+                if(modeMatches)
+                    mCurrentMode.handleLookupFailure(reqFlags, responseCode);
 
                 if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
                     // ONLY notify the user of an error if they specifically
                     // requested this stock.
                     switch(responseCode) {
                         case StockService.RESPONSE_NOT_POSTED_YET:
-                            mBanner.setText(getString(R.string.error_not_yet_posted));
+                            // Just in case, change the text if it's today's
+                            // date that was requested.  That's a bit clearer.
+                            Calendar today = Calendar.getInstance();
+                            boolean isActuallyToday = (cal != null
+                                && today.get(Calendar.YEAR) == cal.get(Calendar.YEAR)
+                                && today.get(Calendar.MONTH) == cal.get(Calendar.MONTH)
+                                && today.get(Calendar.DAY_OF_MONTH) == cal.get(Calendar.DAY_OF_MONTH));
+
+                            mBanner.setText(getString(isActuallyToday ? R.string.error_not_yet_posted_today : R.string.error_not_yet_posted));
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
                             break;
@@ -449,7 +484,7 @@ public class CentralMap
         }
     }
 
-    private StockReceiver mStockReceiver;
+    private StockReceiver mStockReceiver = new StockReceiver();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -481,7 +516,6 @@ public class CentralMap
                 .build();
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
-        mStockReceiver = new StockReceiver();
 
         // Get a map ready.  We'll know when we've got it.  Oh, we'll know.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
@@ -506,6 +540,15 @@ public class CentralMap
                 doReadyChecks();
             }
         });
+
+        // If at this point we don't have any mode bundle, we're starting in
+        // ExpeditionMode with a flag set.  This means that this overrides
+        // the boolean.
+        if(mLastModeBundle == null) {
+            mLastModeBundle = new Bundle();
+            mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+            mSelectAGraticule = false;
+        }
 
         // Now, we get our initial mode set up based on mSelectAGraticule.  We
         // do NOT init it yet; we have to wait for both the map fragment and the
@@ -652,7 +695,16 @@ public class CentralMap
         }
     }
 
-    public void requestStock(Graticule g, Calendar cal, int flags) {
+    /**
+     * Requests a stock.  This'll come back and be handled appropriately by
+     * CentralMap, which more or less amounts to handling the ErrorBanner and
+     * sending the result off to the active CentralMapMode.
+     *
+     * @param g the Graticule (can be null for globalhashes)
+     * @param cal the date
+     * @param flags the {@link StockService} flags
+     */
+    private void requestStock(@Nullable Graticule g, @NonNull Calendar cal, int flags) {
         // As a request ID, we'll use the current date, because why not?
         long date = cal.getTimeInMillis();
 
@@ -662,8 +714,7 @@ public class CentralMap
                 .putExtra(StockService.EXTRA_REQUEST_ID, date)
                 .putExtra(StockService.EXTRA_REQUEST_FLAGS, flags);
 
-        if((flags & StockService.FLAG_USER_INITIATED) != 0)
-            mStockReceiver.setWaitingId(date);
+        mStockReceiver.addToWaitingList(date);
 
         WakefulIntentService.sendWakefulWork(this, i);
     }
@@ -701,6 +752,12 @@ public class CentralMap
         mLastModeBundle = new Bundle();
         mCurrentMode.onSaveInstanceState(mLastModeBundle);
         mCurrentMode.cleanUp();
+        mStockReceiver.clearWaitingList();
+
+        // If we're entering Select-A-Graticule, we're quite sure the user no
+        // longer wants the empty start.
+        mLastModeBundle.remove(ExpeditionMode.DO_INITIAL_START);
+
         mCurrentMode = new SelectAGraticuleMode();
         doReadyChecks();
     }
@@ -719,6 +776,7 @@ public class CentralMap
         mLastModeBundle = new Bundle();
         mCurrentMode.onSaveInstanceState(mLastModeBundle);
         mCurrentMode.cleanUp();
+        mStockReceiver.clearWaitingList();
         mCurrentMode = new ExpeditionMode();
         doReadyChecks();
     }
