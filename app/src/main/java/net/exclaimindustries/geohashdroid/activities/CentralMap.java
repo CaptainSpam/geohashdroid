@@ -229,6 +229,17 @@ public class CentralMap
         public abstract void resume();
 
         /**
+         * Convenience method to call {@link CentralMap#requestStock(Graticule, Calendar, int)}.
+         *
+         * @param g the Graticule (can be null for globalhashes)
+         * @param c the Calendar
+         * @param flags the {@link StockService} flags
+         */
+        protected void requestStock(@Nullable Graticule g, @NonNull Calendar c, int flags) {
+            mCentralMap.requestStock(g, c, flags);
+        }
+
+        /**
          * Called when a new Info has come in from StockService.
          *
          * @param info that Info
@@ -360,6 +371,11 @@ public class CentralMap
          */
         public final boolean isInitComplete() {
             return mInitComplete;
+        }
+
+        @Override
+        public String toString() {
+            return this.getClass().getSimpleName();
         }
     }
 

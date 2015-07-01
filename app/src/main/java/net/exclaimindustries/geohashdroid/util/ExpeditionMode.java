@@ -450,7 +450,7 @@ public class ExpeditionMode
     @Override
     public void nearbyGraticuleClicked(Info info) {
         // Info!
-        mCentralMap.requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+        requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     @Override
@@ -460,7 +460,7 @@ public class ExpeditionMode
         // making a request, at least.  The StockService broadcast will let us
         // know what's going on later.
         if(mCurrentInfo != null)
-            mCentralMap.requestStock(mCurrentInfo.getGraticule(), newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+            requestStock(mCurrentInfo.getGraticule(), newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     private boolean needsNearbyPoints() {

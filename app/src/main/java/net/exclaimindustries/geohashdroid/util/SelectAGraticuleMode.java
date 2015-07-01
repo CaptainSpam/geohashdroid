@@ -241,7 +241,7 @@ public class SelectAGraticuleMode
         outlineGraticule(g);
 
         // Fetch the stock, too.
-        mCentralMap.requestStock(g, mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_SELECT_A_GRATICULE);
+        requestStock(g, mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_SELECT_A_GRATICULE);
     }
 
     @Override
@@ -287,7 +287,7 @@ public class SelectAGraticuleMode
         banner.animateBanner(true);
 
         mLastLocation = loc;
-        mCentralMap.requestStock(new Graticule(loc), mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+        requestStock(new Graticule(loc), mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
     }
 
     private void outlineGraticule(Graticule g) {
