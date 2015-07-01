@@ -443,19 +443,26 @@ public class Info implements Parcelable {
      * Location.  The presence of the single Info param is because this is
      * generally called from the results of StockService with nearby points.
      * Any of the Infos (the single or the array) may be null; if both are null,
-     * this will return null.
+     * this will throw an exception.
      *
      * @param loc Location to compare against
      * @param info a single Info
      * @param nearby a bunch of Infos
      * @return the closest Info
+     * @throws IllegalArgumentException info was null and nearby was either null or empty
      */
-    @Nullable
-    public static Info measureClosest(@NonNull Location loc, @Nullable Info info, @Nullable Info[] nearby) {
+    @NonNull
+    public static Info measureClosest(@NonNull Location loc, @Nullable Info info, @Nullable Info[] nearby)
+        throws IllegalArgumentException {
         if(nearby == null || nearby.length == 0) {
-            // If we were only given the single Info, return it, even if it's
+            // If we were only given the single Info, return it.  Unless it's
             // null.
-            return info;
+            if(info == null) {
+                // If it's null, throw a fit.
+                throw new IllegalArgumentException("You need to include at least one Info in measureClosest!");
+            } else {
+                return info;
+            }
         }
 
         Info nearest = null;
@@ -477,6 +484,12 @@ public class Info implements Parcelable {
                 bestDistance = dist;
             }
         }
+
+        // nearest can't be null here.  nearest gets assigned to be the single
+        // info if it's not null, or at least one of the nearbys.  The only way
+        // nearest can be null is if the distance of ALL the nearbys is equal to
+        // Float.MAX_VALUE, which is just absurd.
+        assert(nearest != null);
 
         // And hey presto, we've got us a winner!
         return nearest;

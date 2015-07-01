@@ -201,11 +201,9 @@ public class SelectAGraticuleMode
                 clearFindClosest();
 
                 // And that's our target!
-                if(nearest != null) {
-                    Graticule g = new Graticule(nearest.getFinalLocation());
-                    mFrag.setNewGraticule(g);
-                    outlineGraticule(g);
-                }
+                Graticule g = new Graticule(nearest.getFinalLocation());
+                mFrag.setNewGraticule(g);
+                outlineGraticule(g);
             } else {
                 // If we get an Info in, plant a flag where it needs to be.
                 addDestinationPoint(info);
