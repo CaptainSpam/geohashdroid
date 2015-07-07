@@ -181,6 +181,14 @@ public class GraticulePickerFragment
         return v;
     }
 
+    /**
+     * Tells the fragment to trigger its listener so its {@link GraticulePickerListener#updateGraticule(Graticule)}
+     * method will be called if need be.
+     */
+    public void triggerListener() {
+        dispatchGraticule();
+    }
+
     private void dispatchGraticule() {
         Graticule toSend;
 

@@ -91,39 +91,41 @@ public class SelectAGraticuleMode
         // again afterward.
         mWasEmptyStart = (bundle != null && bundle.getBoolean(ExpeditionMode.DO_INITIAL_START, false));
 
+        // Gather some data for later.  The Calendar may be of particular
+        // interest in a restart situation.
+        if(bundle != null) {
+            if(bundle.containsKey(INFO)) {
+                Info i = bundle.getParcelable(INFO);
+                if(i != null) {
+                    mInitialGraticule = i.getGraticule();
+                    mCalendar = i.getCalendar();
+                    mInitialGlobal = i.isGlobalHash();
+                }
+            } else {
+                if(bundle.containsKey(GRATICULE)) {
+                    mInitialGraticule = bundle.getParcelable(GRATICULE);
+                }
+
+                if(bundle.containsKey(CALENDAR)) {
+                    mCalendar = (Calendar) bundle.getSerializable(CALENDAR);
+                }
+
+                if(bundle.containsKey(GLOBALHASH)) {
+                    mInitialGlobal = bundle.getBoolean(GLOBALHASH, false);
+                }
+            }
+        }
+
+        if(mCalendar == null)
+            mCalendar = Calendar.getInstance();
+
         // The fragment might already be there if the Activity's being rebuilt.
         // If not, we need to place it there.
         FragmentManager manager = mCentralMap.getFragmentManager();
         mFrag = (GraticulePickerFragment)manager.findFragmentById(R.id.graticulepicker);
         if(mFrag == null) {
-            // If we need to build the fragment, we might also want whatever
-            // graticule the user started with.
-            if(bundle != null) {
-                if(bundle.containsKey(INFO)) {
-                    Info i = bundle.getParcelable(INFO);
-                    if(i != null) {
-                        mInitialGraticule = i.getGraticule();
-                        mCalendar = i.getCalendar();
-                        mInitialGlobal = i.isGlobalHash();
-                    }
-                } else {
-                    if(bundle.containsKey(GRATICULE)) {
-                        mInitialGraticule = bundle.getParcelable(GRATICULE);
-                    }
-
-                    if(bundle.containsKey(CALENDAR)) {
-                        mCalendar = (Calendar) bundle.getSerializable(CALENDAR);
-                    }
-
-                    if(bundle.containsKey(GLOBALHASH)) {
-                        mInitialGlobal = bundle.getBoolean(GLOBALHASH, false);
-                    }
-                }
-            }
-
-            if(mCalendar == null)
-                mCalendar = Calendar.getInstance();
-
+            // If the fragment's not there, let's make sure it IS there,
+            // complete with bonus data.
             FragmentTransaction transaction = manager.beginTransaction();
             transaction.setCustomAnimations(R.animator.slide_in_from_bottom,
                     R.animator.slide_out_to_bottom,
@@ -142,6 +144,10 @@ public class SelectAGraticuleMode
             transaction.replace(R.id.graticulepicker, mFrag, "GraticulePicker");
             transaction.addToBackStack(GRATICULE_PICKER_STACK);
             transaction.commit();
+        } else {
+            // If the fragment already existed, re-assign the listener.
+            mFrag.setListener(this);
+            mFrag.triggerListener();
         }
 
         setTitle(R.string.title_graticule_picker);
