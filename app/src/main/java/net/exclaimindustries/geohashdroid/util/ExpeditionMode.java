@@ -440,7 +440,7 @@ public class ExpeditionMode
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
 
         // We want the last known location to be at least SANELY recent.
-        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+        if(LocationUtil.isLocationNewEnough(lastKnown)) {
             zoomToIdeal(lastKnown);
         } else {
             // Otherwise, wait for the first update and use that for an initial

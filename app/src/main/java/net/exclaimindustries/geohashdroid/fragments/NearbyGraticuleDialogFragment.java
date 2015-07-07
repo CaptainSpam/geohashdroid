@@ -78,7 +78,7 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
         final Location location = getArguments().getParcelable("location");
 
         String message;
-        if(location != null && LocationUtil.isLocationNewEnough(location)) {
+        if(LocationUtil.isLocationNewEnough(location)) {
             message = getString(R.string.dialog_switch_graticule_text,
                     UnitConverter.makeDistanceString(getActivity(),
                             UnitConverter.DISTANCE_FORMAT_SHORT,

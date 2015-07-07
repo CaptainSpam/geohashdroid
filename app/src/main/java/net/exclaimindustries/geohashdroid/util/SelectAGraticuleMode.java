@@ -282,7 +282,7 @@ public class SelectAGraticuleMode
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
 
         // We want the last known location to be at least SANELY recent.
-        if(lastKnown != null && LocationUtil.isLocationNewEnough(lastKnown)) {
+        if(LocationUtil.isLocationNewEnough(lastKnown)) {
             applyFoundGraticule(lastKnown);
         } else {
             // This shouldn't be called OFTEN, but it'll probably be called.
