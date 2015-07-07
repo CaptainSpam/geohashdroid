@@ -138,7 +138,7 @@ public class ExpeditionMode
                 // Well, okay, we can also have no data at all, in which case we
                 // do nothing but wait until the user goes to Select-A-Graticule
                 // to get things moving.
-                if(bundle.containsKey(INFO)) {
+                if(bundle.getParcelable(INFO) != null) {
                     mCurrentInfo = bundle.getParcelable(INFO);
                     requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
@@ -465,18 +465,26 @@ public class ExpeditionMode
         mWaitingOnEmptyStart = true;
 
         // For an initial start, first things first, we ask for the current
-        // location.
-        ErrorBanner banner = mCentralMap.getErrorBanner();
-        banner.setErrorStatus(ErrorBanner.Status.NORMAL);
-        banner.setText(mCentralMap.getText(R.string.search_label).toString());
-        banner.setCloseVisible(false);
-        banner.animateBanner(true);
+        // location.  If it's new enough, we can go with that, as usual.
+        Location loc = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
 
-        LocationRequest lRequest = LocationRequest.create();
-        lRequest.setInterval(1000);
-        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        if(LocationUtil.isLocationNewEnough(loc)) {
+            mInitialCheckLocation = loc;
+            requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+        } else {
+            // Otherwise, it's off to the races.
+            ErrorBanner banner = mCentralMap.getErrorBanner();
+            banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.setCloseVisible(false);
+            banner.animateBanner(true);
 
-        LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mEmptyStartListener);
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mEmptyStartListener);
+        }
     }
 
     @Override
