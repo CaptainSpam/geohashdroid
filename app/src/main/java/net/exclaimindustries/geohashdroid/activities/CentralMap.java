@@ -753,11 +753,6 @@ public class CentralMap
         mCurrentMode.onSaveInstanceState(mLastModeBundle);
         mCurrentMode.cleanUp();
         mStockReceiver.clearWaitingList();
-
-        // If we're entering Select-A-Graticule, we're quite sure the user no
-        // longer wants the empty start.
-        mLastModeBundle.remove(ExpeditionMode.DO_INITIAL_START);
-
         mCurrentMode = new SelectAGraticuleMode();
         doReadyChecks();
     }

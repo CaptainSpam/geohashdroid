@@ -62,6 +62,10 @@ public class SelectAGraticuleMode
 
     private Location mLastLocation;
 
+    private boolean mWasEmptyStart = false;
+    private Graticule mInitialGraticule;
+    private boolean mInitialGlobal;
+
     private LocationListener mFindClosestListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
@@ -82,6 +86,11 @@ public class SelectAGraticuleMode
         // Hi, map!
         mMap.setOnMapClickListener(this);
 
+        // Remember if this was an empty start.  We'll want that flag set back
+        // up if the user didn't set anything so that ExpeditionMode can try
+        // again afterward.
+        mWasEmptyStart = (bundle != null && bundle.getBoolean(ExpeditionMode.DO_INITIAL_START, false));
+
         // The fragment might already be there if the Activity's being rebuilt.
         // If not, we need to place it there.
         FragmentManager manager = mCentralMap.getFragmentManager();
@@ -89,20 +98,17 @@ public class SelectAGraticuleMode
         if(mFrag == null) {
             // If we need to build the fragment, we might also want whatever
             // graticule the user started with.
-            Graticule g = null;
-            boolean globalHash = false;
-
             if(bundle != null) {
                 if(bundle.containsKey(INFO)) {
                     Info i = bundle.getParcelable(INFO);
                     if(i != null) {
-                        g = i.getGraticule();
+                        mInitialGraticule = i.getGraticule();
                         mCalendar = i.getCalendar();
-                        globalHash = i.isGlobalHash();
+                        mInitialGlobal = i.isGlobalHash();
                     }
                 } else {
                     if(bundle.containsKey(GRATICULE)) {
-                        g = bundle.getParcelable(GRATICULE);
+                        mInitialGraticule = bundle.getParcelable(GRATICULE);
                     }
 
                     if(bundle.containsKey(CALENDAR)) {
@@ -110,7 +116,7 @@ public class SelectAGraticuleMode
                     }
 
                     if(bundle.containsKey(GLOBALHASH)) {
-                        globalHash = bundle.getBoolean(GLOBALHASH, false);
+                        mInitialGlobal = bundle.getBoolean(GLOBALHASH, false);
                     }
                 }
             }
@@ -129,8 +135,8 @@ public class SelectAGraticuleMode
 
             // Toss in the current Graticule so the thing knows where to start.
             Bundle args = new Bundle();
-            args.putParcelable(GraticulePickerFragment.GRATICULE, g);
-            args.putBoolean(GraticulePickerFragment.GLOBALHASH, globalHash);
+            args.putParcelable(GraticulePickerFragment.GRATICULE, mInitialGraticule);
+            args.putBoolean(GraticulePickerFragment.GLOBALHASH, mInitialGlobal);
             mFrag.setArguments(args);
 
             transaction.replace(R.id.graticulepicker, mFrag, "GraticulePicker");
@@ -164,8 +170,27 @@ public class SelectAGraticuleMode
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle bundle) {
-        bundle.putParcelable(GRATICULE, mFrag.getGraticule());
-        bundle.putBoolean(GLOBALHASH, mFrag.isGlobalhash());
+        Graticule g = mFrag.getGraticule();
+        boolean global = mFrag.isGlobalhash();
+
+        // If we didn't get any valid input (that is, the graticule is false AND
+        // it's not a Globalhash)...
+        if(g == null && !global) {
+            // ...then, after checking if we came in from an empty start...
+            if(mWasEmptyStart) {
+                // ...set the flag back if we were...
+                bundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+            } else {
+                // ...and set the initial entries if not.
+                bundle.putParcelable(GRATICULE, mInitialGraticule);
+                bundle.putBoolean(GLOBALHASH, mInitialGlobal);
+            }
+        } else {
+            // If we DID get valid input, just use that.
+            bundle.putParcelable(GRATICULE, g);
+            bundle.putBoolean(GLOBALHASH, global);
+        }
+
         bundle.putSerializable(CALENDAR, mCalendar);
     }
 
