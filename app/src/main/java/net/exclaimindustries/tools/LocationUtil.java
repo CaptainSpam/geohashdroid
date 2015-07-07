@@ -9,6 +9,7 @@
 package net.exclaimindustries.tools;
 
 import android.location.Location;
+import android.support.annotation.Nullable;
 
 /**
  * <code>LocationUtil</code> holds any interesting {@link Location}-related
@@ -23,24 +24,26 @@ public class LocationUtil {
 
     /**
      * Returns whether or not the given {@link Location} is "new enough", as
-     * determined by the {@link #NEW_ENOUGH} field.
+     * determined by the {@link #NEW_ENOUGH} field.  Note that a null Location
+     * is never new enough.
      *
      * @param l Location to check
      * @return true if it's new enough, false if it's too old
      */
-    public static boolean isLocationNewEnough(Location l) {
+    public static boolean isLocationNewEnough(@Nullable Location l) {
         return isLocationNewEnough(l, NEW_ENOUGH);
     }
 
     /**
-     * Returns whether or not the given {@link Location} is "new enoough", as
-     * determined by the supplied age.
+     * Returns whether or not the given {@link Location} is "new enough", as
+     * determined by the supplied age.  Note that a null Location is never new
+     * enough.
      *
      * @param l Location to check
      * @param age the oldest that l can be "new enough", in millis
      * @return true if it's new enough, false if it's too old
      */
-    public static boolean isLocationNewEnough(Location l, long age) {
-        return System.currentTimeMillis() - l.getTime() < age;
+    public static boolean isLocationNewEnough(@Nullable Location l, long age) {
+        return l != null && System.currentTimeMillis() - l.getTime() < age;
     }
 }
