@@ -23,7 +23,8 @@
         android:id="@+id/error_banner"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_margin="@dimen/standard_padding"/>
+        android:layout_margin="@dimen/standard_padding"
+        android:elevation="@dimen/elevation_error_banner"/>
 
     <FrameLayout
         android:id="@+id/graticulepicker"
