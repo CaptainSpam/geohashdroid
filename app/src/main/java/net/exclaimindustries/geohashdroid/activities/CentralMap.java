@@ -627,12 +627,14 @@ public class CentralMap
         outState.putParcelable("lastGraticule", mLastGraticule);
         outState.putSerializable("lastCalendar", mLastCalendar);
 
-        // Also, shut down the current mode.  We'll rebuild it later.
-        if(mCurrentMode != null) {
+        // Also, shut down the current mode.  We'll rebuild it later.  Also, if
+        // init isn't complete yet, don't update the state.
+        if(mCurrentMode != null && mCurrentMode.isInitComplete()) {
             mLastModeBundle = new Bundle();
             mCurrentMode.onSaveInstanceState(mLastModeBundle);
-            outState.putBundle(LAST_MODE_BUNDLE, mLastModeBundle);
         }
+
+        outState.putBundle(LAST_MODE_BUNDLE, mLastModeBundle);
     }
 
     @Override

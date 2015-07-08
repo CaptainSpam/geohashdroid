@@ -434,8 +434,10 @@ public class ExpeditionMode
     private void doInitialZoom() {
         GoogleApiClient gClient = getGoogleClient();
 
-        if(gClient == null)
+        if(gClient == null) {
             Log.w(DEBUG_TAG, "Tried calling doInitialZoom() when the Google API client was null or not connected!");
+            return;
+        }
 
         Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
 
@@ -462,6 +464,8 @@ public class ExpeditionMode
     }
 
     private void doEmptyStart() {
+        Log.d(DEBUG_TAG, "Here comes the empty start...");
+
         mWaitingOnEmptyStart = true;
 
         // For an initial start, first things first, we ask for the current
