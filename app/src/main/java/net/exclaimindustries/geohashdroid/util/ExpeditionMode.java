@@ -40,6 +40,7 @@ import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
@@ -74,6 +75,8 @@ public class ExpeditionMode
     private DisplayMetrics mMetrics;
 
     private Location mInitialCheckLocation;
+
+    private InfoBox mInfoBox;
 
     private LocationListener mInitialZoomListener = new LocationListener() {
         @Override
@@ -157,6 +160,10 @@ public class ExpeditionMode
             }
         }
 
+        // Also, let's get that InfoBox taken care of.
+        mInfoBox = getInfoBox();
+        mInfoBox.startListening(getGoogleClient());
+
         mInitComplete = true;
     }
 
@@ -178,6 +185,11 @@ public class ExpeditionMode
         // Remove the nearby points, too.  The superclass took care of the final
         // destination marker for us.
         removeNearbyPoints();
+
+        // The InfoBox should also go away at this point.
+        // TODO: InfoBox needs to animate away!  That'll most likely implicitly
+        // make it stop listening anyway.
+        mInfoBox.stopListening();
     }
 
     @Override
@@ -203,6 +215,9 @@ public class ExpeditionMode
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
         }
+
+        if(mInfoBox != null)
+            mInfoBox.stopListening();
     }
 
     @Override
@@ -218,6 +233,8 @@ public class ExpeditionMode
         // Also if need be, try that empty start again!
         if(mWaitingOnEmptyStart)
             doEmptyStart();
+
+        mInfoBox.startListening(getGoogleClient());
     }
 
     @Override
@@ -351,6 +368,9 @@ public class ExpeditionMode
         if(!mInitComplete) return;
 
         removeDestinationPoint();
+
+        // The InfoBox ALWAYS gets the Info.
+        mInfoBox.setInfo(info);
 
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.

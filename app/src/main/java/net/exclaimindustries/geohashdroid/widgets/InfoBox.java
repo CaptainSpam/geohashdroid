@@ -1,0 +1,157 @@
+/*
+ * InfoBox.java
+ * Copyright (C) 2015 Nicholas Killewald
+ *
+ * This file is distributed under the terms of the BSD license.
+ * The source package should have a LICENSE file at the toplevel.
+ */
+
+package net.exclaimindustries.geohashdroid.widgets;
+
+import android.app.Activity;
+import android.content.Context;
+import android.location.Location;
+import android.support.annotation.Nullable;
+import android.util.AttributeSet;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.tools.LocationUtil;
+
+import java.text.DecimalFormat;
+
+/**
+ * This is the info box.  It sits neatly on top of the map screen.  Given an
+ * Info and a stream of updates, it'll report on where the user is and how far
+ * from the target they are.
+ */
+public class InfoBox
+        extends LinearLayout
+        implements LocationListener {
+
+    private Info mInfo;
+
+    private TextView mDest;
+    private TextView mYou;
+    private TextView mDistance;
+
+    private GoogleApiClient mGClient;
+    private Location mLastLocation;
+
+    private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
+
+    private boolean mIsListening = false;
+
+    public InfoBox(Context c) {
+        this(c, null);
+    }
+
+    public InfoBox(Context c, AttributeSet attrs) {
+        super(c, attrs);
+
+        // INFLATE!
+        inflate(c, R.layout.infobox, this);
+
+        mDest = (TextView)findViewById(R.id.infobox_hashpoint);
+        mYou = (TextView)findViewById(R.id.infobox_you);
+        mDistance = (TextView)findViewById(R.id.infobox_distance);
+    }
+
+    /**
+     * Sets the Info.  If null, this will make it go to standby.
+     *
+     * @param info the new Info
+     */
+    public void setInfo(@Nullable final Info info) {
+        // New info!
+        mInfo = info;
+
+        updateBox();
+    }
+
+    private void updateBox() {
+        ((Activity)getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Redraw the Info.  Always do this.  The user might be coming
+                // back from Preferences, for instance.
+                if(mInfo == null) {
+                    mDest.setText(R.string.standby_title);
+                } else {
+                    mDest.setText(UnitConverter.makeFullCoordinateString(getContext(), mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_SHORT));
+                }
+
+
+                // If we've got a location yet, use that.  If not, to standby
+                // with you!
+                if(mLastLocation == null) {
+                    mYou.setText(R.string.standby_title);
+                } else {
+                    mYou.setText(UnitConverter.makeFullCoordinateString(getContext(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
+                }
+
+                // Next, calculate the distance, if possible.
+                if(mLastLocation == null || mInfo == null) {
+                    mDistance.setText(R.string.standby_title);
+                } else {
+                    mDistance.setText(UnitConverter.makeDistanceString(getContext(), mDistFormat, mLastLocation.distanceTo(mInfo.getFinalLocation())));
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mLastLocation = location;
+    }
+
+    /**
+     * Tells the InfoBox to start listening for updates.  Does nothing if it
+     * thinks it already is.
+     *
+     * @param gClient the GoogleApiClient to use to listen (will be stored for later unlistening)
+     */
+    public void startListening(GoogleApiClient gClient) {
+        if(mIsListening) return;
+
+        mGClient = gClient;
+
+        // Time to wake up and start processing locations!  We'll get the
+        // current location first just for speed, AND we'll subscribe for
+        // updates.
+        Location loc = LocationServices.FusedLocationApi.getLastLocation(gClient);
+
+        if(LocationUtil.isLocationNewEnough(loc))
+            mLastLocation = loc;
+
+        updateBox();
+
+        LocationRequest lRequest = LocationRequest.create();
+        lRequest.setInterval(1000);
+        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, this);
+
+        mIsListening = true;
+    }
+
+    /**
+     * Tells the InfoBox to stop listening to location updates.  Does nothing if
+     * it doesn't think it is already.  This will use whatever GoogleApiClient
+     * was passed in to {@link #startListening(GoogleApiClient)} earlier.
+     */
+    public void stopListening() {
+        if(!mIsListening) return;
+
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, this);
+
+        mIsListening = false;
+    }
+}

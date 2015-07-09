@@ -5,15 +5,16 @@
     <dimen name="button_go_height">40dp</dimen>
     <dimen name="infobox_width">160dp</dimen>
     <dimen name="infobox_height">100dp</dimen>
-    <dimen name="infobox_padding">5dp</dimen>
+    <dimen name="infobox_padding">8dp</dimen>
+    <dimen name="infobox_drawable_padding">4dp</dimen>
 
     <dimen name="input_graticule_width">90dp</dimen>
     <dimen name="input_graticule_fontsize">30sp</dimen>
     <dimen name="input_graticule_margin">4dp</dimen>
     <dimen name="input_graticule_closest_icon_margin">8dp</dimen>
-    <dimen name="infobox_fontsize">16dp</dimen>
-    <dimen name="infobox_jumbo_fontsize">22dp</dimen>
-    <dimen name="infobox_jumbo_fontsize_portrait">18dp</dimen>
+    <dimen name="infobox_fontsize">18sp</dimen>
+    <dimen name="infobox_jumbo_fontsize">22sp</dimen>
+    <dimen name="infobox_jumbo_fontsize_portrait">18sp</dimen>
     <dimen name="details_title_fontsize">34sp</dimen>
     <dimen name="details_title_fontsize_land">36sp</dimen>
     <dimen name="details_subtitle_fontsize">28sp</dimen>
@@ -60,6 +61,7 @@
     <dimen name="standard_padding">8dp</dimen>
 
     <dimen name="elevation_error_banner">4dp</dimen>
+    <dimen name="elevation_infobox">2dp</dimen>
 
     <dimen name="error_banner_height">64dp</dimen>
     <dimen name="map_zoom_padding">64dp</dimen>

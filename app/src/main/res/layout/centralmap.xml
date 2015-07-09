@@ -2,8 +2,9 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 xmlns:tools="http://schemas.android.com/tools"
                 android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:keepScreenOn="true">
 
     <fragment
         android:layout_width="match_parent"
@@ -15,6 +16,15 @@
         android:layout_alignParentTop="true"
         tools:ignore="RtlHardcoded"
         />
+
+    <view
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        class="net.exclaimindustries.geohashdroid.widgets.InfoBox"
+        android:id="@+id/infobox"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:elevation="@dimen/elevation_infobox"/>
 
     <view
         android:layout_width="match_parent"

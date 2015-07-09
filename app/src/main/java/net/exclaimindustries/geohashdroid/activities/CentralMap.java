@@ -42,6 +42,7 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 
 import java.text.DateFormat;
 import java.util.Arrays;
@@ -176,6 +177,15 @@ public class CentralMap
             } else {
                 return null;
             }
+        }
+
+        /**
+         * Gets the {@link InfoBox} in the map.
+         *
+         * @return said InfoBox
+         */
+        protected final InfoBox getInfoBox() {
+            return (InfoBox)mCentralMap.findViewById(R.id.infobox);
         }
 
         /**

@@ -17,4 +17,14 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@drawable/geohashing_logo_background</item>
     </style>
+
+    <!-- The basic infobox text. -->
+    <style name="InfoboxText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">@dimen/infobox_fontsize</item>
+        <item name="android:gravity">center_vertical|left</item>
+        <item name="android:textColor">@color/infobox_text</item>
+        <item name="android:drawablePadding">@dimen/infobox_drawable_padding</item>
+    </style>
 </resources>
