@@ -13,6 +13,7 @@ import android.content.Context;
 import android.location.Location;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -49,6 +50,7 @@ public class InfoBox
     private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
 
     private boolean mIsListening = false;
+    private boolean mAlreadyLaidOut = false;
 
     public InfoBox(Context c) {
         this(c, null);
@@ -63,6 +65,19 @@ public class InfoBox
         mDest = (TextView)findViewById(R.id.infobox_hashpoint);
         mYou = (TextView)findViewById(R.id.infobox_you);
         mDistance = (TextView)findViewById(R.id.infobox_distance);
+
+        // As usual, make sure the view's just gone until we need it.
+        // ExpeditionMode will pull it back in.
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // Got a height!  Hopefully.
+                if(!mAlreadyLaidOut) {
+                    mAlreadyLaidOut = true;
+                    setInfoBoxVisible(false);
+                }
+            }
+        });
     }
 
     /**
@@ -131,6 +146,8 @@ public class InfoBox
 
         if(LocationUtil.isLocationNewEnough(loc))
             mLastLocation = loc;
+        else
+            mLastLocation = null;
 
         updateBox();
 
@@ -153,5 +170,39 @@ public class InfoBox
         LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, this);
 
         mIsListening = false;
+    }
+
+    /**
+     * Slides the InfoBox in to or out of view.
+     *
+     * @param visible true to slide in, false to slide out
+     */
+    public void animateInfoBoxVisible(boolean visible) {
+        // Quick note: The size of the InfoBox might change due to the width of
+        // the text shown (as well as the accuracy warning), but since we alpha
+        // it out anyway, that shouldn't be a real major issue.
+        if(!visible) {
+            // Slide out!
+            animate().translationX(getWidth()).alpha(0.0f);
+            stopListening();
+        } else {
+            // Slide in!
+            animate().translationX(0.0f).alpha(1.0f);
+        }
+    }
+
+    /**
+     * Makes the InfoBox be in or out of view without animating it.
+     * @param visible true to appear, false to vanish
+     */
+    public void setInfoBoxVisible(boolean visible) {
+        if(!visible) {
+            setTranslationX(getWidth());
+            setAlpha(0.0f);
+            stopListening();
+        } else {
+            setTranslationX(0.0f);
+            setAlpha(1.0f);
+        }
     }
 }

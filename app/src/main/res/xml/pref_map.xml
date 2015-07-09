@@ -8,13 +8,12 @@
         android:summaryOn="@string/pref_autozoom_on"
         android:title="@string/pref_autozoom_title" />
 
-    <ListPreference
-        android:defaultValue="Small"
-        android:dialogTitle="@string/pref_infobox_dialogtitle"
-        android:entries="@array/pref_infobox_entries"
-        android:entryValues="@array/pref_infobox_values"
-        android:key="InfoBoxSize"
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="InfoBox"
         android:persistent="true"
+        android:summaryOff="@string/pref_infobox_off"
+        android:summaryOn="@string/pref_infobox_on"
         android:title="@string/pref_infobox_title" />
     <ListPreference
         android:defaultValue="Metric"

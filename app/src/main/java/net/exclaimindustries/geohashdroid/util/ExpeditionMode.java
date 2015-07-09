@@ -162,7 +162,12 @@ public class ExpeditionMode
 
         // Also, let's get that InfoBox taken care of.
         mInfoBox = getInfoBox();
-        mInfoBox.startListening(getGoogleClient());
+
+        // Start things in motion IF the preference says to do so.
+        if(showInfoBox()) {
+            mInfoBox.startListening(getGoogleClient());
+            mInfoBox.animateInfoBoxVisible(true);
+        }
 
         mInitComplete = true;
     }
@@ -187,9 +192,7 @@ public class ExpeditionMode
         removeNearbyPoints();
 
         // The InfoBox should also go away at this point.
-        // TODO: InfoBox needs to animate away!  That'll most likely implicitly
-        // make it stop listening anyway.
-        mInfoBox.stopListening();
+        mInfoBox.animateInfoBoxVisible(false);
     }
 
     @Override
@@ -234,7 +237,12 @@ public class ExpeditionMode
         if(mWaitingOnEmptyStart)
             doEmptyStart();
 
-        mInfoBox.startListening(getGoogleClient());
+        if(showInfoBox()) {
+            mInfoBox.animateInfoBoxVisible(true);
+            mInfoBox.startListening(getGoogleClient());
+        } else {
+            mInfoBox.animateInfoBoxVisible(false);
+        }
     }
 
     @Override
@@ -563,4 +571,8 @@ public class ExpeditionMode
         return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true);
     }
 
+    private boolean showInfoBox() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
+        return prefs.getBoolean(GHDConstants.PREF_INFOBOX, true);
+    }
 }
