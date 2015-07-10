@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.exclaimindustries.geohashdroid.GeohashDroid;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
@@ -58,7 +57,7 @@ public class WikiMessageEditor extends WikiBaseActivity {
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         
-        mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
+        mInfo = (Info)getIntent().getParcelableExtra("Info");
 
         setContentView(R.layout.wikieditor);
 

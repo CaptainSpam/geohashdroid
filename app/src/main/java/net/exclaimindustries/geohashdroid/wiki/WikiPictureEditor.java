@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.exclaimindustries.geohashdroid.GeohashDroid;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
@@ -122,7 +121,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         
         Log.d(DEBUG_TAG, "Thumbnail dimensions: " + THUMB_DIMEN);
 
-        mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
+        mInfo = (Info)getIntent().getParcelableExtra("Info");
 
         setContentView(R.layout.pictureselect);
 

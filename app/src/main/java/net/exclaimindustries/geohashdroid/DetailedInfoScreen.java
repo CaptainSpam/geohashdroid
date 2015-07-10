@@ -76,7 +76,7 @@ public class DetailedInfoScreen extends LocationAwareActivity {
         if (icicle != null && icicle.containsKey(INFO)) {
             mInfo = (Info)icicle.getParcelable(INFO);
         } else {
-            mInfo = (Info)getIntent().getParcelableExtra(GeohashDroid.INFO);
+            mInfo = (Info)getIntent().getParcelableExtra("Info");
         }
 
         // Lay out the initial info. The rest remains on standby for now.

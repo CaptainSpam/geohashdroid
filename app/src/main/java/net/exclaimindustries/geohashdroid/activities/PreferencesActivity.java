@@ -103,7 +103,7 @@ public class PreferencesActivity extends PreferenceActivity {
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref_map);
-            
+
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_DIST_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_COORD_UNITS));
         }
