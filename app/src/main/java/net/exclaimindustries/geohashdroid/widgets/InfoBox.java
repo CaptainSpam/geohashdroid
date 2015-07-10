@@ -13,6 +13,7 @@ import android.content.Context;
 import android.location.Location;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import com.google.android.gms.location.LocationServices;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.LocationUtil;
 
@@ -43,6 +45,8 @@ public class InfoBox
     private TextView mDest;
     private TextView mYou;
     private TextView mDistance;
+    private TextView mAccuracyLow;
+    private TextView mAccuracyReallyLow;
 
     private GoogleApiClient mGClient;
     private Location mLastLocation;
@@ -65,6 +69,8 @@ public class InfoBox
         mDest = (TextView)findViewById(R.id.infobox_hashpoint);
         mYou = (TextView)findViewById(R.id.infobox_you);
         mDistance = (TextView)findViewById(R.id.infobox_distance);
+        mAccuracyLow = (TextView)findViewById(R.id.infobox_accuracy_low);
+        mAccuracyReallyLow = (TextView)findViewById(R.id.infobox_accuracy_really_low);
 
         // As usual, make sure the view's just gone until we need it.
         // ExpeditionMode will pull it back in.
@@ -96,6 +102,9 @@ public class InfoBox
         ((Activity)getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                float accuracy = 0.0f;
+                if(mLastLocation != null) accuracy = mLastLocation.getAccuracy();
+
                 // Redraw the Info.  Always do this.  The user might be coming
                 // back from Preferences, for instance.
                 if(mInfo == null) {
@@ -104,6 +113,10 @@ public class InfoBox
                     mDest.setText(UnitConverter.makeFullCoordinateString(getContext(), mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_SHORT));
                 }
 
+                // Reset the accuracy warnings.  The right one will go back up
+                // as need be.
+                mAccuracyLow.setVisibility(View.GONE);
+                mAccuracyReallyLow.setVisibility(View.GONE);
 
                 // If we've got a location yet, use that.  If not, to standby
                 // with you!
@@ -111,13 +124,31 @@ public class InfoBox
                     mYou.setText(R.string.standby_title);
                 } else {
                     mYou.setText(UnitConverter.makeFullCoordinateString(getContext(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
+
+                    // Hey, as long as we're here, let's also do accuracy.
+                    if(accuracy >= GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD)
+                        mAccuracyReallyLow.setVisibility(View.VISIBLE);
+                    else if(accuracy >= GHDConstants.LOW_ACCURACY_THRESHOLD)
+                        mAccuracyLow.setVisibility(View.VISIBLE);
                 }
 
                 // Next, calculate the distance, if possible.
                 if(mLastLocation == null || mInfo == null) {
                     mDistance.setText(R.string.standby_title);
+                    mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
                 } else {
-                    mDistance.setText(UnitConverter.makeDistanceString(getContext(), mDistFormat, mLastLocation.distanceTo(mInfo.getFinalLocation())));
+                    float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
+                    mDistance.setText(UnitConverter.makeDistanceString(getContext(), mDistFormat, distance));
+
+                    // Plus, if we're close enough AND accurate enough, make the
+                    // text be green.  We COULD do this with geofencing
+                    // callbacks and all, but, I mean, we're already HERE,
+                    // aren't we?
+                    if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
+                        mDistance.setTextColor(getResources().getColor(R.color.infobox_in_range));
+                    else
+                        mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
+
                 }
             }
         });
