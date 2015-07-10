@@ -58,7 +58,27 @@ public class SelectAGraticuleMode
 
     private GraticulePickerFragment mFrag;
 
+    /** The "working" calendar. */
     private Calendar mCalendar;
+    /**
+     * The last Calendar we saw that had a valid hashpoint.  Well, almost.  If
+     * there wasn't a valid hashpoint coming in from ExpeditionMode (i.e. the
+     * user started the app fresh before the opening of the DJIA for that day),
+     * this still won't be a "good" calendar, per se.  At any rate, this is what
+     * gets sent back in the bundle when the mode ends.
+     */
+    private Calendar mLastGoodCalendar;
+    /**
+     * The last Graticule we saw that had a valid hashpoint.  This gets set
+     * alongside {@link #mLastGoodCalendar}, and is used very similarly.  This
+     * CAN be null, of course, which brings us to {@link #mLastGoodGlobal}...
+     */
+    private Graticule mLastGoodGraticule;
+    /**
+     * The last status of the globalhash flag we saw that had a valid hashpoint.
+     * Same deal as the other two.
+     */
+    private boolean mLastGoodGlobal;
 
     private Location mLastLocation;
 
@@ -118,6 +138,10 @@ public class SelectAGraticuleMode
 
         if(mCalendar == null)
             mCalendar = Calendar.getInstance();
+
+        mLastGoodCalendar = mCalendar;
+        mLastGoodGraticule = mInitialGraticule;
+        mLastGoodGlobal = mInitialGlobal;
 
         // The fragment might already be there if the Activity's being rebuilt.
         // If not, we need to place it there.
@@ -193,11 +217,11 @@ public class SelectAGraticuleMode
             }
         } else {
             // If we DID get valid input, just use that.
-            bundle.putParcelable(GRATICULE, g);
-            bundle.putBoolean(GLOBALHASH, global);
+            bundle.putParcelable(GRATICULE, mLastGoodGraticule);
+            bundle.putBoolean(GLOBALHASH, mLastGoodGlobal);
         }
 
-        bundle.putSerializable(CALENDAR, mCalendar);
+        bundle.putSerializable(CALENDAR, mLastGoodCalendar);
     }
 
     @Override
@@ -238,6 +262,9 @@ public class SelectAGraticuleMode
             } else {
                 // If we get an Info in, plant a flag where it needs to be.
                 addDestinationPoint(info);
+                mLastGoodCalendar = info.getCalendar();
+                mLastGoodGraticule = info.getGraticule();
+                mLastGoodGlobal = info.isGlobalHash();
 
                 // If it's a globalhash, zip right off to it.
                 if(mMap != null && info != null && info.isGlobalHash()) {
@@ -251,7 +278,7 @@ public class SelectAGraticuleMode
     public void handleLookupFailure(int reqFlags, int responseCode) {
         // If this was a Find Closest lookup, we need to make sure the button on
         // the fragment is re-enabled.
-        if((reqFlags & StockService.FLAG_FIND_CLOSEST) != StockService.FLAG_FIND_CLOSEST) {
+        if((reqFlags & StockService.FLAG_FIND_CLOSEST) == StockService.FLAG_FIND_CLOSEST) {
             clearFindClosest();
         }
     }
@@ -260,6 +287,7 @@ public class SelectAGraticuleMode
     public void onMapClick(LatLng latLng) {
         // Okay, so now we've got a Graticule.  Well, we will right here:
         Graticule g = new Graticule(latLng);
+        removeDestinationPoint();
 
         // We can update the fragment with that.  We'll get updateGraticule back
         // so we can add the outline.
@@ -270,6 +298,8 @@ public class SelectAGraticuleMode
     public void updateGraticule(@Nullable Graticule g) {
         // New graticule!
         outlineGraticule(g);
+
+        removeDestinationPoint();
 
         // Fetch the stock, too.
         requestStock(g, mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_SELECT_A_GRATICULE);

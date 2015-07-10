@@ -248,6 +248,7 @@ public class CentralMap
          * @param flags the {@link StockService} flags
          */
         protected void requestStock(@Nullable Graticule g, @NonNull Calendar c, int flags) {
+            mCentralMap.getErrorBanner().animateBanner(false);
             mCentralMap.requestStock(g, c, flags);
         }
 
