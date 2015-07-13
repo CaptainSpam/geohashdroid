@@ -20,8 +20,8 @@
     <dimen name="details_subtitle_fontsize">28sp</dimen>
     <dimen name="details_coords_fontsize">28sp</dimen>
     <dimen name="details_coords_fontsize_land">28sp</dimen>
-    <dimen name="details_distance_fontsize">20dip</dimen>
-    <dimen name="details_accuracy_fontsize">14dip</dimen>
+    <dimen name="details_distance_fontsize">20sp</dimen>
+    <dimen name="details_accuracy_fontsize">14sp</dimen>
     <dimen name="details_padding">12dp</dimen>
     <dimen name="details_padding_horiz">10dp</dimen>
     <dimen name="details_distance_padding">10dp</dimen>
