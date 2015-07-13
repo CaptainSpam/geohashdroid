@@ -18,7 +18,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.GHDBasicDialogBuilder;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.LocationUtil;

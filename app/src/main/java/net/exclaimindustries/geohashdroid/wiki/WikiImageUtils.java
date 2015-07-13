@@ -19,7 +19,7 @@ import android.net.Uri;
 import android.provider.MediaStore;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.BitmapTools;
 
