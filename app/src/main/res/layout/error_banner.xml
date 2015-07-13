@@ -3,7 +3,7 @@
               android:orientation="horizontal"
               android:layout_width="match_parent"
               android:layout_height="@dimen/error_banner_height"
-    >
+              android:clickable="true">
 
     <TextView
         android:layout_width="0dp"
@@ -12,8 +12,7 @@
         android:layout_weight="1"
         android:layout_gravity="center_vertical"
         android:layout_margin="@dimen/standard_padding"
-        android:textSize="16sp"
-        />
+        android:textSize="16sp"/>
 
     <ImageButton
         android:layout_width="wrap_content"

@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.location.Location;
@@ -19,6 +20,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.View;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -37,6 +39,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.UnitConverter;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
+import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
@@ -108,6 +111,13 @@ public class ExpeditionMode
         }
     };
 
+    private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            launchDetailedInfo();
+        }
+    };
+
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
         super.setCentralMap(centralMap);
@@ -168,6 +178,8 @@ public class ExpeditionMode
             mInfoBox.startListening(getGoogleClient());
             mInfoBox.animateInfoBoxVisible(true);
         }
+
+        mInfoBox.setOnClickListener(mInfoBoxClicker);
 
         mInitComplete = true;
     }
@@ -574,5 +586,23 @@ public class ExpeditionMode
     private boolean showInfoBox() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
         return prefs.getBoolean(GHDConstants.PREF_INFOBOX, true);
+    }
+
+    private void launchDetailedInfo() {
+        // First off, ignore this if there's no Info yet.
+        if(mCurrentInfo == null) return;
+
+        // Ask CentralMap if there's a fragement container in this layout.
+        // If so (tablet layouts), add it to the current screen.  If not
+        // (phone layouts), jump off to the dedicated activity.
+        View container = mCentralMap.findViewById(R.id.detailed_info_container);
+        if(container == null) {
+            // To the Activity!
+            Intent i = new Intent(mCentralMap, DetailedInfoActivity.class);
+            i.putExtra(DetailedInfoActivity.INFO, mCurrentInfo);
+            mCentralMap.startActivity(i);
+        } else {
+            // TODO: The tablet portion!
+        }
     }
 }

@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -30,22 +31,25 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.LocationUtil;
 
+import java.text.DateFormat;
+
 /**
  * The DetailedInfoFragment shows us some detailed info.  It's Javadocs like
  * this that really sell the whole concept, I know.
  */
-public class DetailedInfoFragment extends Fragment {
+public class DetailedInfoFragment extends Fragment
+        implements GoogleApiClient.ConnectionCallbacks,
+                   GoogleApiClient.OnConnectionFailedListener {
     /** The bundle key for the Info. */
     public final static String INFO = "info";
 
+    private TextView mDate;
     private TextView mYouLat;
     private TextView mYouLon;
     private TextView mDestLat;
     private TextView mDestLon;
     private TextView mDistance;
     private TextView mAccuracy;
-
-    private boolean mIsListening = false;
 
     private GoogleApiClient mGClient;
     private Location mLastLocation;
@@ -84,6 +88,15 @@ public class DetailedInfoFragment extends Fragment {
         if(args != null) {
             mInfo = args.getParcelable(INFO);
         }
+
+        // We'll also form the Google API Client here.  I'm actually not sure
+        // why I thought it was a good idea to pass it in from outside when it's
+        // far more reliable to do it here and manage everything that way.
+        mGClient = new GoogleApiClient.Builder(getActivity())
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
     }
 
     @Nullable
@@ -92,6 +105,7 @@ public class DetailedInfoFragment extends Fragment {
         View layout = inflater.inflate(R.layout.detail, container, true);
 
         // TextViews!
+        mDate = (TextView)layout.findViewById(R.id.detail_date);
         mYouLat = (TextView)layout.findViewById(R.id.you_lat);
         mYouLon = (TextView)layout.findViewById(R.id.you_lon);
         mDestLat = (TextView)layout.findViewById(R.id.dest_lat);
@@ -113,19 +127,29 @@ public class DetailedInfoFragment extends Fragment {
         return layout;
     }
 
-    /**
-     * Tells the fragment to start listening for updates.  Does nothing if it
-     * thinks it already is.
-     *
-     * @param gClient the GoogleApiClient to use to listen (will be stored for later unlistening)
-     */
-    public void startListening(GoogleApiClient gClient) {
-        if(mIsListening) return;
+    @Override
+    public void onStart() {
+        super.onStart();
 
-        mGClient = gClient;
+        // Connect up!
+        mGClient.connect();
+    }
 
-        // We should know the drill by now.  If not, see InfoBox.
-        Location loc = LocationServices.FusedLocationApi.getLastLocation(gClient);
+    @Override
+    public void onStop() {
+        // Stop!
+        if(mGClient != null) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
+            mGClient.disconnect();
+        }
+
+        super.onStop();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        // Connected!  Let's get registered for updates!
+        Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
 
         if(LocationUtil.isLocationNewEnough(loc))
             mLastLocation = loc;
@@ -138,23 +162,18 @@ public class DetailedInfoFragment extends Fragment {
         lRequest.setInterval(1000);
         lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
-
-        mIsListening = true;
     }
 
-    /**
-     * Tells the fragment to stop listening to location updates.  Does nothing
-     * if it doesn't think it is already.  This will use whatever
-     * GoogleApiClient was passed in to {@link #startListening(GoogleApiClient)}
-     * earlier, which is why this won't do anything if you haven't started
-     * listening first.
-     */
-    public void stopListening() {
-        if(!mIsListening) return;
+    @Override
+    public void onConnectionSuspended(int i) {
+        // HALP
+        mLastLocation = null;
+        updateDisplay();
+    }
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
-
-        mIsListening = false;
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        // REALLY HALP
     }
 
     /**
@@ -194,13 +213,17 @@ public class DetailedInfoFragment extends Fragment {
 
                     // One by one, just like InfoBox!  I mean, not JUST like it.
                     // We split the coordinate parts into different TextViews
-                    // here.
+                    // here, and we have the date to display, but other than
+                    // THAT...
                     if(mInfo == null) {
                         mDestLat.setText(R.string.standby_title);
                         mDestLon.setText("");
+                        mDate.setText("");
                     } else {
                         mDestLat.setText(UnitConverter.makeLatitudeCoordinateString(getActivity(), mInfo.getFinalLocation().getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
                         mDestLon.setText(UnitConverter.makeLongitudeCoordinateString(getActivity(), mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
+                        mDate.setText(DateFormat.getDateInstance(DateFormat.LONG).format(
+                                mInfo.getCalendar().getTime()));
                     }
 
                     // Location and accuracy!
@@ -220,7 +243,7 @@ public class DetailedInfoFragment extends Fragment {
                     // Distance!
                     if(mLastLocation == null || mInfo == null) {
                         mDistance.setText(R.string.standby_title);
-                        mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
+                        mDistance.setTextColor(getResources().getColor(R.color.details_text));
                     } else {
                         float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
                         mDistance.setText(UnitConverter.makeDistanceString(getActivity(), GHDConstants.DIST_FORMAT, distance));
@@ -230,9 +253,9 @@ public class DetailedInfoFragment extends Fragment {
                         // callbacks and all, but, I mean, we're already HERE,
                         // aren't we?
                         if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
-                            mDistance.setTextColor(getResources().getColor(R.color.infobox_in_range));
+                            mDistance.setTextColor(getResources().getColor(R.color.details_in_range));
                         else
-                            mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
+                            mDistance.setTextColor(getResources().getColor(R.color.details_text));
 
                     }
                 }
