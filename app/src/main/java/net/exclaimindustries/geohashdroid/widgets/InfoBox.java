@@ -36,9 +36,7 @@ import java.text.DecimalFormat;
  * Info and a stream of updates, it'll report on where the user is and how far
  * from the target they are.
  */
-public class InfoBox
-        extends LinearLayout
-        implements LocationListener {
+public class InfoBox extends LinearLayout {
 
     private Info mInfo;
 
@@ -55,6 +53,15 @@ public class InfoBox
 
     private boolean mIsListening = false;
     private boolean mAlreadyLaidOut = false;
+
+    private LocationListener mLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            // Hey, look, a location!
+            mLastLocation = location;
+            updateBox();
+        }
+    };
 
     public InfoBox(Context c) {
         this(c, null);
@@ -154,11 +161,6 @@ public class InfoBox
         });
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        mLastLocation = location;
-    }
-
     /**
      * Tells the InfoBox to start listening for updates.  Does nothing if it
      * thinks it already is.
@@ -185,7 +187,7 @@ public class InfoBox
         LocationRequest lRequest = LocationRequest.create();
         lRequest.setInterval(1000);
         lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, this);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
 
         mIsListening = true;
     }
@@ -198,7 +200,7 @@ public class InfoBox
     public void stopListening() {
         if(!mIsListening) return;
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, this);
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
 
         mIsListening = false;
     }
