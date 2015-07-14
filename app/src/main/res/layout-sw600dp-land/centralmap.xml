@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:orientation="horizontal"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+    <RelativeLayout android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:keepScreenOn="true"
+                    android:layout_weight="1">
+
+        <fragment
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:name="com.google.android.gms.maps.MapFragment"
+            android:id="@+id/map"
+            android:layout_gravity="center"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            tools:ignore="RtlHardcoded"
+            />
+
+        <view
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            class="net.exclaimindustries.geohashdroid.widgets.InfoBox"
+            android:id="@+id/infobox"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:elevation="@dimen/elevation_infobox"/>
+
+        <view
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            class="net.exclaimindustries.geohashdroid.widgets.ErrorBanner"
+            android:id="@+id/error_banner"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="@dimen/standard_padding"
+            android:elevation="@dimen/elevation_error_banner"/>
+
+        <FrameLayout
+            android:id="@+id/graticulepicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="@dimen/standard_padding"
+            android:layout_marginRight="@dimen/standard_padding"
+            android:layout_marginTop="@dimen/standard_padding"/>
+
+    </RelativeLayout>
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:id="@+id/detailed_info_container"
+        android:visibility="gone"/>
+</LinearLayout>

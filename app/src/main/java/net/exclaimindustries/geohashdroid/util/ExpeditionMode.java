@@ -8,6 +8,9 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
@@ -39,6 +42,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
+import net.exclaimindustries.geohashdroid.fragments.DetailedInfoFragment;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
@@ -58,10 +62,12 @@ public class ExpeditionMode
         extends CentralMap.CentralMapMode
         implements GoogleMap.OnInfoWindowClickListener,
                    GoogleMap.OnCameraChangeListener,
-                   NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback {
+                   NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
+                   DetailedInfoFragment.CloseListener {
     private static final String DEBUG_TAG = "ExpeditionMode";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
+    private static final String DETAIL_BACK_STACK = "DetailFragment";
 
     public static final String DO_INITIAL_START = "doInitialStart";
 
@@ -79,6 +85,7 @@ public class ExpeditionMode
     private Location mInitialCheckLocation;
 
     private InfoBox mInfoBox;
+    private DetailedInfoFragment mDetailFragment;
 
     private LocationListener mInitialZoomListener = new LocationListener() {
         @Override
@@ -180,6 +187,15 @@ public class ExpeditionMode
 
         mInfoBox.setOnClickListener(mInfoBoxClicker);
 
+        // Finally, if the detailed info fragment's already there, make its
+        // container go visible, too.
+        FragmentManager manager = mCentralMap.getFragmentManager();
+        mDetailFragment = (DetailedInfoFragment)manager.findFragmentById(R.id.detailed_info_container);
+        if(mDetailFragment != null) {
+            mCentralMap.findViewById(R.id.detailed_info_container).setVisibility(View.VISIBLE);
+            mDetailFragment.setCloseListener(this);
+        }
+
         mInitComplete = true;
     }
 
@@ -204,6 +220,9 @@ public class ExpeditionMode
 
         // The InfoBox should also go away at this point.
         mInfoBox.animateInfoBoxVisible(false);
+
+        // And its fragment counterpart.
+        detailedInfoClosing();
     }
 
     @Override
@@ -390,6 +409,10 @@ public class ExpeditionMode
 
         // The InfoBox ALWAYS gets the Info.
         mInfoBox.setInfo(info);
+
+        // As does the detail fragment, if it's there.
+        if(mDetailFragment != null)
+            mDetailFragment.setInfo(info);
 
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.
@@ -591,7 +614,7 @@ public class ExpeditionMode
         // First off, ignore this if there's no Info yet.
         if(mCurrentInfo == null) return;
 
-        // Ask CentralMap if there's a fragement container in this layout.
+        // Ask CentralMap if there's a fragment container in this layout.
         // If so (tablet layouts), add it to the current screen.  If not
         // (phone layouts), jump off to the dedicated activity.
         View container = mCentralMap.findViewById(R.id.detailed_info_container);
@@ -601,7 +624,58 @@ public class ExpeditionMode
             i.putExtra(DetailedInfoActivity.INFO, mCurrentInfo);
             mCentralMap.startActivity(i);
         } else {
-            // TODO: The tablet portion!
+            // Check to see if the fragment's already there.
+            FragmentManager manager = mCentralMap.getFragmentManager();
+            Fragment f = manager.findFragmentById(R.id.detailed_info_container);
+            if(f == null) {
+                // If not, make it be there!
+                mDetailFragment = new DetailedInfoFragment();
+                Bundle args = new Bundle();
+                args.putParcelable(DetailedInfoFragment.INFO, mCurrentInfo);
+                mDetailFragment.setArguments(args);
+                mDetailFragment.setCloseListener(this);
+
+                FragmentTransaction trans = manager.beginTransaction();
+                trans.replace(R.id.detailed_info_container, mDetailFragment, DETAIL_BACK_STACK);
+                trans.addToBackStack(DETAIL_BACK_STACK);
+                trans.commit();
+
+                // Also, due to how the layout works, the container also needs
+                // to go visible now.
+                container.setVisibility(View.VISIBLE);
+            } else {
+                // If it's already there, hide it.
+                detailedInfoClosing();
+            }
         }
+    }
+
+    @Override
+    public void detailedInfoClosing() {
+        // On the close button, pop the back stack.
+        FragmentManager manager = mCentralMap.getFragmentManager();
+        try {
+            manager.popBackStack(DETAIL_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        } catch(IllegalStateException ise) {
+            // We might find ourselves here during shutdown time.  CentralMap
+            // triggers its onSaveInstanceState before onDestroy, onDestroy
+            // calls cleanUp, cleanUp comes here, and FragmentManager throws a
+            // fit if you try to pop the back stack AFTER onSaveInstanceState on
+            // an Activity.  In lieu of making more methods in CentralMapMode to
+            // implement, we'll just catch the exception and ignore it.
+        }
+    }
+
+    @Override
+    public void detailedInfoDestroying() {
+        // And now that it's being destroyed, hide the container.
+        View container = mCentralMap.findViewById(R.id.detailed_info_container);
+
+        if(container != null)
+            container.setVisibility(View.GONE);
+        else
+            Log.w(DEBUG_TAG, "We got detailedInfoDestroying when there's no container in CentralMap for it!  The hell?");
+
+        mDetailFragment = null;
     }
 }

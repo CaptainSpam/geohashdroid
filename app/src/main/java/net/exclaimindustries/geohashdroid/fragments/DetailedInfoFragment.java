@@ -68,6 +68,13 @@ public class DetailedInfoFragment extends Fragment
          * it.
          */
         void detailedInfoClosing();
+
+        /**
+         * Called during onDestroy().  ExpeditionMode needs this so it knows
+         * when the user backed out of the fragment, as opposed to just the
+         * close button.
+         */
+        void detailedInfoDestroying();
     }
 
     private LocationListener mLocationListener = new LocationListener() {
@@ -83,10 +90,19 @@ public class DetailedInfoFragment extends Fragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // We hopefully have an argument.
-        Bundle args = getArguments();
-        if(args != null) {
-            mInfo = args.getParcelable(INFO);
+        // First, see if there's an instance state.
+        if(savedInstanceState != null) {
+            // If so, use the info in there.  Assuming it exists.
+            mInfo = savedInstanceState.getParcelable(INFO);
+        }
+
+        // If mInfo is still null here (there was no instance state or there was
+        // null data there), continue on to the arguments.
+        if(mInfo == null) {
+            Bundle args = getArguments();
+            if(args != null) {
+                mInfo = args.getParcelable(INFO);
+            }
         }
 
         // We'll also form the Google API Client here.  I'm actually not sure
@@ -102,7 +118,7 @@ public class DetailedInfoFragment extends Fragment
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View layout = inflater.inflate(R.layout.detail, container, true);
+        View layout = inflater.inflate(R.layout.detail, container, false);
 
         // TextViews!
         mDate = (TextView)layout.findViewById(R.id.detail_date);
@@ -128,6 +144,16 @@ public class DetailedInfoFragment extends Fragment
     }
 
     @Override
+    public void onDestroy() {
+        // ExpeditionMode needs to know when this fragment is destroyed so it
+        // can make the FrameLayout go away.
+        if(mCloseListener != null)
+            mCloseListener.detailedInfoDestroying();
+
+        super.onDestroy();
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
 
@@ -144,6 +170,16 @@ public class DetailedInfoFragment extends Fragment
         }
 
         super.onStop();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Also, remember that last info.  Owing to how ExpeditionMode works, it
+        // might have changed since arguments time.  If it DIDN'T change, well,
+        // it'll be the same as the arguments anyway.
+        outState.putParcelable(INFO, mInfo);
     }
 
     @Override
@@ -177,9 +213,9 @@ public class DetailedInfoFragment extends Fragment
     }
 
     /**
-     * Sets the Info.  If null, this will make it go to standby.  Note that in
-     * general, you'd set this as an argument to the fragment, so unless you're
-     * changing the Info midway through, this shouldn't be necessary.
+     * Sets the Info.  If null, this will make it go to standby.  Whatever gets
+     * set here will override any arguments originally passed in if and when
+     * onSaveInstanceState is needed.
      *
      * @param info the new Info
      */

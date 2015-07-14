@@ -129,4 +129,9 @@ public class DetailedInfoActivity extends Activity
         // Easy enough, just finish the Activity.
         finish();
     }
+
+    @Override
+    public void detailedInfoDestroying() {
+        // Nothing happens here; we're already on our way out.
+    }
 }
