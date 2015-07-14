@@ -10,6 +10,7 @@ package net.exclaimindustries.geohashdroid.util;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -240,7 +241,7 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    public void onCreateOptionsMenu(MenuInflater inflater, Menu menu) {
+    public void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu) {
         inflater.inflate(R.menu.centralmap_selectagraticule, menu);
     }
 

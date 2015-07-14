@@ -11,10 +11,12 @@ package net.exclaimindustries.geohashdroid.util;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -279,12 +281,18 @@ public class ExpeditionMode
     }
 
     @Override
-    public void onCreateOptionsMenu(MenuInflater inflater, Menu menu) {
+    public void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu) {
         inflater.inflate(R.menu.centralmap_expedition, menu);
+
+        // Maps?  You there?
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
+        if(!AndroidUtil.isIntentAvailable(c, i))
+            menu.removeItem(R.id.action_send_to_maps);
 
         // Make sure radar is removed if there's no radar to radar our radar.
         // Radar radar radar radar radar.
-        if(!AndroidUtil.isIntentAvailable(mCentralMap, GHDConstants.SHOW_RADAR_ACTION))
+        if(!AndroidUtil.isIntentAvailable(c, GHDConstants.SHOW_RADAR_ACTION))
             menu.removeItem(R.id.action_send_to_radar);
 
     }
@@ -303,6 +311,29 @@ public class ExpeditionMode
                 // main display or they were poking every option and wanted to
                 // see what this would do.  Here's what it do:
                 launchDetailedInfo();
+                return true;
+            }
+            case R.id.action_send_to_maps: {
+                // Juuuuuuust like in DetailedInfoActivity...
+                if(mCurrentInfo != null) {
+                    // To the map!
+                    Intent i = new Intent();
+                    i.setAction(Intent.ACTION_VIEW);
+
+                    String location = mCurrentInfo.getLatitude() + "," + mCurrentInfo.getLongitude();
+
+                    i.setData(Uri.parse("geo:0,0?q=loc:"
+                            + location
+                            + "("
+                            + mCentralMap.getString(
+                            R.string.send_to_maps_point_name,
+                            DateFormat.getDateInstance(DateFormat.LONG).format(
+                                    mCurrentInfo.getCalendar().getTime())) + ")&z=15"));
+                    mCentralMap.startActivity(i);
+                } else {
+                    Toast.makeText(mCentralMap, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
+                }
+
                 return true;
             }
             case R.id.action_send_to_radar: {

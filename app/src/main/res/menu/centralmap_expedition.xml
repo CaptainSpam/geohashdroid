@@ -17,6 +17,10 @@
         android:title="@string/detail_activity_title"
         android:showAsAction="never" />
     <item
+        android:id="@+id/action_send_to_maps"
+        android:title="@string/menu_item_send_to_maps"
+        android:showAsAction="never" />
+    <item
         android:id="@+id/action_send_to_radar"
         android:title="@string/menu_item_radar"
         android:showAsAction="never" />

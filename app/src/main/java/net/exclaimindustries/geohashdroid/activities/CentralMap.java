@@ -272,10 +272,11 @@ public class CentralMap
         /**
          * Called when the menu needs to be built.
          *
+         * @param c the current Context (the mode may not be fully up by the time this is needed, and thus may not have mCentralMap)
          * @param inflater a MenuInflater, for convenience
          * @param menu the Menu that needs inflating.
          */
-        public abstract void onCreateOptionsMenu(MenuInflater inflater, Menu menu);
+        public abstract void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu);
 
         /**
          * Called when a menu item is selected but CentralMap didn't handle it
@@ -662,7 +663,7 @@ public class CentralMap
         MenuInflater inflater = getMenuInflater();
 
         // Just hand it off to the current mode, it'll know what to do.
-        mCurrentMode.onCreateOptionsMenu(inflater, menu);
+        mCurrentMode.onCreateOptionsMenu(this, inflater, menu);
 
         return true;
     }
