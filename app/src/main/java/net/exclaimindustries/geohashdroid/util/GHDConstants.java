@@ -22,6 +22,12 @@ public final class GHDConstants {
      * default SharedPreferences object.
      */
     public static final String PREFS_BASE = "GeohashDroid";
+
+    /**
+     * The Intent action used to start the radar.  That's... a thing people
+     * still use, right?
+     */
+    public static final String SHOW_RADAR_ACTION = "com.google.android.radar.SHOW_RADAR";
     
     /** Dummy Graticule that uses the 30W rule (51N, 0W). */
     public static final Graticule DUMMY_YESTERDAY = new Graticule(51, false, 0, true);

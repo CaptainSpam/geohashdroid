@@ -17,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -241,6 +242,19 @@ public class SelectAGraticuleMode
     @Override
     public void onCreateOptionsMenu(MenuInflater inflater, Menu menu) {
         inflater.inflate(R.menu.centralmap_selectagraticule, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.action_exitgraticule: {
+                // We've left Select-A-Graticule for whatever reason.
+                mCentralMap.exitSelectAGraticuleMode();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

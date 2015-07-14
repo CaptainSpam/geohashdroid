@@ -278,6 +278,15 @@ public class CentralMap
         public abstract void onCreateOptionsMenu(MenuInflater inflater, Menu menu);
 
         /**
+         * Called when a menu item is selected but CentralMap didn't handle it
+         * itself.
+         *
+         * @param item the item that got selected
+         * @return true if it was handled, false if not
+         */
+        public abstract boolean onOptionsItemSelected(MenuItem item);
+
+        /**
          * Called when a new Calendar comes in.  The modes should update as need
          * be.  This should mean calling for a new Info from StockService, but
          * NOT updating its own Info or concept of the current Calendar if there
@@ -660,22 +669,12 @@ public class CentralMap
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        // CentralMap should just cover the items that can always be selected no
+        // matter what mode we're in.
         switch(item.getItemId()) {
-            case R.id.action_selectagraticule: {
-                // It's Select-A-Graticule Mode!  At long last!
-                enterSelectAGraticuleMode();
-                return true;
-            }
-            case R.id.action_exitgraticule: {
-                // We've left Select-A-Graticule for whatever reason.
-                exitSelectAGraticuleMode();
-                return true;
-            }
             case R.id.action_date: {
                 // The date picker is common to all modes and is best handled by
-                // the Activity itself.  With that said, we can just use the
-                // basic DatePickerDialog, because I know from experience the
-                // DatePicker widget has a few... quirks.
+                // the Activity itself.
                 if(mLastCalendar == null) {
                     // Of course, we need a date to fill in.
                     mLastCalendar = Calendar.getInstance();
@@ -704,7 +703,7 @@ public class CentralMap
                 return true;
             }
             default:
-                return super.onOptionsItemSelected(item);
+                return mCurrentMode.onOptionsItemSelected(item);
         }
     }
 
@@ -756,7 +755,10 @@ public class CentralMap
         // really certain what to do if it does.
     }
 
-    private void enterSelectAGraticuleMode() {
+    /**
+     * Tells Select-A-Graticule to start.
+     */
+    public void enterSelectAGraticuleMode() {
         if(mSelectAGraticule) return;
         mSelectAGraticule = true;
 

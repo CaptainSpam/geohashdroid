@@ -23,7 +23,9 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -47,6 +49,7 @@ import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragmen
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
+import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
@@ -278,6 +281,46 @@ public class ExpeditionMode
     @Override
     public void onCreateOptionsMenu(MenuInflater inflater, Menu menu) {
         inflater.inflate(R.menu.centralmap_expedition, menu);
+
+        // Make sure radar is removed if there's no radar to radar our radar.
+        // Radar radar radar radar radar.
+        if(!AndroidUtil.isIntentAvailable(mCentralMap, GHDConstants.SHOW_RADAR_ACTION))
+            menu.removeItem(R.id.action_send_to_radar);
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.action_selectagraticule: {
+                // It's Select-A-Graticule Mode!  At long last!
+                mCentralMap.enterSelectAGraticuleMode();
+                return true;
+            }
+            case R.id.action_details: {
+                // Here, the user's pressed the menu item for details, probably
+                // either because they don't have the infobox visible on the
+                // main display or they were poking every option and wanted to
+                // see what this would do.  Here's what it do:
+                launchDetailedInfo();
+                return true;
+            }
+            case R.id.action_send_to_radar: {
+                // Someone actually picked radar!  How 'bout that?
+                if(mCurrentInfo != null) {
+                    Intent i = new Intent(GHDConstants.SHOW_RADAR_ACTION);
+                    i.putExtra("latitude", (float) mCurrentInfo.getLatitude());
+                    i.putExtra("longitude", (float) mCurrentInfo.getLongitude());
+                    mCentralMap.startActivity(i);
+                } else {
+                    Toast.makeText(mCentralMap, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
+                }
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

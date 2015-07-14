@@ -16,9 +16,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.DetailedInfoFragment;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.AndroidUtil;
 
@@ -35,8 +37,6 @@ public class DetailedInfoActivity extends Activity
      * very seriously NOT be null.  If it is, you did something very wrong.
      */
     public static final String INFO = "info";
-
-    private static final String SHOW_RADAR_ACTION = "com.google.android.radar.SHOW_RADAR";
 
     private Info mInfo;
 
@@ -76,7 +76,7 @@ public class DetailedInfoActivity extends Activity
             menu.removeItem(R.id.action_send_to_maps);
 
         // Or the Radar intent.
-        if(!AndroidUtil.isIntentAvailable(this, SHOW_RADAR_ACTION))
+        if(!AndroidUtil.isIntentAvailable(this, GHDConstants.SHOW_RADAR_ACTION))
             menu.removeItem(R.id.action_send_to_radar);
 
         return true;
@@ -92,32 +92,42 @@ public class DetailedInfoActivity extends Activity
                 return true;
             }
             case R.id.action_send_to_maps: {
-                // To the map!
-                Intent i = new Intent();
-                i.setAction(Intent.ACTION_VIEW);
+                if(mInfo != null) {
+                    // To the map!
+                    Intent i = new Intent();
+                    i.setAction(Intent.ACTION_VIEW);
 
-                // Assemble the location.  This is a simple latitude,longitude
-                // setup.
-                String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
+                    // Assemble the location.  This is a simple latitude,longitude
+                    // setup.
+                    String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
 
-                // Then, toss the location out the door and hope whatever map
-                // we're using is paying attention.
-                i.setData(Uri.parse("geo:0,0?q=loc:"
-                        + location
-                        + "("
-                        + this.getString(
-                        R.string.send_to_maps_point_name,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(
-                                mInfo.getCalendar().getTime())) + ")&z=15"));
-                startActivity(i);
+                    // Then, toss the location out the door and hope whatever map
+                    // we're using is paying attention.
+                    i.setData(Uri.parse("geo:0,0?q=loc:"
+                            + location
+                            + "("
+                            + this.getString(
+                            R.string.send_to_maps_point_name,
+                            DateFormat.getDateInstance(DateFormat.LONG).format(
+                                    mInfo.getCalendar().getTime())) + ")&z=15"));
+                    startActivity(i);
+                } else {
+                    Toast.makeText(this, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
+                }
 
                 return true;
             }
             case R.id.action_send_to_radar: {
-                Intent i = new Intent(SHOW_RADAR_ACTION);
-                i.putExtra("latitude", (float) mInfo.getLatitude());
-                i.putExtra("longitude", (float) mInfo.getLongitude());
-                startActivity(i);
+                if(mInfo != null) {
+                    Intent i = new Intent(GHDConstants.SHOW_RADAR_ACTION);
+                    i.putExtra("latitude", (float) mInfo.getLatitude());
+                    i.putExtra("longitude", (float) mInfo.getLongitude());
+                    startActivity(i);
+                } else {
+                    Toast.makeText(this, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
+                }
+
+                return true;
             }
         }
 

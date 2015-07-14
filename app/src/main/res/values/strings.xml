@@ -58,6 +58,8 @@
     <string name="error_server_failure">There was a problem talking to the stock price server.  Please try again later.</string>
     <string name="error_no_connection">You\'re not connected to the internet.</string>
     <string name="warning_outside_of_projection">That hashpoint lies outside the map\'s projection, so it might not show up.</string>
+    <string name="error_no_data_to_maps">There\'s no active expedition to send to Maps.</string>
+    <string name="error_no_data_to_radar">There\s no active expedition to send to a radar.</string>
 
     <string name="map_activity_title">The Map</string>
     <string name="gratmap_activity_title">Tap your graticule</string>

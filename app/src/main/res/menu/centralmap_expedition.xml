@@ -13,6 +13,14 @@
         android:title="@string/what_label"
         android:showAsAction="never" />
     <item
+        android:id="@+id/action_details"
+        android:title="@string/detail_activity_title"
+        android:showAsAction="never" />
+    <item
+        android:id="@+id/action_send_to_radar"
+        android:title="@string/menu_item_radar"
+        android:showAsAction="never" />
+    <item
         android:id="@+id/action_preferences"
         android:title="@string/title_preferences"
         android:showAsAction="never" />
