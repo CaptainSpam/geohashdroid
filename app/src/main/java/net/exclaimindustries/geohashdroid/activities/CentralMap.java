@@ -180,15 +180,6 @@ public class CentralMap
         }
 
         /**
-         * Gets the {@link InfoBox} in the map.
-         *
-         * @return said InfoBox
-         */
-        protected final InfoBox getInfoBox() {
-            return (InfoBox)mCentralMap.findViewById(R.id.infobox);
-        }
-
-        /**
          * <p>
          * Does whatever init tomfoolery is needed for this class, using the
          * given Bundle of stuff.  You're probably best calling this AFTER

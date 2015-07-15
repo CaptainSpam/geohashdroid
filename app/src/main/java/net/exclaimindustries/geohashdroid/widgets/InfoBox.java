@@ -11,6 +11,7 @@ package net.exclaimindustries.geohashdroid.widgets;
 import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
+import android.os.Build;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
@@ -53,6 +54,7 @@ public class InfoBox extends LinearLayout {
 
     private boolean mIsListening = false;
     private boolean mAlreadyLaidOut = false;
+    private boolean mWaitingToShow = false;
 
     private LocationListener mLocationListener = new LocationListener() {
         @Override
@@ -69,6 +71,17 @@ public class InfoBox extends LinearLayout {
 
     public InfoBox(Context c, AttributeSet attrs) {
         super(c, attrs);
+
+        // How about some setup?
+        setBackgroundColor(getResources().getColor(R.color.infobox_background));
+        int padding = getResources().getDimensionPixelSize(R.dimen.infobox_padding);
+        setPadding(padding, padding, padding, padding);
+        setOrientation(LinearLayout.VERTICAL);
+
+        // I stand by my decision to elevate!  Even though I'm pretty sure it
+        // doesn't do anything with a translucent background.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            setElevation(getResources().getDimension(R.dimen.elevation_infobox));
 
         // INFLATE!
         inflate(c, R.layout.infobox, this);
@@ -87,7 +100,10 @@ public class InfoBox extends LinearLayout {
                 // Got a height!  Hopefully.
                 if(!mAlreadyLaidOut) {
                     mAlreadyLaidOut = true;
+
+                    // Make it off-screen first, then animate it on if need be.
                     setInfoBoxVisible(false);
+                    animateInfoBoxVisible(mWaitingToShow);
                 }
             }
         });
@@ -211,16 +227,20 @@ public class InfoBox extends LinearLayout {
      * @param visible true to slide in, false to slide out
      */
     public void animateInfoBoxVisible(boolean visible) {
-        // Quick note: The size of the InfoBox might change due to the width of
-        // the text shown (as well as the accuracy warning), but since we alpha
-        // it out anyway, that shouldn't be a real major issue.
-        if(!visible) {
-            // Slide out!
-            animate().translationX(getWidth()).alpha(0.0f);
-            stopListening();
+        if(!mAlreadyLaidOut) {
+            mWaitingToShow = visible;
         } else {
-            // Slide in!
-            animate().translationX(0.0f).alpha(1.0f);
+            // Quick note: The size of the InfoBox might change due to the width
+            // of the text shown (as well as the accuracy warning), but since we
+            // alpha it out anyway, that shouldn't be a real major issue.
+            if(!visible) {
+                // Slide out!
+                animate().translationX(getWidth()).alpha(0.0f);
+                stopListening();
+            } else {
+                // Slide in!
+                animate().translationX(0.0f).alpha(1.0f);
+            }
         }
     }
 

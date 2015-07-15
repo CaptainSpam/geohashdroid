@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -187,7 +188,13 @@ public class ExpeditionMode
         }
 
         // Also, let's get that InfoBox taken care of.
-        mInfoBox = getInfoBox();
+        mInfoBox = new InfoBox(mCentralMap);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
+            params.addRule(RelativeLayout.ALIGN_PARENT_END);
+        params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mInfoBox, params);
 
         // Start things in motion IF the preference says to do so.
         if(showInfoBox()) {
@@ -208,7 +215,7 @@ public class ExpeditionMode
 
         // The zoom buttons also need to go in.
         mZoomButtons = new ZoomButtons(mCentralMap);
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
@@ -238,7 +245,13 @@ public class ExpeditionMode
         removeNearbyPoints();
 
         // The InfoBox should also go away at this point.
-        mInfoBox.animateInfoBoxVisible(false);
+        mInfoBox.stopListening();
+        mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                ((ViewGroup)mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
+            }
+        });
 
         // And its fragment counterpart.
         detailedInfoClosing();

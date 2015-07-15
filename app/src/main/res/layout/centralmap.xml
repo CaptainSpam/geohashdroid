@@ -19,16 +19,6 @@
         />
 
     <view
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        class="net.exclaimindustries.geohashdroid.widgets.InfoBox"
-        android:id="@+id/infobox"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:elevation="@dimen/elevation_infobox"/>
-
-    <view
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         class="net.exclaimindustries.geohashdroid.widgets.ErrorBanner"
