@@ -4,7 +4,8 @@
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:keepScreenOn="true">
+                android:keepScreenOn="true"
+                android:id="@+id/map_content">
 
     <fragment
         android:layout_width="match_parent"
@@ -24,6 +25,7 @@
         android:id="@+id/infobox"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:elevation="@dimen/elevation_infobox"/>
 
     <view
@@ -45,5 +47,4 @@
         android:layout_marginLeft="@dimen/standard_padding"
         android:layout_marginRight="@dimen/standard_padding"
         android:layout_marginTop="@dimen/standard_padding"/>
-
 </RelativeLayout>

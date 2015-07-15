@@ -8,7 +8,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:keepScreenOn="true"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:id="@+id/map_content">
 
         <fragment
             android:layout_width="match_parent"
@@ -49,7 +50,6 @@
             android:layout_marginLeft="@dimen/standard_padding"
             android:layout_marginRight="@dimen/standard_padding"
             android:layout_marginTop="@dimen/standard_padding"/>
-
     </RelativeLayout>
     <FrameLayout
         android:layout_width="match_parent"

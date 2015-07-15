@@ -59,9 +59,11 @@
     <dimen name="infobox_picture_fontsize">20px</dimen>
 
     <dimen name="standard_padding">8dp</dimen>
+    <dimen name="margin_zoom_button">@dimen/standard_padding</dimen>
 
     <dimen name="elevation_error_banner">4dp</dimen>
     <dimen name="elevation_infobox">2dp</dimen>
+    <dimen name="elevation_zoom_button">16dp</dimen>
 
     <dimen name="error_banner_height">64dp</dimen>
     <dimen name="map_zoom_padding">64dp</dimen>

@@ -8,7 +8,8 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:keepScreenOn="true"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:id="@+id/map_content">
 
         <fragment
             android:layout_width="match_parent"

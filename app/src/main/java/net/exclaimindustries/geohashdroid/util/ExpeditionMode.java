@@ -27,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -51,6 +52,7 @@ import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragmen
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
+import net.exclaimindustries.geohashdroid.widgets.ZoomButtons;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.LocationUtil;
 
@@ -68,7 +70,8 @@ public class ExpeditionMode
         implements GoogleMap.OnInfoWindowClickListener,
                    GoogleMap.OnCameraChangeListener,
                    NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
-                   DetailedInfoFragment.CloseListener {
+                   DetailedInfoFragment.CloseListener,
+                   ZoomButtons.ZoomButtonListener {
     private static final String DEBUG_TAG = "ExpeditionMode";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
@@ -91,6 +94,7 @@ public class ExpeditionMode
 
     private InfoBox mInfoBox;
     private DetailedInfoFragment mDetailFragment;
+    private ZoomButtons mZoomButtons;
 
     private LocationListener mInitialZoomListener = new LocationListener() {
         @Override
@@ -201,6 +205,14 @@ public class ExpeditionMode
             mDetailFragment.setCloseListener(this);
         }
 
+        // The zoom buttons also need to go in.
+        mZoomButtons = new ZoomButtons(mCentralMap);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
+        mZoomButtons.setListener(this);
+
         mInitComplete = true;
     }
 
@@ -228,6 +240,9 @@ public class ExpeditionMode
 
         // And its fragment counterpart.
         detailedInfoClosing();
+
+        // Zoom buttons, you go away, too.
+        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons);
     }
 
     @Override
@@ -751,5 +766,11 @@ public class ExpeditionMode
             Log.w(DEBUG_TAG, "We got detailedInfoDestroying when there's no container in CentralMap for it!  The hell?");
 
         mDetailFragment = null;
+    }
+
+    @Override
+    public void zoomButtonPressed(View container, int which) {
+        // BEEP.
+        Log.d(DEBUG_TAG, "beeeeeep: " + which);
     }
 }
