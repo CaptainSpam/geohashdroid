@@ -73,6 +73,7 @@ public class ErrorBanner extends LinearLayout {
                 if(!mAlreadyLaidOut) {
                     mAlreadyLaidOut = true;
                     setBannerVisible(false);
+                    setVisibility(View.VISIBLE);
                 }
             }
         });
