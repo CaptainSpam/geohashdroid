@@ -15,13 +15,14 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
 
 /**
  * THIS IS A TEMPLATE!  WRITE THE JAVADOC, DANGIT!
  */
-public class ZoomButtons extends AnimatedRelativeLayout {
+public class ZoomButtons extends RelativeLayout {
     private static final String DEBUG_TAG = "ZoomButtons";
 
     private ImageButton mZoomMenu;
@@ -131,32 +132,45 @@ public class ZoomButtons extends AnimatedRelativeLayout {
                     // re-use that a lot.
                     mButtonWidth = mCancelMenu.getWidth() + (2 * getResources().getDimension(R.dimen.margin_zoom_button));
 
-                    // First layout, make the menu be gone.  Not animated,
-                    // though.  Just straight off-screen.
+                    // First layout, make all the buttons be off-screen.  The
+                    // right mode will be set back on as need be.
+                    mZoomMenu.setTranslationX(-mButtonWidth);
                     mCancelMenu.setTranslationX(-mButtonWidth);
                     mZoomFitBoth.setTranslationX(-mButtonWidth);
                     mZoomUser.setTranslationX(-mButtonWidth);
                     mZoomDestination.setTranslationX(-mButtonWidth);
+
+                    showMenu(false);
                 }
             }
         });
     }
 
-    private void showMenu(boolean show) {
-        if(show) {
-            // Menu in!  Button out!
-            mZoomMenu.animate().translationX(-mButtonWidth);
-            mCancelMenu.animate().translationX(0.0f);
-            mZoomFitBoth.animate().translationX(0.0f);
-            mZoomUser.animate().translationX(0.0f);
-            mZoomDestination.animate().translationX(0.0f);
-        } else {
-            // Menu out!  Button in!
-            mZoomMenu.animate().translationX(0.0f);
-            mCancelMenu.animate().translationX(-mButtonWidth);
-            mZoomFitBoth.animate().translationX(-mButtonWidth);
-            mZoomUser.animate().translationX(-mButtonWidth);
-            mZoomDestination.animate().translationX(-mButtonWidth);
+    /**
+     * Sets whether the menu is showing (the three options and cancel are up) or
+     * not (the button that triggers the menu is up).
+     *
+     * @param show true to show, false to hide
+     */
+    public void showMenu(boolean show) {
+        if(mAlreadyLaidOut) {
+            // Only do this if we're laid out.  Otherwise, this'll go haywire
+            // with the widget sizes if mButtonWidth isn't defined.
+            if(show) {
+                // Menu in!  Button out!
+                mZoomMenu.animate().translationX(-mButtonWidth);
+                mCancelMenu.animate().translationX(0.0f);
+                mZoomFitBoth.animate().translationX(0.0f);
+                mZoomUser.animate().translationX(0.0f);
+                mZoomDestination.animate().translationX(0.0f);
+            } else {
+                // Menu out!  Button in!
+                mZoomMenu.animate().translationX(0.0f);
+                mCancelMenu.animate().translationX(-mButtonWidth);
+                mZoomFitBoth.animate().translationX(-mButtonWidth);
+                mZoomUser.animate().translationX(-mButtonWidth);
+                mZoomDestination.animate().translationX(-mButtonWidth);
+            }
         }
     }
 

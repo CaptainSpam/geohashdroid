@@ -27,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -212,6 +213,7 @@ public class ExpeditionMode
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
         mZoomButtons.setListener(this);
+        mZoomButtons.showMenu(false);
 
         mInitComplete = true;
     }
@@ -241,8 +243,14 @@ public class ExpeditionMode
         // And its fragment counterpart.
         detailedInfoClosing();
 
-        // Zoom buttons, you go away, too.
-        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons);
+        // Zoom buttons, you go away, too.  In this case, we animate the entire
+        // block away ourselves and remove it when done with a callback.
+        mZoomButtons.animate().translationX(-mZoomButtons.getWidth()).withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                ((ViewGroup)mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons);
+            }
+        });
     }
 
     @Override
