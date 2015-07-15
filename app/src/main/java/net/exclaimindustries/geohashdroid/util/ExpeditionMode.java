@@ -98,6 +98,19 @@ public class ExpeditionMode
     private DetailedInfoFragment mDetailFragment;
     private ZoomButtons mZoomButtons;
 
+    private LocationListener mZoomToUserListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            if(getGoogleClient() != null)
+                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
+
+            if(!isCleanedUp()) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+                zoomToPoint(location);
+            }
+        }
+    };
+
     private LocationListener mInitialZoomListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
@@ -204,7 +217,7 @@ public class ExpeditionMode
 
         mInfoBox.setOnClickListener(mInfoBoxClicker);
 
-        // Finally, if the detailed info fragment's already there, make its
+        // Plus, if the detailed info fragment's already there, make its
         // container go visible, too.
         FragmentManager manager = mCentralMap.getFragmentManager();
         mDetailFragment = (DetailedInfoFragment)manager.findFragmentById(R.id.detailed_info_container);
@@ -221,6 +234,8 @@ public class ExpeditionMode
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
         mZoomButtons.setListener(this);
         mZoomButtons.showMenu(false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
 
         mInitComplete = true;
     }
@@ -231,8 +246,11 @@ public class ExpeditionMode
 
         // First, get rid of the callbacks.
         GoogleApiClient gClient = getGoogleClient();
-        if(gClient != null)
+        if(gClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mZoomToUserListener);
+        }
 
         // And the listens.
         if(mMap != null) {
@@ -288,6 +306,7 @@ public class ExpeditionMode
         if(gClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mZoomToUserListener);
         }
 
         if(mInfoBox != null)
@@ -520,6 +539,10 @@ public class ExpeditionMode
         // The InfoBox ALWAYS gets the Info.
         mInfoBox.setInfo(info);
 
+        // Zoom needs updating, too.
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, info != null);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, info != null);
+
         // As does the detail fragment, if it's there.
         if(mDetailFragment != null)
             mDetailFragment.setInfo(info);
@@ -535,12 +558,12 @@ public class ExpeditionMode
 
                     // With an Info in hand, we can also change the title.
                     StringBuilder newTitle = new StringBuilder();
-                    if(info.isGlobalHash())
+                    if(mCurrentInfo.isGlobalHash())
                         newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
                     else
-                        newTitle.append(info.getGraticule().getLatitudeString(false)).append(' ').append(info.getGraticule().getLongitudeString(false));
+                        newTitle.append(mCurrentInfo.getGraticule().getLatitudeString(false)).append(' ').append(mCurrentInfo.getGraticule().getLongitudeString(false));
                     newTitle.append(", ");
-                    newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(info.getDate()));
+                    newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));
                     setTitle(newTitle.toString());
 
                     // Now, the Mercator projection that the map uses clips at
@@ -552,7 +575,7 @@ public class ExpeditionMode
                     // Globalhash showed up when I was testing this, else I
                     // honestly might've forgot.
                     ErrorBanner banner = mCentralMap.getErrorBanner();
-                    if(Math.abs(info.getLatitude()) > 85) {
+                    if(Math.abs(mCurrentInfo.getLatitude()) > 85) {
                         banner.setErrorStatus(ErrorBanner.Status.WARNING);
                         banner.setText(mCentralMap.getString(R.string.warning_outside_of_projection));
                         banner.animateBanner(true);
@@ -590,6 +613,12 @@ public class ExpeditionMode
 
         CameraUpdate cam = CameraUpdateFactory.newLatLngBounds(bounds, mCentralMap.getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
 
+        mMap.animateCamera(cam);
+    }
+
+    private void zoomToPoint(Location loc) {
+        LatLng dest = new LatLng(loc.getLatitude(), loc.getLongitude());
+        CameraUpdate cam = CameraUpdateFactory.newLatLngZoom(dest, 15.0f);
         mMap.animateCamera(cam);
     }
 
@@ -792,6 +821,51 @@ public class ExpeditionMode
     @Override
     public void zoomButtonPressed(View container, int which) {
         // BEEP.
-        Log.d(DEBUG_TAG, "beeeeeep: " + which);
+        GoogleApiClient gClient = getGoogleClient();
+
+        if(gClient == null) {
+            Log.e(DEBUG_TAG, "Tried to call a zoom button when Google API Client was null or not connected!");
+            return;
+        }
+
+        switch(which) {
+            case ZoomButtons.ZOOM_FIT_BOTH:
+                doInitialZoom();
+                break;
+            case ZoomButtons.ZOOM_DESTINATION:
+                // Assuming we already have the destination...
+                if(mCurrentInfo == null) {
+                    Log.e(DEBUG_TAG, "Tried to zoom to the destination when there is no destination set!");
+                } else {
+                    zoomToPoint(mCurrentInfo.getFinalLocation());
+                }
+                break;
+            case ZoomButtons.ZOOM_USER:
+                // Hopefully the user's already got a valid location.  Else...
+                Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
+
+                // We want the last known location to be at least SANELY recent.
+                if(LocationUtil.isLocationNewEnough(lastKnown)) {
+                    zoomToPoint(lastKnown);
+                } else {
+                    // Otherwise, wait for the first update and use that for an initial
+                    // zoom.
+                    ErrorBanner banner = mCentralMap.getErrorBanner();
+                    banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+                    banner.setText(mCentralMap.getText(R.string.search_label).toString());
+                    banner.setCloseVisible(false);
+                    banner.animateBanner(true);
+
+                    LocationRequest lRequest = LocationRequest.create();
+                    lRequest.setInterval(1000);
+                    lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+                    mWaitingOnInitialZoom = true;
+
+                    LocationServices.FusedLocationApi.requestLocationUpdates(gClient, lRequest, mZoomToUserListener);
+                }
+
+                break;
+        }
     }
 }
