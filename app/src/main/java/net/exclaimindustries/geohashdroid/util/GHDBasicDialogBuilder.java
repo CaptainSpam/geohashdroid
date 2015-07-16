@@ -162,6 +162,34 @@ public class GHDBasicDialogBuilder {
     }
 
     /**
+     * Sets a set of items into the builder by resource ID, much like
+     * {@link android.app.AlertDialog.Builder#setItems(int, DialogInterface.OnClickListener)}.
+     * Pretty much exactly like it, in fact.
+     *
+     * @param resId a resource ID of a string array
+     * @param listener a listener
+     * @return this, for chaining purposes
+     */
+    public GHDBasicDialogBuilder setItems(int resId, DialogInterface.OnClickListener listener) {
+        return setItems(mContext.getResources().getStringArray(resId), listener);
+    }
+
+    /**
+     * Sets a set of items into the builder by a CharSequence array, much like
+     * {@link android.app.AlertDialog.Builder#setItems(int, DialogInterface.OnClickListener)}.
+     * Pretty much exactly like it, in fact.
+     *
+     * @param items a bunch of things to display
+     * @param listener a listener
+     * @return this, for chaining purposes
+     */
+    public GHDBasicDialogBuilder setItems(CharSequence[] items, DialogInterface.OnClickListener listener) {
+        mBuilder.setItems(items, listener);
+
+        return this;
+    }
+
+    /**
      * Sets the text on the dialog by ID.
      *
      * @param id the ID
