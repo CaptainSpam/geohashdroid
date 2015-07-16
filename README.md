@@ -10,4 +10,3 @@ It's also in the process of a major overhaul, so the current master branch isn't
 ## Notes for future me to consider
 
 * Make GraticulePickerFragment not be a Fragment.  I really don't think that's gaining me anything, but I could be wrong.
-* Look over ErrorBanner and InfoBox again.  I'm pretty sure I'm accidentally inflating another layer of LinearLayout in each.
