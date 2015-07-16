@@ -10,3 +10,4 @@ It's also in the process of a major overhaul, so the current master branch isn't
 ## Notes for future me to consider
 
 * Make GraticulePickerFragment not be a Fragment.  I really don't think that's gaining me anything, but I could be wrong.
+* Figure out why CentralMap sometimes starts up and never gets an initial stock value unless the mode, graticule, or date are changed, or the mode is restarted in any way (screen rotation, enter/exit preferences, SelectAGraticuleMode, etc).  It's as if there's a timing issue somewhere that's causing it to ignore the stock response at first.  Maybe something with the waiting list?
