@@ -99,8 +99,7 @@
     <string name="menu_item_recenter_destination">The final destination</string>
     <string name="menu_item_recenter_mylocation">Your current location</string>
     <string name="menu_item_details">Details</string>
-    <string name="menu_item_mode_street">Normal map</string>
-    <string name="menu_item_mode_sat">Satellite</string>
+    <string name="menu_item_map_type">Map type</string>
     <string name="menu_item_about">About</string>
     <string name="menu_item_post">Wiki</string>
     <string name="menu_item_post_message">Post message</string>
@@ -110,6 +109,16 @@
     <string name="menu_item_globalhash">Globalhash</string>
     <string name="menu_item_geohash">Geohash</string>
     <string name="menu_item_radar">Radar</string>
+
+    <string name="menu_item_map_type_street">Street</string>
+    <string name="menu_item_map_type_sat">Satellite</string>
+    <string name="menu_item_map_type_terrain">Terrain</string>
+
+    <string-array name="menu_item_map_types">
+        <item>@string/menu_item_map_type_street</item>
+        <item>@string/menu_item_map_type_sat</item>
+        <item>@string/menu_item_map_type_terrain</item>
+    </string-array>
 
     <string name="infobox_dist">Dist:</string>
     <string name="infobox_final">To:</string>

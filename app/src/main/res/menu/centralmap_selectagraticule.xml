@@ -13,6 +13,10 @@
         android:title="@string/what_label"
         android:showAsAction="never" />
     <item
+        android:id="@+id/action_map_type"
+        android:title="@string/menu_item_map_type"
+        android:showAsAction="never" />
+    <item
         android:id="@+id/action_preferences"
         android:title="@string/title_preferences"
         android:showAsAction="never" />

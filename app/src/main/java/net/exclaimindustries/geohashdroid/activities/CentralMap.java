@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
@@ -42,7 +43,6 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
-import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 
 import java.text.DateFormat;
 import java.util.Arrays;
@@ -60,11 +60,13 @@ public class CentralMap
         extends Activity
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
-                   GHDDatePickerDialogFragment.GHDDatePickerCallback {
+                   GHDDatePickerDialogFragment.GHDDatePickerCallback,
+                   MapTypeDialogFragment.MapTypeCallback {
 //    private static final String DEBUG_TAG = "CentralMap";
 
     private static final String LAST_MODE_BUNDLE = "lastModeBundle";
     private static final String DATE_PICKER_DIALOG = "datePicker";
+    private static final String MAP_TYPE_DIALOG = "mapType";
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -502,6 +504,8 @@ public class CentralMap
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        int mapType = -1;
+
         // Load up!
         if(savedInstanceState != null) {
             mCurrentInfo = savedInstanceState.getParcelable("info");
@@ -515,7 +519,13 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(LAST_MODE_BUNDLE);
+
+            // Map type?
+            mapType = savedInstanceState.getInt("mapType", -1);
         }
+
+        // Finalize the map type.  That's going into a callback.
+        final int reallyMapType = mapType;
 
         setContentView(R.layout.centralmap);
 
@@ -544,6 +554,10 @@ public class CentralMap
                 set.setMyLocationButtonEnabled(false);
 
                 mMap.setMyLocationEnabled(true);
+
+                // Restore the map's type, if it was changed.
+                if(reallyMapType >= 0)
+                    mMap.setMapType(reallyMapType);
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
@@ -639,6 +653,9 @@ public class CentralMap
         outState.putParcelable("lastGraticule", mLastGraticule);
         outState.putSerializable("lastCalendar", mLastCalendar);
 
+        // Aaaaaaaand the map type.
+        outState.putInt("mapType", mMap.getMapType());
+
         // Also, shut down the current mode.  We'll rebuild it later.  Also, if
         // init isn't complete yet, don't update the state.
         if(mCurrentMode != null && mCurrentMode.isInitComplete()) {
@@ -664,6 +681,14 @@ public class CentralMap
         // CentralMap should just cover the items that can always be selected no
         // matter what mode we're in.
         switch(item.getItemId()) {
+            case R.id.action_map_type: {
+                // The map type can be changed at any time, so it has to be
+                // common.  To the alert dialog!
+                MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
+                frag.show(getFragmentManager(), MAP_TYPE_DIALOG);
+
+                return true;
+            }
             case R.id.action_date: {
                 // The date picker is common to all modes and is best handled by
                 // the Activity itself.
@@ -843,5 +868,13 @@ public class CentralMap
         // Calendar!
         mLastCalendar = picked;
         mCurrentMode.changeCalendar(mLastCalendar);
+    }
+
+    @Override
+    public void mapTypeSelected(int type) {
+        // Map type!
+        if(mMap != null) {
+            mMap.setMapType(type);
+        }
     }
 }
