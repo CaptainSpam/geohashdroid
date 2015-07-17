@@ -20,6 +20,7 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -67,7 +68,7 @@ public class CentralMap
                    GoogleApiClient.OnConnectionFailedListener,
                    GHDDatePickerDialogFragment.GHDDatePickerCallback,
                    MapTypeDialogFragment.MapTypeCallback {
-//    private static final String DEBUG_TAG = "CentralMap";
+    private static final String DEBUG_TAG = "CentralMap";
 
     private static final String LAST_MODE_BUNDLE = "lastModeBundle";
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -462,6 +463,8 @@ public class CentralMap
                     if(pArr != null)
                         nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
                     mCurrentMode.handleInfo(received, nearby, reqFlags);
+                } else {
+                    Log.w(DEBUG_TAG, "Request ID " + reqId + " was NOT expected by this mode, ignoring...");
                 }
             } else  {
                 // Make sure the mode knows what's up first.
