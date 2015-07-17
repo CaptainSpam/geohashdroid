@@ -7,14 +7,17 @@
  */
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.Menu;
@@ -35,6 +38,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
+import net.exclaimindustries.geohashdroid.services.AlarmService;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
@@ -576,6 +581,9 @@ public class CentralMap
             mSelectAGraticule = false;
         }
 
+        // Perform startup and cleanup work before the modes arrive.
+        doStartupStuff();
+
         // Now, we get our initial mode set up based on mSelectAGraticule.  We
         // do NOT init it yet; we have to wait for both the map fragment and the
         // API to be ready first.
@@ -722,6 +730,66 @@ public class CentralMap
             default:
                 return mCurrentMode.onOptionsItemSelected(item);
         }
+    }
+
+    @SuppressLint("CommitPrefEdits")
+    private void doStartupStuff() {
+        // This handles all the oddities that need to be covered at startup
+        // time, including cleaning up old preferences that have been replaced
+        // or otherwise changed, starting the stock alarm service if it should
+        // be up, and throwing up the version history dialog if it's a new
+        // version.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+
+        // Let's start with the stock alarm service.
+        Intent i = new Intent(this, AlarmService.class);
+
+        if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
+            // Alarm gets set!  Fire it up!
+            i.setAction(AlarmService.STOCK_ALARM_ON);
+        } else {
+            // No alarm!  Off it goes!
+            i.setAction(AlarmService.STOCK_ALARM_OFF);
+        }
+
+        startService(i);
+
+        // Now for preference cleanup.  Unfortunately, this section will only
+        // get bigger with time, as I can't guarantee what version the user
+        // might've come from.  The version from which the user might've come.
+
+        // The Infobox is now controlled by a boolean, not a string.
+        if(prefs.contains("InfoBoxSize")) {
+            if(!prefs.contains(GHDConstants.PREF_INFOBOX)) {
+                String size = "";
+                try {
+                    size = prefs.getString("InfoBoxSize", "None");
+                } catch (ClassCastException cce) {
+                    size = "Off";
+                }
+                if(size == null) size = "Off";
+
+                edit.putBoolean(GHDConstants.PREF_INFOBOX, size.equals("None"));
+            }
+
+            edit.remove("InfoBoxSize");
+        }
+
+        // These prefs either don't exist any more or we found better ways to
+        // deal with them.
+        edit.remove("DefaultLatitude")
+                .remove("DefaultLongitude")
+                .remove("GlobalhashMode")
+                .remove("RememberGraticule")
+                .remove("ClosestOn")
+                .remove("AlwaysToday")
+                .remove("ClosenessReported");
+
+        // Anything edit-worthy we just did needs to be committed.
+        edit.commit();
+
+        // TODO: Version check!  See what the most recent known version was!
     }
 
     /**

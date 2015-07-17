@@ -33,23 +33,12 @@ public final class GHDConstants {
     public static final Graticule DUMMY_YESTERDAY = new Graticule(51, false, 0, true);
     /** Dummy Graticule that doesn't use the 30W rule (38N, 84W). */
     public static final Graticule DUMMY_TODAY = new Graticule(38, false, 84, true);
-    
-    /**
-     * Prefs key where the last latitude is stored. 
-     * @see #PREF_REMEMBER_GRATICULE
-     * */
-    public static final String PREF_DEFAULT_LAT = "DefaultLatitude";
-    /** Prefs key where the last longitude is stored. */
-    public static final String PREF_DEFAULT_LON = "DefaultLongitude";
-    /** Prefs key where we keep track of whether we were in globalhash mode. */
-    public static final String PREF_GLOBALHASH_MODE = "GlobalhashMode";
+
     /** Prefs key specifying coordinate units. */
     public static final String PREF_COORD_UNITS = "CoordUnits";
     /** Prefs key specifying distance units. */
     public static final String PREF_DIST_UNITS = "Units";
     /** Prefs key specifying whether or not to remember the last graticule. */
-    public static final String PREF_REMEMBER_GRATICULE = "RememberGraticule";
-    /** Prefs key specifying whether or not to auto-zoom. */
     public static final String PREF_AUTOZOOM = "AutoZoom";
     /** Prefs key specifying info box visibility. */
     public static final String PREF_INFOBOX = "InfoBox";
@@ -57,21 +46,20 @@ public final class GHDConstants {
     public static final String PREF_STOCK_CACHE_SIZE = "StockCacheSize";
     /** Prefs key specifying to show nearby meetup points. */
     public static final String PREF_NEARBY_POINTS = "NearbyPoints";
-    /** Prefs key specifying whether the closest checkbox is ticked. */
-    public static final String PREF_CLOSEST = "ClosestOn";
     /** Prefs key specifying wiki user name. */
     public static final String PREF_WIKI_USER = "WikiUserName";
     /** Prefs key specifying wiki user pass. */
     public static final String PREF_WIKI_PASS = "WikiPassword";
-    /** Prefs key specifying if the Today checkbox is ticked. */
-    public static final String PREF_TODAY = "AlwaysToday";
     /**
      * Prefs key tracking if we've reported on the closeness of the user to the
      * final destination.
      */
     public static final String PREF_CLOSENESS_REPORTED = "ClosenessReported";
-    /** Prefs key specifying if the background StockService should be used. */
-    public static final String PREF_STOCK_SERVICE = "UseStockService";
+    /**
+     * Prefs key specifying if the background StockAlarm should be used.  Yes,
+     * the name's from an older time when AlarmService was called StockService.
+     */
+    public static final String PREF_STOCK_ALARM = "UseStockService";
 
     /** Prefs value for metric distances. */
     public static final String PREFVAL_DIST_METRIC = "Metric";

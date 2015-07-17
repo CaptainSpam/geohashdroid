@@ -223,7 +223,7 @@ public class PreferencesActivity extends PreferenceActivity {
 
             // The stock alarm preference needs to enable/disable the alarm as
             // need be.
-            findPreference(GHDConstants.PREF_STOCK_SERVICE).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            findPreference(GHDConstants.PREF_STOCK_ALARM).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
 
                 @Override
                 public boolean onPreferenceChange(Preference preference,
