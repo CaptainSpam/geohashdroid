@@ -14,9 +14,12 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
@@ -39,6 +42,8 @@ public class WikiImageUtils {
     private static final int MAX_UPLOAD_WIDTH = 800;
     /** The largest height we'll allow to be uploaded. */
     private static final int MAX_UPLOAD_HEIGHT = 600;
+    /** The JPEG quality setting to be uploaded. */
+    private static final int IMAGE_JPEG_QUALITY = 90;
 
     /**
      * Amount of time until we don't consider this to be a "live" picture.
@@ -47,8 +52,10 @@ public class WikiImageUtils {
      */
     private static final int LIVE_TIMEOUT = 900000;
 
-    private static final int INFOBOX_MARGIN = 16;
-    private static final int INFOBOX_PADDING = 8;
+    // Padding around the sides of the icons/text.
+    private static final int INFOBOX_BOX_PADDING = 8;
+    // Padding between things in the infobox.
+    private static final int INFOBOX_ITEM_PADDING = 8;
 
     private static Paint mBackgroundPaint;
     private static Paint mTextPaint;
@@ -92,6 +99,7 @@ public class WikiImageUtils {
      * @param locationIfNoneSet location to use if the image has no location metadata stored in it
      * @return a brand new ImageInfo, or null if there were problems
      */
+    @Nullable
     public static ImageInfo readImageInfo(Context context, Uri uri, Location locationIfNoneSet) {
         // We're hoping this is something that MediaStore understands.  If not,
         // or if the image doesn't exist anyway, we're returning null, which is
@@ -162,6 +170,7 @@ public class WikiImageUtils {
      * @param drawInfobox true to draw the infobox, false to just shrink and compress
      * @return a byte array of JPEG data, or null if something went wrong
      */
+    @Nullable
     public static byte[] createWikiImage(Context context, Info info, ImageInfo imageInfo, boolean drawInfobox) {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
@@ -180,7 +189,7 @@ public class WikiImageUtils {
 
         // Finally, compress it and away it goes!
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, bytes);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, IMAGE_JPEG_QUALITY, bytes);
         byte[] toReturn = bytes.toByteArray();
         bitmap.recycle();
         return toReturn;
@@ -190,12 +199,12 @@ public class WikiImageUtils {
      * Puts the handy infobox on a Bitmap.
      *
      * @param context a Context, for resources
-     * @param info an Info object for determining the distance to the destination
+     * @param info an Info object for the current expedition
      * @param imageInfo some ImageInfo
      * @param bitmap the Bitmap (must be read/write, will be edited)
      * @throws java.lang.IllegalArgumentException if you tried to pass an immutable Bitmap
      */
-    public static void drawInfobox(Context context, Info info, ImageInfo imageInfo, Bitmap bitmap) {
+    public static void drawInfobox(@NonNull Context context, @NonNull Info info, @NonNull ImageInfo imageInfo, @NonNull Bitmap bitmap) {
         if (!bitmap.isMutable())
             throw new IllegalArgumentException("The Bitmap has to be mutable in order to draw an infobox on it!");
 
@@ -205,21 +214,38 @@ public class WikiImageUtils {
         // First, we need to draw something.  Get a Canvas.
         Canvas c = new Canvas(bitmap);
 
+        String[] strings;
+        int[] icons;
+
+        // I'm sure this could have less redundant code if I wasn't thinking too
+        // hard about it...
         if (imageInfo.location != null) {
-            // Assemble all our data.  Our four strings will be the final
+            // Assemble all our data.  Our three strings will be the final
             // destination, our current location, and the distance.
-            String infoTo = context.getString(R.string.infobox_final) + " " + UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
-            String infoYou = context.getString(R.string.infobox_you) + " " + UnitConverter.makeFullCoordinateString(context, imageInfo.location, false, UnitConverter.OUTPUT_LONG);
-            String infoDist = context.getString(R.string.infobox_dist) + " " + UnitConverter.makeDistanceString(context, mDistFormat, info.getDistanceInMeters(imageInfo.location));
+            strings = new String[3];
+
+            strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            strings[1] = UnitConverter.makeFullCoordinateString(context, imageInfo.location, false, UnitConverter.OUTPUT_LONG);
+            strings[2] = UnitConverter.makeDistanceString(context, mDistFormat, info.getDistanceInMeters(imageInfo.location));
 
             // Then, to the render method!
-            String[] strings = {infoTo, infoYou, infoDist};
-            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+            icons = new int[3];
+            icons[0] = R.drawable.final_destination_wiki_image;
+            icons[1] = R.drawable.current_location_wiki_image;
+            icons[2] = R.drawable.distance_wiki_image;
         } else {
-            // Otherwise, just throw up an unknown.
-            String[] strings = {context.getString(R.string.location_unknown)};
-            drawStrings(strings, c, mTextPaint, mBackgroundPaint);
+            // Otherwise, just throw up an unknown.  Location's still there,
+            // though.
+            strings = new String[2];
+            strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            strings[1] = context.getString(R.string.location_unknown);
+
+            icons = new int[2];
+            icons[0] = R.drawable.final_destination_wiki_image;
+            icons[1] = R.drawable.current_location_wiki_image;
         }
+
+        drawStrings(context, strings, icons, c, mTextPaint, mBackgroundPaint);
     }
 
     private static void makePaints(Context context) {
@@ -238,43 +264,128 @@ public class WikiImageUtils {
         }
     }
 
-    private static void drawStrings(String[] strings, Canvas c, Paint textPaint, Paint backgroundPaint) {
-        // We need SOME strings.  If we've got nothing, bail out.
+    private static void drawStrings(Context context, String[] strings, int[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
+        // All we do here is prepare the Drawables before tossing them to the
+        // OTHER method.  Hence the need for a Context.
+        Drawable[] drawables = new Drawable[icons.length];
+        for(int i = 0; i < icons.length; i++) {
+            drawables[i] = context.getResources().getDrawable(icons[i]);
+        }
+
+        drawStrings(strings, drawables, c, textPaint, backgroundPaint);
+    }
+
+    private static void drawStrings(String[] strings, Drawable[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
+        // We need SOME strings.  If we've got nothing, bail out.  This doesn't
+        // apply to icons, though; if there's fewer icons than there are
+        // strings, the strings just get placed on the left margin.
         if(strings.length < 1) return;
+        if(icons == null) icons = new Drawable[0];
 
         // First, init our variables.  This is as good a place as any to do so.
         Rect textBounds = new Rect();
-        int[] heights = new int[strings.length];
-        int totalHeight = INFOBOX_MARGIN * 2;
+        int[] stringHeights = new int[strings.length];
+        int[] iconHeights = new int[strings.length]; // Yes, strings.length.
+        int totalHeight = INFOBOX_BOX_PADDING * 2;
         int longestWidth = 0;
 
-        // Now, loop through the strings, adding to the height and keeping track
-        // of the longest width.
-        int i = 0;
-        for(String s : strings) {
+        // The height of the box is the total heights of either the texts or
+        // images (whichever is bigger), plus the margins.  The width of it is
+        // the LONGEST icon/text combo.
+        for(int i = 0; i < strings.length; i++) {
+            String s = strings[i];
             textPaint.getTextBounds(s, 0, s.length(), textBounds);
-            if(textBounds.width() > longestWidth) longestWidth = textBounds.width();
-            totalHeight += textBounds.height();
-            heights[i] = textBounds.height();
-            i++;
+            int textWidth = textBounds.width();
+            int textHeight = textBounds.height();
+
+            int iconWidth = 0;
+            int iconHeight = 0;
+
+            // If we even HAVE an icon for this...
+            if(icons.length > i) {
+                // With an extra shot of padding for the icon...
+                iconWidth = icons[i].getIntrinsicWidth() + INFOBOX_ITEM_PADDING;
+                iconHeight = icons[i].getIntrinsicHeight();
+            }
+
+            // Now, add the tallest of those into the height...
+            totalHeight += (textHeight > iconHeight ? textHeight : iconHeight);
+
+            // ...keep track of the individual heights so we don't have to keep
+            // recalculating them...
+            stringHeights[i] = textHeight;
+            iconHeights[i] = iconHeight;
+
+            // ...and see if the sum of the widths is wider than the widest we
+            // found so far.
+            if(textWidth + iconWidth > longestWidth) {
+                longestWidth = textWidth + iconWidth;
+            }
         }
 
-        // Now, we have us a rectangle.  Draw that.
-        Rect drawBounds =  new Rect(c.getWidth() - longestWidth - (INFOBOX_MARGIN * 2),
+        // With the total height and widest width, we've got us a rectangle.
+        Rect drawBounds =  new Rect(c.getWidth() - longestWidth - (INFOBOX_BOX_PADDING * 2),
                 0,
                 c.getWidth(),
                 totalHeight);
 
         c.drawRect(drawBounds, backgroundPaint);
 
-        // Now, place each of the strings.  We'll assume the topmost one is in
-        // index 0.  They should all be left-justified, too.
-        i = 0;
-        int curHeight = 0;
-        for(String s : strings) {
-            c.drawText(s, drawBounds.left + INFOBOX_MARGIN, INFOBOX_MARGIN + (INFOBOX_PADDING * (i + 1)) + curHeight, textPaint);
-            curHeight += heights[i];
-            i++;
+        // Now, place each of the strings with their respective icons next to
+        // them.  Topmost one is index 0, they're all left-justified, and the
+        // icons go in first.
+        int curHeight = INFOBOX_BOX_PADDING;
+        for(int i = 0; i < strings.length; i++) {
+            // Oh, and we want to center the text and the icons.  The way the
+            // textBounds grabber works, it just gives us the rectangle around
+            // the entire text.  That rectangle, however, doesn't account for
+            // any font descenders or whatnot unless such glyphs are in the
+            // string itself.  For what we're doing, however, that should work,
+            // as the numbers and letters we use don't descend.  If that changes
+            // at any point, we need to get more in-depth with font analysis to
+            // make sure everything centers consistently on the same baseline.
+            int iconOffset = 0;
+            int textOffsetX = 0;
+            int textOffsetY = 0;
+            int heightOffset;
+
+            if(stringHeights[i] > iconHeights[i]) {
+                // String is taller, icon needs to adjust.
+                iconOffset = (stringHeights[i] - iconHeights[i]) / 2;
+                heightOffset = stringHeights[i];
+            } else {
+                // Icon is taller, string needs to adjust.
+                textOffsetY = (iconHeights[i] - stringHeights[i]) / 2;
+                heightOffset = iconHeights[i];
+            }
+
+            // textOffsetY must also be adjusted, since Android draws text from
+            // the baseline, not the top-left corner of the text block.
+            textOffsetY += stringHeights[i];
+
+            // The icon and text need to be vertically centered.  The way that
+            // happens depends on which is bigger.  At time of writing, the
+            // icons were, but knowing me, this could change at any time.
+
+            // Icon!
+            if(icons.length > i) {
+                icons[i].setBounds(drawBounds.left + INFOBOX_BOX_PADDING,
+                        curHeight + iconOffset,
+                        drawBounds.left + INFOBOX_BOX_PADDING + icons[i].getIntrinsicWidth(),
+                        curHeight + iconOffset + icons[i].getIntrinsicHeight());
+                icons[i].draw(c);
+
+                textOffsetX = icons[i].getIntrinsicWidth() + INFOBOX_ITEM_PADDING;
+            }
+
+            // Text!
+            c.drawText(strings[i],
+                    drawBounds.left + INFOBOX_BOX_PADDING + textOffsetX,
+                    curHeight + textOffsetY,
+            textPaint);
+
+            // Then set the height for the next row.
+            curHeight += heightOffset;
         }
     }
 
@@ -288,6 +399,7 @@ public class WikiImageUtils {
      * @param info the requisite Info
      * @return a prefix tag
      */
+    @NonNull
     public static String getImagePrefixTag(Context context, ImageInfo imageInfo, Info info) {
         if(info.isRetroHash()) {
             return context.getText(R.string.wiki_post_picture_summary_retro).toString();
