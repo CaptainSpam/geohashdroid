@@ -453,7 +453,7 @@ public class WikiService extends QueueService {
             // later.
 
             // The date can come in as a long.
-            Calendar c = (Calendar)i.getParcelableExtra(EXTRA_TIMESTAMP);
+            Calendar c = (Calendar)i.getSerializableExtra(EXTRA_TIMESTAMP);
             if(c != null)
                 builder.append(c.getTimeInMillis());
             builder.append('\n');
