@@ -665,7 +665,8 @@ public class CentralMap
         outState.putSerializable("lastCalendar", mLastCalendar);
 
         // Aaaaaaaand the map type.
-        outState.putInt("mapType", mMap.getMapType());
+        if(mMap != null)
+            outState.putInt("mapType", mMap.getMapType());
 
         // Also, shut down the current mode.  We'll rebuild it later.  Also, if
         // init isn't complete yet, don't update the state.

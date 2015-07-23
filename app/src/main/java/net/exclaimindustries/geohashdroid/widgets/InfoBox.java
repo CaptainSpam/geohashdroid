@@ -214,7 +214,7 @@ public class InfoBox extends LinearLayout {
      * was passed in to {@link #startListening(GoogleApiClient)} earlier.
      */
     public void stopListening() {
-        if(!mIsListening) return;
+        if(!mIsListening || mGClient == null || !mGClient.isConnected()) return;
 
         LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
 
