@@ -301,7 +301,7 @@ public class HashBuilder {
                 String location = s.replaceAll("%Y", Integer.toString(sCal.get(Calendar.YEAR)));
                 location = location.replaceAll("%m", sMonthStr);
                 location = location.replaceAll("%d", sDayStr);
-                Log.d(DEBUG_TAG, "Trying " + location + "...");
+                Log.v(DEBUG_TAG, "Trying " + location + "...");
                 
                 // And go fetch!
                 HttpClient client = new DefaultHttpClient();
@@ -507,11 +507,11 @@ public class HashBuilder {
 //        Calendar sCal = Info.makeAdjustedCalendar(c, g);
 
         // If it's in the quick cache, use it.
-        Log.d(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c)
+        Log.v(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c)
                 + ((g == null || g.uses30WRule()) ? " with 30W rule" : " without 30W rule"));
         Info result = getQuickCache(c, g);
         if(result != null) {
-            Log.d(DEBUG_TAG, "Data found in quickcache!");
+            Log.v(DEBUG_TAG, "Data found in quickcache!");
             if(result.isGlobalHash()) return result;
             else return cloneInfo(result, g);
         }
@@ -522,7 +522,7 @@ public class HashBuilder {
         if(i == null)
             return null;
             
-        Log.d(DEBUG_TAG, "Data found in database!  Quickcaching...");
+        Log.v(DEBUG_TAG, "Data found in database!  Quickcaching...");
         // If it was in the main cache but not the quick cache, quick cache it.
         quickCache(i);
         return i;
@@ -539,7 +539,7 @@ public class HashBuilder {
      */
     public static String getStoredStock(Context con, Calendar c) {
         // We don't quickcache the stock values.
-        Log.d(DEBUG_TAG, "Going to the database for a stock for " + DateTools.getDateString(c));
+        Log.v(DEBUG_TAG, "Going to the database for a stock for " + DateTools.getDateString(c));
         
         return getStore(con).getStock(c);
     }
@@ -711,7 +711,7 @@ public class HashBuilder {
         
         // At any rate, first off, the most recent date/30W combo.  Then, the
         // second-most.  Failing THAT, return null.
-        Log.d(DEBUG_TAG, "Checking quickcache for data...");
+        Log.v(DEBUG_TAG, "Checking quickcache for data...");
         if(mLastInfo != null) {
             Calendar stored = mLastInfo.getCalendar();
             
@@ -721,7 +721,7 @@ public class HashBuilder {
                     && ((mLastInfo.getGraticule() == null && g == null)
                             || (mLastInfo.getGraticule() != null && g != null))
                     && mLastInfo.uses30WRule() == is30W) {
-                Log.d(DEBUG_TAG, "Hash data is in quick cache (mLastInfo): " + mLastInfo.getLatitudeHash() + ", " + mLastInfo.getLongitudeHash());
+                Log.v(DEBUG_TAG, "Hash data is in quick cache (mLastInfo): " + mLastInfo.getLatitudeHash() + ", " + mLastInfo.getLongitudeHash());
                 return mLastInfo;
             }
         }
@@ -735,12 +735,12 @@ public class HashBuilder {
                     && ((mTwoInfosAgo.getGraticule() == null && g == null)
                             || (mTwoInfosAgo.getGraticule() != null && g != null))
                     && mTwoInfosAgo.uses30WRule() == is30W) {
-                Log.d(DEBUG_TAG, "Hash data is in quick cache (mTwoInfosAgo): " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
+                Log.v(DEBUG_TAG, "Hash data is in quick cache (mTwoInfosAgo): " + mTwoInfosAgo.getLatitudeHash() + ", " + mTwoInfosAgo.getLongitudeHash());
                 return mTwoInfosAgo;
             }
         }
         
-        Log.d(DEBUG_TAG, "Data wasn't in quickcache.");
+        Log.v(DEBUG_TAG, "Data wasn't in quickcache.");
         
         return null;
     }

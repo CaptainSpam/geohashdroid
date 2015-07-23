@@ -165,7 +165,7 @@ public class StockStoreDatabase {
             // does, return a -1.
             // TODO: No, wrong.  I need a better mechanism for that.
             if(getInfo(i.getCalendar(), i.getGraticule()) != null) {
-                Log.d(DEBUG_TAG, "Info already exists for that data, ignoring...");
+                Log.v(DEBUG_TAG, "Info already exists for that data, ignoring...");
                 return -1;
             }
             
@@ -176,7 +176,7 @@ public class StockStoreDatabase {
             toGo.put(KEY_HASHES_LATHASH, i.getLatitudeHash());
             toGo.put(KEY_HASHES_LONHASH, i.getLongitudeHash());
             
-            Log.d(DEBUG_TAG, "NOW STORING TO HASHES " + DateTools.getDateString(cal)
+            Log.v(DEBUG_TAG, "NOW STORING TO HASHES " + DateTools.getDateString(cal)
                     + (i.uses30WRule() ? " (30W)" : "") + " : "
                     + i.getLatitudeHash() + "," + i.getLongitudeHash());
             
@@ -198,7 +198,7 @@ public class StockStoreDatabase {
             // First, check over the database to make sure it doesn't already
             // exist.
             if(getStock(cal) != null) {
-                Log.d(DEBUG_TAG, "Stock price already exists in database for " + DateTools.getDateString(cal) + ", ignoring...");
+                Log.v(DEBUG_TAG, "Stock price already exists in database for " + DateTools.getDateString(cal) + ", ignoring...");
                 return -1;
             }
             
@@ -207,7 +207,7 @@ public class StockStoreDatabase {
             toGo.put(KEY_STOCKS_DATE, DateTools.getDateString(cal));
             toGo.put(KEY_STOCKS_STOCK, stock);
             
-            Log.d(DEBUG_TAG, "NOW STORING TO STOCKS " + DateTools.getDateString(cal)
+            Log.v(DEBUG_TAG, "NOW STORING TO STOCKS " + DateTools.getDateString(cal)
                     + " : " + stock);
             
             return mDatabase.insert(TABLE_STOCKS, null, toGo);
@@ -227,7 +227,7 @@ public class StockStoreDatabase {
      */
     public Info getInfo(Calendar c, Graticule g) {
         synchronized(mDatabase) {
-            Log.d(DEBUG_TAG, "Querying the hashes database...");
+            Log.v(DEBUG_TAG, "Querying the hashes database...");
             // First, adjust the calendar if we need to.
             Info toReturn = null;
             
@@ -244,14 +244,14 @@ public class StockStoreDatabase {
             } else if(cursor.getCount() == 0) {
                 // If nothing resulted from this, the stock doesn't exist in the
                 // cache.
-                Log.d(DEBUG_TAG, "Info doesn't exist in database");
+                Log.v(DEBUG_TAG, "Info doesn't exist in database");
             } else {
                 // Otherwise, grab the first one we come across.
                 if(!cursor.moveToFirst()) return null;
                 
                 double latHash = cursor.getDouble(0);
                 double lonHash = cursor.getDouble(1);
-                Log.d(DEBUG_TAG, "Info found -- Today's lucky numbers are " + latHash + "," + lonHash);
+                Log.v(DEBUG_TAG, "Info found -- Today's lucky numbers are " + latHash + "," + lonHash);
                 
                 // Get the destination set...
                 if(g != null) {
@@ -260,7 +260,7 @@ public class StockStoreDatabase {
                     
                     toReturn = new Info(lat, lon, g, c);
                 } else {
-                    toReturn = new Info(latHash, lonHash, g, c);
+                    toReturn = new Info(latHash, lonHash, null, c);
                 }
             }
             
@@ -278,7 +278,7 @@ public class StockStoreDatabase {
      */
     public String getStock(Calendar cal) {
         synchronized(mDatabase) {
-            Log.d(DEBUG_TAG, "Querying the stock database...");
+            Log.v(DEBUG_TAG, "Querying the stock database...");
             
             String toReturn = null;
             
@@ -295,13 +295,13 @@ public class StockStoreDatabase {
             } else if(cursor.getCount() == 0) {
                 // If nothing resulted from this, the stock doesn't exist in the
                 // cache.
-                Log.d(DEBUG_TAG, "Stock doesn't exist in database");
+                Log.v(DEBUG_TAG, "Stock doesn't exist in database");
             } else {
                 // Otherwise, grab the first one we come across.
                 if(!cursor.moveToFirst()) return null;
                 
                 toReturn = cursor.getString(0);
-                Log.d(DEBUG_TAG, "Stock found -- Today's lucky number is " + toReturn);
+                Log.v(DEBUG_TAG, "Stock found -- Today's lucky number is " + toReturn);
             }
             
             cursor.close();
@@ -315,51 +315,51 @@ public class StockStoreDatabase {
      */
     public synchronized void cleanup() {
         synchronized(mDatabase) {
-        	SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
-        	
-        	Log.d(DEBUG_TAG, "Pruning database...");
-        	try {
-        		// Presumably, initPrefs was already run from the GeohashDroid
-        		// class.  Thus, if the pref doesn't exist at this point or
-        	    // isn't parseable into an int, we can quite justifiably spaz
-        	    // out.
-        		int max = Integer.parseInt(prefs.getString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15"));
-        		
-        		// Step one: Get the highest row ID.  I could probably ram this
-        		// all into one big monolithic SQL statement, but that would get
-        		// more than a bit unreadable.  Also note very carefully, this
-        		// entire method depends on there being no holes in the rowids.
-        		// "SELECT _rowid FROM stocks ORDER BY _rowid DESC LIMIT 1;"
-        		Cursor cursor = mDatabase.query(TABLE_STOCKS, new String[] {KEY_STOCKS_ROWID},
-        		        null, null, null, null, KEY_STOCKS_ROWID + " DESC", "1");
-        		
-        		cursor.moveToFirst();
-        		int highest = cursor.getInt(0);
-        		cursor.close();
-        		
-        		// Step two: Delete anything in the database older than the
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+            
+            Log.v(DEBUG_TAG, "Pruning database...");
+            try {
+                // Presumably, initPrefs was already run from the GeohashDroid
+                // class.  Thus, if the pref doesn't exist at this point or
+                // isn't parseable into an int, we can quite justifiably spaz
+                // out.
+                int max = Integer.parseInt(prefs.getString(GHDConstants.PREF_STOCK_CACHE_SIZE, "15"));
+                
+                // Step one: Get the highest row ID.  I could probably ram this
+                // all into one big monolithic SQL statement, but that would get
+                // more than a bit unreadable.  Also note very carefully, this
+                // entire method depends on there being no holes in the rowids.
+                // "SELECT _rowid FROM stocks ORDER BY _rowid DESC LIMIT 1;"
+                Cursor cursor = mDatabase.query(TABLE_STOCKS, new String[] {KEY_STOCKS_ROWID},
+                        null, null, null, null, KEY_STOCKS_ROWID + " DESC", "1");
+                
+                cursor.moveToFirst();
+                int highest = cursor.getInt(0);
+                cursor.close();
+                
+                // Step two: Delete anything in the database older than the
                 // highest minus the max.
-        		// "DELETE FROM stocks WHERE _rowid < (highest - max);"
-        		int deleted = mDatabase.delete(TABLE_STOCKS, KEY_STOCKS_ROWID + " <= " + (highest - max), null);
-        		
-        		Log.d(DEBUG_TAG, "Stock rows deleted: " + deleted);
-        		
-        		// Now, do all that again, but for hashes.
-        		
-        		cursor = mDatabase.query(TABLE_HASHES, new String[] {KEY_HASHES_ROWID},
-        		        null, null, null, null, KEY_HASHES_ROWID + " DESC", "1");
-        		
-        		cursor.moveToFirst();
-        		highest = cursor.getInt(0);
-        		cursor.close();
-        		
-        		deleted = mDatabase.delete(TABLE_HASHES, KEY_HASHES_ROWID + " <= " + (highest - max), null);
-        		
-        		Log.d(DEBUG_TAG, "Info rows deleted: " + deleted);
-        	} catch (Exception e) {
-        		// If something went wrong, let it go.
-        		Log.w(DEBUG_TAG, "HEY!  Couldn't prune the stock cache database: " + e.toString());
-        	}
+                // "DELETE FROM stocks WHERE _rowid < (highest - max);"
+                int deleted = mDatabase.delete(TABLE_STOCKS, KEY_STOCKS_ROWID + " <= " + (highest - max), null);
+
+                Log.v(DEBUG_TAG, "Stock rows deleted: " + deleted);
+                
+                // Now, do all that again, but for hashes.
+                
+                cursor = mDatabase.query(TABLE_HASHES, new String[] {KEY_HASHES_ROWID},
+                        null, null, null, null, KEY_HASHES_ROWID + " DESC", "1");
+                
+                cursor.moveToFirst();
+                highest = cursor.getInt(0);
+                cursor.close();
+                
+                deleted = mDatabase.delete(TABLE_HASHES, KEY_HASHES_ROWID + " <= " + (highest - max), null);
+                
+                Log.v(DEBUG_TAG, "Info rows deleted: " + deleted);
+            } catch (Exception e) {
+                // If something went wrong, let it go.
+                Log.w(DEBUG_TAG, "HEY!  Couldn't prune the stock cache database: " + e.toString());
+            }
         }
     }
     
@@ -370,7 +370,7 @@ public class StockStoreDatabase {
     public synchronized boolean deleteCache() {
         synchronized(mDatabase) {
             try {
-                Log.d(DEBUG_TAG, "Emptying the stock cache...");
+                Log.v(DEBUG_TAG, "Emptying the stock cache...");
                 // KABOOM!
                 mDatabase.delete(TABLE_STOCKS, null, null);
                 mDatabase.delete(TABLE_HASHES, null, null);
