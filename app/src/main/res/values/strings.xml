@@ -135,6 +135,7 @@
     <string name="hint_lat">Lat</string>
     <string name="hint_lon">Lon</string>
     <string name="hint_message">Message</string>
+    <string name="hint_caption">Caption</string>
 
     <string name="notification_title">Fetching stocks&#8230;</string>
     <string name="notification_detail">(now checking %1$s)</string>

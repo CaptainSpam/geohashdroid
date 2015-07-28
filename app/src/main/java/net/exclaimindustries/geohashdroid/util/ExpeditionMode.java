@@ -220,9 +220,9 @@ public class ExpeditionMode
         // Plus, if the detailed info fragment's already there, make its
         // container go visible, too.
         FragmentManager manager = mCentralMap.getFragmentManager();
-        mDetailFragment = (DetailedInfoFragment)manager.findFragmentById(R.id.detailed_info_container);
+        mDetailFragment = (DetailedInfoFragment)manager.findFragmentById(R.id.extra_fragment_container);
         if(mDetailFragment != null) {
-            mCentralMap.findViewById(R.id.detailed_info_container).setVisibility(View.VISIBLE);
+            mCentralMap.findViewById(R.id.extra_fragment_container).setVisibility(View.VISIBLE);
             mDetailFragment.setCloseListener(this);
         }
 
@@ -756,7 +756,7 @@ public class ExpeditionMode
         // Ask CentralMap if there's a fragment container in this layout.
         // If so (tablet layouts), add it to the current screen.  If not
         // (phone layouts), jump off to the dedicated activity.
-        View container = mCentralMap.findViewById(R.id.detailed_info_container);
+        View container = mCentralMap.findViewById(R.id.extra_fragment_container);
         if(container == null) {
             // To the Activity!
             Intent i = new Intent(mCentralMap, DetailedInfoActivity.class);
@@ -765,7 +765,7 @@ public class ExpeditionMode
         } else {
             // Check to see if the fragment's already there.
             FragmentManager manager = mCentralMap.getFragmentManager();
-            Fragment f = manager.findFragmentById(R.id.detailed_info_container);
+            Fragment f = manager.findFragmentById(R.id.extra_fragment_container);
             if(f == null) {
                 // If not, make it be there!
                 mDetailFragment = new DetailedInfoFragment();
@@ -775,7 +775,7 @@ public class ExpeditionMode
                 mDetailFragment.setCloseListener(this);
 
                 FragmentTransaction trans = manager.beginTransaction();
-                trans.replace(R.id.detailed_info_container, mDetailFragment, DETAIL_BACK_STACK);
+                trans.replace(R.id.extra_fragment_container, mDetailFragment, DETAIL_BACK_STACK);
                 trans.addToBackStack(DETAIL_BACK_STACK);
                 trans.commit();
 
@@ -808,7 +808,7 @@ public class ExpeditionMode
     @Override
     public void detailedInfoDestroying() {
         // And now that it's being destroyed, hide the container.
-        View container = mCentralMap.findViewById(R.id.detailed_info_container);
+        View container = mCentralMap.findViewById(R.id.extra_fragment_container);
 
         if(container != null)
             container.setVisibility(View.GONE);

@@ -33,11 +33,13 @@
     <dimen name="details_coords_fontsize_small">24sp</dimen>
     <dimen name="details_coords_fontsize_small_land">22sp</dimen>
     <dimen name="details_subtitle_fontsize_small">28sp</dimen>
-    <dimen name="details_distance_fontsize_small">18dip</dimen>
-    <dimen name="details_accuracy_fontsize_small">12dip</dimen>
+    <dimen name="details_distance_fontsize_small">18sp</dimen>
+    <dimen name="details_accuracy_fontsize_small">12sp</dimen>
 
-    <dimen name="wikipost_tiny_fontsize">14dip</dimen>
-    <dimen name="wikipost_really_tiny_fontsize">12dip</dimen>
+    <dimen name="wikipost_options_size">200dp</dimen>
+    <dimen name="wikipost_fontsize">16sp</dimen>
+    <dimen name="wikipost_tiny_fontsize">14sp</dimen>
+    <dimen name="wikipost_really_tiny_fontsize">12sp</dimen>
 
     <dimen name="main_padding">5dp</dimen>
     <dimen name="button_date_padding">15dp</dimen>
@@ -60,6 +62,7 @@
 
     <dimen name="standard_padding">8dp</dimen>
     <dimen name="margin_zoom_button">@dimen/standard_padding</dimen>
+    <dimen name="wiki_fragment_padding">16dp</dimen>
 
     <dimen name="elevation_error_banner">4dp</dimen>
     <dimen name="elevation_infobox">2dp</dimen>

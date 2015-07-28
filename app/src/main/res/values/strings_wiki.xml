@@ -5,8 +5,9 @@
     <string name="wiki_editor_activity_title">Enter Message</string>
 	<string name="wiki_picture_activity_title">Upload Picture</string>
 	
-	<string name="wiki_editor_not_logged_in">WARNING: You will be posting anonymously.  If you do not wish to be anonymous, you need to set a username and password in settings.</string>
-	
+	<string name="wiki_editor_not_logged_in">You will be posting anonymously, and are thus not be able to upload pictures.  If you do not wish to be anonymous, you need to set a wiki username and password in settings.</string>
+	<string name="wiki_editor_message_will_be_caption">The message you send will just be used as the caption for the image in the expedition gallery.</string>
+
 	<string name="wiki_post_message_summary">[live]</string>
 	<string name="wiki_post_picture_summary">[live picture]</string>
 	<string name="wiki_post_message_summary_retro">[retro]</string>
@@ -61,6 +62,7 @@
 	<string name="wiki_error_conflict">An edit conflict happened.  Someone might be right nearby, trying to edit that same page.</string>
 	
 	<string name="wiki_dialog_append_time">Append local timestamp</string>
+	<string name="wiki_dialog_add_picture">Post a picture</string>
 	<string name="wiki_dialog_submit_message">Submit message</string>
 	<string name="wiki_dialog_submit_picture">Submit to gallery</string>
 	

@@ -48,6 +48,6 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:id="@+id/detailed_info_container"
+        android:id="@+id/extra_fragment_container"
         android:visibility="gone"/>
 </LinearLayout>
