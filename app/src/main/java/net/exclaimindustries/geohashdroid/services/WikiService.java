@@ -266,19 +266,9 @@ public class WikiService extends QueueService {
             // to suggest.
             if (imageLocation != null) {
                 // Let's say there's an image specified.  So, we try to look it
-                // up on the system.
+                // up via readImageInfo.
                 WikiImageUtils.ImageInfo imageInfo;
-                imageInfo = WikiImageUtils.readImageInfo(this, imageLocation, loc);
-
-                // But, if said info remains null, we've got a problem.  The
-                // user wanted an image uploaded, but we can't do that, so we
-                // have to abandon this intent.  However, I don't think that's a
-                // showstopper in terms of continuing the queue.
-                if (imageInfo == null) {
-                    Log.e(DEBUG_TAG, "The user was somehow allowed to choose an image that can't be accessed via MediaStore!");
-                    showImageErrorNotification();
-                    return ReturnCode.CONTINUE;
-                }
+                imageInfo = WikiImageUtils.readImageInfo(this, imageLocation, loc, timestamp);
 
                 // Now, the location that we're going to send for the image
                 // SHOULD match up with where the user thinks they are, so we'll

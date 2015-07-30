@@ -27,7 +27,9 @@ import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.BitmapTools;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Calendar;
 
 /**
  * <code>WikiImageUtils</code> contains static methods that do stuff to
@@ -66,10 +68,20 @@ public class WikiImageUtils {
      * image.  It's used when making image calls.
      */
     public static class ImageInfo {
+        /** The image's URI.  Should not be null. */
         public Uri uri;
+        /**
+         * The image's local filename.  May be null if it's not stored on the
+         * local filesystem.
+         */
         public String filename;
+        /**
+         * The location of either the image or the user, depending on if the
+         * geodata from the image could be read.  May be null.
+         */
         public Location location;
-        public long timestamp;
+        /** The timestamp of the image, if possible.  Defaults to -1. */
+        public long timestamp = -1l;
     }
 
     /**
@@ -78,7 +90,7 @@ public class WikiImageUtils {
      * same timestamp.  So don't do that.
      *
      * @param info Info object containing expedition data
-     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Context, Uri, Location)}
+     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Context, Uri, Location, Calendar)}
      * @param username current username (must not be null)
      * @return the name of the image on the wiki
      */
@@ -89,23 +101,32 @@ public class WikiImageUtils {
     }
 
     /**
+     * <p>
      * Creates an {@link ImageInfo} object from the given Uri.  Note that as
      * this is written, the Uri should be something that can be read by
      * MediaStore, meaning you probably want to get something in from the
      * Photos or Gallery app.
+     * </p>
+     *
+     * <p>
+     * If MediaStore can't figure it out, this will return a new ImageInfo
+     * pre-populated with as much data as given when called.
+     * </p>
      *
      * @param context a Context from which ContentResolver comes
      * @param uri the URI of the image
      * @param locationIfNoneSet location to use if the image has no location metadata stored in it
-     * @return a brand new ImageInfo, or null if there were problems
+     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it
+     * @return a brand new ImageInfo
      */
-    @Nullable
-    public static ImageInfo readImageInfo(Context context, Uri uri, Location locationIfNoneSet) {
-        // We're hoping this is something that MediaStore understands.  If not,
-        // or if the image doesn't exist anyway, we're returning null, which is
-        // interpreted by the intent handler to mean there's no image here, so
-        // an error should be thrown.
-        ImageInfo toReturn = null;
+    @NonNull
+    public static ImageInfo readImageInfo(Context context, Uri uri, Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
+        // We're hoping this is something that MediaStore understands.  But,
+        // we'll make this first anyway, just in case.
+        ImageInfo toReturn = new ImageInfo();
+        toReturn.uri = uri;
+        toReturn.location = locationIfNoneSet;
+        toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
 
         if(uri != null) {
             Cursor cursor;
@@ -118,15 +139,15 @@ public class WikiImageUtils {
 
             if(cursor == null || cursor.getCount() < 1) {
                 if(cursor != null) cursor.close();
-                return null;
+                return toReturn;
             }
 
             cursor.moveToFirst();
 
-            toReturn = new ImageInfo();
-            toReturn.uri = uri;
             toReturn.filename = cursor.getString(0);
             toReturn.timestamp = cursor.getLong(3);
+
+            if(toReturn.timestamp < 0) toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
 
             // These two could very well be null or empty.  Nothing wrong with
             // that.  But if they're good, make a Location out of them.
@@ -171,14 +192,20 @@ public class WikiImageUtils {
      * @return a byte array of JPEG data, or null if something went wrong
      */
     @Nullable
-    public static byte[] createWikiImage(Context context, Info info, ImageInfo imageInfo, boolean drawInfobox) {
+    public static byte[] createWikiImage(@NonNull Context context, @NonNull Info info, @NonNull ImageInfo imageInfo, boolean drawInfobox) {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
         // 150k, so scaling and compressing are the way to go.
-        Bitmap bitmap = BitmapTools
-                .createRatioPreservedDownscaledBitmapFromFile(
-                        imageInfo.filename, MAX_UPLOAD_WIDTH,
-                        MAX_UPLOAD_HEIGHT, true);
+        Bitmap bitmap;
+        try {
+            bitmap = BitmapTools
+                    .createRatioPreservedDownscaledBitmapFromUri(
+                            context, imageInfo.uri, MAX_UPLOAD_WIDTH,
+                            MAX_UPLOAD_HEIGHT, true);
+        } catch (IOException ioe) {
+            // Oops.
+            return null;
+        }
 
         // If the Bitmap wound up null, we're in trouble.
         if(bitmap == null) return null;
