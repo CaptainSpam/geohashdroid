@@ -120,7 +120,7 @@ public class WikiImageUtils {
      * @return a brand new ImageInfo
      */
     @NonNull
-    public static ImageInfo readImageInfo(Context context, Uri uri, Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
+    public static ImageInfo readImageInfo(@NonNull Context context, @NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
         // We're hoping this is something that MediaStore understands.  But,
         // we'll make this first anyway, just in case.
         ImageInfo toReturn = new ImageInfo();
@@ -128,54 +128,51 @@ public class WikiImageUtils {
         toReturn.location = locationIfNoneSet;
         toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
 
-        if(uri != null) {
-            Cursor cursor;
-            cursor = context.getContentResolver().query(uri, new String[]
-                            { MediaStore.Images.ImageColumns.DATA,
-                                    MediaStore.Images.ImageColumns.LATITUDE,
-                                    MediaStore.Images.ImageColumns.LONGITUDE,
-                                    MediaStore.Images.ImageColumns.DATE_TAKEN },
-                    null, null, null);
+        Cursor cursor;
+        cursor = context.getContentResolver().query(uri, new String[]
+                        { MediaStore.Images.ImageColumns.DATA,
+                                MediaStore.Images.ImageColumns.LATITUDE,
+                                MediaStore.Images.ImageColumns.LONGITUDE,
+                                MediaStore.Images.ImageColumns.DATE_TAKEN },
+                null, null, null);
 
-            if(cursor == null || cursor.getCount() < 1) {
-                if(cursor != null) cursor.close();
-                return toReturn;
-            }
-
-            cursor.moveToFirst();
-
-            toReturn.filename = cursor.getString(0);
-            toReturn.timestamp = cursor.getLong(3);
-
-            if(toReturn.timestamp < 0) toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
-
-            // These two could very well be null or empty.  Nothing wrong with
-            // that.  But if they're good, make a Location out of them.
-            String lat = cursor.getString(1);
-            String lon = cursor.getString(2);
-
-            Location toSet;
-            try {
-                double llat = Double.parseDouble(lat);
-                double llon = Double.parseDouble(lon);
-                toSet = new Location("");
-                toSet.setLatitude(llat);
-                toSet.setLongitude(llon);
-            } catch (Exception ex) {
-                // If we get an exception, we got it because of the number
-                // parser.  Assume it's invalid and we're using the user's
-                // current location, if that's even known (that might ALSO be
-                // null, in which case we just don't have any clue where the
-                // user is, which seems a bit counterintuitive to how
-                // Geohashing is supposed to work).
-                toSet = locationIfNoneSet;
-            }
-
-            // Now toss the location into the info.
-            toReturn.location = toSet;
-
-            cursor.close();
+        if(cursor == null || cursor.getCount() < 1) {
+            if(cursor != null) cursor.close();
+            return toReturn;
         }
+
+        cursor.moveToFirst();
+
+        toReturn.filename = cursor.getString(0);
+        toReturn.timestamp = cursor.getLong(3);
+
+        if(toReturn.timestamp < 0) toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
+
+        // These two could very well be null or empty.  Nothing wrong with that.
+        // But if they're good, make a Location out of them.
+        String lat = cursor.getString(1);
+        String lon = cursor.getString(2);
+
+        Location toSet;
+        try {
+            double llat = Double.parseDouble(lat);
+            double llon = Double.parseDouble(lon);
+            toSet = new Location("");
+            toSet.setLatitude(llat);
+            toSet.setLongitude(llon);
+        } catch (Exception ex) {
+            // If we get an exception, we got it because of the number parser.
+            // Assume it's invalid and we're using the user's current location,
+            // if that's even known (that might ALSO be null, in which case we
+            // just don't have any clue where the user is, which seems a bit
+            // counterintuitive to how Geohashing is supposed to work).
+            toSet = locationIfNoneSet;
+        }
+
+        // Now toss the location into the info.
+        toReturn.location = toSet;
+
+        cursor.close();
 
         return toReturn;
     }
