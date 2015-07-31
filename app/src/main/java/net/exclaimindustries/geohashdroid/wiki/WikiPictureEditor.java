@@ -117,7 +117,7 @@ public class WikiPictureEditor extends WikiBaseActivity {
         // Android phone.
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        THUMB_DIMEN = (int)(getResources().getDimensionPixelSize(R.dimen.nominal_icon_size) * metrics.density);
+        THUMB_DIMEN = getResources().getDimensionPixelSize(R.dimen.wiki_nominal_icon_size);
         
         Log.d(DEBUG_TAG, "Thumbnail dimensions: " + THUMB_DIMEN);
 

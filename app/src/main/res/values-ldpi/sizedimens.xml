@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-<!-- Really, this one is only here because small screens have such a smaller
-     aspect ratio than others, so manual hackery is needed. -->
-<dimen name="nominal_icon_size">110px</dimen>
-</resources>
