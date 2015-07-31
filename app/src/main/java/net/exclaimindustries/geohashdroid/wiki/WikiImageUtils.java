@@ -193,16 +193,10 @@ public class WikiImageUtils {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
         // 150k, so scaling and compressing are the way to go.
-        Bitmap bitmap;
-        try {
-            bitmap = BitmapTools
-                    .createRatioPreservedDownscaledBitmapFromUri(
-                            context, imageInfo.uri, MAX_UPLOAD_WIDTH,
-                            MAX_UPLOAD_HEIGHT, true);
-        } catch (IOException ioe) {
-            // Oops.
-            return null;
-        }
+        Bitmap bitmap = BitmapTools
+                .createRatioPreservedDownscaledBitmapFromUri(
+                        context, imageInfo.uri, MAX_UPLOAD_WIDTH,
+                        MAX_UPLOAD_HEIGHT, true);
 
         // If the Bitmap wound up null, we're in trouble.
         if(bitmap == null) return null;
