@@ -20,6 +20,7 @@
     <string name="graticule_label">Graticule</string>
     <string name="exit_graticule_label">Return</string>
     <string name="date_label">Date</string>
+    <string name="wiki_label">Wiki</string>
     <string name="what_label">What\'s Geohashing?</string>
 
     <string name="search_label">Waiting for your location&#8230;</string>
@@ -60,10 +61,12 @@
     <string name="warning_outside_of_projection">That hashpoint lies outside the map\'s projection, so it might not show up.</string>
     <string name="error_no_data_to_maps">There\'s no active expedition to send to Maps.</string>
     <string name="error_no_data_to_radar">There\s no active expedition to send to a radar.</string>
+    <string name="error_no_data_to_wiki">There\'s no active expedition to send to the wiki.</string>
 
     <string name="map_activity_title">The Map</string>
     <string name="gratmap_activity_title">Tap your graticule</string>
     <string name="detail_activity_title">Details</string>
+    <string name="wiki_activity_title">Post to wiki</string>
     <string name="destination_label">Today\'s Point</string>
 
     <string name="find_location">Trying to determine your location&#8230;</string>

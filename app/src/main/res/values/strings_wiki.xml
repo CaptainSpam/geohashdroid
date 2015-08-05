@@ -67,6 +67,7 @@
 	<string name="wiki_dialog_submit_picture">Submit to gallery</string>
 	
 	<string name="wiki_generic_error">There was an unknown problem communicating with the wiki.</string>
+	<string name="wiki_generic_image_error">There was a problem loading that image.</string>
 	
 	<string name="pref_wiki_message">Gone hashing!</string>
 	<string name="pref_wiki_submit_message">Submit</string>

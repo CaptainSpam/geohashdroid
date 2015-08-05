@@ -9,9 +9,9 @@
 package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,7 +37,7 @@ import java.text.DateFormat;
  * The DetailedInfoFragment shows us some detailed info.  It's Javadocs like
  * this that really sell the whole concept, I know.
  */
-public class DetailedInfoFragment extends Fragment
+public class DetailedInfoFragment extends CentralMapExtraFragment
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener {
     /** The bundle key for the Info. */
@@ -53,29 +53,6 @@ public class DetailedInfoFragment extends Fragment
 
     private GoogleApiClient mGClient;
     private Location mLastLocation;
-    private Info mInfo;
-
-    private CloseListener mCloseListener;
-
-    /**
-     * Now, what you've got here is your garden-variety interface that something
-     * ought to implement to handle the close button on this here fragment.
-     */
-    public interface CloseListener {
-        /**
-         * Called when the user clicks the close button.  Use this opportunity
-         * to either dismiss the fragment or close the activity that contains
-         * it.
-         */
-        void detailedInfoClosing();
-
-        /**
-         * Called during onDestroy().  ExpeditionMode needs this so it knows
-         * when the user backed out of the fragment, as opposed to just the
-         * close button.
-         */
-        void detailedInfoDestroying();
-    }
 
     private LocationListener mLocationListener = new LocationListener() {
         @Override
@@ -89,21 +66,6 @@ public class DetailedInfoFragment extends Fragment
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // First, see if there's an instance state.
-        if(savedInstanceState != null) {
-            // If so, use the info in there.  Assuming it exists.
-            mInfo = savedInstanceState.getParcelable(INFO);
-        }
-
-        // If mInfo is still null here (there was no instance state or there was
-        // null data there), continue on to the arguments.
-        if(mInfo == null) {
-            Bundle args = getArguments();
-            if(args != null) {
-                mInfo = args.getParcelable(INFO);
-            }
-        }
 
         // We'll also form the Google API Client here.  I'm actually not sure
         // why I thought it was a good idea to pass it in from outside when it's
@@ -133,24 +95,9 @@ public class DetailedInfoFragment extends Fragment
         Button closeButton = (Button) layout.findViewById(R.id.close);
 
         // Button does a thing!
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mCloseListener != null) mCloseListener.detailedInfoClosing();
-            }
-        });
+        if(closeButton != null) registerCloseButton(closeButton);
 
         return layout;
-    }
-
-    @Override
-    public void onDestroy() {
-        // ExpeditionMode needs to know when this fragment is destroyed so it
-        // can make the FrameLayout go away.
-        if(mCloseListener != null)
-            mCloseListener.detailedInfoDestroying();
-
-        super.onDestroy();
     }
 
     @Override
@@ -170,16 +117,6 @@ public class DetailedInfoFragment extends Fragment
         }
 
         super.onStop();
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        // Also, remember that last info.  Owing to how ExpeditionMode works, it
-        // might have changed since arguments time.  If it DIDN'T change, well,
-        // it'll be the same as the arguments anyway.
-        outState.putParcelable(INFO, mInfo);
     }
 
     @Override
@@ -220,19 +157,9 @@ public class DetailedInfoFragment extends Fragment
      * @param info the new Info
      */
     public void setInfo(@Nullable final Info info) {
-        // New info!
-        mInfo = info;
+        super.setInfo(info);
 
         updateDisplay();
-    }
-
-    /**
-     * Sets what'll be listening for the close button.
-     *
-     * @param closeListener some CloseListener somewhere
-     */
-    public void setCloseListener(CloseListener closeListener) {
-        mCloseListener = closeListener;
     }
 
     private void updateDisplay() {
@@ -297,5 +224,11 @@ public class DetailedInfoFragment extends Fragment
                 }
             });
         }
+    }
+
+    @NonNull
+    @Override
+    public FragmentType getType() {
+        return FragmentType.DETAILS;
     }
 }

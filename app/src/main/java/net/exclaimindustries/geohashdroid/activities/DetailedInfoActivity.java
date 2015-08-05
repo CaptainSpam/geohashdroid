@@ -10,7 +10,6 @@ package net.exclaimindustries.geohashdroid.activities;
 
 import android.app.Activity;
 import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -19,6 +18,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
 import net.exclaimindustries.geohashdroid.fragments.DetailedInfoFragment;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -85,6 +85,20 @@ public class DetailedInfoActivity extends Activity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
+            case R.id.action_wiki: {
+                // Wiki time!  Wiki time!  It's time for wiki time!
+                if(mInfo != null) {
+                    // Since we're in the activity version of Detailed Info, we
+                    // know we're just starting the wiki activity.
+                    Intent i = new Intent(this, WikiActivity.class);
+                    i.putExtra(WikiActivity.INFO, mInfo);
+                    startActivity(i);
+                } else {
+                    Toast.makeText(this, R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
+                }
+
+                return true;
+            }
             case R.id.action_preferences: {
                 // We've got preferences, so we've got an Activity.
                 Intent i = new Intent(this, PreferencesActivity.class);
@@ -135,13 +149,13 @@ public class DetailedInfoActivity extends Activity
     }
 
     @Override
-    public void detailedInfoClosing() {
+    public void extraFragmentClosing(CentralMapExtraFragment fragment) {
         // Easy enough, just finish the Activity.
         finish();
     }
 
     @Override
-    public void detailedInfoDestroying() {
+    public void extraFragmentDestroying(CentralMapExtraFragment fragment) {
         // Nothing happens here; we're already on our way out.
     }
 }

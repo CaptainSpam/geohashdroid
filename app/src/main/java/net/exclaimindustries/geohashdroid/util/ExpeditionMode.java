@@ -8,7 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
@@ -49,6 +48,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
+import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
 import net.exclaimindustries.geohashdroid.fragments.DetailedInfoFragment;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
@@ -72,17 +72,18 @@ public class ExpeditionMode
         implements GoogleMap.OnInfoWindowClickListener,
                    GoogleMap.OnCameraChangeListener,
                    NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
-                   DetailedInfoFragment.CloseListener,
+                   CentralMapExtraFragment.CloseListener,
                    ZoomButtons.ZoomButtonListener {
     private static final String DEBUG_TAG = "ExpeditionMode";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
-    private static final String DETAIL_BACK_STACK = "DetailFragment";
+    private static final String EXTRA_FRAGMENT_BACK_STACK = "ExtraFragment";
 
     public static final String DO_INITIAL_START = "doInitialStart";
 
     private boolean mWaitingOnInitialZoom = false;
     private boolean mWaitingOnEmptyStart = false;
+    private boolean mReplacingFragment = false;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -95,7 +96,7 @@ public class ExpeditionMode
     private Location mInitialCheckLocation;
 
     private InfoBox mInfoBox;
-    private DetailedInfoFragment mDetailFragment;
+    private CentralMapExtraFragment mExtraFragment;
     private ZoomButtons mZoomButtons;
 
     private LocationListener mZoomToUserListener = new LocationListener() {
@@ -144,7 +145,7 @@ public class ExpeditionMode
     private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            launchDetailedInfo();
+            launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
         }
     };
 
@@ -181,8 +182,8 @@ public class ExpeditionMode
                 // Well, okay, we can also have no data at all, in which case we
                 // do nothing but wait until the user goes to Select-A-Graticule
                 // to get things moving.
-                if(bundle.getParcelable(INFO) != null) {
-                    mCurrentInfo = bundle.getParcelable(INFO);
+                mCurrentInfo = bundle.getParcelable(INFO);
+                if(mCurrentInfo != null) {
                     requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
                     // We've got a request to make!  Chances are, StockService
@@ -220,10 +221,10 @@ public class ExpeditionMode
         // Plus, if the detailed info fragment's already there, make its
         // container go visible, too.
         FragmentManager manager = mCentralMap.getFragmentManager();
-        mDetailFragment = (DetailedInfoFragment)manager.findFragmentById(R.id.extra_fragment_container);
-        if(mDetailFragment != null) {
+        mExtraFragment = (CentralMapExtraFragment)manager.findFragmentById(R.id.extra_fragment_container);
+        if(mExtraFragment != null) {
             mCentralMap.findViewById(R.id.extra_fragment_container).setVisibility(View.VISIBLE);
-            mDetailFragment.setCloseListener(this);
+            mExtraFragment.setCloseListener(this);
         }
 
         // The zoom buttons also need to go in.
@@ -267,12 +268,13 @@ public class ExpeditionMode
         mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
             @Override
             public void run() {
-                ((ViewGroup)mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
+                ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
             }
         });
 
-        // And its fragment counterpart.
-        detailedInfoClosing();
+        // Plus, any bonus fragment we might have.
+        if(mExtraFragment != null)
+            extraFragmentClosing(mExtraFragment);
 
         // Zoom buttons, you go away, too.  In this case, we animate the entire
         // block away ourselves and remove it when done with a callback.
@@ -350,6 +352,14 @@ public class ExpeditionMode
         if(!AndroidUtil.isIntentAvailable(c, GHDConstants.SHOW_RADAR_ACTION))
             menu.removeItem(R.id.action_send_to_radar);
 
+        // If we don't have any Info yet, we can't have things that depend on
+        // it, such as wiki, details, Send To Maps, or Send To Radar.
+        if(mCurrentInfo == null) {
+            menu.removeItem(R.id.action_send_to_maps);
+            menu.removeItem(R.id.action_send_to_radar);
+            menu.removeItem(R.id.action_details);
+            menu.removeItem(R.id.action_wiki);
+        }
     }
 
     @Override
@@ -365,7 +375,12 @@ public class ExpeditionMode
                 // either because they don't have the infobox visible on the
                 // main display or they were poking every option and wanted to
                 // see what this would do.  Here's what it do:
-                launchDetailedInfo();
+                launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
+                return true;
+            }
+            case R.id.action_wiki: {
+                // Same as with details, but with the wiki instead.
+                launchExtraFragment(CentralMapExtraFragment.FragmentType.WIKI);
                 return true;
             }
             case R.id.action_send_to_maps: {
@@ -532,6 +547,17 @@ public class ExpeditionMode
     private void setInfo(final Info info) {
         mCurrentInfo = info;
 
+        // Redraw the menu as need be, too.
+        mCentralMap.invalidateOptionsMenu();
+
+        // Set the infobox in motion as well.
+        if(showInfoBox()) {
+            mInfoBox.animateInfoBoxVisible(true);
+            mInfoBox.startListening(getGoogleClient());
+        } else {
+            mInfoBox.animateInfoBoxVisible(false);
+        }
+
         if(!mInitComplete) return;
 
         removeDestinationPoint();
@@ -544,8 +570,8 @@ public class ExpeditionMode
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, info != null);
 
         // As does the detail fragment, if it's there.
-        if(mDetailFragment != null)
-            mDetailFragment.setInfo(info);
+        if(mExtraFragment != null)
+            mExtraFragment.setInfo(info);
 
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.
@@ -746,10 +772,10 @@ public class ExpeditionMode
 
     private boolean showInfoBox() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
-        return prefs.getBoolean(GHDConstants.PREF_INFOBOX, true);
+        return mCurrentInfo != null && prefs.getBoolean(GHDConstants.PREF_INFOBOX, true);
     }
 
-    private void launchDetailedInfo() {
+    private void launchExtraFragment(CentralMapExtraFragment.FragmentType type) {
         // First off, ignore this if there's no Info yet.
         if(mCurrentInfo == null) return;
 
@@ -759,42 +785,69 @@ public class ExpeditionMode
         View container = mCentralMap.findViewById(R.id.extra_fragment_container);
         if(container == null) {
             // To the Activity!
-            Intent i = new Intent(mCentralMap, DetailedInfoActivity.class);
+            Intent i = CentralMapExtraFragment.makeIntentForType(mCentralMap, type);
             i.putExtra(DetailedInfoActivity.INFO, mCurrentInfo);
             mCentralMap.startActivity(i);
         } else {
             // Check to see if the fragment's already there.
+            // Check to see if the fragment's already there.
             FragmentManager manager = mCentralMap.getFragmentManager();
-            Fragment f = manager.findFragmentById(R.id.extra_fragment_container);
+            CentralMapExtraFragment f;
+            try {
+                f = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
+            } catch(ClassCastException cce) {
+                f = null;
+            }
+
             if(f == null) {
-                // If not, make it be there!
-                mDetailFragment = new DetailedInfoFragment();
+                // It's not there!  Make it be there!
+                mExtraFragment = CentralMapExtraFragment.makeFragmentForType(type);
                 Bundle args = new Bundle();
                 args.putParcelable(DetailedInfoFragment.INFO, mCurrentInfo);
-                mDetailFragment.setArguments(args);
-                mDetailFragment.setCloseListener(this);
+                mExtraFragment.setArguments(args);
+                mExtraFragment.setCloseListener(this);
 
                 FragmentTransaction trans = manager.beginTransaction();
-                trans.replace(R.id.extra_fragment_container, mDetailFragment, DETAIL_BACK_STACK);
-                trans.addToBackStack(DETAIL_BACK_STACK);
+                trans.replace(R.id.extra_fragment_container, mExtraFragment, EXTRA_FRAGMENT_BACK_STACK);
+                trans.addToBackStack(EXTRA_FRAGMENT_BACK_STACK);
                 trans.commit();
 
                 // Also, due to how the layout works, the container also needs
                 // to go visible now.
                 container.setVisibility(View.VISIBLE);
             } else {
-                // If it's already there, hide it.
-                detailedInfoClosing();
+                // Okay, something's already there.  Is it the same type of
+                // fragment we're trying to launch?
+                if(type == f.getType()) {
+                    // It is!  Just dismiss it, then.
+                    clearExtraFragment();
+                } else {
+                    // It isn't.  Well, that means we need to replace the old
+                    // one.  However, we also need to make sure the destroy
+                    // call won't trigger the hide-the-container code in here.
+                    // So...
+                    mReplacingFragment = true;
+
+                    mExtraFragment = CentralMapExtraFragment.makeFragmentForType(type);
+                    Bundle args = new Bundle();
+                    args.putParcelable(DetailedInfoFragment.INFO, mCurrentInfo);
+                    mExtraFragment.setArguments(args);
+                    mExtraFragment.setCloseListener(this);
+
+                    FragmentTransaction trans = manager.beginTransaction();
+                    trans.replace(R.id.extra_fragment_container, mExtraFragment, EXTRA_FRAGMENT_BACK_STACK);
+                    trans.addToBackStack(EXTRA_FRAGMENT_BACK_STACK);
+                    trans.commit();
+                }
             }
         }
     }
 
-    @Override
-    public void detailedInfoClosing() {
-        // On the close button, pop the back stack.
+    private void clearExtraFragment() {
+        // This simply clears out the extra fragment
         FragmentManager manager = mCentralMap.getFragmentManager();
         try {
-            manager.popBackStack(DETAIL_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            manager.popBackStack(EXTRA_FRAGMENT_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         } catch(IllegalStateException ise) {
             // We might find ourselves here during shutdown time.  CentralMap
             // triggers its onSaveInstanceState before onDestroy, onDestroy
@@ -806,16 +859,27 @@ public class ExpeditionMode
     }
 
     @Override
-    public void detailedInfoDestroying() {
-        // And now that it's being destroyed, hide the container.
-        View container = mCentralMap.findViewById(R.id.extra_fragment_container);
+    public void extraFragmentClosing(CentralMapExtraFragment fragment) {
+        // On the close button, pop the back stack.
+        clearExtraFragment();
+    }
 
-        if(container != null)
-            container.setVisibility(View.GONE);
-        else
-            Log.w(DEBUG_TAG, "We got detailedInfoDestroying when there's no container in CentralMap for it!  The hell?");
+    @Override
+    public void extraFragmentDestroying(CentralMapExtraFragment fragment) {
+        // And now that it's being destroyed, hide the container, unless it's
+        // being replaced.
+        if(mReplacingFragment) {
+            mReplacingFragment = false;
+        } else {
+            View container = mCentralMap.findViewById(R.id.extra_fragment_container);
 
-        mDetailFragment = null;
+            if(container != null)
+                container.setVisibility(View.GONE);
+            else
+                Log.w(DEBUG_TAG, "We got detailedInfoDestroying when there's no container in CentralMap for it!  The hell?");
+
+            mExtraFragment = null;
+        }
     }
 
     @Override

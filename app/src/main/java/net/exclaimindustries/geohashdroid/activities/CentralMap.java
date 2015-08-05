@@ -38,16 +38,16 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
-import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 
 import java.text.DateFormat;
@@ -766,13 +766,12 @@ public class CentralMap
         // The Infobox is now controlled by a boolean, not a string.
         if(prefs.contains("InfoBoxSize")) {
             if(!prefs.contains(GHDConstants.PREF_INFOBOX)) {
-                String size = "";
+                String size;
                 try {
                     size = prefs.getString("InfoBoxSize", "None");
                 } catch (ClassCastException cce) {
                     size = "Off";
                 }
-                if(size == null) size = "Off";
 
                 edit.putBoolean(GHDConstants.PREF_INFOBOX, size.equals("None"));
             }

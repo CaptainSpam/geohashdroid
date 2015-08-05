@@ -5,20 +5,24 @@
         android:title="@string/graticule_label"
         android:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_date"
-        android:title="@string/date_label"
+        android:id="@+id/action_wiki"
+        android:title="@string/wiki_label"
         android:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_whatisthis"
         android:title="@string/what_label"
         android:showAsAction="never" />
     <item
-        android:id="@+id/action_map_type"
-        android:title="@string/menu_item_map_type"
-        android:showAsAction="never" />
+        android:id="@+id/action_date"
+        android:title="@string/date_label"
+        android:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_details"
         android:title="@string/detail_activity_title"
+        android:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_map_type"
+        android:title="@string/menu_item_map_type"
         android:showAsAction="never" />
     <item
         android:id="@+id/action_send_to_maps"

@@ -55,7 +55,7 @@
     <dimen name="about_major_padding">10dp</dimen>
     <dimen name="about_minor_padding">5dp</dimen>
 
-    <dimen name="wiki_nominal_icon_size">150dp</dimen>
+    <dimen name="wiki_nominal_icon_size">100dp</dimen>
     <!-- This one really really doesn't depend on dpi or whatnot, as this is
          directly going into an image that'll always be a fairly similar size
          no matter what happens. -->

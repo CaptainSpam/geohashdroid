@@ -72,6 +72,11 @@
             android:label="@string/detail_activity_title">
         </activity>
 
+        <activity
+            android:name=".activities.WikiActivity"
+            android:label="@string/wiki_activity_title">
+        </activity>
+
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="@string/api_map_key_v2"/>
