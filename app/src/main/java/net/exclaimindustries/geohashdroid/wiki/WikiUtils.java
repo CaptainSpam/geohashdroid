@@ -386,7 +386,7 @@ public class WikiUtils {
         // Now, get the result.  If it was a success, cookies got added.  If it
         // was NeedToken, this is a 1.16 wiki (as it should be now) and we need
         // another request to get the final token.
-        if(result.equals("NeedToken")) {
+        if(result != null && result.equals("NeedToken")) {
             Log.d(DEBUG_TAG, "Token needed, trying again...");
             // Okay, do the same thing again, this time with the token we got
             // the first time around.  Cookies will be set this time around, I
@@ -421,7 +421,7 @@ public class WikiUtils {
 
         // Check it.  If NeedToken was returned again, then the wiki is just
         // telling us nonsense and we've got a right to throw an exception.
-        if(result.equals("Success")) {
+        if(result != null && result.equals("Success")) {
             Log.d(DEBUG_TAG, "Success!");
         } else {
             Log.d(DEBUG_TAG, "FAILURE!");

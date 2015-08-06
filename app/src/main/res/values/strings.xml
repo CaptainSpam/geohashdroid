@@ -62,6 +62,8 @@
     <string name="error_no_data_to_maps">There\'s no active expedition to send to Maps.</string>
     <string name="error_no_data_to_radar">There\s no active expedition to send to a radar.</string>
     <string name="error_no_data_to_wiki">There\'s no active expedition to send to the wiki.</string>
+    <string name="error_no_message">You need to put in a message to send it to the wiki.</string>
+    <string name="error_no_picture">You didn\'t pick a picture for a picture post.</string>
 
     <string name="map_activity_title">The Map</string>
     <string name="gratmap_activity_title">Tap your graticule</string>

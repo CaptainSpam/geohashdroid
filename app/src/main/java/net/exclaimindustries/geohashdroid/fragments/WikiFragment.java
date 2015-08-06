@@ -13,10 +13,13 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +46,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import java.text.DateFormat;
+import java.util.Calendar;
 
 /**
  * <code>WikiFragment</code> does double duty, handling what both of <code>WikiPictureEditor</code>
@@ -60,7 +64,7 @@ public class WikiFragment extends CentralMapExtraFragment
     private View mAnonWarning;
     private ImageButton mGalleryButton;
     private CheckBox mPictureCheckbox;
-    private CheckBox mStampInfoboxCheckbox;
+    private CheckBox mIncludeLocationCheckbox;
     private TextView mLocationView;
     private TextView mDistanceView;
     private EditText mMessage;
@@ -112,7 +116,7 @@ public class WikiFragment extends CentralMapExtraFragment
         // Views!
         mAnonWarning = layout.findViewById(R.id.wiki_anon_warning);
         mPictureCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_include_picture);
-        mStampInfoboxCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_infobox);
+        mIncludeLocationCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_include_location);
         mGalleryButton = (ImageButton)layout.findViewById(R.id.wiki_thumbnail);
         mPostButton = (Button)layout.findViewById(R.id.wiki_post_button);
         mMessage = (EditText)layout.findViewById(R.id.wiki_message);
@@ -134,11 +138,44 @@ public class WikiFragment extends CentralMapExtraFragment
         mGalleryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivityForResult(
-                        new Intent(
-                                Intent.ACTION_PICK,
-                                android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI),
-                        GET_PICTURE);
+                // Apparently there's been some... changes.  Changes in Kitkat
+                // or the like.
+                Intent i;
+
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                    i = new Intent(Intent.ACTION_GET_CONTENT);
+                    i.setType("image/*");
+                } else {
+                    i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType("image/*");
+                }
+
+                startActivityForResult(i, GET_PICTURE);
+            }
+        });
+
+        // Any time the user edits the text, we also check to re-enable the post
+        // button.
+        mMessage.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Ah, there we go.
+                resolvePostButtonEnabledness();
+            }
+        });
+
+        // Here's the main event.
+        mPostButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dispatchPost();
             }
         });
 
@@ -149,6 +186,11 @@ public class WikiFragment extends CentralMapExtraFragment
         if(savedInstanceState != null) {
             Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
             if(pic != null) setImageUri(pic);
+        } else {
+            // setImageUri will call resolvePostButtonEnabledness, but since we
+            // don't want to pass a null to the former, we'll call the latter if
+            // we got a null.
+            resolvePostButtonEnabledness();
         }
 
         return layout;
@@ -250,6 +292,8 @@ public class WikiFragment extends CentralMapExtraFragment
 
         // And remember it for posting later.  Done!
         mPictureUri = uri;
+
+        resolvePostButtonEnabledness();
     }
 
     @Override
@@ -277,7 +321,6 @@ public class WikiFragment extends CentralMapExtraFragment
                     mPictureCheckbox.setChecked(false);
                     mPictureCheckbox.setVisibility(View.GONE);
                     mGalleryButton.setVisibility(View.GONE);
-                    mStampInfoboxCheckbox.setVisibility(View.GONE);
                     mAnonWarning.setVisibility(View.VISIBLE);
                 } else {
                     // Now, we can't just turn everything back on without
@@ -302,15 +345,20 @@ public class WikiFragment extends CentralMapExtraFragment
             public void run() {
                 if(mPictureCheckbox.isChecked()) {
                     mGalleryButton.setVisibility(View.VISIBLE);
-                    mStampInfoboxCheckbox.setVisibility(View.VISIBLE);
 
-                    // Oh, and update the button string, too.
+                    // Oh, and update a few strings, too.
                     mPostButton.setText(R.string.wiki_dialog_submit_picture);
+                    mIncludeLocationCheckbox.setText(R.string.wiki_dialog_stamp_image);
+                    mMessage.setHint(R.string.hint_caption);
                 } else {
                     mGalleryButton.setVisibility(View.GONE);
-                    mStampInfoboxCheckbox.setVisibility(View.GONE);
                     mPostButton.setText(R.string.wiki_dialog_submit_message);
+                    mIncludeLocationCheckbox.setText(R.string.wiki_dialog_append_coordinates);
+                    mMessage.setHint(R.string.hint_message);
                 }
+
+                // This also changes the post button's enabledness.
+                resolvePostButtonEnabledness();
             }
         });
     }
@@ -319,17 +367,16 @@ public class WikiFragment extends CentralMapExtraFragment
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                // We can make a few booleans here just so the eventual call to
+                // setEnabled is easier to read.
+                boolean isInPictureMode = mPictureCheckbox.isChecked();
+                boolean hasPicture = (mPictureUri != null);
                 boolean hasMessage = !(mMessage.getText().toString().isEmpty());
 
-                if(!mPictureCheckbox.isChecked()) {
-                    // If we're in message mode, then we just need to make sure
-                    // there's a message.
-                    mPostButton.setEnabled(hasMessage);
-                } else {
-                    // Otherwise, we also need to make sure there's a picture to
-                    // go with it.
-
-                }
+                // So, to review, the button is enabled ONLY if there's a
+                // message and, if we're in picture mode, there's a picture to
+                // go with it.
+                mPostButton.setEnabled(hasMessage && (hasPicture || !isInPictureMode));
             }
         });
     }
@@ -370,6 +417,51 @@ public class WikiFragment extends CentralMapExtraFragment
                 }
             }
         });
+    }
+
+    private void dispatchPost() {
+        // Time for fun!
+        boolean includeLocation = mIncludeLocationCheckbox.isChecked();
+        boolean includePicture = mPictureCheckbox.isChecked();
+
+        // So.  If we didn't have an Info yet, we're hosed.
+        if(mInfo == null) {
+            Toast.makeText(getActivity(), R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // If there's no message, we're hosed.
+        if(mMessage.getText().toString().isEmpty()) {
+            Toast.makeText(getActivity(), R.string.error_no_message, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // If this is a picture post but there's no picture, we're hosed.
+        if(includePicture && mPictureUri == null) {
+            Toast.makeText(getActivity(), R.string.error_no_picture, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Otherwise, it's time to send!
+        String message = mMessage.getText().toString();
+        Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
+        if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
+
+        Intent i = new Intent(getActivity(), WikiService.class);
+        i.putExtra(WikiService.EXTRA_INFO, mInfo);
+        i.putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance());
+        i.putExtra(WikiService.EXTRA_MESSAGE, message);
+        i.putExtra(WikiService.EXTRA_LOCATION, loc);
+        i.putExtra(WikiService.EXTRA_INCLUDE_LOCATION, includeLocation);
+        if(includePicture)
+            i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri);
+
+        // And away it goes!
+        getActivity().startService(i);
+
+        // Post complete!  We're done here!
+        if(mCloseListener != null)
+            mCloseListener.extraFragmentClosing(this);
     }
 
     @Override

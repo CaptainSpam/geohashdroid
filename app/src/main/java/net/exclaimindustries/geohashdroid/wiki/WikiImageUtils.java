@@ -102,77 +102,28 @@ public class WikiImageUtils {
 
     /**
      * <p>
-     * Creates an {@link ImageInfo} object from the given Uri.  Note that as
-     * this is written, the Uri should be something that can be read by
-     * MediaStore, meaning you probably want to get something in from the
-     * Photos or Gallery app.
-     * </p>
-     *
-     * <p>
-     * If MediaStore can't figure it out, this will return a new ImageInfo
-     * pre-populated with as much data as given when called.
+     * Creates an {@link ImageInfo} object from the given Uri.  Note that as far
+     * as Android goes for the time being, locationIfNoneSet and timeIfNoneSet
+     * will ALWAYS be what's used, ever since the changes that require me to use
+     * the document opening interface as opposed to the old MediaStore method.
+     * This will change if I can ever get reasonable metadata out of the
+     * document provider's methods.
      * </p>
      *
      * @param context a Context from which ContentResolver comes
      * @param uri the URI of the image
-     * @param locationIfNoneSet location to use if the image has no location metadata stored in it
-     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it
+     * @param locationIfNoneSet location to use if the image has no location metadata stored in it (it won't)
+     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it (it won't)
      * @return a brand new ImageInfo
      */
     @NonNull
     public static ImageInfo readImageInfo(@NonNull Context context, @NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
-        // We're hoping this is something that MediaStore understands.  But,
-        // we'll make this first anyway, just in case.
+        // This got a lot simpler, but sadly much less robust, after the Android
+        // change that broke permissions on MediaStore...
         ImageInfo toReturn = new ImageInfo();
         toReturn.uri = uri;
         toReturn.location = locationIfNoneSet;
         toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
-
-        Cursor cursor;
-        cursor = context.getContentResolver().query(uri, new String[]
-                        { MediaStore.Images.ImageColumns.DATA,
-                                MediaStore.Images.ImageColumns.LATITUDE,
-                                MediaStore.Images.ImageColumns.LONGITUDE,
-                                MediaStore.Images.ImageColumns.DATE_TAKEN },
-                null, null, null);
-
-        if(cursor == null || cursor.getCount() < 1) {
-            if(cursor != null) cursor.close();
-            return toReturn;
-        }
-
-        cursor.moveToFirst();
-
-        toReturn.filename = cursor.getString(0);
-        toReturn.timestamp = cursor.getLong(3);
-
-        if(toReturn.timestamp < 0) toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
-
-        // These two could very well be null or empty.  Nothing wrong with that.
-        // But if they're good, make a Location out of them.
-        String lat = cursor.getString(1);
-        String lon = cursor.getString(2);
-
-        Location toSet;
-        try {
-            double llat = Double.parseDouble(lat);
-            double llon = Double.parseDouble(lon);
-            toSet = new Location("");
-            toSet.setLatitude(llat);
-            toSet.setLongitude(llon);
-        } catch (Exception ex) {
-            // If we get an exception, we got it because of the number parser.
-            // Assume it's invalid and we're using the user's current location,
-            // if that's even known (that might ALSO be null, in which case we
-            // just don't have any clue where the user is, which seems a bit
-            // counterintuitive to how Geohashing is supposed to work).
-            toSet = locationIfNoneSet;
-        }
-
-        // Now toss the location into the info.
-        toReturn.location = toSet;
-
-        cursor.close();
 
         return toReturn;
     }

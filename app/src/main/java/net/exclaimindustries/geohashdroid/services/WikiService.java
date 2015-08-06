@@ -270,15 +270,6 @@ public class WikiService extends QueueService {
                 WikiImageUtils.ImageInfo imageInfo;
                 imageInfo = WikiImageUtils.readImageInfo(this, imageLocation, loc, timestamp);
 
-                // Now, the location that we're going to send for the image
-                // SHOULD match up with where the user thinks they are, so we'll
-                // read what got stuffed into the ImageInfo.  Note that we just
-                // gave it the user's current location in the event that
-                // MediaStore doesn't have any idea, either, so we're not going
-                // to replace good data with a null, if said good data exists.
-                if(includeLocation)
-                    loc = imageInfo.location;
-
                 // Get the image's filename, too.  Well, that is, the name it'll
                 // have on the wiki.
                 String wikiName = WikiImageUtils.getImageWikiName(info, imageInfo, username);
@@ -288,7 +279,7 @@ public class WikiService extends QueueService {
                 // it" steps.
                 if(!WikiUtils.doesWikiPageExist(client, wikiName)) {
                     // Get us a byte array!  We'll be uploading this soon.
-                    byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, true);
+                    byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, includeLocation);
 
                     // And by "soon", I mean "right now", because that byte
                     // array takes up a decent amount of memory.
@@ -386,6 +377,7 @@ public class WikiService extends QueueService {
             } else {
                 // Otherwise, we're kinda stumped.  Maybe the user will know
                 // what to do?
+                Log.e(DEBUG_TAG, "Unknown wiki problem", e);
                 showPausingErrorNotification(getString(R.string.wiki_notification_general_error), resolveWikiExceptionActions(null));
             }
 

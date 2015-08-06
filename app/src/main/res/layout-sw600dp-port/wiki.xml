@@ -36,14 +36,6 @@
             android:scaleType="centerInside"
             android:src="@android:drawable/ic_menu_gallery" />
 
-        <CheckBox
-            android:id="@+id/wiki_check_infobox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/wiki_dialog_stamp_image"
-            android:textSize="@dimen/wikipost_fontsize"
-            android:checked="true"/>
-
         <TextView
             android:id="@+id/wiki_anon_warning"
             android:layout_width="wrap_content"
@@ -72,7 +64,7 @@
         <EditText
             android:layout_width="fill_parent"
             android:layout_height="0dp"
-            android:inputType="textMultiLine"
+            android:inputType="textMultiLine|textCapSentences"
             android:ems="10"
             android:id="@+id/wiki_message"
             android:layout_weight="1"

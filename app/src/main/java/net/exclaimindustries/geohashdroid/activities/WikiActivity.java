@@ -41,6 +41,7 @@ public class WikiActivity extends Activity
         // Hi, fragment.
         FragmentManager manager = getFragmentManager();
         WikiFragment frag = (WikiFragment) manager.findFragmentById(R.id.wiki_fragment);
+        frag.setCloseListener(this);
 
         // Hi, intent.
         Intent intent = getIntent();
