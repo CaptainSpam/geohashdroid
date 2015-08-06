@@ -45,14 +45,6 @@
             android:checked="true"/>
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="@dimen/wikipost_tiny_fontsize"
-            android:text="@string/wiki_editor_message_will_be_caption"
-            android:id="@+id/wiki_message_is_caption"
-            android:layout_gravity="center_horizontal"/>
-
-        <TextView
             android:id="@+id/wiki_anon_warning"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -69,6 +61,14 @@
         android:layout_weight="1"
         android:layout_margin="@dimen/wiki_fragment_padding">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/wiki_header"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:textSize="@dimen/wikipost_header_fontsize"/>
+
         <EditText
             android:layout_width="fill_parent"
             android:layout_height="0dp"
@@ -78,27 +78,6 @@
             android:layout_weight="1"
             android:hint="@string/hint_message"
             />
-
-        <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:id="@+id/wiki_location_block"
-            android:layout_margin="@dimen/standard_padding">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/standby_title"
-                android:id="@+id/wiki_current_location"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/standby_title"
-                android:id="@+id/wiki_distance"/>
-        </LinearLayout>
 
         <Button
             android:layout_width="wrap_content"

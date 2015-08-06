@@ -8,7 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
-import android.app.Fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -43,7 +42,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-import java.io.IOException;
+import java.text.DateFormat;
 
 /**
  * <code>WikiFragment</code> does double duty, handling what both of <code>WikiPictureEditor</code>
@@ -54,25 +53,20 @@ import java.io.IOException;
 public class WikiFragment extends CentralMapExtraFragment
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener {
-    /** Boolean argument indicating this needs to track location itself. */
-    public static final String TRACK_LOCATION = "trackLocation";
-    /** Bunde key for the Info object. */
-    public static final String INFO = "info";
+    private static final String PICTURE_URI = "pictureUri";
 
     private static final int GET_PICTURE = 1;
 
     private View mAnonWarning;
-    private View mPictureCaptionNote;
     private ImageButton mGalleryButton;
     private CheckBox mPictureCheckbox;
     private CheckBox mStampInfoboxCheckbox;
-    private View mLocationLayout;
     private TextView mLocationView;
     private TextView mDistanceView;
     private EditText mMessage;
     private Button mPostButton;
+    private TextView mHeader;
 
-    private Info mInfo;
     private GoogleApiClient mGClient;
     private Location mLastLocation;
 
@@ -102,21 +96,7 @@ public class WikiFragment extends CentralMapExtraFragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // First, see if there's an instance state.
-        if(savedInstanceState != null) {
-            // If so, use the info in there.  Assuming it exists.
-            mInfo = savedInstanceState.getParcelable(INFO);
-        }
-
-        // Was it null?  Perhaps it was...
-        if(mInfo == null) {
-            Bundle args = getArguments();
-            if(args != null) {
-                mInfo = args.getParcelable(INFO);
-            }
-        }
-
-        // And hey, look, it's a GoogleApiClient again.  Surprise, surprise.
+        // Hey, look, it's a GoogleApiClient again.  Surprise, surprise.
         mGClient = new GoogleApiClient.Builder(getActivity())
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -131,8 +111,6 @@ public class WikiFragment extends CentralMapExtraFragment
 
         // Views!
         mAnonWarning = layout.findViewById(R.id.wiki_anon_warning);
-        mPictureCaptionNote = layout.findViewById(R.id.wiki_message_is_caption);
-        mLocationLayout = layout.findViewById(R.id.wiki_location_block);
         mPictureCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_include_picture);
         mStampInfoboxCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_infobox);
         mGalleryButton = (ImageButton)layout.findViewById(R.id.wiki_thumbnail);
@@ -140,6 +118,7 @@ public class WikiFragment extends CentralMapExtraFragment
         mMessage = (EditText)layout.findViewById(R.id.wiki_message);
         mLocationView = (TextView)layout.findViewById(R.id.wiki_current_location);
         mDistanceView = (TextView)layout.findViewById(R.id.wiki_distance);
+        mHeader = (TextView)layout.findViewById(R.id.wiki_header);
 
         // The picture checkbox determines if the other boxes are visible or
         // not.
@@ -162,6 +141,15 @@ public class WikiFragment extends CentralMapExtraFragment
                         GET_PICTURE);
             }
         });
+
+        // Make sure the header gets set here, too.
+        applyHeader();
+
+        // If we had a leftover Uri, apply that as well.
+        if(savedInstanceState != null) {
+            Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
+            if(pic != null) setImageUri(pic);
+        }
 
         return layout;
     }
@@ -206,6 +194,14 @@ public class WikiFragment extends CentralMapExtraFragment
     }
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // We've also got a picture URI to deal with.
+        outState.putParcelable(PICTURE_URI, mPictureUri);
+    }
+
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
             case GET_PICTURE: {
@@ -217,29 +213,7 @@ public class WikiFragment extends CentralMapExtraFragment
                     if(uri == null)
                         return;
 
-                    // Grab a new Bitmap.  We'll toss this into the button.
-                    int dimen = getResources().getDimensionPixelSize(R.dimen.wiki_nominal_icon_size);
-                    Bitmap thumbnail = BitmapTools
-                            .createRatioPreservedDownscaledBitmapFromUri(
-                                    getActivity(),
-                                    uri,
-                                    dimen,
-                                    dimen,
-                                    true
-                            );
-
-                    // Good!  Was it null?
-                    if(thumbnail == null) {
-                        // NO!  WRONG!  BAD!
-                        Toast.makeText(getActivity(), R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    // With bitmap in hand...
-                    mGalleryButton.setImageBitmap(thumbnail);
-
-                    // And remember it for posting later.  Done!
-                    mPictureUri = uri;
+                    setImageUri(uri);
                 }
             }
             default:
@@ -247,38 +221,42 @@ public class WikiFragment extends CentralMapExtraFragment
         }
     }
 
-    /**
-     * Sets the Info.  Whatever gets set here will override any arguments
-     * originally passed in if and when onSaveInstanceState is needed.  Please
-     * don't make this null.
-     *
-     * @param info the new Info
-     */
-    public void setInfo(Info info) {
-        mInfo = info;
+    private void setImageUri(@NonNull Uri uri) {
+        // Grab a new Bitmap.  We'll toss this into the button.
+        int dimen = getResources().getDimensionPixelSize(R.dimen.wiki_nominal_icon_size);
+        final Bitmap thumbnail = BitmapTools
+                .createRatioPreservedDownscaledBitmapFromUri(
+                        getActivity(),
+                        uri,
+                        dimen,
+                        dimen,
+                        true
+                );
 
-        // TODO: Update the display.
+        // Good!  Was it null?
+        if(thumbnail == null) {
+            // NO!  WRONG!  BAD!
+            Toast.makeText(getActivity(), R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // With bitmap in hand...
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mGalleryButton.setImageBitmap(thumbnail);
+            }
+        });
+
+        // And remember it for posting later.  Done!
+        mPictureUri = uri;
     }
 
-    /**
-     * Sets whether or not the current location section is visible.  It should
-     * be visible if we're on a phone.  On a tablet, CentralMap is still there,
-     * meaning the InfoBox that's usually there will suffice.  In either case,
-     * the most recent location from the location service will be what's
-     * actually sent to the wiki.  This is mainly just for the interface.
-     *
-     * @param enabled true to track, false to not
-     */
-    public void setTrackLocation(boolean enabled) {
-        if(enabled) {
-            // On go the views!
-            mLocationView.setVisibility(View.VISIBLE);
-            mDistanceView.setVisibility(View.VISIBLE);
-        } else {
-            // Out go the views!
-            mLocationView.setVisibility(View.GONE);
-            mDistanceView.setVisibility(View.GONE);
-        }
+    @Override
+    public void setInfo(Info info) {
+        super.setInfo(info);
+
+        applyHeader();
     }
 
     private void checkAnonStatus() {
@@ -299,7 +277,6 @@ public class WikiFragment extends CentralMapExtraFragment
                     mPictureCheckbox.setChecked(false);
                     mPictureCheckbox.setVisibility(View.GONE);
                     mGalleryButton.setVisibility(View.GONE);
-                    mPictureCaptionNote.setVisibility(View.GONE);
                     mStampInfoboxCheckbox.setVisibility(View.GONE);
                     mAnonWarning.setVisibility(View.VISIBLE);
                 } else {
@@ -325,14 +302,12 @@ public class WikiFragment extends CentralMapExtraFragment
             public void run() {
                 if(mPictureCheckbox.isChecked()) {
                     mGalleryButton.setVisibility(View.VISIBLE);
-                    mPictureCaptionNote.setVisibility(View.VISIBLE);
                     mStampInfoboxCheckbox.setVisibility(View.VISIBLE);
 
                     // Oh, and update the button string, too.
                     mPostButton.setText(R.string.wiki_dialog_submit_picture);
                 } else {
                     mGalleryButton.setVisibility(View.GONE);
-                    mPictureCaptionNote.setVisibility(View.GONE);
                     mStampInfoboxCheckbox.setVisibility(View.GONE);
                     mPostButton.setText(R.string.wiki_dialog_submit_message);
                 }
@@ -359,19 +334,42 @@ public class WikiFragment extends CentralMapExtraFragment
         });
     }
 
+    private void applyHeader() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(mInfo == null) {
+                    mHeader.setText("");
+                } else {
+                    mHeader.setText(getString(R.string.wiki_dialog_header,
+                            DateFormat.getDateInstance(DateFormat.MEDIUM).format(mInfo.getCalendar().getTime()),
+                            (mInfo.isGlobalHash()
+                                    ? getString(R.string.globalhash_label)
+                                    : mInfo.getGraticule().getLatitudeString(false) + " " + mInfo.getGraticule().getLongitudeString(false))));
+                }
+            }
+        });
+    }
+
     private void updateLocation() {
-        // If we're not ready yet, don't bother.
+        // If we're not ready yet (or if this isn't a phone layout), don't
+        // bother.
         if(mLocationView == null || mDistanceView == null || mInfo == null) return;
 
-        // Easy enough, this is just the current location and the distance.
-        if(mLastLocation == null) {
-            // Or not, if there's no location.
-            mLocationView.setText(R.string.standby_title);
-            mDistanceView.setText(R.string.standby_title);
-        } else {
-            mLocationView.setText(UnitConverter.makeFullCoordinateString(getActivity(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
-            mLocationView.setText(UnitConverter.makeDistanceString(getActivity(), UnitConverter.DISTANCE_FORMAT_SHORT, mLastLocation.distanceTo(mInfo.getFinalLocation())));
-        }
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Easy enough, this is just the current location data.
+                if(mLastLocation == null) {
+                    // Or not, if there's no location.
+                    mLocationView.setText(R.string.standby_title);
+                    mDistanceView.setText(R.string.standby_title);
+                } else {
+                    mLocationView.setText(UnitConverter.makeFullCoordinateString(getActivity(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
+                    mDistanceView.setText(UnitConverter.makeDistanceString(getActivity(), UnitConverter.DISTANCE_FORMAT_SHORT, mLastLocation.distanceTo(mInfo.getFinalLocation())));
+                }
+            }
+        });
     }
 
     @Override

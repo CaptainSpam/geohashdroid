@@ -40,6 +40,7 @@
     <dimen name="wikipost_fontsize">16sp</dimen>
     <dimen name="wikipost_tiny_fontsize">14sp</dimen>
     <dimen name="wikipost_really_tiny_fontsize">12sp</dimen>
+    <dimen name="wikipost_header_fontsize">24sp</dimen>
 
     <dimen name="main_padding">5dp</dimen>
     <dimen name="button_date_padding">15dp</dimen>

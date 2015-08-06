@@ -32,8 +32,6 @@ public class WikiActivity extends Activity
      */
     public static final String INFO = "info";
 
-    private Info mInfo;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,12 +46,10 @@ public class WikiActivity extends Activity
         Intent intent = getIntent();
 
         // Hi, Info that better be in that intent.
-        mInfo = intent.getParcelableExtra(INFO);
+        Info info = intent.getParcelableExtra(INFO);
 
         // Make that info LIVE!
-        frag.setInfo(mInfo);
-
-        // TODO: Also, tell the fragment to start listening for the location.
+        frag.setInfo(info);
     }
 
     @Override

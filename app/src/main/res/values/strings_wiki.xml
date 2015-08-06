@@ -65,6 +65,7 @@
 	<string name="wiki_dialog_add_picture">Post a picture</string>
 	<string name="wiki_dialog_submit_message">Submit message</string>
 	<string name="wiki_dialog_submit_picture">Submit to gallery</string>
+	<string name="wiki_dialog_header">Wiki post for %1$s\n(%2$s)</string>
 	
 	<string name="wiki_generic_error">There was an unknown problem communicating with the wiki.</string>
 	<string name="wiki_generic_image_error">There was a problem loading that image.</string>

@@ -4,6 +4,15 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:padding="@dimen/wiki_fragment_padding">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/wiki_header"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center_horizontal"
+        android:textSize="@dimen/wikipost_header_fontsize"/>
+
     <EditText
         android:layout_width="fill_parent"
         android:layout_height="0dp"
@@ -61,13 +70,6 @@
                 android:text="@string/wiki_dialog_add_picture"
                 android:textSize="@dimen/wikipost_tiny_fontsize"/>
 
-            <CheckBox
-                android:id="@+id/wiki_check_infobox"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/wiki_dialog_stamp_image"
-                android:textSize="@dimen/wikipost_tiny_fontsize"
-                android:checked="true"/>
         </LinearLayout>
 
         <LinearLayout
@@ -85,13 +87,13 @@
                 android:scaleType="centerInside"
                 android:src="@android:drawable/ic_menu_gallery" />
 
-            <TextView
+            <CheckBox
+                android:id="@+id/wiki_check_infobox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="@dimen/wikipost_really_tiny_fontsize"
-                android:text="@string/wiki_editor_message_will_be_caption"
-                android:id="@+id/wiki_message_is_caption"
-                android:layout_gravity="center_horizontal"/>
+                android:text="@string/wiki_dialog_stamp_image"
+                android:textSize="@dimen/wikipost_tiny_fontsize"
+                android:checked="true"/>
 
             <TextView
                 android:id="@+id/wiki_anon_warning"
