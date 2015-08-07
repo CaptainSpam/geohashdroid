@@ -20,7 +20,10 @@ import android.widget.RelativeLayout;
 import net.exclaimindustries.geohashdroid.R;
 
 /**
- * THIS IS A TEMPLATE!  WRITE THE JAVADOC, DANGIT!
+ * The <code>ZoomButtons</code> container handles the button in the lower-left
+ * of CentralMap.  It pops out when tapped, revealing more buttons to center and
+ * re-zoom the view as need be.  No, this isn't related to the zoom buttons on
+ * the old API v1 maps.
  */
 public class ZoomButtons extends RelativeLayout {
     private static final String DEBUG_TAG = "ZoomButtons";
