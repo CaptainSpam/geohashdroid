@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/action_selectagraticule"
-        android:title="@string/graticule_label"
+        android:id="@+id/action_details"
+        android:title="@string/detail_activity_title"
         android:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_wiki"
@@ -13,12 +13,12 @@
         android:title="@string/what_label"
         android:showAsAction="never" />
     <item
-        android:id="@+id/action_date"
-        android:title="@string/date_label"
+        android:id="@+id/action_selectagraticule"
+        android:title="@string/graticule_label"
         android:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_details"
-        android:title="@string/detail_activity_title"
+        android:id="@+id/action_date"
+        android:title="@string/date_label"
         android:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_map_type"
