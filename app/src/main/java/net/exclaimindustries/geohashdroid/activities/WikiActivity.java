@@ -8,15 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
-import android.app.Activity;
-import android.app.FragmentManager;
-import android.content.Intent;
-import android.os.Bundle;
-
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
-import net.exclaimindustries.geohashdroid.fragments.WikiFragment;
-import net.exclaimindustries.geohashdroid.util.Info;
 
 /**
  * Are you using a phone?  How about a very very small tablet?  Maybe you
@@ -24,8 +16,7 @@ import net.exclaimindustries.geohashdroid.util.Info;
  * the latter, then why did you do that?  If the former two, this Activity's for
  * you, assuming that what you want to do is post to the wiki.
  */
-public class WikiActivity extends Activity
-        implements CentralMapExtraFragment.CloseListener{
+public class WikiActivity extends CentralMapExtraActivity {
     /**
      * The key for the Intent extra containing the Info object.  You really,
      * really need this, else there's really, really no point in this Activity.
@@ -33,34 +24,17 @@ public class WikiActivity extends Activity
     public static final String INFO = "info";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.wiki_activity);
-
-        // Hi, fragment.
-        FragmentManager manager = getFragmentManager();
-        WikiFragment frag = (WikiFragment) manager.findFragmentById(R.id.wiki_fragment);
-        frag.setCloseListener(this);
-
-        // Hi, intent.
-        Intent intent = getIntent();
-
-        // Hi, Info that better be in that intent.
-        Info info = intent.getParcelableExtra(INFO);
-
-        // Make that info LIVE!
-        frag.setInfo(info);
+    protected int getMenuResource() {
+        return R.menu.wiki_activity;
     }
 
     @Override
-    public void extraFragmentClosing(CentralMapExtraFragment fragment) {
-        // Easy enough, just finish the Activity.
-        finish();
+    protected int getFragmentResource() {
+        return R.id.wiki_fragment;
     }
 
     @Override
-    public void extraFragmentDestroying(CentralMapExtraFragment fragment) {
-        // Nothing happens here; we're already on our way out.
+    protected int getLayoutResource() {
+        return R.layout.wiki_activity;
     }
 }
