@@ -747,7 +747,7 @@ public class WikiService extends QueueService {
         return PendingIntent.getService(this,
                 0,
                 new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, command),
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                0);
     }
 
     private NotificationAction getBasicNotificationAction(int command) {
