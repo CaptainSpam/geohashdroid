@@ -17,12 +17,6 @@ import net.exclaimindustries.geohashdroid.R;
  * you, assuming that what you want to do is post to the wiki.
  */
 public class WikiActivity extends CentralMapExtraActivity {
-    /**
-     * The key for the Intent extra containing the Info object.  You really,
-     * really need this, else there's really, really no point in this Activity.
-     */
-    public static final String INFO = "info";
-
     @Override
     protected int getMenuResource() {
         return R.menu.wiki_activity;

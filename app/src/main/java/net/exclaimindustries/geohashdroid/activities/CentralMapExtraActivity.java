@@ -19,7 +19,6 @@ import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
-import net.exclaimindustries.geohashdroid.fragments.DetailedInfoFragment;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.AndroidUtil;
@@ -125,23 +124,7 @@ public abstract class CentralMapExtraActivity extends Activity
             case R.id.action_preferences: {
                 // We've got preferences, so we've got an Activity.
                 Intent i = new Intent(this, PreferencesActivity.class);
-                startActivity(i);        setContentView(R.layout.detail_activity);
-
-                // Grab the fragment.  We know it's there, it's right there in the
-                // layout.
-                FragmentManager manager = getFragmentManager();
-                DetailedInfoFragment frag = (DetailedInfoFragment) manager.findFragmentById(R.id.detail_fragment);
-
-                // We'd BETTER have an Intent.
-                Intent intent = getIntent();
-
-                // And that intent BETTER have an Info.
-                mInfo = intent.getParcelableExtra(INFO);
-
-                // Since the fragment's part of the layout, we can't set an argument
-                // anymore.  So, just update the Info.
-                frag.setCloseListener(this);
-                frag.setInfo(mInfo);
+                startActivity(i);
                 return true;
             }
             case R.id.action_send_to_maps: {
