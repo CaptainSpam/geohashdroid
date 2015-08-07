@@ -19,7 +19,9 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.Editable;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.UnderlineSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +38,7 @@ import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.LocationUtil;
 
@@ -168,6 +171,19 @@ public class WikiFragment extends CentralMapExtraFragment
             public void afterTextChanged(Editable s) {
                 // Ah, there we go.
                 resolvePostButtonEnabledness();
+            }
+        });
+
+        // The header goes to the current wiki page.
+        mHeader.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mInfo != null) {
+                    Intent i = new Intent();
+                    i.setAction(Intent.ACTION_VIEW);
+                    i.setData(Uri.parse(WikiUtils.getWikiBaseUrl() + WikiUtils.getWikiPageName(mInfo)));
+                    startActivity(i);
+                }
             }
         });
 
@@ -388,11 +404,15 @@ public class WikiFragment extends CentralMapExtraFragment
                 if(mInfo == null) {
                     mHeader.setText("");
                 } else {
-                    mHeader.setText(getString(R.string.wiki_dialog_header,
+                    // Make sure it's underlined so it at least LOOKS like a
+                    // thing someone might click.
+                    SpannableString text = new SpannableString(getString(R.string.wiki_dialog_header,
                             DateFormat.getDateInstance(DateFormat.MEDIUM).format(mInfo.getCalendar().getTime()),
                             (mInfo.isGlobalHash()
                                     ? getString(R.string.globalhash_label)
                                     : mInfo.getGraticule().getLatitudeString(false) + " " + mInfo.getGraticule().getLongitudeString(false))));
+                    text.setSpan(new UnderlineSpan(), 0, text.length(), 0);
+                    mHeader.setText(text);
                 }
             }
         });

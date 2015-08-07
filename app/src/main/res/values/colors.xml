@@ -10,4 +10,5 @@
 	<!-- Since the details screen is on white text, this needs to be a slightly
 	     darker shade of green. -->
 	<color name="details_in_range">#00DD00</color>
+	<color name="link_color">#00f</color>
 </resources>

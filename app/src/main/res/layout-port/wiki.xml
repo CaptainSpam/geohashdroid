@@ -11,7 +11,8 @@
         android:id="@+id/wiki_header"
         android:layout_gravity="center_horizontal"
         android:gravity="center_horizontal"
-        android:textSize="@dimen/wikipost_header_fontsize"/>
+        android:textSize="@dimen/wikipost_header_fontsize"
+        android:textColor="@color/link_color"/>
 
     <EditText
         android:layout_width="fill_parent"
