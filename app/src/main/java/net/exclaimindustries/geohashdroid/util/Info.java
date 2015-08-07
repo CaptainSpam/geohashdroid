@@ -18,7 +18,6 @@ import android.support.annotation.Nullable;
 import android.support.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.maps.GeoPoint;
 
 /**
  * <p>
@@ -153,18 +152,6 @@ public class Info implements Parcelable {
     }
 
     /**
-     * Returns the final destination as a GeoPoint object, which can be so
-     * unbelievably handy when plotting this on a map, given that uses GeoPoints
-     * and not doubles.
-     * 
-     * @return a GeoPoint based on the data obtained from the connection
-     */
-    public GeoPoint getFinalDestination() {
-        return new GeoPoint((int)(getLatitude() * 1000000),
-                (int)(getLongitude() * 1000000));
-    }
-
-    /**
      * Returns the final destination as a LatLng object, convenient for the Maps
      * v2 API.
      *
@@ -230,18 +217,6 @@ public class Info implements Parcelable {
     }
 
     /**
-     * Gets the distance, in meters, from the given GeoPoint and the final
-     * destination.
-     * 
-     * @param point
-     *            GeoPoint to compare
-     * @return the distance, in meters, to the final destination
-     */
-    public float getDistanceInMeters(GeoPoint point) {
-        return locationFromGeoPoint(point).distanceTo(getFinalLocation());
-    }
-
-    /**
      * Gets the distance, in meters, from the given LatLng and the final
      * destination.
      *
@@ -300,18 +275,6 @@ public class Info implements Parcelable {
         
         // There!  Done!
         return cal;
-    }
-
-    private static Location locationFromGeoPoint(GeoPoint point) {
-        // It turns out GeoPoint doesn't have the distanceTo method that
-        // Location does. So, this method converts a GeoPoint into a Location
-        // that doesn't have a provider.
-        Location loc = new Location("");
-
-        loc.setLatitude(point.getLatitudeE6() / 1000000.0f);
-        loc.setLongitude(point.getLongitudeE6() / 1000000.0f);
-
-        return loc;
     }
 
     private static Location locationFromLatLng(LatLng latLng) {

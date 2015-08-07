@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
     }
-    compileSdkVersion 'Google Inc.:Google APIs:21'
+    compileSdkVersion 21
     buildToolsVersion "21.1.2"
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
@@ -20,6 +20,6 @@ android {
 
 dependencies {
     compile files('libs/cwac-wakeful-1.0.3.jar')
-    compile 'com.android.support:support-v4:22.0.0'
-    compile 'com.google.android.gms:play-services:6.5.87'
+    compile 'com.android.support:support-v4:22.2.1'
+    compile 'com.google.android.gms:play-services:7.5.0'
 }

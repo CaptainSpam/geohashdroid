@@ -9,7 +9,6 @@ package net.exclaimindustries.geohashdroid.util;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
-import com.google.android.maps.GeoPoint;
 
 import android.location.Location;
 import android.os.Parcel;
@@ -48,16 +47,6 @@ public class Graticule implements Parcelable {
      */
     public Graticule(Location location) {
         this(location.getLatitude(), location.getLongitude());
-    }
-
-    /**
-     * Constructs a new Graticule with the given GeoPoint object. Similar deal
-     * to the Location version of this.
-     *
-     * @param point GeoPoint to make a new Graticule out of
-     */
-    public Graticule(GeoPoint point) {
-        this(point.getLatitudeE6() / 1000000f, point.getLongitudeE6() / 1000000f);
     }
 
     /**
@@ -414,31 +403,6 @@ public class Graticule implements Parcelable {
     }
 
     /**
-     * Returns the center of this Graticule as a GeoPoint.
-     * 
-     * @return a GeoPoint representing the center of this Graticule.
-     */
-    public GeoPoint getCenter() {
-        int lat, lon;
-
-        // The concept of "center" changes when we're dealing with negative
-        // graticules. So...
-        if (isSouth()) {
-            lat = (getLatitude() * -1000000) - 500000;
-        } else {
-            lat = (getLatitude() * 1000000) + 500000;
-        }
-
-        if (isWest()) {
-            lon = (getLongitude() * -1000000) - 500000;
-        } else {
-            lon = (getLongitude() * 1000000) + 500000;
-        }
-
-        return new GeoPoint(lat, lon);
-    }
-
-    /**
      * Returns the center of this Graticule as a LatLng.
      *
      * @return a LatLng representing the center of this Graticule.
@@ -459,52 +423,6 @@ public class Graticule implements Parcelable {
         }
 
         return new LatLng(lat, lon);
-    }
-    
-    /**
-     * Grab the top-left GeoPoint of this Graticule.  Or, well, the northwest.
-     * 
-     * @return a GeoPoint representing the top-left corner of this Graticule
-     */
-    public GeoPoint getTopLeft() {
-        int top, left;
-        
-        if (isSouth()) {
-            top = (-1 * getLatitude()) * 1000000;
-        } else {
-            top = (getLatitude() + 1) * 1000000;
-        }
-
-        if (isWest()) {
-            left = (-1 * getLongitude()) * 1000000;
-        } else {
-            left = (getLongitude() + 1) * 1000000;
-        }
-        
-        return new GeoPoint(top, left);
-    }
-    
-    /**
-     * Grab the bottom-right GeoPoint of this Graticule.  Or, well, the southeast.
-     * 
-     * @return a GeoPoint representing the bottom-right corner of this Graticule
-     */
-    public GeoPoint getBottomRight() {
-        int bottom, right;
-
-        if (isSouth()) {
-            bottom = (-1 * (getLatitude() + 1)) * 1000000;
-        } else {
-            bottom = getLatitude() * 1000000;
-        }
-
-        if (isWest()) {
-            right = (-1 * (getLongitude() + 1)) * 1000000;
-        } else {
-            right = getLongitude() * 1000000;
-        }
-        
-        return new GeoPoint(bottom, right);
     }
 
     /**
