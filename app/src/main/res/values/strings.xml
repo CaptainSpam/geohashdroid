@@ -155,6 +155,6 @@
     <string name="about_date">(BUILD_DATE)</string>
 
     <string name="url_geohash">http://xkcd.com</string>
-    <string name="url_project">http://code.google.com/p/geohashdroid</string>
+    <string name="url_project">https://github.com/CaptainSpam/geohashdroid</string>
 
 </resources>
