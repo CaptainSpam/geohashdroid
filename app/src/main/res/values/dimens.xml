@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<dimen name="button_go_width">100dp</dimen>
+	<dimen name="button_go_height">40dp</dimen>
+	<dimen name="infobox_width">160dp</dimen>
+	<dimen name="infobox_height">100dp</dimen>
+	<dimen name="infobox_padding">5dp</dimen>
+
+	<dimen name="input_graticule_width">90dp</dimen>
+	<dimen name="input_graticule_fontsize">30dp</dimen>
+	<dimen name="infobox_fontsize">16dp</dimen>
+	<dimen name="infobox_jumbo_fontsize">22dp</dimen>
+	<dimen name="infobox_jumbo_fontsize_portrait">18dp</dimen>
+	<dimen name="details_title_fontsize">34sp</dimen>
+	<dimen name="details_title_fontsize_land">36sp</dimen>
+	<dimen name="details_subtitle_fontsize">28sp</dimen>
+	<dimen name="details_coords_fontsize">28sp</dimen>
+	<dimen name="details_coords_fontsize_land">28sp</dimen>
+	<dimen name="details_distance_fontsize">20dip</dimen>
+	<dimen name="details_accuracy_fontsize">14dip</dimen>
+	<dimen name="details_padding">12dp</dimen>
+	<dimen name="details_padding_horiz">10dp</dimen>
+	<dimen name="details_distance_padding">10dp</dimen>
+	<dimen name="details_text_padding">5dp</dimen>
+	
+	<dimen name="details_text_padding_small">2dp</dimen>
+	<dimen name="details_title_fontsize_small">30sp</dimen>
+	<dimen name="details_title_fontsize_small_land">32sp</dimen>
+	<dimen name="details_coords_fontsize_small">24sp</dimen>
+	<dimen name="details_coords_fontsize_small_land">22sp</dimen>
+	<dimen name="details_subtitle_fontsize_small">28sp</dimen>
+	<dimen name="details_distance_fontsize_small">18dip</dimen>
+	<dimen name="details_accuracy_fontsize_small">12dip</dimen>
+	
+	<dimen name="wikipost_tiny_fontsize">14dip</dimen>
+	<dimen name="wikipost_really_tiny_fontsize">12dip</dimen>
+
+	<dimen name="main_padding">5dp</dimen>
+	<dimen name="button_date_padding">15dp</dimen>
+	<dimen name="dialog_font_size">18sp</dimen>
+	<dimen name="dialog_padding">10dp</dimen>
+	<dimen name="gallery_button_padding">10dp</dimen>
+
+	<dimen name="about_title">32dip</dimen>
+	<dimen name="about_names">18dip</dimen>
+	<dimen name="about_version_date">14dip</dimen>
+	<dimen name="about_urls">20dip</dimen>
+	
+	<dimen name="about_major_padding">10dp</dimen>
+	<dimen name="about_minor_padding">5dp</dimen>
+	
+	<!-- This one really really doesn't depend on dpi or whatnot, as this is
+	     directly going into an image that'll always be a fairly similar size
+	     no matter what happens. -->
+	<dimen name="infobox_picture_fontsize">6pt</dimen>
+
+</resources>

@@ -1,0 +1,16 @@
+default.properties
+private.xml
+*.swp
+bin/
+gen/
+.project
+.classpath
+.DS_Store
+.directory
+
+app/build/*
+/.idea/workspace.xml
+/.idea/libraries
+.gradle
+/local.properties
+/build
