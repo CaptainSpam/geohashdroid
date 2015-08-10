@@ -48,7 +48,7 @@ import android.util.Log;
  */
 public class WikiUtils {
   /** The base URL for all wiki activities.  Remember the trailing slash! */
-  private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/wgh/";
+  private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/geohashing/";
   /** The URL for the MediaWiki API.  There's no trailing slash here. */
   private static final String WIKI_API_URL = WIKI_BASE_URL + "api.php";
 
