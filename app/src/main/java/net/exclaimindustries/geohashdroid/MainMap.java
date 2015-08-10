@@ -768,13 +768,10 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 // Assemble a URL.  On the wiki, they come in this format:
                 // [WIKI_BASE_URL]YYYY-MM-DD LAT LON
                 // (yes, spaces and all... sort of odd, but hey, it works)
-                
-                // We attach "index.php" to the end of it just to be absolutely
-                // safe.
                 String page = WikiUtils.getWikiPageName(mInfo);
                 
                 i.setData(Uri
-                        .parse(WikiUtils.getWikiBaseUrl() + "index.php?title=" + page));
+                        .parse(WikiUtils.getWikiBaseUrl() + page));
                 startActivity(i);
                 
                 return true;
