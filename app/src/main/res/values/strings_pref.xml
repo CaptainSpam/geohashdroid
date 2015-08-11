@@ -8,10 +8,6 @@
     <string name="pref_autozoom_on">Re-zoom any time the map is (re)loaded</string>
     <string name="pref_autozoom_off">Only re-zoom when changing the expedition</string>
 
-    <string name="pref_remembergraticule_title">Auto-fill last graticule</string>
-    <string name="pref_remembergraticule_on">When starting the program, fill in the last graticule used</string>
-    <string name="pref_remembergraticule_off">When starting the program, leave the graticule blank</string>
-
     <string name="pref_infobox_title">Info box</string>
     <string name="pref_infobox_on">Show an info box on the map</string>
     <string name="pref_infobox_off">Don\'t show an info box on the map</string>
