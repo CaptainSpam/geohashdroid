@@ -264,13 +264,15 @@ public class ExpeditionMode
         removeNearbyPoints();
 
         // The InfoBox should also go away at this point.
-        mInfoBox.stopListening();
-        mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
-            @Override
-            public void run() {
-                ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
-            }
-        });
+        if(mInfoBox != null) {
+            mInfoBox.stopListening();
+            mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
+                @Override
+                public void run() {
+                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
+                }
+            });
+        }
 
         // Plus, any bonus fragment we might have.
         if(mExtraFragment != null)
@@ -278,12 +280,14 @@ public class ExpeditionMode
 
         // Zoom buttons, you go away, too.  In this case, we animate the entire
         // block away ourselves and remove it when done with a callback.
-        mZoomButtons.animate().translationX(-mZoomButtons.getWidth()).withEndAction(new Runnable() {
-            @Override
-            public void run() {
-                ((ViewGroup)mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons);
-            }
-        });
+        if(mZoomButtons != null) {
+            mZoomButtons.animate().translationX(-mZoomButtons.getWidth()).withEndAction(new Runnable() {
+                @Override
+                public void run() {
+                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons);
+                }
+            });
+        }
     }
 
     @Override
