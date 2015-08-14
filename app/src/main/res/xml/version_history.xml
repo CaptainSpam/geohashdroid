@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<versionHistory>
+    <version name="0.9.0-pre1" version="900">
+        <title>Hope Pre-Returns In A Pre-Release</title>
+        <header>It's not quite done yet, but there's plenty to be said about this Geohash Droid overhaul.</header>
+        <bullets>
+            <bullet>Brand new, Fragment-based, Maps v2 interface.  Looks better on tablets than the old version!</bullet>
+            <bullet>Lots more backgroundy.  Wiki stuff, especially.  You can send wiki posts even if there's no internet connection, and it'll queue them up for later when you DO have one.</bullet>
+            <bullet>Much sleeker design that's sort of Materials-based, but not fully.</bullet>
+        </bullets>
+        <footer>Missing stuff, like the About screen, a few missing images, and this Version History screen, will come later.  It IS a pre-release, after all.</footer>
+    </version>
+</versionHistory>
