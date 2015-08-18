@@ -42,6 +42,11 @@
     <dimen name="wikipost_really_tiny_fontsize">12sp</dimen>
     <dimen name="wikipost_header_fontsize">24sp</dimen>
 
+    <dimen name="version_history_leader_fontsize_version">24sp</dimen>
+    <dimen name="version_history_leader_fontsize_date">20sp</dimen>
+    <dimen name="version_history_leader_fontsize_title">12sp</dimen>
+    <dimen name="version_history_header_footer_fontsize">14sp</dimen>
+
     <dimen name="main_padding">5dp</dimen>
     <dimen name="button_date_padding">15dp</dimen>
     <dimen name="dialog_font_size">18sp</dimen>
