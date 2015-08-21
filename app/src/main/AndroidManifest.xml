@@ -58,12 +58,6 @@
             android:theme="@android:style/Theme.DeviceDefault.Light.Dialog">
         </activity>
         <activity
-            android:name=".activities.VersionHistoryDialog"
-            android:label="@string/title_versionhistory"
-            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog">
-        </activity>
-
-        <activity
             android:name=".activities.PreferencesActivity"
             android:label="@string/title_preferences">
         </activity>

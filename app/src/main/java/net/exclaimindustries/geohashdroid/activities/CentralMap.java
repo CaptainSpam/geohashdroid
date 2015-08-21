@@ -40,6 +40,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
+import net.exclaimindustries.geohashdroid.fragments.VersionHistoryDialogFragment;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
@@ -73,6 +74,7 @@ public class CentralMap
     private static final String LAST_MODE_BUNDLE = "lastModeBundle";
     private static final String DATE_PICKER_DIALOG = "datePicker";
     private static final String MAP_TYPE_DIALOG = "mapType";
+    private static final String VERSION_HISTORY_DIALOG = "versionHistory";
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -698,6 +700,13 @@ public class CentralMap
                 // common.  To the alert dialog!
                 MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
                 frag.show(getFragmentManager(), MAP_TYPE_DIALOG);
+
+                return true;
+            }
+            case R.id.action_versionhistory: {
+                // The version history has no real actions at all.
+                VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
+                frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
 
                 return true;
             }

@@ -51,7 +51,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/bullets"
-        android:padding="@dimen/standard_padding">
+        android:padding="@dimen/standard_padding"
+        android:layout_marginLeft="16dp">
     </LinearLayout>
 
     <TextView

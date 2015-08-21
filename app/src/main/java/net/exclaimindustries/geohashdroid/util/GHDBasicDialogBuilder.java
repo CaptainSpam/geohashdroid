@@ -15,6 +15,7 @@ import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListAdapter;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -185,6 +186,19 @@ public class GHDBasicDialogBuilder {
      */
     public GHDBasicDialogBuilder setItems(CharSequence[] items, DialogInterface.OnClickListener listener) {
         mBuilder.setItems(items, listener);
+
+        return this;
+    }
+
+    /**
+     * Sets a bunch of items into the builder via a ListAdapter.
+     *
+     * @param la a ListAdapter
+     * @param listener a listener in case you need these items to be tappable
+     * @return this, for chaining purposes
+     */
+    public GHDBasicDialogBuilder setAdapter(ListAdapter la, DialogInterface.OnClickListener listener) {
+        mBuilder.setAdapter(la, listener);
 
         return this;
     }
