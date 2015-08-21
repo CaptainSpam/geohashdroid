@@ -10,6 +10,8 @@ package net.exclaimindustries.geohashdroid.util;
 
 import android.content.Context;
 import android.content.res.XmlResourceParser;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -18,8 +20,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * The <code>VersionHistoryParser</code> parses the version history XML file
@@ -27,10 +28,53 @@ import java.util.List;
  */
 public class VersionHistoryParser {
     /**
-     * A <code>VersionHistoryEntry</code> holds a single entry in the version
-     * history (obviously).  You will generally get a List of these.
+     * A <code>VersionEntry</code> holds a single entry in the version history
+     * (obviously).  You will generally get a List of these.
      */
-    public static class VersionHistoryEntry {
+    public static class VersionEntry implements Parcelable {
+        public VersionEntry() { }
+
+        private VersionEntry(Parcel in) {
+            // Oh, hey, we're Parcelable now.  Who would've guessed?
+            readFromParcel(in);
+        }
+
+        public static final Parcelable.Creator<VersionEntry> CREATOR = new Parcelable.Creator<VersionEntry>() {
+            @Override
+            public VersionEntry createFromParcel(Parcel source) { return new VersionEntry(source); }
+
+            @Override
+            public VersionEntry[] newArray(int size) { return new VersionEntry[size]; }
+        };
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            // Dump 'em out!
+            dest.writeString(title);
+            dest.writeString(versionName);
+            dest.writeString(date);
+            dest.writeInt(versionCode);
+            dest.writeString(header);
+            dest.writeString(footer);
+            dest.writeStringList(bullets);
+        }
+
+        public void readFromParcel(Parcel in) {
+            // Fill 'em back in!
+            title = in.readString();
+            versionName = in.readString();
+            date = in.readString();
+            versionCode = in.readInt();
+            header = in.readString();
+            footer = in.readString();
+            bullets = in.createStringArrayList();
+        }
+
         /**
          * The title of this version.  Can be empty.  Will generally be whatever
          * silly name I decided to give it.
@@ -54,7 +98,7 @@ public class VersionHistoryParser {
          * The internal version code of this version.  That is, whatever the
          * manifest actually uses for version identification.
          */
-        public int versionCode;
+        public int versionCode = 0;
 
         /**
          * The header of this version.  This is some descriptive text that comes
@@ -72,7 +116,7 @@ public class VersionHistoryParser {
          * The list of bullet entries.  Each of these should be displayed in
          * order in their own section, indented and with bullets on the side.
          */
-        @NonNull public List<String> bullets = new LinkedList<>();
+        @NonNull public ArrayList<String> bullets = new ArrayList<>();
 
         @Override
         public String toString() {
@@ -87,15 +131,15 @@ public class VersionHistoryParser {
      * @return a bunch of VersionHistoryEntries
      * @throws XmlPullParserException something went wrong with XML parsing
      */
-    public static List<VersionHistoryEntry> parseVersionHistory(Context c) throws XmlPullParserException {
-        List<VersionHistoryEntry> toReturn = new LinkedList<>();
+    public static ArrayList<VersionEntry> parseVersionHistory(Context c) throws XmlPullParserException {
+        ArrayList<VersionEntry> toReturn = new ArrayList<>();
 
         // To the parser!
         XmlResourceParser xrp = c.getResources().getXml(R.xml.version_history);
         int eventType = xrp.getEventType();
 
         String currentTag = "";
-        VersionHistoryEntry currentEntry = null;
+        VersionEntry currentEntry = null;
 
         while(eventType != XmlPullParser.END_DOCUMENT) {
             // There's only a few events we can get, so...
@@ -105,7 +149,7 @@ public class VersionHistoryParser {
 
                 if(currentTag.equals("version")) {
                     // New version!  This means we get a new entry!
-                    currentEntry = new VersionHistoryEntry();
+                    currentEntry = new VersionEntry();
 
                     // There's also a few attributes in a version.  Like so:
                     currentEntry.versionName = xrp.getAttributeValue(null, "name");
