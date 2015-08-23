@@ -83,6 +83,7 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
         else
             startCal = (Calendar)getArguments().getSerializable("calendar");
 
+        if(startCal == null) startCal = Calendar.getInstance();
 
         mYear = startCal.get(Calendar.YEAR);
         mMonth = startCal.get(Calendar.MONTH);
