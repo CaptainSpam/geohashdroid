@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
@@ -23,7 +24,6 @@ import android.widget.Toast;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.WikiService;
-import net.exclaimindustries.geohashdroid.util.GHDBasicDialogBuilder;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.tools.QueueService;
@@ -183,7 +183,7 @@ public class PreferencesActivity extends PreferenceActivity {
         public static class WipeCacheDialogFragment extends DialogFragment {
             @Override
             public Dialog onCreateDialog(Bundle savedInstanceState) {
-                return new GHDBasicDialogBuilder(getActivity()).setMessage(R.string.pref_stockwipe_dialog_text)
+                return new AlertDialog.Builder(getActivity()).setMessage(R.string.pref_stockwipe_dialog_text)
                         .setTitle(R.string.pref_stockwipe_title)
                         .setPositiveButton(getString(R.string.dialog_stockwipe_yes), new DialogInterface.OnClickListener() {
                             @Override

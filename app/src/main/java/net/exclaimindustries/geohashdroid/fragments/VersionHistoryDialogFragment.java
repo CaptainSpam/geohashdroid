@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
@@ -21,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDBasicDialogBuilder;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser.VersionEntry;
 
@@ -117,7 +117,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
         ArrayList<VersionEntry> entries = getArguments().getParcelableArrayList("entries");
 
         // Rack 'em!
-        return new GHDBasicDialogBuilder(getActivity())
+        return new AlertDialog.Builder(getActivity())
                 .setAdapter(new EntryAdapter(getActivity(), entries), null)
                 .setTitle(R.string.title_versionhistory)
                 .setPositiveButton(getString(R.string.cool_label), new DialogInterface.OnClickListener() {

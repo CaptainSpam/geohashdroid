@@ -9,6 +9,7 @@
 package net.exclaimindustries.geohashdroid.fragments;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
@@ -21,7 +22,6 @@ import android.view.View;
 import android.widget.DatePicker;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDBasicDialogBuilder;
 
 import java.util.Calendar;
 
@@ -105,7 +105,8 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
             }
         });
 
-        return new GHDBasicDialogBuilder(getActivity(), dialogView)
+        return new AlertDialog.Builder(getActivity())
+                .setView(dialogView)
                 .setTitle(R.string.dialog_date_picker_title)
                 .setPositiveButton(getString(R.string.ok_label), new DialogInterface.OnClickListener() {
                     @Override
