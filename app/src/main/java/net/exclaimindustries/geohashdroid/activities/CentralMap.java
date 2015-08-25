@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -801,7 +802,27 @@ public class CentralMap
         // Anything edit-worthy we just did needs to be committed.
         edit.commit();
 
-        // TODO: Version check!  See what the most recent known version was!
+        // We still have that prefs object.  Let's see if we've got a newer
+        // version than what we last saw.
+        int lastVersion = prefs.getInt(GHDConstants.PREF_LAST_SEEN_VERSION, 0);
+        int curVersion = -1;
+        try {
+            curVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+        } catch (PackageManager.NameNotFoundException nnfe) {
+            // Since this is OUR OWN PACKAGE NAME, this better work.
+        }
+
+        Log.d(DEBUG_TAG, "We are version " + curVersion + ", we last reported version history on version " + lastVersion);
+
+        if(lastVersion < curVersion) {
+            // Aha!  We're newer!
+            VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
+            frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+        }
+
+        // In any case, update the version.
+        edit.putInt(GHDConstants.PREF_LAST_SEEN_VERSION, curVersion);
+        edit.apply();
     }
 
     /**

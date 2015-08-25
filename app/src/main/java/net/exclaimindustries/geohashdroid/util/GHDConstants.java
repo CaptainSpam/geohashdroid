@@ -51,6 +51,13 @@ public final class GHDConstants {
     /** Prefs key specifying wiki user pass. */
     public static final String PREF_WIKI_PASS = "WikiPassword";
     /**
+     * Prefs key indicating the most recent version the user's seen in the
+     * VersionHistoryDialog activity.  If this is lower than the current one
+     * when CentralMap starts, it will throw up the version history, which in
+     * turn updates this.
+     */
+    public static final String PREF_LAST_SEEN_VERSION = "LastSeenVersion";
+    /**
      * Prefs key tracking if we've reported on the closeness of the user to the
      * final destination.
      */
