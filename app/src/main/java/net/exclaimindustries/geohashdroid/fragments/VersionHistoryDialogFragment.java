@@ -67,15 +67,11 @@ public class VersionHistoryDialogFragment extends DialogFragment {
             // Clear out anything that was there before.
             bullets.removeAllViews();
 
-            // All the bullets will have the same layout params, at least...
-            LinearLayout.LayoutParams bulletParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            bulletParams.topMargin = getResources().getDimensionPixelSize(R.dimen.version_history_bullet_vertical_margin);
-            bulletParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.version_history_bullet_vertical_margin);
-
             for(String s : entry.bullets) {
-                TextView bullet = new TextView(getActivity());
-                bullet.setText(s);
-                bullet.setLayoutParams(bulletParams);
+                View bullet = LayoutInflater.from(getActivity()).inflate(R.layout.version_history_bullet, bullets, false);
+
+                TextView bulletText = (TextView)bullet.findViewById(R.id.bulletText);
+                bulletText.setText(s);
                 bullets.addView(bullet);
             }
 
