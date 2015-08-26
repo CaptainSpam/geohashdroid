@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.0-pre2" version="901" date="2015-08-26">
+        <title>You Are Literally Reading What Changed</title>
+        <header>At some point I'll ask myself why I included the version history for the previous version when you couldn't see that anyway, but at any rate...</header>
+        <bullets>
+            <bullet>The Version History dialog is ready.  You're reading it now, in fact.</bullet>
+            <bullet>All dialogs other than the wiki login dialog now look like standard Android dialogs.  I might bring back the GHD theme when I've got a better way to do it.</bullet>
+            <bullet>Fixed the "Today" button not appearing on the date picker dialog on phones in landscape mode.</bullet>
+        </bullets>
+        <footer>Next will probably be the missing images and the "you've made it" toast.</footer>
+    </version>
     <version name="0.9.0-pre1" version="900" date="2015-08-10">
         <title>Hope Pre-Returns In A Pre-Release</title>
         <header>It's not quite done yet, but there's plenty to be said about this Geohash Droid overhaul.  Here's just some of what can be said.</header>
