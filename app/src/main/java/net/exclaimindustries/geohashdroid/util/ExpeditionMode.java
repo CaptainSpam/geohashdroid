@@ -93,6 +93,11 @@ public class ExpeditionMode
     private Info mCurrentInfo;
     private DisplayMetrics mMetrics;
 
+    // This is only used in really weird startup cases.  Otherwise, we'll be
+    // explicitly using the Calendar from changeCalendar() or implicitly using
+    // it from mCurrentInfo.
+    private Calendar mInitialCalendar;
+
     private Location mInitialCheckLocation;
 
     private InfoBox mInfoBox;
@@ -137,7 +142,9 @@ public class ExpeditionMode
             // Second, ask for a stock using that location.
             if(!isCleanedUp()) {
                 mInitialCheckLocation = location;
-                requestStock(new Graticule(location), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+
+                if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
+                requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
             }
         }
     };
@@ -765,8 +772,24 @@ public class ExpeditionMode
         // necessarily mean a new point is coming in, but it does mean we're
         // making a request, at least.  The StockService broadcast will let us
         // know what's going on later.
+        Graticule g = null;
+
+        // Remember, this is ONLY checked on the initial lookup.  So it's safe
+        // to just change it like this every time.
+        mInitialCalendar = newDate;
+
+        // The Graticule we use is either the one in our current Info (thus
+        // recycling our current position) or whatever the initial check came up
+        // with.  The latter is in case we never came up with a valid Info if,
+        // for instance, the check was made before the opening of the DJIA and
+        // the user decided to pick a previous day.
         if(mCurrentInfo != null)
-            requestStock(mCurrentInfo.getGraticule(), newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+            g = mCurrentInfo.getGraticule();
+        else if(mInitialCheckLocation != null)
+            g = new Graticule(mInitialCheckLocation);
+
+        if(g != null)
+            requestStock(g, newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     private boolean needsNearbyPoints() {
