@@ -20,9 +20,16 @@ import android.widget.TextView;
 import net.exclaimindustries.geohashdroid.R;
 
 /**
+ * <p>
  * An <code>ErrorBanner</code> is meant to appear on the top of a View (usually
  * the root View of an Activity) and slides in and out of place to report on
  * errors, warnings, notifications, etc.
+ * </p>
+ *
+ * <p>
+ * Given it's used for informational purposes, not just errors, this class is
+ * perhaps increasingly ill-named.
+ * </p>
  */
 public class ErrorBanner extends LinearLayout {
     private TextView mMessage;
@@ -40,7 +47,9 @@ public class ErrorBanner extends LinearLayout {
         /** An error banner screaming a warning (yellow). */
         WARNING,
         /** An error banner just giving up with an error (red). */
-        ERROR
+        ERROR,
+        /** A banner that proclaims victory (green)! */
+        VICTORY
     }
 
     public ErrorBanner(Context context) {
@@ -148,6 +157,8 @@ public class ErrorBanner extends LinearLayout {
             case ERROR:
                 setBackgroundErrorColor(Color.RED);
                 break;
+            case VICTORY:
+                setBackgroundErrorColor(Color.GREEN);
         }
     }
 
