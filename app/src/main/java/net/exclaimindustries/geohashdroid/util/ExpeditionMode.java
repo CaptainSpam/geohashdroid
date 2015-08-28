@@ -84,6 +84,7 @@ public class ExpeditionMode
     private boolean mWaitingOnInitialZoom = false;
     private boolean mWaitingOnEmptyStart = false;
     private boolean mReplacingFragment = false;
+    private boolean mVictoryReported = false;
 
     // This will hold all the nearby points we come up with.  They'll be
     // removed any time we get a new Info in.  It's a map so that we have a
@@ -145,6 +146,38 @@ public class ExpeditionMode
 
                 if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
                 requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+            }
+        }
+    };
+
+    private LocationListener mVictoryListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            // We're not using the built-in geofencing capabilities because we
+            // want to use the current GPS accuracy as our fencing radius.  The
+            // built-in one requires a single radius that doesn't change, which,
+            // to be honest, is perfectly fine for MOST situations.  This just
+            // isn't most situations.
+            if(mCurrentInfo == null || mVictoryReported) return;
+
+            float accuracy = location.getAccuracy();
+
+            // The accuracy can't be zero, at least not in real-world
+            // circumstances.  The only way it'll be zero is if we're using the
+            // emulator or there's otherwise a mock location coming in.  In that
+            // case, treat it as 5m, just so victory can be achieved without
+            // being EXACTLY on the point.
+            if(accuracy == 0.0f) accuracy = 5.0f;
+
+            if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD
+                && mCurrentInfo.getDistanceInMeters(location) < accuracy) {
+                // VICTORY!
+                ErrorBanner banner = mCentralMap.getErrorBanner();
+                banner.setErrorStatus(ErrorBanner.Status.VICTORY);
+                banner.setText(mCentralMap.getString(R.string.toast_close_enough));
+                banner.setCloseVisible(true);
+                banner.animateBanner(true);
+                mVictoryReported = true;
             }
         }
     };
@@ -245,6 +278,9 @@ public class ExpeditionMode
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
 
+        // Be ready for victory!
+        startVictoryListener();
+
         mInitComplete = true;
     }
 
@@ -258,6 +294,7 @@ public class ExpeditionMode
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mZoomToUserListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mVictoryListener);
         }
 
         // And the listens.
@@ -320,6 +357,7 @@ public class ExpeditionMode
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mZoomToUserListener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mVictoryListener);
         }
 
         if(mInfoBox != null)
@@ -346,6 +384,9 @@ public class ExpeditionMode
         } else {
             mInfoBox.animateInfoBoxVisible(false);
         }
+
+        // And fire up the victory cannon!
+        startVictoryListener();
     }
 
     @Override
@@ -557,6 +598,7 @@ public class ExpeditionMode
 
     private void setInfo(final Info info) {
         mCurrentInfo = info;
+        mVictoryReported = false;
 
         // Redraw the menu as need be, too.
         mCentralMap.invalidateOptionsMenu();
@@ -957,6 +999,17 @@ public class ExpeditionMode
                 }
 
                 break;
+        }
+    }
+
+    private void startVictoryListener() {
+        GoogleApiClient gClient = getGoogleClient();
+        if(gClient != null) {
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(gClient, lRequest, mVictoryListener);
         }
     }
 }

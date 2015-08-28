@@ -125,8 +125,13 @@ public class InfoBox extends LinearLayout {
         ((Activity)getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                float accuracy = 0.0f;
+                float accuracy = 5.0f;
                 if(mLastLocation != null) accuracy = mLastLocation.getAccuracy();
+
+                // Make sure we're dealing with sane data if we got this from an
+                // emulator or mock location data...
+                if(accuracy == 0.0f)
+                    accuracy = 5.0f;
 
                 // Redraw the Info.  Always do this.  The user might be coming
                 // back from Preferences, for instance.
