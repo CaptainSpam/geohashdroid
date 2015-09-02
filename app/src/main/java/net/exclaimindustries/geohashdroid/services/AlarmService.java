@@ -15,6 +15,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.util.Log;
 
@@ -293,7 +294,8 @@ public class AlarmService extends WakefulIntentService {
         // Ready the notification!  The detail text will be set by date, of
         // course.
         mNotificationBuilder = new Notification.Builder(this)
-            .setSmallIcon(R.drawable.geohashing_logo_notification)
+            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+            .setSmallIcon(R.drawable.ic_stat_file_file_download)
             .setContentTitle(getString(R.string.notification_title))
             .setOngoing(true);
         
