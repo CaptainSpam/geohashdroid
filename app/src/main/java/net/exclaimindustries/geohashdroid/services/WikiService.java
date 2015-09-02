@@ -724,7 +724,7 @@ public class WikiService extends QueueService {
             case R.string.wiki_error_bad_username:
             case R.string.wiki_error_username_nonexistant:
                 toReturn[0] = new NotificationAction(
-                        R.drawable.ic_action_edit,
+                        0,
                         PendingIntent.getActivity(this,
                                 0,
                                 new Intent(this, LoginPromptDialog.class),
@@ -760,19 +760,19 @@ public class WikiService extends QueueService {
         switch(command) {
             case COMMAND_RESUME:
                 return new NotificationAction(
-                        R.drawable.ic_action_refresh,
+                        0,
                         getBasicCommandIntent(QueueService.COMMAND_RESUME),
                         getString(R.string.wiki_notification_action_retry)
                 );
             case COMMAND_RESUME_SKIP_FIRST:
                 return new NotificationAction(
-                        R.drawable.ic_action_next,
+                        0,
                         getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
                         getString(R.string.wiki_notification_action_skip)
                 );
             case COMMAND_ABORT:
                 return new NotificationAction(
-                        R.drawable.ic_action_cancel,
+                        0,
                         getBasicCommandIntent(QueueService.COMMAND_ABORT),
                         getString(R.string.wiki_notification_action_abort)
                 );
