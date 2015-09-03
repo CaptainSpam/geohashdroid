@@ -82,5 +82,5 @@
         android:layout_alignRight="@+id/buttonrow"
         android:layout_alignTop="@+id/latlonrow"
         android:contentDescription="@string/close_label"
-        android:src="@drawable/ic_action_cancel"/>
+        android:src="@drawable/cancel_button"/>
 </view>

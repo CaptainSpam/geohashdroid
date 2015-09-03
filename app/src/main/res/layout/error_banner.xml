@@ -20,7 +20,7 @@
         android:id="@+id/close"
         android:layout_gravity="center_vertical"
         style="@style/GeohashDroid.Button.Borderless"
-        android:src="@drawable/ic_action_cancel"
+        android:src="@drawable/cancel_button"
         android:contentDescription="@string/close_label"
         android:visibility="gone"/>
 </LinearLayout>
