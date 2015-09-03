@@ -27,4 +27,16 @@
         <item name="android:textColor">@color/infobox_text</item>
         <item name="android:drawablePadding">@dimen/infobox_drawable_padding</item>
     </style>
+
+    <!-- The main About texts.  Not the headers or whatnot.  The bottom note
+         overrides the size. -->
+    <style name="AboutText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:layout_marginTop">16dp</item>
+        <item name="android:layout_marginBottom">16dp</item>
+    </style>
 </resources>

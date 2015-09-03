@@ -61,13 +61,11 @@
     <dimen name="dialog_padding">20dp</dimen>
     <dimen name="gallery_button_padding">10dp</dimen>
 
-    <dimen name="about_title">32dip</dimen>
-    <dimen name="about_names">18dip</dimen>
-    <dimen name="about_version_date">14dip</dimen>
-    <dimen name="about_urls">20dip</dimen>
-
-    <dimen name="about_major_padding">10dp</dimen>
-    <dimen name="about_minor_padding">5dp</dimen>
+    <dimen name="about_title">28sp</dimen>
+    <dimen name="about_description">16sp</dimen>
+    <dimen name="about_version">12sp</dimen>
+    <dimen name="about_disclaimer">12sp</dimen>
+    <dimen name="about_urls">18sp</dimen>
 
     <dimen name="wiki_nominal_icon_size">100dp</dimen>
     <!-- This one really really doesn't depend on dpi or whatnot, as this is

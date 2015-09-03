@@ -39,6 +39,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.fragments.AboutDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.VersionHistoryDialogFragment;
@@ -76,6 +77,7 @@ public class CentralMap
     private static final String DATE_PICKER_DIALOG = "datePicker";
     private static final String MAP_TYPE_DIALOG = "mapType";
     private static final String VERSION_HISTORY_DIALOG = "versionHistory";
+    private static final String ABOUT_DIALOG = "about";
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -654,8 +656,6 @@ public class CentralMap
         super.onSaveInstanceState(outState);
 
         // Also, keep the latest Info around.
-        // TODO: Later, we'll need to know NOT to reload the Info at startup
-        // time.  Determine the correct way to determine that.
         outState.putParcelable("info", mCurrentInfo);
 
         // Keep the various flags, too.
@@ -708,6 +708,13 @@ public class CentralMap
                 // The version history has no real actions at all.
                 VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
                 frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+
+                return true;
+            }
+            case R.id.action_about: {
+                // About is just a dialog with a view.
+                AboutDialogFragment frag = AboutDialogFragment.newInstance();
+                frag.show(getFragmentManager(), ABOUT_DIALOG);
 
                 return true;
             }
