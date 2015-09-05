@@ -51,9 +51,13 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 
+import org.xmlpull.v1.XmlPullParserException;
+
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -822,9 +826,26 @@ public class CentralMap
         Log.d(DEBUG_TAG, "We are version " + curVersion + ", we last reported version history on version " + lastVersion);
 
         if(lastVersion < curVersion) {
-            // Aha!  We're newer!
-            VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
-            frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+            // Aha!  We're newer!  Now, let's see if there's a new version to
+            // display.  That is, if the first entry in version history is newer
+            // than the last-seen version.
+            ArrayList<VersionHistoryParser.VersionEntry> entries = new ArrayList<>();
+
+            try {
+                entries = VersionHistoryParser.parseVersionHistory(this);
+            } catch(XmlPullParserException xppe) {
+                // You get NOTHING!
+            }
+
+            if(entries.isEmpty()) {
+                Log.w(DEBUG_TAG, "Couldn't parse version history, not displaying anything.");
+            } else {
+                Log.d(DEBUG_TAG, "Newest version with an entry is " + entries.get(0).versionCode);
+                if(entries.get(0).versionCode > lastVersion) {
+                    VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(entries);
+                    frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+                }
+            }
         }
 
         // In any case, update the version.

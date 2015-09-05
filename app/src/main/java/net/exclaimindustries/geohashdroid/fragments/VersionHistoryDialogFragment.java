@@ -80,17 +80,15 @@ public class VersionHistoryDialogFragment extends DialogFragment {
     }
 
     /**
-     * Generates a new VersionHistoryDialogFragment, suitable for use as a
-     * DialogFragment.
+     * Generates a new VersionHistoryDialogFragment, parsing out the XML as it
+     * does so.
      *
-     * @param c the Context from which we can get to the version history XML
+     * @param c a Context to get the XML data
      * @return a new Fragment
      */
     public static VersionHistoryDialogFragment newInstance(Context c) {
-        VersionHistoryDialogFragment frag = new VersionHistoryDialogFragment();
-
         // GENERATE!
-        ArrayList<VersionEntry> entries = new ArrayList<>();
+        ArrayList<VersionHistoryParser.VersionEntry> entries = new ArrayList<>();
 
         try {
             entries = VersionHistoryParser.parseVersionHistory(c);
@@ -99,6 +97,19 @@ public class VersionHistoryDialogFragment extends DialogFragment {
             // return an empty list, which I guess is okay, given this should
             // never happen...
         }
+
+        return newInstance(entries);
+    }
+
+    /**
+     * Generates a new VersionHistoryDialogFragment, using an ArrayList of
+     * version data already parsed elsewhere.
+     *
+     * @param entries an ArrayList of VersionEntries to display
+     * @return a new Fragment
+     */
+    public static VersionHistoryDialogFragment newInstance(ArrayList<VersionEntry> entries) {
+        VersionHistoryDialogFragment frag = new VersionHistoryDialogFragment();
 
         Bundle args = new Bundle();
         args.putParcelableArrayList("entries", entries);
