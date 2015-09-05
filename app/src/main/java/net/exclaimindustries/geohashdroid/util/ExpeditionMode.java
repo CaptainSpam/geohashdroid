@@ -140,10 +140,15 @@ public class ExpeditionMode
             if(getGoogleClient() != null)
                 LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
 
-            // Second, ask for a stock using that location.
             if(!isCleanedUp()) {
                 mInitialCheckLocation = location;
 
+                // First, zoom to the location.  This'll at least give us
+                // something other than the center of the map until the
+                // hashpoint comes in.
+                zoomToInitialCurrentLocation(location);
+
+                // Second, ask for a stock using that location.
                 if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
                 requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
             }
@@ -701,6 +706,27 @@ public class ExpeditionMode
         mMap.animateCamera(cam);
     }
 
+    private void zoomToInitialCurrentLocation(Location loc) {
+        // This is called during initial lookup, just to make sure the map's at
+        // a location OTHER than dead zero while we potentially wait for a stock
+        // value to come in.  The zoom will be to half a degree around the
+        // current point, just to grab an entire graticule's space.
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        builder.include(new LatLng(loc.getLatitude() - .5, loc.getLongitude() - .5));
+        builder.include(new LatLng(loc.getLatitude() - .5, loc.getLongitude() + .5));
+        builder.include(new LatLng(loc.getLatitude() + .5, loc.getLongitude() - .5));
+        builder.include(new LatLng(loc.getLatitude() + .5, loc.getLongitude() + .5));
+        CameraUpdate cam = CameraUpdateFactory.newLatLngBounds(builder.build(), mCentralMap.getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
+        try {
+            // And don't worry, when the stock comes in, that'll fire off a new
+            // animateCamera() call, which in turn will cancel this one.
+            mMap.animateCamera(cam);
+        } catch(IllegalStateException ise) {
+            // I really hope it's ready to go by now...
+            Log.w(DEBUG_TAG, "The map isn't ready for animating yet!");
+        }
+    }
+
     private void doReloadZoom() {
         // This happens on every resume().  The only real difference is that
         // this is protected by a preference, while initial zoom happens any
@@ -754,6 +780,7 @@ public class ExpeditionMode
 
         if(LocationUtil.isLocationNewEnough(loc)) {
             mInitialCheckLocation = loc;
+            zoomToInitialCurrentLocation(loc);
             requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
         } else {
             // Otherwise, it's off to the races.
