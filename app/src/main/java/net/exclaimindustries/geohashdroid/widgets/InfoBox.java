@@ -25,6 +25,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -48,6 +49,7 @@ public class InfoBox extends LinearLayout {
     private TextView mAccuracyReallyLow;
 
     private GoogleApiClient mGClient;
+    private CentralMap mCentralMap;
     private Location mLastLocation;
 
     private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
@@ -126,7 +128,8 @@ public class InfoBox extends LinearLayout {
             @Override
             public void run() {
                 float accuracy = 5.0f;
-                if(mLastLocation != null) accuracy = mLastLocation.getAccuracy();
+                if(mLastLocation != null)
+                    accuracy = mLastLocation.getAccuracy();
 
                 // Make sure we're dealing with sane data if we got this from an
                 // emulator or mock location data...
@@ -187,41 +190,46 @@ public class InfoBox extends LinearLayout {
      * thinks it already is.
      *
      * @param gClient the GoogleApiClient to use to listen (will be stored for later unlistening)
+     * @param centralMap the calling CentralMap (needed for permissions checking)
      */
-    public void startListening(GoogleApiClient gClient) {
+    public void startListening(GoogleApiClient gClient, CentralMap centralMap) {
         if(mIsListening) return;
 
         mGClient = gClient;
+        mCentralMap = centralMap;
 
-        // Time to wake up and start processing locations!  We'll get the
-        // current location first just for speed, AND we'll subscribe for
-        // updates.
-        Location loc = LocationServices.FusedLocationApi.getLastLocation(gClient);
+        if(mCentralMap.checkLocationPermissions(CentralMap.CentralMapMode.PERMISSION_INFOBOX_INIT)) {
+            // Time to wake up and start processing locations!  We'll get the
+            // current location first just for speed, AND we'll subscribe for
+            // updates.
+            Location loc = LocationServices.FusedLocationApi.getLastLocation(gClient);
 
-        if(LocationUtil.isLocationNewEnough(loc))
-            mLastLocation = loc;
-        else
-            mLastLocation = null;
+            if(LocationUtil.isLocationNewEnough(loc))
+                mLastLocation = loc;
+            else
+                mLastLocation = null;
 
-        updateBox();
+            updateBox();
 
-        LocationRequest lRequest = LocationRequest.create();
-        lRequest.setInterval(1000);
-        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
 
-        mIsListening = true;
+            mIsListening = true;
+        }
     }
 
     /**
      * Tells the InfoBox to stop listening to location updates.  Does nothing if
      * it doesn't think it is already.  This will use whatever GoogleApiClient
-     * was passed in to {@link #startListening(GoogleApiClient)} earlier.
+     * was passed in to {@link #startListening(GoogleApiClient, CentralMap)} earlier.
      */
     public void stopListening() {
         if(!mIsListening || mGClient == null || !mGClient.isConnected()) return;
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
+        if(mCentralMap != null && mCentralMap.checkLocationPermissions(0, true))
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
 
         mIsListening = false;
     }

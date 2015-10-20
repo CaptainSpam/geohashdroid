@@ -8,11 +8,15 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v13.app.FragmentCompat;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +46,8 @@ public class DetailedInfoFragment extends CentralMapExtraFragment
                    GoogleApiClient.OnConnectionFailedListener {
     /** The bundle key for the Info. */
     public final static String INFO = "info";
+
+    private final static int LOCATION_PERMISSION = 1;
 
     private TextView mDate;
     private TextView mYouLat;
@@ -112,7 +118,8 @@ public class DetailedInfoFragment extends CentralMapExtraFragment
     public void onStop() {
         // Stop!
         if(mGClient != null) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
+            if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+                LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
             mGClient.disconnect();
         }
 
@@ -121,20 +128,27 @@ public class DetailedInfoFragment extends CentralMapExtraFragment
 
     @Override
     public void onConnected(Bundle bundle) {
-        // Connected!  Let's get registered for updates!
-        Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
+        startListening();
+    }
 
-        if(LocationUtil.isLocationNewEnough(loc))
-            mLastLocation = loc;
-        else
-            mLastLocation = null;
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(permissions.length <= 0 || grantResults.length <= 0)
+            return;
 
-        updateDisplay();
+        if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // We're good!  Fire it up again!
+            startListening();
+        } else {
+            // We're not good.  Throw a popup.
+            Bundle args = new Bundle();
+            args.putInt(PermissionDeniedDialogFragment.TITLE, R.string.title_permission_location);
+            args.putInt(PermissionDeniedDialogFragment.MESSAGE, R.string.explain_permission_location);
 
-        LocationRequest lRequest = LocationRequest.create();
-        lRequest.setInterval(1000);
-        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
+            PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
+            frag.setArguments(args);
+            frag.show(getFragmentManager(), "PermissionDeniedDialog");
+        }
     }
 
     @Override
@@ -146,7 +160,38 @@ public class DetailedInfoFragment extends CentralMapExtraFragment
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        // REALLY HALP
+        // The only way into DetailedInfoFragment is via CentralMap (either by
+        // an added fragment or jumping to the new activity).  We already
+        // covered API failures back there, so either we still have those
+        // permissions set or the user refused and we don't want to keep on
+        // bugging them.  Either way, we can ignore this.
+    }
+
+    private void startListening() {
+        // Unlike in CentralMap, we won't set up an entire method to abstract
+        // this away, since the only use we have for this permission is right
+        // here.
+        if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Permission granted!  Let's get registered for updates!
+            Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
+
+            if(LocationUtil.isLocationNewEnough(loc))
+                mLastLocation = loc;
+            else
+                mLastLocation = null;
+
+            updateDisplay();
+
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
+        } else {
+            // Else, we need to fire off a permissions check.
+            FragmentCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION);
+        }
     }
 
     /**

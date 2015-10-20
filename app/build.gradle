@@ -14,5 +14,6 @@ android {
 dependencies {
     compile files('libs/cwac-wakeful-1.0.3.jar')
     compile 'com.android.support:support-v4:23.1.0'
+    compile 'com.android.support:support-v13:23.1.0'
     compile 'com.google.android.gms:play-services:8.1.0'
 }

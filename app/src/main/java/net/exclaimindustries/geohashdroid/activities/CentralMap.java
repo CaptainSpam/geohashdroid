@@ -7,12 +7,17 @@
  */
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -21,6 +26,7 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,6 +34,7 @@ import android.view.MenuItem;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
@@ -42,6 +49,7 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.AboutDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
+import net.exclaimindustries.geohashdroid.fragments.PermissionDeniedDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.VersionHistoryDialogFragment;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.StockService;
@@ -77,7 +85,6 @@ public class CentralMap
                    MapTypeDialogFragment.MapTypeCallback {
     private static final String DEBUG_TAG = "CentralMap";
 
-    private static final String LAST_MODE_BUNDLE = "lastModeBundle";
     private static final String DATE_PICKER_DIALOG = "datePicker";
     private static final String MAP_TYPE_DIALOG = "mapType";
     private static final String VERSION_HISTORY_DIALOG = "versionHistory";
@@ -86,11 +93,18 @@ public class CentralMap
     private static final String STATE_WAS_ALREADY_ZOOMED = "alreadyZoomed";
     private static final String STATE_WAS_SELECT_A_GRATICULE = "selectAGraticule";
     private static final String STATE_WAS_GLOBALHASH = "globalhash";
+    private static final String STATE_WAS_RESOLVING_CONNECTION_ERROR = "resolvingError";
     private static final String STATE_LAST_GRATICULE = "lastGraticule";
     private static final String STATE_LAST_CALENDAR = "lastCalendar";
     private static final String STATE_MAP_TYPE = "mapType";
     private static final String STATE_INFO = "info";
     private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
+
+    /**
+     * Bitmask for a permission request that came from a CentralMapMode.  Set
+     * this bit to 1 to make those request come back to the current mode.
+     */
+    public static final int PERMISSION_REQUEST_FROM_MODE = 0x1000;
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -118,6 +132,13 @@ public class CentralMap
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
 
+    // Request code to use when launching the resolution activity.
+    private static final int REQUEST_RESOLVE_ERROR = 1001;
+    // Unique tag for the error dialog fragment.
+    private static final String DIALOG_API_ERROR = "ApiErrorDialog";
+    // Bool to track whether the app is already resolving an error.
+    private boolean mResolvingError = false;
+
     /**
      * <p>
      * A <code>CentralMapMode</code> is a set of behaviors that happen whenever
@@ -136,6 +157,8 @@ public class CentralMap
      * </p>
      */
     public abstract static class CentralMapMode {
+        private final static String DEBUG_TAG = "CentralMapMode";
+
         protected boolean mInitComplete = false;
         private boolean mCleanedUp = false;
 
@@ -163,6 +186,21 @@ public class CentralMap
 
         /** The current destination Marker. */
         protected Marker mDestination;
+
+        /** Permission request needs to redo initial zoom. */
+        public final static int PERMISSION_INITIAL_ZOOM = PERMISSION_REQUEST_FROM_MODE + 1;
+
+        /** Permission request needs to redo the empty start. */
+        public final static int PERMISSION_EMPTY_START = PERMISSION_REQUEST_FROM_MODE + 2;
+
+        /** Permission request needs to restart the victory listener. */
+        public final static int PERMISSION_VICTORY_LISTENER = PERMISSION_REQUEST_FROM_MODE + 3;
+
+        /** Permission request needs to redo finding the closest graticule. */
+        public final static int PERMISSION_FIND_CLOSEST = PERMISSION_REQUEST_FROM_MODE + 4;
+
+        /** Permission request needs to re-init the InfoBox. */
+        public final static int PERMISSION_INFOBOX_INIT = PERMISSION_REQUEST_FROM_MODE + 5;
 
         /**
          * Sets the {@link GoogleMap} this mode deals with.  When implementing
@@ -417,6 +455,24 @@ public class CentralMap
         public String toString() {
             return this.getClass().getSimpleName();
         }
+
+        /**
+         * <p>
+         * Called when a permission request was made from a CentralMapMode and
+         * it was subsequently granted.  Use the requestCode to figure out just
+         * what you'll need to try again.
+         * </p>
+         *
+         * <p>
+         * The default implementation does nothing but report to the log that it
+         * doesn't know what to do with it.  Supercall in the default case.
+         * </p>
+         *
+         * @param requestCode the request code sent when permissions were initially requested
+         */
+        protected void handlePermissionsGranted(int requestCode) {
+            Log.w(DEBUG_TAG, "Permission request code " + requestCode + " came back; " + toString() + " doesn't recognize that, so that request must've come in after the previous mode left.");
+        }
     }
 
     private class StockReceiver extends BroadcastReceiver {
@@ -538,6 +594,7 @@ public class CentralMap
             mAlreadyDidInitialZoom = savedInstanceState.getBoolean(STATE_WAS_ALREADY_ZOOMED, false);
             mSelectAGraticule = savedInstanceState.getBoolean(STATE_WAS_SELECT_A_GRATICULE, false);
             mGlobalhash = savedInstanceState.getBoolean(STATE_WAS_GLOBALHASH, false);
+            mResolvingError = savedInstanceState.getBoolean(STATE_WAS_RESOLVING_CONNECTION_ERROR, false);
 
             mLastGraticule = savedInstanceState.getParcelable(STATE_LAST_GRATICULE);
 
@@ -675,6 +732,7 @@ public class CentralMap
         outState.putBoolean(STATE_WAS_ALREADY_ZOOMED, mAlreadyDidInitialZoom);
         outState.putBoolean(STATE_WAS_SELECT_A_GRATICULE, mSelectAGraticule);
         outState.putBoolean(STATE_WAS_GLOBALHASH, mGlobalhash);
+        outState.putBoolean(STATE_WAS_RESOLVING_CONNECTION_ERROR, mResolvingError);
 
         // And some additional data.
         outState.putParcelable(STATE_LAST_GRATICULE, mLastGraticule);
@@ -905,9 +963,28 @@ public class CentralMap
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        // I'm not really certain how this can fail to connect, and so I'm not
-        // really certain what to do if it does.
+    public void onConnectionFailed(ConnectionResult result) {
+        // Oh, so THAT'S how the connection can fail: If we're using Marshmallow
+        // and the user refused to give permissions to the API or the user
+        // doesn't have the Google Play Services installed.  Okay, that's fair.
+        // Let's deal with it, then.
+        if(!mResolvingError) {
+            if(result.hasResolution()) {
+                try {
+                    mResolvingError = true;
+                    result.startResolutionForResult(this, REQUEST_RESOLVE_ERROR);
+                } catch(IntentSender.SendIntentException e) {
+                    // We get this if something went wrong sending the intent.  So,
+                    // let's just try to connect again.
+                    mGoogleClient.connect();
+                }
+            } else {
+                // If we can't actually resolve this, give up and throw an error.
+                // doReadyChecks() won't ever be called.
+                showErrorDialog(result.getErrorCode());
+                mResolvingError = true;
+            }
+        }
     }
 
     /**
@@ -1013,6 +1090,133 @@ public class CentralMap
         // Map type!
         if(mMap != null) {
             mMap.setMapType(type);
+        }
+    }
+
+    // Here's a chunk of stuff from the Android docs on just what to do when the
+    // API connect fails due to permissions:
+
+    private void showErrorDialog(int errorCode) {
+        // Create a fragment for the error dialog
+        ErrorDialogFragment dialogFragment = new ErrorDialogFragment();
+        // Pass the error that should be displayed
+        Bundle args = new Bundle();
+        args.putInt(DIALOG_API_ERROR, errorCode);
+        dialogFragment.setArguments(args);
+        dialogFragment.show(getFragmentManager(), "errordialog");
+    }
+
+    /* Called from ErrorDialogFragment when the dialog is dismissed. */
+    public void onDialogDismissed() {
+        mResolvingError = false;
+    }
+
+    /* A fragment to display an error dialog */
+    public static class ErrorDialogFragment extends DialogFragment {
+        public ErrorDialogFragment() { }
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            // Get the error code and retrieve the appropriate dialog
+            int errorCode = this.getArguments().getInt(DIALOG_API_ERROR);
+            return GoogleApiAvailability.getInstance().getErrorDialog(
+                    this.getActivity(), errorCode, REQUEST_RESOLVE_ERROR);
+        }
+
+        @Override
+        public void onDismiss(DialogInterface dialog) {
+            ((CentralMap) getActivity()).onDialogDismissed();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_RESOLVE_ERROR) {
+            mResolvingError = false;
+            if (resultCode == RESULT_OK) {
+                // Make sure the app is not already connected or attempting to connect
+                if (!mGoogleClient.isConnecting() &&
+                        !mGoogleClient.isConnected()) {
+                    mGoogleClient.connect();
+                }
+            }
+        }
+    }
+
+    /**
+     * <p>
+     * Checks for permissions on {@link Manifest.permission#ACCESS_FINE_LOCATION},
+     * automatically firing off the permission request if it hasn't been
+     * granted yet.  This method DOES return, mind; if it returns true, continue
+     * as normal, and if it returns false, don't do anything.  In the false
+     * case, it will (usually) ask for permissions, with CentralMap handling the
+     * callback.
+     * </p>
+     *
+     * <p>
+     * If skipRequest is set, permissions won't be asked for in the event that
+     * they're not already granted, and no explanation popup will show up,
+     * either.  Use that for cases like shutdowns where all the listeners are
+     * being unregistered.
+     * </p>
+     *
+     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
+     * @param skipRequest if true, don't bother requesting permission, just drop it and go on
+     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
+     */
+    public boolean checkLocationPermissions(int requestCode, boolean skipRequest) {
+        // First, the easy case: Permissions granted.
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Yay!
+            return true;
+        } else {
+            // Boo!  Now we need to fire off a permissions request!
+            if(!skipRequest)
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        requestCode);
+            return false;
+        }
+    }
+
+    /**
+     * Convenience method that calls {@link #checkLocationPermissions(int, boolean)}
+     * with skipRequest set to false.
+     *
+     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
+     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
+     */
+    public boolean checkLocationPermissions(int requestCode) {
+        return checkLocationPermissions(requestCode, false);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(permissions.length <= 0 || grantResults.length <= 0)
+            return;
+
+        // CentralMap will generally be handling location permissions.  So...
+        if(grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            // Whoops.  We're sunk.  Go to the permission failure dialog thing.
+            Bundle args = new Bundle();
+            args.putInt(PermissionDeniedDialogFragment.TITLE, R.string.title_permission_location);
+            args.putInt(PermissionDeniedDialogFragment.MESSAGE, R.string.explain_permission_location);
+
+            PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
+            frag.setArguments(args);
+            frag.show(getFragmentManager(), "PermissionDeniedDialog");
+        } else {
+            // Thankfully, we don't need to ask for forgiveness, as we've
+            // got permissions right here!
+            if((requestCode & PERMISSION_REQUEST_FROM_MODE) != 0 && mCurrentMode != null) {
+                // This came from a CentralMapMode, so we just tell the current
+                // mode what permission came back.  If the mode somehow changed
+                // while we were getting permission, it'll just ignore the code
+                // we give it.
+                mCurrentMode.handlePermissionsGranted(requestCode);
+            } else {
+                Log.w(DEBUG_TAG, "Well, permission's been granted, but I don't know who's supposed to know about it.");
+            }
         }
     }
 }

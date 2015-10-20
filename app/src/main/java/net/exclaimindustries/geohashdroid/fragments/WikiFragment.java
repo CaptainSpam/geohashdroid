@@ -8,8 +8,10 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
@@ -18,6 +20,8 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v13.app.FragmentCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
@@ -63,6 +67,8 @@ public class WikiFragment extends CentralMapExtraFragment
     private static final String PICTURE_URI = "pictureUri";
 
     private static final int GET_PICTURE = 1;
+
+    private final static int LOCATION_PERMISSION = 1;
 
     private View mAnonWarning;
     private ImageButton mGalleryButton;
@@ -224,7 +230,8 @@ public class WikiFragment extends CentralMapExtraFragment
     public void onStop() {
         // Stop!
         if(mGClient != null) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
+            if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+                LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
             mGClient.disconnect();
         }
 
@@ -464,7 +471,7 @@ public class WikiFragment extends CentralMapExtraFragment
 
         // Otherwise, it's time to send!
         String message = mMessage.getText().toString();
-        Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
+        Location loc = mLastLocation;
         if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
 
         Intent i = new Intent(getActivity(), WikiService.class);
@@ -487,21 +494,7 @@ public class WikiFragment extends CentralMapExtraFragment
     @Override
     public void onConnected(Bundle bundle) {
         // Hi, API client!
-        Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
-
-        if(LocationUtil.isLocationNewEnough(loc))
-            mLastLocation = loc;
-        else
-            mLastLocation = null;
-
-        updateLocation();
-
-        // Now, we'll listen for updates no matter what.  This way we're always
-        // assured a fresh location.
-        LocationRequest lRequest = LocationRequest.create();
-        lRequest.setInterval(1000);
-        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
+        startListening();
     }
 
     @Override
@@ -513,7 +506,53 @@ public class WikiFragment extends CentralMapExtraFragment
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        // OH CRAP OH CRAP OH CRAP OH CRAP OH CRAP
+        // Same as DetailedInfoFragment.  Either we're already good or the user
+        // refused, so we stop pestering them.
+    }
+
+    private void startListening() {
+        if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
+
+            if(LocationUtil.isLocationNewEnough(loc))
+                mLastLocation = loc;
+            else
+                mLastLocation = null;
+
+            updateLocation();
+
+            // Now, we'll listen for updates no matter what.  This way we're always
+            // assured a fresh location.
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
+        } else {
+            // Else, we need to fire off a permissions check.
+            FragmentCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(permissions.length <= 0 || grantResults.length <= 0)
+            return;
+
+        if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // We're good!  Fire it up again!
+            startListening();
+        } else {
+            // We're not good.  Throw a popup.
+            Bundle args = new Bundle();
+            args.putInt(PermissionDeniedDialogFragment.TITLE, R.string.title_permission_location);
+            args.putInt(PermissionDeniedDialogFragment.MESSAGE, R.string.explain_permission_location_wiki);
+
+            PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
+            frag.setArguments(args);
+            frag.show(getFragmentManager(), "PermissionDeniedDialog");
+        }
     }
 
     @NonNull

@@ -93,7 +93,7 @@ public class SelectAGraticuleMode
         public void onLocationChanged(Location location) {
             // Okay, NOW we have a location.  Don't call the clear method yet,
             // though!  We've still got a lookup to do!
-            if(getGoogleClient() != null)
+            if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
                 LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
 
             if(!isCleanedUp()) {
@@ -230,7 +230,7 @@ public class SelectAGraticuleMode
     public void pause() {
         // Stop that listener!
         GoogleApiClient gClient = getGoogleClient();
-        if(gClient != null)
+        if(gClient != null && mCentralMap.checkLocationPermissions(0, false))
             LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mFindClosestListener);
     }
 
@@ -282,7 +282,7 @@ public class SelectAGraticuleMode
                 mLastGoodGlobal = info.isGlobalHash();
 
                 // If it's a globalhash, zip right off to it.
-                if(mMap != null && info != null && info.isGlobalHash()) {
+                if(mMap != null && info.isGlobalHash()) {
                     zoomToPoint(info.getFinalDestinationLatLng());
                 }
             }
@@ -329,23 +329,25 @@ public class SelectAGraticuleMode
         if(gClient == null)
             Log.w(DEBUG_TAG, "Tried to call findClosest when the Google API Client was either null or not connected!");
 
-        // Same as with the initial zoom, only we're setting a Graticule.
-        Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
+        if(mCentralMap != null && mCentralMap.checkLocationPermissions(PERMISSION_FIND_CLOSEST)) {
+            // Same as with the initial zoom, only we're setting a Graticule.
+            Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
 
-        // We want the last known location to be at least SANELY recent.
-        if(LocationUtil.isLocationNewEnough(lastKnown)) {
-            applyFoundGraticule(lastKnown);
-        } else {
-            // This shouldn't be called OFTEN, but it'll probably be called.
-            ErrorBanner banner = mCentralMap.getErrorBanner();
-            banner.setErrorStatus(ErrorBanner.Status.NORMAL);
-            banner.setText(mCentralMap.getText(R.string.search_label).toString());
-            banner.setCloseVisible(false);
-            banner.animateBanner(true);
-            LocationRequest lRequest = LocationRequest.create();
-            lRequest.setInterval(1000);
-            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mFindClosestListener);
+            // We want the last known location to be at least SANELY recent.
+            if(LocationUtil.isLocationNewEnough(lastKnown)) {
+                applyFoundGraticule(lastKnown);
+            } else {
+                // This shouldn't be called OFTEN, but it'll probably be called.
+                ErrorBanner banner = mCentralMap.getErrorBanner();
+                banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+                banner.setText(mCentralMap.getText(R.string.search_label).toString());
+                banner.setCloseVisible(false);
+                banner.animateBanner(true);
+                LocationRequest lRequest = LocationRequest.create();
+                lRequest.setInterval(1000);
+                lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mFindClosestListener);
+            }
         }
     }
 
@@ -418,12 +420,23 @@ public class SelectAGraticuleMode
     }
 
     private void clearFindClosest() {
-        if(getGoogleClient() != null)
+        if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
             LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mFindClosestListener);
 
         if(mFrag != null)
             mFrag.resetFindClosest();
 
         mLastLocation = null;
+    }
+
+    @Override
+    protected void handlePermissionsGranted(int requestCode) {
+        switch(requestCode) {
+            case PERMISSION_FIND_CLOSEST:
+                findClosest();
+                break;
+            default:
+                super.handlePermissionsGranted(requestCode);
+        }
     }
 }
