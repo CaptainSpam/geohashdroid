@@ -83,6 +83,15 @@ public class CentralMap
     private static final String VERSION_HISTORY_DIALOG = "versionHistory";
     private static final String ABOUT_DIALOG = "about";
 
+    private static final String STATE_WAS_ALREADY_ZOOMED = "alreadyZoomed";
+    private static final String STATE_WAS_SELECT_A_GRATICULE = "selectAGraticule";
+    private static final String STATE_WAS_GLOBALHASH = "globalhash";
+    private static final String STATE_LAST_GRATICULE = "lastGraticule";
+    private static final String STATE_LAST_CALENDAR = "lastCalendar";
+    private static final String STATE_MAP_TYPE = "mapType";
+    private static final String STATE_INFO = "info";
+    private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
+
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
     // If we already did the initial zoom for this expedition.
@@ -525,20 +534,20 @@ public class CentralMap
 
         // Load up!
         if(savedInstanceState != null) {
-            mCurrentInfo = savedInstanceState.getParcelable("info");
-            mAlreadyDidInitialZoom = savedInstanceState.getBoolean("alreadyZoomed", false);
-            mSelectAGraticule = savedInstanceState.getBoolean("selectAGraticule", false);
-            mGlobalhash = savedInstanceState.getBoolean("globalhash", false);
+            mCurrentInfo = savedInstanceState.getParcelable(STATE_INFO);
+            mAlreadyDidInitialZoom = savedInstanceState.getBoolean(STATE_WAS_ALREADY_ZOOMED, false);
+            mSelectAGraticule = savedInstanceState.getBoolean(STATE_WAS_SELECT_A_GRATICULE, false);
+            mGlobalhash = savedInstanceState.getBoolean(STATE_WAS_GLOBALHASH, false);
 
-            mLastGraticule = savedInstanceState.getParcelable("lastGraticule");
+            mLastGraticule = savedInstanceState.getParcelable(STATE_LAST_GRATICULE);
 
-            mLastCalendar = (Calendar)savedInstanceState.getSerializable("lastCalendar");
+            mLastCalendar = (Calendar)savedInstanceState.getSerializable(STATE_LAST_CALENDAR);
 
             // This will just get dropped right back into the mode wholesale.
-            mLastModeBundle = savedInstanceState.getBundle(LAST_MODE_BUNDLE);
+            mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
 
             // Map type?
-            mapType = savedInstanceState.getInt("mapType", -1);
+            mapType = savedInstanceState.getInt(STATE_MAP_TYPE, -1);
         }
 
         // Finalize the map type.  That's going into a callback.
@@ -660,20 +669,20 @@ public class CentralMap
         super.onSaveInstanceState(outState);
 
         // Also, keep the latest Info around.
-        outState.putParcelable("info", mCurrentInfo);
+        outState.putParcelable(STATE_INFO, mCurrentInfo);
 
         // Keep the various flags, too.
-        outState.putBoolean("alreadyZoomed", mAlreadyDidInitialZoom);
-        outState.putBoolean("selectAGraticule", mSelectAGraticule);
-        outState.putBoolean("globalhash", mGlobalhash);
+        outState.putBoolean(STATE_WAS_ALREADY_ZOOMED, mAlreadyDidInitialZoom);
+        outState.putBoolean(STATE_WAS_SELECT_A_GRATICULE, mSelectAGraticule);
+        outState.putBoolean(STATE_WAS_GLOBALHASH, mGlobalhash);
 
         // And some additional data.
-        outState.putParcelable("lastGraticule", mLastGraticule);
-        outState.putSerializable("lastCalendar", mLastCalendar);
+        outState.putParcelable(STATE_LAST_GRATICULE, mLastGraticule);
+        outState.putSerializable(STATE_LAST_CALENDAR, mLastCalendar);
 
         // Aaaaaaaand the map type.
         if(mMap != null)
-            outState.putInt("mapType", mMap.getMapType());
+            outState.putInt(STATE_MAP_TYPE, mMap.getMapType());
 
         // Also, shut down the current mode.  We'll rebuild it later.  Also, if
         // init isn't complete yet, don't update the state.
@@ -682,7 +691,7 @@ public class CentralMap
             mCurrentMode.onSaveInstanceState(mLastModeBundle);
         }
 
-        outState.putBundle(LAST_MODE_BUNDLE, mLastModeBundle);
+        outState.putBundle(STATE_LAST_MODE_BUNDLE, mLastModeBundle);
     }
 
     @Override
