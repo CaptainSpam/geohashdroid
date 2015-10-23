@@ -57,6 +57,7 @@ public class InfoBox extends LinearLayout {
     private boolean mIsListening = false;
     private boolean mAlreadyLaidOut = false;
     private boolean mWaitingToShow = false;
+    private boolean mUnavailable = false;
 
     private LocationListener mLocationListener = new LocationListener() {
         @Override
@@ -138,7 +139,9 @@ public class InfoBox extends LinearLayout {
 
                 // Redraw the Info.  Always do this.  The user might be coming
                 // back from Preferences, for instance.
-                if(mInfo == null) {
+                if(mUnavailable) {
+                    mDest.setText(R.string.unavailable_title);
+                } else if(mInfo == null) {
                     mDest.setText(R.string.standby_title);
                 } else {
                     mDest.setText(UnitConverter.makeFullCoordinateString(getContext(), mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_SHORT));
@@ -151,7 +154,9 @@ public class InfoBox extends LinearLayout {
 
                 // If we've got a location yet, use that.  If not, to standby
                 // with you!
-                if(mLastLocation == null) {
+                if(mUnavailable) {
+                    mYou.setText(R.string.unavailable_title);
+                } else if(mLastLocation == null) {
                     mYou.setText(R.string.standby_title);
                 } else {
                     mYou.setText(UnitConverter.makeFullCoordinateString(getContext(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
@@ -270,5 +275,19 @@ public class InfoBox extends LinearLayout {
             setTranslationX(0.0f);
             setAlpha(1.0f);
         }
+    }
+
+    /**
+     * Sets whether or not the location data is unavailable.  It's unavailable
+     * if the user didn't give us permission to get it.  If so, the current
+     * location and distance fields will just say they're unavailable.  This is
+     * different from if we don't have the appropriate data YET, but CAN get it
+     * if it shows up.  The widget defaults to available (false).
+     *
+     * @param flag true for unavailable, false for available
+     */
+    public void setUnavailable(boolean flag) {
+        mUnavailable = flag;
+        updateBox();
     }
 }
