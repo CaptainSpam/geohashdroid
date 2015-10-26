@@ -19,17 +19,12 @@ import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.activities.CentralMap;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
-import net.exclaimindustries.tools.LocationUtil;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
 import java.text.DecimalFormat;
 
@@ -38,7 +33,7 @@ import java.text.DecimalFormat;
  * Info and a stream of updates, it'll report on where the user is and how far
  * from the target they are.
  */
-public class InfoBox extends LinearLayout {
+public class InfoBox extends LinearLayout implements LocationListener {
 
     private Info mInfo;
 
@@ -48,25 +43,14 @@ public class InfoBox extends LinearLayout {
     private TextView mAccuracyLow;
     private TextView mAccuracyReallyLow;
 
-    private GoogleApiClient mGClient;
-    private CentralMap mCentralMap;
     private Location mLastLocation;
 
-    private static final DecimalFormat mDistFormat = new DecimalFormat("###.###");
+    private static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.###");
 
-    private boolean mIsListening = false;
     private boolean mAlreadyLaidOut = false;
     private boolean mWaitingToShow = false;
     private boolean mUnavailable = false;
 
-    private LocationListener mLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            // Hey, look, a location!
-            mLastLocation = location;
-            updateBox();
-        }
-    };
 
     public InfoBox(Context c) {
         this(c, null);
@@ -174,7 +158,7 @@ public class InfoBox extends LinearLayout {
                     mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
                 } else {
                     float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
-                    mDistance.setText(UnitConverter.makeDistanceString(getContext(), mDistFormat, distance));
+                    mDistance.setText(UnitConverter.makeDistanceString(getContext(), DIST_FORMAT, distance));
 
                     // Plus, if we're close enough AND accurate enough, make the
                     // text be green.  We COULD do this with geofencing
@@ -188,55 +172,6 @@ public class InfoBox extends LinearLayout {
                 }
             }
         });
-    }
-
-    /**
-     * Tells the InfoBox to start listening for updates.  Does nothing if it
-     * thinks it already is.
-     *
-     * @param gClient the GoogleApiClient to use to listen (will be stored for later unlistening)
-     * @param centralMap the calling CentralMap (needed for permissions checking)
-     */
-    public void startListening(GoogleApiClient gClient, CentralMap centralMap) {
-        if(mIsListening) return;
-
-        mGClient = gClient;
-        mCentralMap = centralMap;
-
-        if(mCentralMap.checkLocationPermissions(CentralMap.CentralMapMode.PERMISSION_INFOBOX_INIT)) {
-            // Time to wake up and start processing locations!  We'll get the
-            // current location first just for speed, AND we'll subscribe for
-            // updates.
-            Location loc = LocationServices.FusedLocationApi.getLastLocation(gClient);
-
-            if(LocationUtil.isLocationNewEnough(loc))
-                mLastLocation = loc;
-            else
-                mLastLocation = null;
-
-            updateBox();
-
-            LocationRequest lRequest = LocationRequest.create();
-            lRequest.setInterval(1000);
-            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
-
-            mIsListening = true;
-        }
-    }
-
-    /**
-     * Tells the InfoBox to stop listening to location updates.  Does nothing if
-     * it doesn't think it is already.  This will use whatever GoogleApiClient
-     * was passed in to {@link #startListening(GoogleApiClient, CentralMap)} earlier.
-     */
-    public void stopListening() {
-        if(!mIsListening || mGClient == null || !mGClient.isConnected()) return;
-
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(0, true))
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
-
-        mIsListening = false;
     }
 
     /**
@@ -254,7 +189,6 @@ public class InfoBox extends LinearLayout {
             if(!visible) {
                 // Slide out!
                 animate().translationX(getWidth()).alpha(0.0f);
-                stopListening();
             } else {
                 // Slide in!
                 animate().translationX(0.0f).alpha(1.0f);
@@ -270,7 +204,6 @@ public class InfoBox extends LinearLayout {
         if(!visible) {
             setTranslationX(getWidth());
             setAlpha(0.0f);
-            stopListening();
         } else {
             setTranslationX(0.0f);
             setAlpha(1.0f);
@@ -288,6 +221,13 @@ public class InfoBox extends LinearLayout {
      */
     public void setUnavailable(boolean flag) {
         mUnavailable = flag;
+        updateBox();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        // Hey, look, a location!
+        mLastLocation = location;
         updateBox();
     }
 }

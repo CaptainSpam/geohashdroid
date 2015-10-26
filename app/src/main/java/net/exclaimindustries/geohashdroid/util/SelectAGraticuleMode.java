@@ -21,9 +21,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -82,26 +79,13 @@ public class SelectAGraticuleMode
      */
     private boolean mLastGoodGlobal;
 
+    private boolean mWaitingOnFindClosest = false;
+
     private Location mLastLocation;
 
     private boolean mWasEmptyStart = false;
     private Graticule mInitialGraticule;
     private boolean mInitialGlobal;
-
-    private LocationListener mFindClosestListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            // Okay, NOW we have a location.  Don't call the clear method yet,
-            // though!  We've still got a lookup to do!
-            if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
-                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
-
-            if(!isCleanedUp()) {
-                mCentralMap.getErrorBanner().animateBanner(false);
-                applyFoundGraticule(location);
-            }
-        }
-    };
 
     @Override
     public void init(@Nullable Bundle bundle) {
@@ -228,10 +212,8 @@ public class SelectAGraticuleMode
 
     @Override
     public void pause() {
-        // Stop that listener!
-        GoogleApiClient gClient = getGoogleClient();
-        if(gClient != null && mCentralMap.checkLocationPermissions(0, false))
-            LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mFindClosestListener);
+        // Maybe I don't need pause() anymore in the interface.  But, it pays to
+        // be defensive.
     }
 
     @Override
@@ -329,25 +311,21 @@ public class SelectAGraticuleMode
         if(gClient == null)
             Log.w(DEBUG_TAG, "Tried to call findClosest when the Google API Client was either null or not connected!");
 
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(PERMISSION_FIND_CLOSEST)) {
-            // Same as with the initial zoom, only we're setting a Graticule.
-            Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
+        // Same as with the initial zoom, only we're setting a Graticule.
+        Location lastKnown = getLastKnownLocation();
 
-            // We want the last known location to be at least SANELY recent.
-            if(LocationUtil.isLocationNewEnough(lastKnown)) {
-                applyFoundGraticule(lastKnown);
-            } else {
-                // This shouldn't be called OFTEN, but it'll probably be called.
-                ErrorBanner banner = mCentralMap.getErrorBanner();
-                banner.setErrorStatus(ErrorBanner.Status.NORMAL);
-                banner.setText(mCentralMap.getText(R.string.search_label).toString());
-                banner.setCloseVisible(false);
-                banner.animateBanner(true);
-                LocationRequest lRequest = LocationRequest.create();
-                lRequest.setInterval(1000);
-                lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-                LocationServices.FusedLocationApi.requestLocationUpdates(getGoogleClient(), lRequest, mFindClosestListener);
-            }
+        // We want the last known location to be at least SANELY recent.
+        if(LocationUtil.isLocationNewEnough(lastKnown)) {
+            applyFoundGraticule(lastKnown);
+        } else {
+            // This shouldn't be called OFTEN, but it'll probably be called.
+            ErrorBanner banner = mCentralMap.getErrorBanner();
+            banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.setCloseVisible(false);
+            banner.animateBanner(true);
+
+            mWaitingOnFindClosest = true;
         }
     }
 
@@ -420,9 +398,7 @@ public class SelectAGraticuleMode
     }
 
     private void clearFindClosest() {
-        if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
-            LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), mFindClosestListener);
-
+        mWaitingOnFindClosest = false;
         if(mFrag != null)
             mFrag.resetFindClosest();
 
@@ -430,13 +406,13 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    protected void handlePermissionsGranted(int requestCode) {
-        switch(requestCode) {
-            case PERMISSION_FIND_CLOSEST:
-                findClosest();
-                break;
-            default:
-                super.handlePermissionsGranted(requestCode);
+    public void onLocationChanged(Location location) {
+        if(mWaitingOnFindClosest) {
+            mWaitingOnFindClosest = false;
+            if(!isCleanedUp()) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+                applyFoundGraticule(location);
+            }
         }
     }
 }

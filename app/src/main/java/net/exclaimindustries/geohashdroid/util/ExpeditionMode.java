@@ -32,9 +32,6 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -81,8 +78,6 @@ public class ExpeditionMode
 
     public static final String DO_INITIAL_START = "doInitialStart";
 
-    private boolean mWaitingOnInitialZoom = false;
-    private boolean mWaitingOnEmptyStart = false;
     private boolean mReplacingFragment = false;
     private boolean mVictoryReported = false;
 
@@ -105,87 +100,12 @@ public class ExpeditionMode
     private CentralMapExtraFragment mExtraFragment;
     private ZoomButtons mZoomButtons;
 
-    private LocationListener mZoomToUserListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
-                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
-
-            if(!isCleanedUp()) {
-                mCentralMap.getErrorBanner().animateBanner(false);
-                zoomToPoint(location);
-            }
-        }
-    };
-
-    private LocationListener mInitialZoomListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            // Got it!
-            mWaitingOnInitialZoom = false;
-
-            if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
-                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
-
-            if(!isCleanedUp()) {
-                mCentralMap.getErrorBanner().animateBanner(false);
-                zoomToIdeal(location);
-            }
-        }
-    };
-
-    private LocationListener mEmptyStartListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            if(getGoogleClient() != null && mCentralMap.checkLocationPermissions(0, false))
-                LocationServices.FusedLocationApi.removeLocationUpdates(getGoogleClient(), this);
-
-            if(!isCleanedUp()) {
-                mInitialCheckLocation = location;
-
-                // First, zoom to the location.  This'll at least give us
-                // something other than the center of the map until the
-                // hashpoint comes in.
-                zoomToInitialCurrentLocation(location);
-
-                // Second, ask for a stock using that location.
-                if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
-                requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
-            }
-        }
-    };
-
-    private LocationListener mVictoryListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            // We're not using the built-in geofencing capabilities because we
-            // want to use the current GPS accuracy as our fencing radius.  The
-            // built-in one requires a single radius that doesn't change, which,
-            // to be honest, is perfectly fine for MOST situations.  This just
-            // isn't most situations.
-            if(mCurrentInfo == null || mVictoryReported) return;
-
-            float accuracy = location.getAccuracy();
-
-            // The accuracy can't be zero, at least not in real-world
-            // circumstances.  The only way it'll be zero is if we're using the
-            // emulator or there's otherwise a mock location coming in.  In that
-            // case, treat it as 5m, just so victory can be achieved without
-            // being EXACTLY on the point.
-            if(accuracy == 0.0f) accuracy = 5.0f;
-
-            if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD
-                && mCurrentInfo.getDistanceInMeters(location) < accuracy) {
-                // VICTORY!
-                ErrorBanner banner = mCentralMap.getErrorBanner();
-                banner.setErrorStatus(ErrorBanner.Status.VICTORY);
-                banner.setText(mCentralMap.getString(R.string.toast_close_enough));
-                banner.setCloseVisible(true);
-                banner.animateBanner(true);
-                mVictoryReported = true;
-            }
-        }
-    };
+    // These booleans tell us that the location handler is waiting to act on a
+    // result in some manner other than the victory listener or updating the
+    // InfoBox.
+    private boolean mWaitingOnInitialZoom = false;
+    private boolean mWaitingOnEmptyStart = false;
+    private boolean mWaitingOnZoomToUser = false;
 
     private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
         @Override
@@ -257,7 +177,6 @@ public class ExpeditionMode
 
         // Start things in motion IF the preference says to do so.
         if(showInfoBox()) {
-            mInfoBox.startListening(getGoogleClient(), mCentralMap);
             mInfoBox.animateInfoBoxVisible(true);
         }
 
@@ -283,9 +202,6 @@ public class ExpeditionMode
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
 
-        // Be ready for victory!
-        startVictoryListener();
-
         mInitComplete = true;
     }
 
@@ -293,18 +209,7 @@ public class ExpeditionMode
     public void cleanUp() {
         super.cleanUp();
 
-        // First, get rid of the callbacks.
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(0, true)) {
-            GoogleApiClient gClient = getGoogleClient();
-            if(gClient != null) {
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mZoomToUserListener);
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mVictoryListener);
-            }
-        }
-
-        // And the listens.
+        // First, get rid of the listens.
         if(mMap != null) {
             mMap.setOnInfoWindowClickListener(null);
             mMap.setOnCameraChangeListener(null);
@@ -316,7 +221,6 @@ public class ExpeditionMode
 
         // The InfoBox should also go away at this point.
         if(mInfoBox != null) {
-            mInfoBox.stopListening();
             mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
                 @Override
                 public void run() {
@@ -358,19 +262,7 @@ public class ExpeditionMode
 
     @Override
     public void pause() {
-        // Stop listening!
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(0, false)) {
-            GoogleApiClient gClient = getGoogleClient();
-            if(gClient != null) {
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mInitialZoomListener);
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mEmptyStartListener);
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mZoomToUserListener);
-                LocationServices.FusedLocationApi.removeLocationUpdates(gClient, mVictoryListener);
-            }
-        }
-
-        if(mInfoBox != null)
-            mInfoBox.stopListening();
+        // Hey, wow, we're not doing anything here anymore!
     }
 
     @Override
@@ -389,13 +281,9 @@ public class ExpeditionMode
 
         if(showInfoBox()) {
             mInfoBox.animateInfoBoxVisible(true);
-            mInfoBox.startListening(getGoogleClient(), mCentralMap);
         } else {
             mInfoBox.animateInfoBoxVisible(false);
         }
-
-        // And fire up the victory cannon!
-        startVictoryListener();
     }
 
     @Override
@@ -615,7 +503,6 @@ public class ExpeditionMode
         // Set the infobox in motion as well.
         if(showInfoBox()) {
             mInfoBox.animateInfoBoxVisible(true);
-            mInfoBox.startListening(getGoogleClient(), mCentralMap);
         } else {
             mInfoBox.animateInfoBoxVisible(false);
         }
@@ -749,60 +636,43 @@ public class ExpeditionMode
             return;
         }
 
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(PERMISSION_INITIAL_ZOOM)) {
-            Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
+        // We want the last known location to be at least SANELY recent.
+        Location loc = getLastKnownLocation();
+        if(LocationUtil.isLocationNewEnough(loc)) {
+            zoomToIdeal(loc);
+        } else {
+            // Otherwise, wait for the first update and use that for an initial
+            // zoom.
+            ErrorBanner banner = mCentralMap.getErrorBanner();
+            banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.setCloseVisible(false);
+            banner.animateBanner(true);
 
-            // We want the last known location to be at least SANELY recent.
-            if(LocationUtil.isLocationNewEnough(lastKnown)) {
-                zoomToIdeal(lastKnown);
-            } else {
-                // Otherwise, wait for the first update and use that for an initial
-                // zoom.
-                waitForLocation(mInitialZoomListener);
-            }
+            mWaitingOnInitialZoom = true;
         }
     }
 
     private void doEmptyStart() {
         Log.d(DEBUG_TAG, "Here comes the empty start...");
 
-        mWaitingOnEmptyStart = true;
+        // For an initial start, first things first, we ask for the current
+        // location.  If it's new enough, we can go with that, as usual.
+        Location loc = getLastKnownLocation();
+        if(LocationUtil.isLocationNewEnough(loc)) {
+            mInitialCheckLocation = loc;
+            zoomToInitialCurrentLocation(loc);
+            requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+        } else {
+            // Otherwise, it's off to the races.
+            ErrorBanner banner = mCentralMap.getErrorBanner();
+            banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+            banner.setText(mCentralMap.getText(R.string.search_label).toString());
+            banner.setCloseVisible(false);
+            banner.animateBanner(true);
 
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(PERMISSION_EMPTY_START)) {
-            // For an initial start, first things first, we ask for the current
-            // location.  If it's new enough, we can go with that, as usual.
-            Location loc = LocationServices.FusedLocationApi.getLastLocation(getGoogleClient());
-
-            if(LocationUtil.isLocationNewEnough(loc)) {
-                mInitialCheckLocation = loc;
-                zoomToInitialCurrentLocation(loc);
-                requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
-            } else {
-                // Otherwise, it's off to the races.
-                waitForLocation(mEmptyStartListener);
-            }
+            mWaitingOnEmptyStart = true;
         }
-    }
-
-    private void waitForLocation(LocationListener callback) {
-        GoogleApiClient gClient = getGoogleClient();
-
-        if(gClient == null) {
-            Log.e(DEBUG_TAG, "Tried to start waiting for a location when Google API Client was null or not connected!");
-            return;
-        }
-
-        ErrorBanner banner = mCentralMap.getErrorBanner();
-        banner.setErrorStatus(ErrorBanner.Status.NORMAL);
-        banner.setText(mCentralMap.getText(R.string.search_label).toString());
-        banner.setCloseVisible(false);
-        banner.animateBanner(true);
-
-        LocationRequest lRequest = LocationRequest.create();
-        lRequest.setInterval(1000);
-        lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        LocationServices.FusedLocationApi.requestLocationUpdates(gClient, lRequest, callback);
     }
 
     @Override
@@ -812,19 +682,10 @@ public class ExpeditionMode
         if(mNearbyPoints.containsKey(marker)) {
             final Info newInfo = mNearbyPoints.get(marker);
 
-            // Ask first!  Get the current location (if possible) and prompt the
-            // user with a distance.  If we don't have permissions (somehow),
-            // just ignore it and give the standard "we don't know where you
-            // are" style of message.
-            Location lastKnown = null;
-            if(mCentralMap != null && mCentralMap.checkLocationPermissions(0, true)) {
-                GoogleApiClient gClient = getGoogleClient();
-                if(gClient != null)
-                    lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
-            }
-
-            // Then, we've got a fragment that'll do this sort of work for us.
-            NearbyGraticuleDialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, lastKnown);
+            // Get the last-known location (if possible) and prompt the user
+            // with a distance.  Then, we've got a fragment that'll do this sort
+            // of work for us.
+            NearbyGraticuleDialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, getLastKnownLocation());
             frag.setCallback(this);
             frag.show(mCentralMap.getFragmentManager(), NEARBY_DIALOG);
         }
@@ -1013,55 +874,95 @@ public class ExpeditionMode
                 }
 
                 // Hopefully the user's already got a valid location.  Else...
-                Location lastKnown = LocationServices.FusedLocationApi.getLastLocation(gClient);
-
-                // We want the last known location to be at least SANELY recent.
-                if(LocationUtil.isLocationNewEnough(lastKnown)) {
-                    zoomToPoint(lastKnown);
+                Location loc = getLastKnownLocation();
+                if(LocationUtil.isLocationNewEnough(loc)) {
+                    zoomToPoint(loc);
                 } else {
-                    // Otherwise, wait for the first update and use that for an initial
-                    // zoom.
-                    waitForLocation(mZoomToUserListener);
+                    // Otherwise, wait for the first update and use that for the
+                    // user's location.
+                    ErrorBanner banner = mCentralMap.getErrorBanner();
+                    banner.setErrorStatus(ErrorBanner.Status.NORMAL);
+                    banner.setText(mCentralMap.getText(R.string.search_label).toString());
+                    banner.setCloseVisible(false);
+                    banner.animateBanner(true);
+
+                    mWaitingOnZoomToUser = true;
                 }
 
                 break;
         }
     }
 
-    private void startVictoryListener() {
-        if(mCentralMap != null && mCentralMap.checkLocationPermissions(PERMISSION_VICTORY_LISTENER)) {
-            GoogleApiClient gClient = getGoogleClient();
-            if(gClient != null) {
-                LocationRequest lRequest = LocationRequest.create();
-                lRequest.setInterval(1000);
-                lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    @Override
+    public void onLocationChanged(Location location) {
+        // This listener handles all listening duties.  We've got a few
+        // booleans that tell us what's waiting to be done.
+        if(mWaitingOnInitialZoom) {
+            mWaitingOnInitialZoom = false;
 
-                LocationServices.FusedLocationApi.requestLocationUpdates(gClient, lRequest, mVictoryListener);
+            if(!isCleanedUp()) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+                zoomToIdeal(location);
             }
         }
-    }
 
-    @Override
-    protected void handlePermissionsGranted(int requestCode) {
-        switch(requestCode) {
-            case PERMISSION_INITIAL_ZOOM:
-                // Redo the initial zoom.  Simple.
-                doInitialZoom();
-                break;
-            case PERMISSION_EMPTY_START:
-                // Empty start, that should be simple, too.
-                doEmptyStart();
-                break;
-            case PERMISSION_VICTORY_LISTENER:
-                // So glad I compartmentalized these requests.
-                startVictoryListener();
-                break;
-            case PERMISSION_INFOBOX_INIT:
-                // This one, on the other hand, just needs a re-init.
-                mInfoBox.startListening(getGoogleClient(), mCentralMap);
-                break;
-            default:
-                super.handlePermissionsGranted(requestCode);
+        if(mWaitingOnEmptyStart) {
+            mWaitingOnEmptyStart = false;
+
+            if(!isCleanedUp()) {
+                mInitialCheckLocation = location;
+
+                // First, zoom to the location.  This'll at least give us
+                // something other than the center of the map until the
+                // hashpoint comes in.
+                zoomToInitialCurrentLocation(location);
+
+                // Second, ask for a stock using that location.
+                if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
+                requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+            }
         }
+
+        if(mWaitingOnZoomToUser) {
+            mWaitingOnZoomToUser = false;
+
+            if(!isCleanedUp()) {
+                mCentralMap.getErrorBanner().animateBanner(false);
+                zoomToPoint(location);
+            }
+        }
+
+        // Next, do the victory observer.  We're not using the built-in
+        // geofencing capabilities because we want to use the current GPS
+        // accuracy as our fencing radius.  The built-in one requires a
+        // single radius that doesn't change, which, to be honest, is
+        // perfectly fine for MOST situations.  This just isn't most
+        // situations.
+        if(mCurrentInfo != null && !mVictoryReported) {
+
+            float accuracy = location.getAccuracy();
+
+            // The accuracy can't be zero, at least not in real-world
+            // circumstances.  The only way it'll be zero is if we're using
+            // the emulator or there's otherwise a mock location coming in.
+            // In that case, treat it as 5m, just so victory can be achieved
+            // without being EXACTLY on the point.
+            if(accuracy == 0.0f) accuracy = 5.0f;
+
+            if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD
+                    && mCurrentInfo.getDistanceInMeters(location) < accuracy) {
+                // VICTORY!
+                ErrorBanner banner = mCentralMap.getErrorBanner();
+                banner.setErrorStatus(ErrorBanner.Status.VICTORY);
+                banner.setText(mCentralMap.getString(R.string.toast_close_enough));
+                banner.setCloseVisible(true);
+                banner.animateBanner(true);
+                mVictoryReported = true;
+            }
+        }
+
+        // Update the InfoBox, too.  Fortunately, that takes care of
+        // everything in and of itself.
+        mInfoBox.onLocationChanged(location);
     }
 }

@@ -20,6 +20,7 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -36,6 +37,8 @@ import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -61,6 +64,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.LocationUtil;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -100,11 +104,7 @@ public class CentralMap
     private static final String STATE_INFO = "info";
     private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
 
-    /**
-     * Bitmask for a permission request that came from a CentralMapMode.  Set
-     * this bit to 1 to make those request come back to the current mode.
-     */
-    public static final int PERMISSION_REQUEST_FROM_MODE = 0x1000;
+    private static final int LOCATION_PERMISSION_REQUEST = 1;
 
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
@@ -116,6 +116,7 @@ public class CentralMap
     private Info mCurrentInfo;
     private GoogleMap mMap;
     private GoogleApiClient mGoogleClient;
+    private Location mLastKnownLocation;
 
     // This is either the current expedition Graticule (same as in mCurrentInfo)
     // or the last-selected Graticule in Select-A-Graticule mode (needed if we
@@ -156,9 +157,7 @@ public class CentralMap
      * {@link #init(Bundle)} and {@link #cleanUp()} calls.
      * </p>
      */
-    public abstract static class CentralMapMode {
-        private final static String DEBUG_TAG = "CentralMapMode";
-
+    public abstract static class CentralMapMode implements LocationListener {
         protected boolean mInitComplete = false;
         private boolean mCleanedUp = false;
 
@@ -186,21 +185,6 @@ public class CentralMap
 
         /** The current destination Marker. */
         protected Marker mDestination;
-
-        /** Permission request needs to redo initial zoom. */
-        public final static int PERMISSION_INITIAL_ZOOM = PERMISSION_REQUEST_FROM_MODE + 1;
-
-        /** Permission request needs to redo the empty start. */
-        public final static int PERMISSION_EMPTY_START = PERMISSION_REQUEST_FROM_MODE + 2;
-
-        /** Permission request needs to restart the victory listener. */
-        public final static int PERMISSION_VICTORY_LISTENER = PERMISSION_REQUEST_FROM_MODE + 3;
-
-        /** Permission request needs to redo finding the closest graticule. */
-        public final static int PERMISSION_FIND_CLOSEST = PERMISSION_REQUEST_FROM_MODE + 4;
-
-        /** Permission request needs to re-init the InfoBox. */
-        public final static int PERMISSION_INFOBOX_INIT = PERMISSION_REQUEST_FROM_MODE + 5;
 
         /**
          * Sets the {@link GoogleMap} this mode deals with.  When implementing
@@ -457,21 +441,16 @@ public class CentralMap
         }
 
         /**
-         * <p>
-         * Called when a permission request was made from a CentralMapMode and
-         * it was subsequently granted.  Use the requestCode to figure out just
-         * what you'll need to try again.
-         * </p>
+         * Gets the user's last known location as seen by CentralMap.  Note that
+         * this may be null if the user's location isn't known yet (or if the
+         * user refused location permissions).  Also, there's no guarantee that
+         * this is at all recent.
          *
-         * <p>
-         * The default implementation does nothing but report to the log that it
-         * doesn't know what to do with it.  Supercall in the default case.
-         * </p>
-         *
-         * @param requestCode the request code sent when permissions were initially requested
+         * @return a Location, or null
          */
-        protected void handlePermissionsGranted(int requestCode) {
-            Log.w(DEBUG_TAG, "Permission request code " + requestCode + " came back; " + toString() + " doesn't recognize that, so that request must've come in after the previous mode left.");
+        @Nullable
+        protected Location getLastKnownLocation() {
+            return mCentralMap.mLastKnownLocation;
         }
     }
 
@@ -581,6 +560,16 @@ public class CentralMap
     }
 
     private StockReceiver mStockReceiver = new StockReceiver();
+
+    private LocationListener mLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            // New location!
+            mLastKnownLocation = location;
+
+            if(mCurrentMode != null) mCurrentMode.onLocationChanged(location);
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -707,6 +696,13 @@ public class CentralMap
 
     @Override
     protected void onStop() {
+        // TODO: I probably want this in onPause, not onStop, but the Google API
+        // client disconnect hits here, not in onPause, so I'd have to keep
+        // track of more things to make sure I know if I need to start listening
+        // again on onResume or wait for the client to reconnect.  And I don't
+        // want the client disconnecting on onPause.
+        stopListening();
+
         // Service down!
         mGoogleClient.disconnect();
 
@@ -946,9 +942,10 @@ public class CentralMap
 
     @Override
     public void onConnected(Bundle bundle) {
-        // If we're coming back from somewhere, reset the marker.  This is just
-        // in case the user changes coordinate preferences, as the marker only
-        // updates its internal info when it's created.
+        // We're connected!  Start listening for updates!  The modes will get
+        // their updates through us.
+        startListening();
+
         if(!isFinishing()) {
             doReadyChecks();
         }
@@ -959,7 +956,9 @@ public class CentralMap
         // Since the location API doesn't appear to connect back to the network,
         // I'm not sure I need to do anything special here.  I'm not even
         // entirely convinced the connection CAN become suspended after it's
-        // made unless things are completely hosed.
+        // made unless things are completely hosed.  At the very least, though,
+        // I can stop listening.
+        stopListening();
     }
 
     @Override
@@ -1050,6 +1049,9 @@ public class CentralMap
                 mCurrentMode.setCentralMap(this);
                 mCurrentMode.init(mLastModeBundle);
             }
+
+            if(mLastKnownLocation != null && LocationUtil.isLocationNewEnough(mLastKnownLocation))
+                mCurrentMode.onLocationChanged(mLastKnownLocation);
             invalidateOptionsMenu();
 
             return true;
@@ -1090,6 +1092,22 @@ public class CentralMap
         // Map type!
         if(mMap != null) {
             mMap.setMapType(type);
+        }
+    }
+
+    private void startListening() {
+        if(checkLocationPermissions(LOCATION_PERMISSION_REQUEST)) {
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
+        }
+    }
+
+    private void stopListening() {
+        if(mGoogleClient != null && checkLocationPermissions(LOCATION_PERMISSION_REQUEST, true)) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mLocationListener);
         }
     }
 
@@ -1164,7 +1182,7 @@ public class CentralMap
      * @param skipRequest if true, don't bother requesting permission, just drop it and go on
      * @return true if permissions are good, false if not (in the false case, a request might be in progress)
      */
-    public boolean checkLocationPermissions(int requestCode, boolean skipRequest) {
+    public synchronized boolean checkLocationPermissions(int requestCode, boolean skipRequest) {
         // First, the easy case: Permissions granted.
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             // Yay!
@@ -1186,7 +1204,7 @@ public class CentralMap
      * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
      * @return true if permissions are good, false if not (in the false case, a request might be in progress)
      */
-    public boolean checkLocationPermissions(int requestCode) {
+    public synchronized boolean checkLocationPermissions(int requestCode) {
         return checkLocationPermissions(requestCode, false);
     }
 
@@ -1208,15 +1226,7 @@ public class CentralMap
         } else {
             // Thankfully, we don't need to ask for forgiveness, as we've
             // got permissions right here!
-            if((requestCode & PERMISSION_REQUEST_FROM_MODE) != 0 && mCurrentMode != null) {
-                // This came from a CentralMapMode, so we just tell the current
-                // mode what permission came back.  If the mode somehow changed
-                // while we were getting permission, it'll just ignore the code
-                // we give it.
-                mCurrentMode.handlePermissionsGranted(requestCode);
-            } else {
-                Log.w(DEBUG_TAG, "Well, permission's been granted, but I don't know who's supposed to know about it.");
-            }
+            startListening();
         }
     }
 }
