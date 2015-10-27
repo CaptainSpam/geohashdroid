@@ -107,6 +107,9 @@ public class ExpeditionMode
     private boolean mWaitingOnEmptyStart = false;
     private boolean mWaitingOnZoomToUser = false;
 
+    // Then there's this one empty start boolean.
+    private boolean mWaitingOnEmptyStartInfo = false;
+
     private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -379,8 +382,8 @@ public class ExpeditionMode
         if(mInitComplete) {
             mCentralMap.getErrorBanner().animateBanner(false);
 
-            if(mWaitingOnEmptyStart) {
-                mWaitingOnEmptyStart = false;
+            if(mWaitingOnEmptyStartInfo) {
+                mWaitingOnEmptyStartInfo = false;
                 // Coming in from the initial setup, we should have nearbys.
                 // Get the closest one.
                 Info inf = Info.measureClosest(mInitialCheckLocation, info, nearby);
@@ -661,6 +664,7 @@ public class ExpeditionMode
         Location loc = getLastKnownLocation();
         if(LocationUtil.isLocationNewEnough(loc)) {
             mInitialCheckLocation = loc;
+            mWaitingOnEmptyStartInfo = true;
             zoomToInitialCurrentLocation(loc);
             requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
         } else {
@@ -908,6 +912,7 @@ public class ExpeditionMode
 
         if(mWaitingOnEmptyStart) {
             mWaitingOnEmptyStart = false;
+            mWaitingOnEmptyStartInfo = true;
 
             if(!isCleanedUp()) {
                 mInitialCheckLocation = location;
