@@ -19,6 +19,8 @@ import android.support.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import net.exclaimindustries.tools.DateTools;
+
 /**
  * <p>
  * An <code>Info</code> object holds all the relevant info that involves the 
@@ -456,5 +458,16 @@ public class Info implements Parcelable {
 
         // And hey presto, we've got us a winner!
         return nearest;
+    }
+
+    @Override
+    public String toString() {
+        // This is mostly used for debugging purposes, so we may as well make it
+        // useful.
+        return "Info for "
+                + (mGraticule == null ? "Globalhash" : "Graticule")
+                + " on " + DateTools.getDateString(mDate)
+                + "; point is at "
+                + getLatitude() + "," + getLongitude();
     }
 }
