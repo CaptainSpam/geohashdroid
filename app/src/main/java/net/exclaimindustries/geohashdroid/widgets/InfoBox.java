@@ -123,10 +123,8 @@ public class InfoBox extends LinearLayout implements LocationListener {
 
                 // Redraw the Info.  Always do this.  The user might be coming
                 // back from Preferences, for instance.
-                if(mUnavailable) {
-                    mDest.setText(R.string.unavailable_title);
-                } else if(mInfo == null) {
-                    mDest.setText(R.string.standby_title);
+                if(mInfo == null) {
+                    mDest.setText(R.string.unknown_title);
                 } else {
                     mDest.setText(UnitConverter.makeFullCoordinateString(getContext(), mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_SHORT));
                 }
@@ -139,9 +137,13 @@ public class InfoBox extends LinearLayout implements LocationListener {
                 // If we've got a location yet, use that.  If not, to standby
                 // with you!
                 if(mUnavailable) {
-                    mYou.setText(R.string.unavailable_title);
-                } else if(mLastLocation == null) {
-                    mYou.setText(R.string.standby_title);
+                    mYou.setVisibility(View.GONE);
+                } else {
+                    mYou.setVisibility(View.VISIBLE);
+                }
+
+                if(mLastLocation == null) {
+                    mYou.setText(R.string.unknown_title);
                 } else {
                     mYou.setText(UnitConverter.makeFullCoordinateString(getContext(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
 
@@ -153,8 +155,14 @@ public class InfoBox extends LinearLayout implements LocationListener {
                 }
 
                 // Next, calculate the distance, if possible.
+                if(mUnavailable) {
+                    mDistance.setVisibility(View.GONE);
+                } else {
+                    mDistance.setVisibility(View.VISIBLE);
+                }
+
                 if(mLastLocation == null || mInfo == null) {
-                    mDistance.setText(R.string.standby_title);
+                    mDistance.setText(R.string.unknown_title);
                     mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
                 } else {
                     float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());

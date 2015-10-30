@@ -205,6 +205,8 @@ public class ExpeditionMode
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
 
+        permissionsDenied(arePermissionsDenied());
+
         mInitComplete = true;
     }
 
@@ -287,6 +289,8 @@ public class ExpeditionMode
         } else {
             mInfoBox.animateInfoBoxVisible(false);
         }
+
+        permissionsDenied(arePermissionsDenied());
     }
 
     @Override
@@ -518,8 +522,7 @@ public class ExpeditionMode
         mInfoBox.setInfo(info);
 
         // Zoom needs updating, too.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, info != null);
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, info != null);
+        setZoomButtonsEnabled();
 
         // As does the detail fragment, if it's there.
         if(mExtraFragment != null)
@@ -574,6 +577,12 @@ public class ExpeditionMode
     }
 
     private void zoomToIdeal(Location current) {
+        // We can't do an ideal zoom if we don't have permissions!
+        if(arePermissionsDenied()) {
+            Log.i(DEBUG_TAG, "Tried to do an ideal zoom after permissions were denied, ignoring...");
+            return;
+        }
+
         // Where "current" means the user's current location, and we're zooming
         // relative to the final destination, if we have it yet.  Let's check
         // that latter part first.
@@ -632,6 +641,12 @@ public class ExpeditionMode
     }
 
     private void doInitialZoom() {
+        // We can't do the initial zoom if we don't have permissions!
+        if(arePermissionsDenied()) {
+            Log.i(DEBUG_TAG, "Tried to do an initial zoom after permissions were denied, ignoring...");
+            return;
+        }
+
         GoogleApiClient gClient = getGoogleClient();
 
         if(gClient == null) {
@@ -657,6 +672,12 @@ public class ExpeditionMode
     }
 
     private void doEmptyStart() {
+        // We can't do the empty start if we don't have permissions!
+        if(arePermissionsDenied()) {
+            Log.i(DEBUG_TAG, "Tried to do an empty start after permissions were denied, ignoring...");
+            return;
+        }
+
         Log.d(DEBUG_TAG, "Here comes the empty start...");
 
         // For an initial start, first things first, we ask for the current
@@ -969,5 +990,34 @@ public class ExpeditionMode
         // Update the InfoBox, too.  Fortunately, that takes care of
         // everything in and of itself.
         mInfoBox.onLocationChanged(location);
+    }
+
+    @Override
+    public void permissionsDenied(boolean denied) {
+        // Make sure the zoom buttons are updated right away.
+        setZoomButtonsEnabled();
+
+        // Also, get rid of the banner if we're denied.
+        if(denied)
+            mCentralMap.getErrorBanner().animateBanner(false);
+
+        // The InfoBox also goes to unavailable mode.
+        mInfoBox.setUnavailable(denied);
+
+        // All of the various updates for which we've got booleans will just sit
+        // around and not do anything if we never get updates, which we won't if
+        // the user denied permissions.
+    }
+
+    private void setZoomButtonsEnabled() {
+        // Zoom to user is always on if permissions aren't denied.
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_USER, !arePermissionsDenied());
+
+        // Zoom to destination is only on if we have a valid info.
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, mCurrentInfo != null);
+
+        // Zoom to both is only on if we have a valid info AND permissions
+        // aren't denied.
+        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
     }
 }

@@ -149,6 +149,7 @@ public class SelectAGraticuleMode
             Bundle args = new Bundle();
             args.putParcelable(GraticulePickerFragment.GRATICULE, mInitialGraticule);
             args.putBoolean(GraticulePickerFragment.GLOBALHASH, mInitialGlobal);
+            args.putBoolean(GraticulePickerFragment.HIDE_FIND_CLOSEST, arePermissionsDenied());
             mFrag.setArguments(args);
 
             transaction.replace(R.id.graticulepicker, mFrag, "GraticulePicker");
@@ -158,6 +159,7 @@ public class SelectAGraticuleMode
             // If the fragment already existed, re-assign the listener.
             mFrag.setListener(this);
             mFrag.triggerListener();
+            permissionsDenied(arePermissionsDenied());
         }
 
         setTitle(R.string.title_graticule_picker);
@@ -218,8 +220,7 @@ public class SelectAGraticuleMode
 
     @Override
     public void resume() {
-        // Nothing needs doing on resume here.  The Find Closest thing can kick
-        // back in on the user's command.
+        permissionsDenied(arePermissionsDenied());
     }
 
     @Override
@@ -304,6 +305,11 @@ public class SelectAGraticuleMode
 
     @Override
     public void findClosest() {
+        if(arePermissionsDenied()) {
+            Log.w(DEBUG_TAG, "Tried to call findClosest when CentralMap thinks the user has explicitly denied location permissions!");
+            return;
+        }
+
         GoogleApiClient gClient = getGoogleClient();
 
         // TODO: I should really have a way to go on standby if this happens and
@@ -414,5 +420,15 @@ public class SelectAGraticuleMode
                 applyFoundGraticule(location);
             }
         }
+    }
+
+    @Override
+    public void permissionsDenied(boolean denied) {
+        // If permissions were denied, the Find Closest button is invalid.
+        if(mFrag != null) mFrag.setClosestHidden(denied);
+
+        // Also, if there's a waiting error banner, get rid of it.
+        if(denied)
+            mCentralMap.getErrorBanner().animateBanner(false);
     }
 }

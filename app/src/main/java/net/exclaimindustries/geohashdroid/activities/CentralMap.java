@@ -98,6 +98,7 @@ public class CentralMap
     private static final String STATE_WAS_SELECT_A_GRATICULE = "selectAGraticule";
     private static final String STATE_WAS_GLOBALHASH = "globalhash";
     private static final String STATE_WAS_RESOLVING_CONNECTION_ERROR = "resolvingError";
+    private static final String STATE_WERE_PERMISSIONS_DENIED = "permissionsDenied";
     private static final String STATE_LAST_GRATICULE = "lastGraticule";
     private static final String STATE_LAST_CALENDAR = "lastCalendar";
     private static final String STATE_MAP_TYPE = "mapType";
@@ -139,6 +140,8 @@ public class CentralMap
     private static final String DIALOG_API_ERROR = "ApiErrorDialog";
     // Bool to track whether the app is already resolving an error.
     private boolean mResolvingError = false;
+    // Bool to track whether or not the user's refused permissions.
+    private boolean mPermissionsDenied = false;
 
     /**
      * <p>
@@ -450,8 +453,46 @@ public class CentralMap
          */
         @Nullable
         protected Location getLastKnownLocation() {
-            return mCentralMap.mLastKnownLocation;
+            if(mCentralMap != null)
+                return mCentralMap.mLastKnownLocation;
+            else
+                return null;
         }
+
+        /**
+         * <p>
+         * Gets whether or not the user explicitly denied permissions during
+         * this session.  Updates on this state will be sent via {@link #permissionsDenied(boolean)},
+         * but this should be called during {@link #init(Bundle)} to get things
+         * set up initially.
+         * </p>
+         *
+         * <p>
+         * Remember, just because this returns false does NOT mean permissions
+         * have been GRANTED; it just means permissions weren't DENIED, and most
+         * importantly, weren't denied YET.  There is a difference.  In the
+         * false case, for instance, the user might still be being prompted for
+         * permissions, in which case {@link #permissionsDenied(boolean)} might
+         * eventually come up with true.
+         * </p>
+         *
+         * @return true if permissions were denied, false if not
+         */
+        protected boolean arePermissionsDenied() {
+            return mCentralMap != null && mCentralMap.mPermissionsDenied;
+        }
+
+        /**
+         * Called when a change happens to whether or not the permissions have
+         * been denied.  On startup, CentralMap should be queried for what it
+         * thinks is the most recent status of permissions.  This will be called
+         * when the user either gives or refuses permission explicitly (until
+         * that happens, CentralMap will report that it hasn't been denied).
+         * Update the mode appropriately.
+         *
+         * @param denied true for permission denied, false for permission granted
+         */
+        public abstract void permissionsDenied(boolean denied);
     }
 
     private class StockReceiver extends BroadcastReceiver {
@@ -584,6 +625,7 @@ public class CentralMap
             mSelectAGraticule = savedInstanceState.getBoolean(STATE_WAS_SELECT_A_GRATICULE, false);
             mGlobalhash = savedInstanceState.getBoolean(STATE_WAS_GLOBALHASH, false);
             mResolvingError = savedInstanceState.getBoolean(STATE_WAS_RESOLVING_CONNECTION_ERROR, false);
+            mPermissionsDenied = savedInstanceState.getBoolean(STATE_WERE_PERMISSIONS_DENIED, false);
 
             mLastGraticule = savedInstanceState.getParcelable(STATE_LAST_GRATICULE);
 
@@ -682,6 +724,14 @@ public class CentralMap
         filt.addAction(StockService.ACTION_STOCK_RESULT);
         registerReceiver(mStockReceiver, filt);
 
+        // Do a permissions check.  If it turns out we DO have permissions, we
+        // can mark the denied flag as false.  This covers cases where the user
+        // denies permission at one point, suspends the Activity, grants it some
+        // other way, and returns.  I'm quite certain someone will make a really
+        // big deal out of it and claim it's a common use case if I don't catch
+        // this circumstance.
+        if(checkLocationPermissions(0, true)) mPermissionsDenied = false;
+
         // The mode will resume itself once the client comes back in from
         // onStart.
     }
@@ -729,6 +779,7 @@ public class CentralMap
         outState.putBoolean(STATE_WAS_SELECT_A_GRATICULE, mSelectAGraticule);
         outState.putBoolean(STATE_WAS_GLOBALHASH, mGlobalhash);
         outState.putBoolean(STATE_WAS_RESOLVING_CONNECTION_ERROR, mResolvingError);
+        outState.putBoolean(STATE_WERE_PERMISSIONS_DENIED, mPermissionsDenied);
 
         // And some additional data.
         outState.putParcelable(STATE_LAST_GRATICULE, mLastGraticule);
@@ -1188,8 +1239,10 @@ public class CentralMap
             // Yay!
             return true;
         } else {
-            // Boo!  Now we need to fire off a permissions request!
-            if(!skipRequest)
+            // Boo!  Now we need to fire off a permissions request!  If we were
+            // already denied permissions once, though, don't bother trying
+            // again.
+            if(!skipRequest && !mPermissionsDenied)
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                         requestCode);
@@ -1223,10 +1276,16 @@ public class CentralMap
             PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
             frag.setArguments(args);
             frag.show(getFragmentManager(), "PermissionDeniedDialog");
+
+            mPermissionsDenied = true;
         } else {
             // Thankfully, we don't need to ask for forgiveness, as we've
             // got permissions right here!
             startListening();
+
+            mPermissionsDenied = false;
         }
+
+        if(mCurrentMode != null) mCurrentMode.permissionsDenied(mPermissionsDenied);
     }
 }

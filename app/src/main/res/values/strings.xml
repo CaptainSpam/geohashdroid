@@ -52,6 +52,7 @@
     <string name="error_title">Error</string>
     <string name="standby_title">Stand by&#8230;</string>
     <string name="unavailable_title">Unavailable</string>
+    <string name="unknown_title">Unknown</string>
     <string name="location_unknown">Location unknown</string>
     <string name="stock_label">Fetching stock data&#8230;</string>
     <string name="location_label">Attempting to determine your location&#8230;</string>

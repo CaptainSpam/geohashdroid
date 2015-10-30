@@ -42,6 +42,11 @@ public class GraticulePickerFragment
      * pre-filled and disabled.
      */
     public final static String GLOBALHASH = "globalHash";
+    /**
+     * Bundle key for hiding the Find Closest button in case the user refused to
+     * give permission for location checking.
+     */
+    public final static String HIDE_FIND_CLOSEST = "hideFindClosest";
 
     private EditText mLat;
     private EditText mLon;
@@ -176,6 +181,8 @@ public class GraticulePickerFragment
             }
 
             mGlobal.setChecked(global);
+
+            setClosestHidden(args.getBoolean(HIDE_FIND_CLOSEST, false));
         }
 
         return v;
@@ -289,4 +296,12 @@ public class GraticulePickerFragment
     public void resetFindClosest() {
         mClosest.setEnabled(true);
     }
+
+    /**
+     * Makes the Find Closest button visible or invisible.  Make it invisible if
+     * location permissions have been denied.
+     *
+     * @param hidden true to be {@link View#INVISIBLE}, false for {@link View#VISIBLE}
+     */
+    public void setClosestHidden(boolean hidden) { mClosest.setVisibility(hidden ? View.INVISIBLE : View.VISIBLE);}
 }
