@@ -139,7 +139,7 @@ public class ExpeditionMode
         if(bundle != null) {
             // And if we DO have a Bundle, does that Bundle simply tell us to
             // perform the initial startup?
-            if(bundle.getBoolean(DO_INITIAL_START, false)) {
+            if(bundle.getBoolean(DO_INITIAL_START, false) && !arePermissionsDenied()) {
                 doEmptyStart();
             } else {
                 // We've either got a complete Info (highest priority) or a
