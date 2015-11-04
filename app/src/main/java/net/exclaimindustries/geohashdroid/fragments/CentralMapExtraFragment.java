@@ -16,16 +16,21 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 
+import com.google.android.gms.location.LocationListener;
+
 import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
 import net.exclaimindustries.geohashdroid.activities.WikiActivity;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
 
 /**
  * This is the base class from which the two extra Fragments {@link net.exclaimindustries.geohashdroid.activities.CentralMap}
  * can use derive.  It simply allows better communication between them and
  * {@link net.exclaimindustries.geohashdroid.util.ExpeditionMode}.
  */
-public abstract class CentralMapExtraFragment extends Fragment {
+public abstract class CentralMapExtraFragment
+        extends Fragment
+        implements LocationListener, PermissionsDeniedListener {
     /**
      * The various types of CentralMapExtraFragment that can exist.  It's either
      * this or a mess of instanceof checks to see what's currently showing.
@@ -66,6 +71,7 @@ public abstract class CentralMapExtraFragment extends Fragment {
 
     protected CloseListener mCloseListener;
     protected Info mInfo;
+    protected boolean mPermissionsDenied;
 
     /**
      * Sets what'll be listening for the close button and/or an onDestroy event.
@@ -86,14 +92,16 @@ public abstract class CentralMapExtraFragment extends Fragment {
             mInfo = savedInstanceState.getParcelable(INFO);
         }
 
-        // If mInfo is still null here (there was no instance state or there was
-        // null data there), continue on to the arguments.
-        if(mInfo == null) {
-            Bundle args = getArguments();
-            if(args != null) {
+        Bundle args = getArguments();
+
+        if(args != null) {
+            // If mInfo is still null here (there was no instance state or there
+            // was null data there), continue on to the arguments.
+            if(mInfo == null) {
                 mInfo = args.getParcelable(INFO);
             }
         }
+
     }
 
     @Override

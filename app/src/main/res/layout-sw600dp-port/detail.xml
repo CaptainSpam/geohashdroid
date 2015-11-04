@@ -67,7 +67,7 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/RightSide"
+            android:id="@+id/you_block"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
@@ -105,7 +105,7 @@
 
 
     <LinearLayout
-        android:id="@+id/DistanceLine"
+        android:id="@+id/distance_block"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"

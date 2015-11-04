@@ -8,10 +8,8 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
@@ -20,8 +18,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v13.app.FragmentCompat;
-import android.support.v4.content.ContextCompat;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
@@ -46,12 +42,6 @@ import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.LocationUtil;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-
 import java.text.DateFormat;
 import java.util.Calendar;
 
@@ -61,14 +51,10 @@ import java.util.Calendar;
  * most of that's been dumped into {@link WikiService}, but the interface part
  * here can handle either pictures or messages.
  */
-public class WikiFragment extends CentralMapExtraFragment
-        implements GoogleApiClient.ConnectionCallbacks,
-                   GoogleApiClient.OnConnectionFailedListener {
+public class WikiFragment extends CentralMapExtraFragment {
     private static final String PICTURE_URI = "pictureUri";
 
     private static final int GET_PICTURE = 1;
-
-    private final static int LOCATION_PERMISSION = 1;
 
     private View mAnonWarning;
     private ImageButton mGalleryButton;
@@ -80,19 +66,9 @@ public class WikiFragment extends CentralMapExtraFragment
     private Button mPostButton;
     private TextView mHeader;
 
-    private GoogleApiClient mGClient;
     private Location mLastLocation;
 
     private Uri mPictureUri;
-
-    private LocationListener mLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            // DING.
-            mLastLocation = location;
-            updateLocation();
-        }
-    };
 
     private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
         @Override
@@ -104,18 +80,6 @@ public class WikiFragment extends CentralMapExtraFragment
             }
         }
     };
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // Hey, look, it's a GoogleApiClient again.  Surprise, surprise.
-        mGClient = new GoogleApiClient.Builder(getActivity())
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
 
     @Nullable
     @Override
@@ -219,26 +183,6 @@ public class WikiFragment extends CentralMapExtraFragment
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-
-        // BOOM!  Connect!
-        mGClient.connect();
-    }
-
-    @Override
-    public void onStop() {
-        // Stop!
-        if(mGClient != null) {
-            if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-                LocationServices.FusedLocationApi.removeLocationUpdates(mGClient, mLocationListener);
-            mGClient.disconnect();
-        }
-
-        super.onStop();
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
 
@@ -248,6 +192,11 @@ public class WikiFragment extends CentralMapExtraFragment
 
         // Plus, resubscribe for those changes.
         PreferenceManager.getDefaultSharedPreferences(getActivity()).registerOnSharedPreferenceChangeListener(mPrefListener);
+
+        // Update the location, too.  This also makes the location fields
+        // invisible if permissions aren't granted yet.  permissionsDenied()
+        // will cover if they suddenly became available.
+        updateLocation();
     }
 
     @Override
@@ -434,6 +383,14 @@ public class WikiFragment extends CentralMapExtraFragment
             @Override
             public void run() {
                 // Easy enough, this is just the current location data.
+                if(mPermissionsDenied) {
+                    mLocationView.setVisibility(View.INVISIBLE);
+                    mDistanceView.setVisibility(View.INVISIBLE);
+                } else {
+                    mLocationView.setVisibility(View.VISIBLE);
+                    mDistanceView.setVisibility(View.VISIBLE);
+                }
+
                 if(mLastLocation == null) {
                     // Or not, if there's no location.
                     mLocationView.setText(R.string.standby_title);
@@ -491,73 +448,27 @@ public class WikiFragment extends CentralMapExtraFragment
             mCloseListener.extraFragmentClosing(this);
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
-        // Hi, API client!
-        startListening();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        // OH CRAP
-        mLastLocation = null;
-        updateLocation();
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        // Same as DetailedInfoFragment.  Either we're already good or the user
-        // refused, so we stop pestering them.
-    }
-
-    private void startListening() {
-        if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Location loc = LocationServices.FusedLocationApi.getLastLocation(mGClient);
-
-            if(LocationUtil.isLocationNewEnough(loc))
-                mLastLocation = loc;
-            else
-                mLastLocation = null;
-
-            updateLocation();
-
-            // Now, we'll listen for updates no matter what.  This way we're always
-            // assured a fresh location.
-            LocationRequest lRequest = LocationRequest.create();
-            lRequest.setInterval(1000);
-            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGClient, lRequest, mLocationListener);
-        } else {
-            // Else, we need to fire off a permissions check.
-            FragmentCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(permissions.length <= 0 || grantResults.length <= 0)
-            return;
-
-        if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            // We're good!  Fire it up again!
-            startListening();
-        } else {
-            // We're not good.  Throw a popup.
-            Bundle args = new Bundle();
-            args.putInt(PermissionDeniedDialogFragment.TITLE, R.string.title_permission_location);
-            args.putInt(PermissionDeniedDialogFragment.MESSAGE, R.string.explain_permission_location_wiki);
-
-            PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
-            frag.setArguments(args);
-            frag.show(getFragmentManager(), "PermissionDeniedDialog");
-        }
-    }
-
     @NonNull
     @Override
     public FragmentType getType() {
         return FragmentType.WIKI;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        // We'll get this in either from CentralMap or WikiActivity.  In either
+        // case, we act the same way.
+        mLastLocation = location;
+        updateLocation();
+    }
+
+    @Override
+    public void permissionsDenied(boolean denied) {
+        // This comes in from CentralMap if permissions are denied/granted or
+        // from WikiActivity during onResume if permissions are granted some
+        // other way (WikiActivity won't ask for permission; it'll just assume
+        // the current permission state holds).
+        mPermissionsDenied = denied;
+        updateLocation();
     }
 }

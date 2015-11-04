@@ -8,14 +8,24 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
@@ -32,12 +42,18 @@ import java.text.DateFormat;
  * quite a lot in common.
  */
 public abstract class CentralMapExtraActivity extends Activity
-        implements CentralMapExtraFragment.CloseListener {
+        implements CentralMapExtraFragment.CloseListener,
+                   GoogleApiClient.ConnectionCallbacks,
+                   GoogleApiClient.OnConnectionFailedListener,
+                   LocationListener {
     /**
      * The key for the Intent extra containing the Info object.  This should
      * very seriously NOT be null.  If it is, you did something very wrong.
      */
     public static final String INFO = "info";
+
+    private CentralMapExtraFragment mFrag;
+    private GoogleApiClient mGoogleClient;
 
     protected Info mInfo;
 
@@ -50,7 +66,7 @@ public abstract class CentralMapExtraActivity extends Activity
         // Grab the fragment.  We know it's there, it's right there in the
         // layout.
         FragmentManager manager = getFragmentManager();
-        CentralMapExtraFragment frag = (CentralMapExtraFragment) manager.findFragmentById(getFragmentResource());
+        mFrag = (CentralMapExtraFragment) manager.findFragmentById(getFragmentResource());
 
         // We'd BETTER have an Intent.
         Intent intent = getIntent();
@@ -60,8 +76,33 @@ public abstract class CentralMapExtraActivity extends Activity
 
         // Since the fragment's part of the layout, we can't set an argument
         // anymore.  So, just update the Info.
-        frag.setCloseListener(this);
-        frag.setInfo(mInfo);
+        mFrag.setCloseListener(this);
+        mFrag.setInfo(mInfo);
+
+        // Let's get the client fired up, since CentralMap won't be around to
+        // handle updating the location.
+        mGoogleClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Fire up the client!
+        mGoogleClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        // Client goes down, and so does the listener!
+        stopListening();
+        mGoogleClient.disconnect();
+
+        super.onStop();
     }
 
     /**
@@ -179,5 +220,54 @@ public abstract class CentralMapExtraActivity extends Activity
     @Override
     public void extraFragmentDestroying(CentralMapExtraFragment fragment) {
         // Nothing happens here; we're already on our way out.
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        // We have a connection!  Yay!
+        mFrag.permissionsDenied(false);
+
+        // Start listening!  If we have permission, that is.  If not, well...
+        startListening();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        stopListening();
+    }
+
+    private void startListening() {
+        // While starting up, we also report to the fragment what happened with
+        // the permissions checks.
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            mFrag.permissionsDenied(false);
+            LocationRequest lRequest = LocationRequest.create();
+            lRequest.setInterval(1000);
+            lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, this);
+        } else {
+            mFrag.permissionsDenied(true);
+        }
+    }
+
+    private void stopListening() {
+        if(mGoogleClient != null && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
+        }
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        // If the connection failed, forget it.  That means the user's already
+        // denied permission somehow, so we're not asking again.
+        mFrag.permissionsDenied(true);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        // When we get a location, let the fragment know.  We're sort of acting
+        // like an ersatz CentralMap at this point.
+        mFrag.onLocationChanged(location);
     }
 }
