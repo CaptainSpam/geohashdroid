@@ -60,6 +60,7 @@ import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
@@ -160,7 +161,8 @@ public class CentralMap
      * {@link #init(Bundle)} and {@link #cleanUp()} calls.
      * </p>
      */
-    public abstract static class CentralMapMode implements LocationListener {
+    public abstract static class CentralMapMode implements LocationListener,
+                                                           PermissionsDeniedListener {
         protected boolean mInitComplete = false;
         private boolean mCleanedUp = false;
 
@@ -481,18 +483,6 @@ public class CentralMap
         protected boolean arePermissionsDenied() {
             return mCentralMap != null && mCentralMap.mPermissionsDenied;
         }
-
-        /**
-         * Called when a change happens to whether or not the permissions have
-         * been denied.  On startup, CentralMap should be queried for what it
-         * thinks is the most recent status of permissions.  This will be called
-         * when the user either gives or refuses permission explicitly (until
-         * that happens, CentralMap will report that it hasn't been denied).
-         * Update the mode appropriately.
-         *
-         * @param denied true for permission denied, false for permission granted
-         */
-        public abstract void permissionsDenied(boolean denied);
     }
 
     private class StockReceiver extends BroadcastReceiver {
