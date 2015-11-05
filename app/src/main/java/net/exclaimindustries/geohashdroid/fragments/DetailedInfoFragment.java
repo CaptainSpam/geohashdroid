@@ -65,6 +65,8 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         // Button does a thing!
         if(closeButton != null) registerCloseButton(closeButton);
 
+        updateDisplay();
+
         return layout;
     }
 

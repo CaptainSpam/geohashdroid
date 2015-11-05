@@ -179,6 +179,8 @@ public class WikiFragment extends CentralMapExtraFragment {
             resolvePostButtonEnabledness();
         }
 
+        updateCheckbox();
+
         return layout;
     }
 
@@ -472,6 +474,10 @@ public class WikiFragment extends CentralMapExtraFragment {
         updateLocation();
 
         // Also, remove the Append Location box if permissions were denied.
-        mIncludeLocationCheckbox.setVisibility(denied ? View.GONE : View.VISIBLE);
+        updateCheckbox();
+    }
+
+    private void updateCheckbox() {
+        mIncludeLocationCheckbox.setVisibility(mPermissionsDenied ? View.GONE : View.VISIBLE);
     }
 }

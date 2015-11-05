@@ -46,6 +46,12 @@ public abstract class CentralMapExtraFragment
     public final static String INFO = "info";
 
     /**
+     * The bundle key for if permissions were explicitly denied coming into the
+     * fragment.
+     */
+    public final static String PERMISSIONS_DENIED = "permissionsDenied";
+
+    /**
      * Now, what you've got here is your garden-variety interface that something
      * ought to implement to handle the close button on this here fragment.
      */
@@ -88,17 +94,16 @@ public abstract class CentralMapExtraFragment
 
         // First, see if there's an instance state.
         if(savedInstanceState != null) {
-            // If so, use the info in there.  Assuming it exists.
+            // If so, use what's in there.
             mInfo = savedInstanceState.getParcelable(INFO);
-        }
+            mPermissionsDenied = savedInstanceState.getBoolean(PERMISSIONS_DENIED, false);
+        } else {
+            // If not, go to the arguments.
+            Bundle args = getArguments();
 
-        Bundle args = getArguments();
-
-        if(args != null) {
-            // If mInfo is still null here (there was no instance state or there
-            // was null data there), continue on to the arguments.
-            if(mInfo == null) {
+            if(args != null) {
                 mInfo = args.getParcelable(INFO);
+                mPermissionsDenied = args.getBoolean(PERMISSIONS_DENIED, false);
             }
         }
 
@@ -118,10 +123,11 @@ public abstract class CentralMapExtraFragment
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        // Also, remember that last info.  Owing to how ExpeditionMode works, it
-        // might have changed since arguments time.  If it DIDN'T change, well,
-        // it'll be the same as the arguments anyway.
+        // Remember that last info.  Owing to how ExpeditionMode works, it might
+        // have changed since arguments time.  If it DIDN'T change, well, it'll
+        // be the same as the arguments anyway.
         outState.putParcelable(INFO, mInfo);
+        outState.putBoolean(PERMISSIONS_DENIED, mPermissionsDenied);
     }
 
     /**
