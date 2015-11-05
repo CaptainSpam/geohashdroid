@@ -694,9 +694,6 @@ public class CentralMap
 
     @Override
     protected void onPause() {
-        // The receiver goes right off as soon as we pause.
-        unregisterReceiver(mStockReceiver);
-
         // The modes should know what they need to do when pausing.
         if(mCurrentMode != null)
             mCurrentMode.pause();
@@ -707,12 +704,6 @@ public class CentralMap
     @Override
     protected void onResume() {
         super.onResume();
-
-        // The receiver goes on during onResume, even though we might not be
-        // waiting for anything yet.
-        IntentFilter filt = new IntentFilter();
-        filt.addAction(StockService.ACTION_STOCK_RESULT);
-        registerReceiver(mStockReceiver, filt);
 
         // Do a permissions check.  If it turns out we DO have permissions, we
         // can mark the denied flag as false.  This covers cases where the user
@@ -730,12 +721,22 @@ public class CentralMap
     protected void onStart() {
         super.onStart();
 
+        // The receiver goes on during onStart, since the modes might need it
+        // before onResume has a chance to kick in, thanks to the possibility of
+        // the API connection happening really quickly.
+        IntentFilter filt = new IntentFilter();
+        filt.addAction(StockService.ACTION_STOCK_RESULT);
+        registerReceiver(mStockReceiver, filt);
+
         // Service up!
         mGoogleClient.connect();
     }
 
     @Override
     protected void onStop() {
+        // The receiver goes right off as soon as we stop.
+        unregisterReceiver(mStockReceiver);
+
         // TODO: I probably want this in onPause, not onStop, but the Google API
         // client disconnect hits here, not in onPause, so I'd have to keep
         // track of more things to make sure I know if I need to start listening
