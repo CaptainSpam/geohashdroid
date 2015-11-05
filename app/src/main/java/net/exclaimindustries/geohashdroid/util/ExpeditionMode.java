@@ -46,7 +46,6 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
 import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
-import net.exclaimindustries.geohashdroid.fragments.DetailedInfoFragment;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
@@ -137,35 +136,29 @@ public class ExpeditionMode
 
         // Do we have a Bundle to un-Bundlify?
         if(bundle != null) {
-            // And if we DO have a Bundle, does that Bundle simply tell us to
-            // perform the initial startup?
-            if(bundle.getBoolean(DO_INITIAL_START, false) && !arePermissionsDenied()) {
-                doEmptyStart();
-            } else {
-                // We've either got a complete Info (highest priority) or a
-                // combination of Graticule, boolean, and Calendar.  So we can
-                // either start right back up from Info or we just make a call
-                // out to StockService.
-                //
-                // Well, okay, we can also have no data at all, in which case we
-                // do nothing but wait until the user goes to Select-A-Graticule
-                // to get things moving.
-                mCurrentInfo = bundle.getParcelable(INFO);
-                if(mCurrentInfo != null) {
-                    requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
-                } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
-                    // We've got a request to make!  Chances are, StockService
-                    // will have this in cache.
-                    Graticule g = bundle.getParcelable(GRATICULE);
-                    boolean global = bundle.getBoolean(GLOBALHASH, false);
-                    Calendar cal = (Calendar) bundle.getSerializable(CALENDAR);
+            // And if we DO have a Bundle, does that Bundle have an Info?
+            mCurrentInfo = bundle.getParcelable(INFO);
+            if(mCurrentInfo != null) {
+                // Info!  Yay!  We can request a stock based on that!  Okay,
+                // technically the Info should already have the stock we need,
+                // but this also lets us get the nearby points if need be.
+                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+            } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
+                // We've got a request to make!  Chances are, StockService will
+                // have this in cache.
+                Graticule g = bundle.getParcelable(GRATICULE);
+                boolean global = bundle.getBoolean(GLOBALHASH, false);
+                Calendar cal = (Calendar) bundle.getSerializable(CALENDAR);
 
-                    // We only go through with this if we have a Calendar and
-                    // either a globalhash or a Graticule.
-                    if(cal != null && (global || g != null)) {
-                        requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
-                    }
+                // We only go through with this if we have a Calendar and
+                // either a globalhash or a Graticule.
+                if(cal != null && (global || g != null)) {
+                    requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 }
+            } else if(bundle.getBoolean(DO_INITIAL_START, false) && !arePermissionsDenied()) {
+                // If we didn't get an Info, well, maybe there's an initial
+                // start to fire off?
+                doEmptyStart();
             }
         }
 
@@ -783,7 +776,6 @@ public class ExpeditionMode
             mCentralMap.startActivity(i);
         } else {
             // Check to see if the fragment's already there.
-            // Check to see if the fragment's already there.
             FragmentManager manager = mCentralMap.getFragmentManager();
             CentralMapExtraFragment f;
             try {
@@ -792,11 +784,14 @@ public class ExpeditionMode
                 f = null;
             }
 
+            // Make the bundle arguments.  We want to argue a whole bundle.
+            Bundle args = new Bundle();
+            args.putParcelable(CentralMapExtraFragment.INFO, mCurrentInfo);
+            args.putBoolean(CentralMapExtraFragment.PERMISSIONS_DENIED, arePermissionsDenied());
+
             if(f == null) {
                 // It's not there!  Make it be there!
                 mExtraFragment = CentralMapExtraFragment.makeFragmentForType(type);
-                Bundle args = new Bundle();
-                args.putParcelable(DetailedInfoFragment.INFO, mCurrentInfo);
                 mExtraFragment.setArguments(args);
                 mExtraFragment.setCloseListener(this);
 
@@ -822,8 +817,6 @@ public class ExpeditionMode
                     mReplacingFragment = true;
 
                     mExtraFragment = CentralMapExtraFragment.makeFragmentForType(type);
-                    Bundle args = new Bundle();
-                    args.putParcelable(DetailedInfoFragment.INFO, mCurrentInfo);
                     mExtraFragment.setArguments(args);
                     mExtraFragment.setCloseListener(this);
 
@@ -990,6 +983,10 @@ public class ExpeditionMode
         // Update the InfoBox, too.  Fortunately, that takes care of
         // everything in and of itself.
         mInfoBox.onLocationChanged(location);
+
+        // Plus, update the fragment, if there is one.
+        if(mExtraFragment != null)
+            mExtraFragment.onLocationChanged(location);
     }
 
     @Override
@@ -1003,6 +1000,10 @@ public class ExpeditionMode
 
         // The InfoBox also goes to unavailable mode.
         mInfoBox.setUnavailable(denied);
+
+        // The fragment needs to know to shut off location bits if need be.
+        if(mExtraFragment != null)
+            mExtraFragment.permissionsDenied(denied);
 
         // All of the various updates for which we've got booleans will just sit
         // around and not do anything if we never get updates, which we won't if
