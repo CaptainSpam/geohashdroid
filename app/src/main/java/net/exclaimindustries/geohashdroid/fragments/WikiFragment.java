@@ -405,7 +405,7 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private void dispatchPost() {
         // Time for fun!
-        boolean includeLocation = mIncludeLocationCheckbox.isChecked();
+        boolean includeLocation = !mPermissionsDenied && mIncludeLocationCheckbox.isChecked();
         boolean includePicture = mPictureCheckbox.isChecked();
 
         // So.  If we didn't have an Info yet, we're hosed.
@@ -464,11 +464,14 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     @Override
     public void permissionsDenied(boolean denied) {
-        // This comes in from CentralMap if permissions are denied/granted or
-        // from WikiActivity during onResume if permissions are granted some
+        // This comes in from ExpeditionMode if permissions are denied/granted
+        // or from WikiActivity during onResume if permissions are granted some
         // other way (WikiActivity won't ask for permission; it'll just assume
         // the current permission state holds).
         mPermissionsDenied = denied;
         updateLocation();
+
+        // Also, remove the Append Location box if permissions were denied.
+        mIncludeLocationCheckbox.setVisibility(denied ? View.GONE : View.VISIBLE);
     }
 }
