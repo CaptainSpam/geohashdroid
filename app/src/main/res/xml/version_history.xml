@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.0-pre4" version="903" date="2015-11-06">
+        <title>There's No requestForgiveness() Call In Android</title>
+        <header>And then Marshmallow happened.</header>
+        <bullets>
+            <bullet>Marshmallow-like permissions are now in play!</bullet>
+            <bullet>Because of this, a lot of the way locations are communicated between objects has been streamlined.  Let me know if there's issues.</bullet>
+            <bullet>Hopefully nailed down that bug where the map sometimes didn't understand there was an expedition to load.</bullet>
+        </bullets>
+        <footer>Okay, NOW things should be nearly complete.  I just need to do some real-world wiki testing to be sure.</footer>
+    </version>
     <version name="0.9.0-pre3" version="902" date="2015-09-04">
         <title>Credit And Giving It Where It Is Due</title>
         <header>I think I've got the major stuff nailed down now.</header>
