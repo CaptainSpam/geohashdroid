@@ -132,9 +132,10 @@ public class StockService extends WakefulIntentService {
      */
     public static final int FLAG_USER_INITIATED = 0x2;
     /**
-     * Flag meaning this request was automatically initiated.  This is used if
-     * the user goes to the map, the last known date wasn't today, and the user
-     * hasn't overridden the expedition with a new date or Graticule.
+     * Flag meaning this request was automatically initiated.  This is used for
+     * odd cases where we need to make requests behind the user's back, like
+     * coming back in from preferences and we need to re-read the "place nearby
+     * flags" setting.
      */
     public static final int FLAG_AUTO_INITIATED = 0x4;
     /**

@@ -283,6 +283,24 @@ public class ExpeditionMode
             mInfoBox.animateInfoBoxVisible(false);
         }
 
+        // Re-check the nearby points pref.  If that changed, we need to either
+        // remove or add the points.  Actually, to keep it simple, just wipe
+        // the old points anyway and only draw them back if the pref says so.
+        // Remember, since this isn't really an Activity lifecycle, resume() is
+        // NOT called immediately after init(), so this will only happen when
+        // we're coming back from somewhere else (like, say, Preferences, where
+        // this sort of thing might change).
+        if(mCurrentInfo != null) {
+            removeNearbyPoints();
+
+            if(needsNearbyPoints()) {
+                // Hey, let's use the little-used FLAG_AUTO_INITIATED!  That'll
+                // do as a flag that tells us we're ONLY waiting on nearby
+                // points!
+                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_INCLUDE_NEARBY_POINTS | StockService.FLAG_AUTO_INITIATED);
+            }
+        }
+
         permissionsDenied(arePermissionsDenied());
     }
 
@@ -391,7 +409,10 @@ public class ExpeditionMode
                 // it back in the else field quickly, as it's cached now.
                 requestStock(inf.getGraticule(), inf.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
             } else {
-                setInfo(info);
+                if((flags & StockService.FLAG_AUTO_INITIATED) == 0) {
+                    setInfo(info);
+                }
+
                 doNearbyPoints(nearby);
             }
         }
@@ -753,7 +774,7 @@ public class ExpeditionMode
 
     private boolean needsNearbyPoints() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
-        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true);
+        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
     }
 
     private boolean showInfoBox() {
