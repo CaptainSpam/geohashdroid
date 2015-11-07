@@ -7,6 +7,13 @@
         android:summaryOff="@string/pref_infobox_off"
         android:summaryOn="@string/pref_infobox_on"
         android:title="@string/pref_infobox_title" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="AutoZoom"
+        android:persistent="true"
+        android:summaryOff="@string/pref_autozoom_off"
+        android:summaryOn="@string/pref_autozoom_on"
+        android:title="@string/pref_autozoom_title" />
     <ListPreference
         android:defaultValue="Metric"
         android:dialogTitle="@string/pref_units_dialogtitle"

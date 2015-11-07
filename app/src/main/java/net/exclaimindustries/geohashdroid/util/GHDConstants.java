@@ -38,7 +38,7 @@ public final class GHDConstants {
     public static final String PREF_COORD_UNITS = "CoordUnits";
     /** Prefs key specifying distance units. */
     public static final String PREF_DIST_UNITS = "Units";
-    /** Prefs key specifying whether or not to remember the last graticule. */
+    /** Prefs key specifying whether or not to auto-zoom on reloads. */
     public static final String PREF_AUTOZOOM = "AutoZoom";
     /** Prefs key specifying info box visibility. */
     public static final String PREF_INFOBOX = "InfoBox";
