@@ -67,7 +67,7 @@ public class Info implements Parcelable {
      *            the date
      */
     public Info(double latitude, double longitude, Graticule graticule,
-            Calendar date) {
+            @NonNull Calendar date) {
         mLatitude = latitude;
         mLongitude = longitude;
         mGraticule = graticule;
@@ -84,7 +84,7 @@ public class Info implements Parcelable {
      * @param graticule the graticule
      * @param date the date
      */
-    public Info(Graticule graticule, Calendar date) {
+    public Info(Graticule graticule, @NonNull Calendar date) {
         mLatitude = 0;
         mLongitude = 0;
         mGraticule = graticule;
@@ -192,6 +192,7 @@ public class Info implements Parcelable {
      * 
      * @return the Calendar
      */
+    @NonNull
     public Calendar getCalendar() {
         return mDate;
     }
@@ -202,6 +203,7 @@ public class Info implements Parcelable {
      * 
      * @return the Date of the Calendar
      */
+    @NonNull
     public Date getDate() {
         return mDate.getTime();
     }
@@ -236,6 +238,7 @@ public class Info implements Parcelable {
      * 
      * @return a new adjusted Calendar
      */
+    @NonNull
     public Calendar getStockCalendar() {
         return makeAdjustedCalendar(mDate, mGraticule);
     }
@@ -385,7 +388,7 @@ public class Info implements Parcelable {
         mRetroHash = (in.readInt() == 1);
     }
     
-    private void setDate(Calendar cal) {
+    private void setDate(@NonNull Calendar cal) {
         // First, actually set the date.
         mDate = cal;
         
@@ -469,5 +472,31 @@ public class Info implements Parcelable {
                 + " on " + DateTools.getDateString(mDate)
                 + "; point is at "
                 + getLatitude() + "," + getLongitude();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(!(o instanceof Info)) return false;
+
+        Info other = (Info)o;
+
+        // I'm really sure I could make this clearer and/or more efficient if I
+        // really thought more about it, and was not in a room full of other
+        // reveling nerds as I tried writing it, but to compare the graticules
+        // while making sure it doesn't NPE if either Info is a Globalhash...
+        if(isGlobalHash() != other.isGlobalHash()) return false;
+
+        // ...then, we see if the graticules match (if neither is a
+        // Globalhash)...
+        if(!isGlobalHash() && !(mGraticule.equals(other.mGraticule))) return false;
+
+        // ...and also check the date, latitude, and longitude.
+        if(!mDate.equals(other.mDate)
+                || (getLatitude() != other.getLatitude())
+                || (getLongitude() != other.getLongitude()))
+            return false;
+
+        // Otherwise, we match!
+        return true;
     }
 }
