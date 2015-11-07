@@ -267,7 +267,7 @@ public abstract class CentralMapExtraActivity extends Activity
     @Override
     public void onLocationChanged(Location location) {
         // When we get a location, let the fragment know.  We're sort of acting
-        // like an ersatz CentralMap at this point.
+        // like an ersatz ExpeditionMode at this point.
         mFrag.onLocationChanged(location);
     }
 }
