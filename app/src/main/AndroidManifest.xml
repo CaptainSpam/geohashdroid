@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="net.exclaimindustries.geohashdroid"
+    package="net.exclaimindustries.geohashdroidlegacy"
     android:installLocation="auto"
     android:versionCode="704"
     android:versionName="0.7.19" >

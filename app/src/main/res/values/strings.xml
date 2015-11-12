@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     
-<string name="app_name">Geohash Droid</string>
+<string name="app_name">Geohash Droid Legacy</string>
 <string name="app_description">A simple Geohashing app</string>
 
 <!-- api_map_key should be defined elsewhere and not uploaded to SVN -->
