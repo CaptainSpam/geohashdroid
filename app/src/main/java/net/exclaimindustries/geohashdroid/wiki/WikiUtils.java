@@ -48,6 +48,7 @@ import org.w3c.dom.Element;
 
 import android.content.Context;
 import android.location.Location;
+import android.support.annotation.NonNull;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -58,12 +59,19 @@ public class WikiUtils {
     /**
      * The base URL for all wiki activities.  Remember the trailing slash!
      */
-    private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/geohashing/";
+    private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/";
 
     /**
      * The URL for the MediaWiki API.  There's no trailing slash here.
      */
-    private static final String WIKI_API_URL = WIKI_BASE_URL + "api.php";
+    private static final String WIKI_API_URL = WIKI_BASE_URL + "wgh/api.php";
+
+    /**
+     * The base URL for viewing pages on the wiki.  On the Geohashing wiki, the
+     * URL where the API is located isn't what the public sees as the URL for
+     * viewing pages, thus we need this.  There IS a trailing slash.
+     */
+    private static final String WIKI_BASE_VIEW_URL = WIKI_BASE_URL + "geohashing/";
 
     private static final String DEBUG_TAG = "WikiUtils";
 
@@ -94,13 +102,15 @@ public class WikiUtils {
     }
 
     /**
-     * Returns the wiki base URL.  That is, the base of where all requests will
-     * be sent.
+     * Returns the wiki view URL.  Attach a wiki page name to this to send it to
+     * a browser for viewing.  It will most likely be different from the API
+     * URL.
      *
-     * @return the wiki base URL
+     * @return the wiki view URL
      */
-    public static String getWikiBaseUrl() {
-        return WIKI_BASE_URL;
+    @NonNull
+    public static String getWikiBaseViewUrl() {
+        return WIKI_BASE_VIEW_URL;
     }
 
     /**
@@ -109,6 +119,7 @@ public class WikiUtils {
      *
      * @return the MediaWiki API URL
      */
+    @NonNull
     public static String getWikiApiUrl() {
         return WIKI_API_URL;
     }

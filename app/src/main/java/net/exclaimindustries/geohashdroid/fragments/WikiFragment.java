@@ -151,7 +151,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                 if(mInfo != null) {
                     Intent i = new Intent();
                     i.setAction(Intent.ACTION_VIEW);
-                    i.setData(Uri.parse(WikiUtils.getWikiBaseUrl() + WikiUtils.getWikiPageName(mInfo)));
+                    i.setData(Uri.parse(WikiUtils.getWikiBaseViewUrl() + WikiUtils.getWikiPageName(mInfo)));
                     startActivity(i);
                 }
             }
