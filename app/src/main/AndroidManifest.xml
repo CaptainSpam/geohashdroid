@@ -2,8 +2,8 @@
 <manifest package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="903"
-          android:versionName="0.9.0-pre4">
+          android:versionCode="904"
+          android:versionName="0.9.0">
 
     <uses-sdk
         android:minSdkVersion="16"

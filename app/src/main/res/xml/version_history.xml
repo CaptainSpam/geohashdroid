@@ -1,45 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
-    <version name="0.9.0-pre4" version="903" date="2015-11-06">
-        <title>There's No requestForgiveness() Call In Android</title>
-        <header>And then Marshmallow happened.</header>
+    <version name="0.9.0" version="904" date="2015-11-12">
+        <title>A New Day Dawns Over The 30W Line</title>
+        <header>It's here!  It's here!  The revamped Geohash Droid is finally here!  Seriously, just look at this:</header>
         <bullets>
-            <bullet>Marshmallow-like permissions are now in play!</bullet>
-            <bullet>Because of this, a lot of the way locations are communicated between objects has been streamlined.  Let me know if there's issues.</bullet>
-            <bullet>Hopefully nailed down that bug where the map sometimes didn't understand there was an expedition to load.</bullet>
+            <bullet>Completely redone Fragment-based, materials-ish interface.  Your tablet will thank you.</bullet>
+            <bullet>Brand-new Google Maps v2 API.  Navigate in comfort and style!</bullet>
+            <bullet>Marshmallow permissions, where appropriate.</bullet>
+            <bullet>All wiki calls are in the background, so you can queue up multiple requests if you don't have an internet connection.</bullet>
+            <bullet>Fixed the problem where you couldn't post to the wiki for a while regardless.  Whoops.</bullet>
+            <bullet>Newer, crisper graphics.</bullet>
         </bullets>
-        <footer>Okay, NOW things should be nearly complete.  I just need to do some real-world wiki testing to be sure.</footer>
-    </version>
-    <version name="0.9.0-pre3" version="902" date="2015-09-04">
-        <title>Credit And Giving It Where It Is Due</title>
-        <header>I think I've got the major stuff nailed down now.</header>
-        <bullets>
-            <bullet>When you get close enough to the hashpoint, you'll get a green victory banner telling you so.</bullet>
-            <bullet>All images should be in place.  Most of them are simple clipart.</bullet>
-            <bullet>All appropriate images now go up to xxxhdpi sizes, for everyone who routinely takes xxxhdpi devices with them on hashing trips.</bullet>
-            <bullet>The About screen is ready!  Now you know who was responsible for this mess!</bullet>
-            <bullet>Fixed an issue where the central map wouldn't always understand to find a new stock price when the date changes.</bullet>
-        </bullets>
-        <footer>That should just about do it for the basic functionality as it stood in legacy.  Now all I need to do is find an ideal hashpoint to give it one real-world test (so I'm not making bogus posts to the real wiki), and, barring any other bugs, version 0.9.0 will make its way to the Play Store.</footer>
-    </version>
-    <version name="0.9.0-pre2" version="901" date="2015-08-26">
-        <title>You Are Literally Reading What Changed</title>
-        <header>At some point I'll ask myself why I included the version history for the previous version when you couldn't see that anyway, but at any rate...</header>
-        <bullets>
-            <bullet>The Version History dialog is ready.  You're reading it now, in fact.</bullet>
-            <bullet>All dialogs other than the wiki login dialog now look like standard Android dialogs.  I might bring back the GHD theme when I've got a better way to do it.</bullet>
-            <bullet>Fixed the "Today" button not appearing on the date picker dialog on phones in landscape mode.</bullet>
-        </bullets>
-        <footer>Next will probably be the missing images and the "you've made it" toast.</footer>
-    </version>
-    <version name="0.9.0-pre1" version="900" date="2015-08-10">
-        <title>Hope Pre-Returns In A Pre-Release</title>
-        <header>It's not quite done yet, but there's plenty to be said about this Geohash Droid overhaul.  Here's just some of what can be said.</header>
-        <bullets>
-            <bullet>Brand new, Fragment-based, Maps v2 interface.  Looks better on tablets than the old version!</bullet>
-            <bullet>Lots more backgroundy.  Wiki stuff, especially.  You can send wiki posts even if there's no internet connection, and it'll queue them up for later when you DO have one.</bullet>
-            <bullet>Much sleeker design that's sort of Materials-based, but not fully.</bullet>
-        </bullets>
-        <footer>Missing stuff, like the About screen, a few missing images, and this Version History screen, will come later.  It IS a pre-release, after all.</footer>
+        <footer>This version should work basically as well as the previous 0.7 versions.  If something goes wrong, file issues at the GitHub repository.  Now, hopefully I can get some NEW features going...</footer>
     </version>
 </versionHistory>
