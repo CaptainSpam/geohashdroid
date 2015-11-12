@@ -771,7 +771,7 @@ public class MainMap extends MapActivity implements ZoomChangeOverlay.ZoomChange
                 String page = WikiUtils.getWikiPageName(mInfo);
                 
                 i.setData(Uri
-                        .parse(WikiUtils.getWikiBaseUrl() + page));
+                        .parse(WikiUtils.getWikiBaseViewUrl() + page));
                 startActivity(i);
                 
                 return true;
