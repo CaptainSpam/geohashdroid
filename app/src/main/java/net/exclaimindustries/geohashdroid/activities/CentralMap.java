@@ -657,8 +657,6 @@ public class CentralMap
                 // infobox right around there.
                 set.setMyLocationButtonEnabled(false);
 
-                mMap.setMyLocationEnabled(true);
-
                 // Restore the map's type, if it was changed.
                 if(reallyMapType >= 0)
                     mMap.setMapType(reallyMapType);
@@ -1144,6 +1142,12 @@ public class CentralMap
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
+
+            // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
+            // locked method.  Which, to be honest, is a good thing, really, it
+            // didn't make much sense that you could turn that on without
+            // permissions before.
+            mMap.setMyLocationEnabled(true);
         }
     }
 
