@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.0.1" version="905" date="2015-12-04">
+        <title>Maybe Not ALL Of Google Play Services</title>
+        <header>Just a minor update this time.</header>
+        <bullets>
+            <bullet>Trimmed down the amount of Google Play APIs used.  This should cut things down a bit and allows me to mark Geohash Droid as ad-free on the store without complaints.  It also means the app won't have that odd "Accounts" permission switch that never gets used.</bullet>
+            <bullet>Updated to version 8.3.0 of the Play Services I DO use.</bullet>
+        </bullets>
+        <footer>Let me know if I missed any permissions checks that the new Play Services need.</footer>
+    </version>
     <version name="0.9.0" version="904" date="2015-11-12">
         <title>A New Day Dawns Over The 30W Line</title>
         <header>It's here!  It's here!  The revamped Geohash Droid is finally here!  Seriously, just look at this:</header>
