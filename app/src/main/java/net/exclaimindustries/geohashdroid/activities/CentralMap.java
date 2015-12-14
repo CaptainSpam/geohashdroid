@@ -66,6 +66,7 @@ import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.tools.LocationUtil;
+import net.exclaimindustries.tools.LogcatDumper;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -860,6 +861,11 @@ public class CentralMap
                 // Preferences!  To the Preferencemobile!
                 Intent i = new Intent(this, PreferencesActivity.class);
                 startActivity(i);
+                return true;
+            }
+            case R.id.action_logcat: {
+                LogcatDumper.shareLogcat(this);
+
                 return true;
             }
             default:

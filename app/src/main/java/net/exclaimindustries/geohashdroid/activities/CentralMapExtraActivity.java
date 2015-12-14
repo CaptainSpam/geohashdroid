@@ -32,6 +32,7 @@ import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.AndroidUtil;
+import net.exclaimindustries.tools.LogcatDumper;
 
 import java.text.DateFormat;
 
@@ -203,6 +204,11 @@ public abstract class CentralMapExtraActivity extends Activity
                 } else {
                     Toast.makeText(this, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
                 }
+
+                return true;
+            }
+            case R.id.action_logcat: {
+                LogcatDumper.shareLogcat(this);
 
                 return true;
             }

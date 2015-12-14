@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_item_logcat">Dump logcat data</string>
+    <string name="logcat_dump_prompt">Alright, how are you sending this log?</string>
+    <string name="logcat_dump_title">A Geohash Droid logcat!</string>
+    <string name="logcat_dump_error">Something went wrong building a logcat file.  That\'s bad.</string>
+</resources>
