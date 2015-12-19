@@ -486,6 +486,8 @@ public class CentralMap
     }
 
     private class StockReceiver extends BroadcastReceiver {
+        private final static String DEBUG_TAG = "StockReceiver";
+
         // This allows us to NOT blast out responses if the current mode didn't
         // request it.
         private Set<Long> mWaitingList;
@@ -515,11 +517,16 @@ public class CentralMap
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(DEBUG_TAG, "Stock has come in!");
+
+            Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            bun.setClassLoader(getClassLoader());
+
             // A stock result arrives!  Let's get data!  That oughta tell us
             // whether or not we're even going to bother with it.
-            int reqFlags = intent.getIntExtra(StockService.EXTRA_REQUEST_FLAGS, 0);
-            long reqId = intent.getLongExtra(StockService.EXTRA_REQUEST_ID, -1);
-            Calendar cal = (Calendar)intent.getSerializableExtra(StockService.EXTRA_DATE);
+            int reqFlags = bun.getInt(StockService.EXTRA_REQUEST_FLAGS, 0);
+            long reqId = bun.getLong(StockService.EXTRA_REQUEST_ID, -1);
+            Calendar cal = (Calendar)bun.getSerializable(StockService.EXTRA_DATE);
 
             // Now, if the flags state this was from the alarm or somewhere else
             // we weren't expecting, give up now.  We don't want it.
@@ -528,7 +535,7 @@ public class CentralMap
             // Well, it's what we're looking for.  What was the result?  The
             // default is RESPONSE_NETWORK_ERROR, as not getting a response code
             // is a Bad Thing(tm).
-            int responseCode = intent.getIntExtra(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
+            int responseCode = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
 
             // Since the mode switchers wipe all requests from a given mode, all
             // we need for a mode match is whether or not the item exists in the
@@ -540,8 +547,8 @@ public class CentralMap
                 // the Info out of it and fire it away to the corresponding
                 // CentralMapMode, if applicable.
                 if(modeMatches) {
-                    Info received = intent.getParcelableExtra(StockService.EXTRA_INFO);
-                    Parcelable[] pArr = intent.getParcelableArrayExtra(StockService.EXTRA_NEARBY_POINTS);
+                    Info received = bun.getParcelable(StockService.EXTRA_INFO);
+                    Parcelable[] pArr = bun.getParcelableArray(StockService.EXTRA_NEARBY_POINTS);
 
                     Info[] nearby = null;
                     if(pArr != null)
@@ -550,7 +557,7 @@ public class CentralMap
                 } else {
                     Log.w(DEBUG_TAG, "Request ID " + reqId + " was NOT expected by this mode, ignoring...");
                 }
-            } else  {
+            } else {
                 // Make sure the mode knows what's up first.
                 if(modeMatches)
                     mCurrentMode.handleLookupFailure(reqFlags, responseCode);

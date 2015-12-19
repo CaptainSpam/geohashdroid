@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Build;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
@@ -373,9 +374,12 @@ public class AlarmService extends WakefulIntentService {
             // posted just yet.  So, we can count on that for error checking.
             if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
                 Log.d(DEBUG_TAG, "Just got a stock result!");
-                
-                int result = intent.getIntExtra(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
-                Graticule g = intent.getParcelableExtra(StockService.EXTRA_GRATICULE);
+
+                Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+                bun.setClassLoader(getClassLoader());
+
+                int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
+                Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
                 
                 if(result == StockService.RESPONSE_NO_CONNECTION) {
                     // No connection means we just set up the receiver and wait.

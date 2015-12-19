@@ -8,7 +8,9 @@
 package net.exclaimindustries.geohashdroid.services;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Parcelable;
+import android.util.Log;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 
@@ -43,8 +45,8 @@ import java.util.List;
  */
 public class StockService extends WakefulIntentService {
 
-//    private static final String DEBUG_TAG = "StockService";
-    
+    private static final String DEBUG_TAG = "StockService";
+
     /**
      * <p>
      * Action to send out when you want stock data and the associated Info
@@ -70,7 +72,26 @@ public class StockService extends WakefulIntentService {
      * the {@link #ACTION_STOCK_REQUEST} that started this.
      */
     public static final String ACTION_STOCK_RESULT = "net.exclaimindustries.geohashdroid.STOCK_RESULT";
-    
+
+    /**
+     * <p>
+     * Key for the extra stuff Bundle.  This Bundle will contain all the needed
+     * Extras to put StockService together.  This is needed because not all
+     * devices seem to apply the correct ClassLoader when dealing with Intents
+     * being sent across remote services (i.e. broadcasts), resulting in
+     * problems when custom Parcelables are used (i.e. Graticule and Info).  A
+     * Bundle, on the other hand, doesn't try to unmarshall Parcelables until
+     * needed, and we can properly assign the ClassLoader then.
+     * </p>
+     *
+     * <p>
+     * Note that this also implies you should call {@link Bundle#setClassLoader(ClassLoader)}
+     * on this Bundle with whatever the current ClassLoader is any time you deal
+     * with data from StockService.
+     * </p>
+     */
+    public static final String EXTRA_STUFF = "net.exclaimindustries.geohashdroid.EXTRA_STUFF";
+
     /**
      * Key for an ID extra on the response.  This isn't actually used and is not
      * required, but whatever is stored here (so long as it's a long) will be
@@ -196,7 +217,10 @@ public class StockService extends WakefulIntentService {
         // WakeLock stuff!  You're even off the main thread, too, so I don't
         // have to spawn a new thread to not screw up the UI!  So let's get that
         // data right in hand, shall we?
-        if(!intent.hasExtra(EXTRA_DATE)) return;
+        if(!intent.hasExtra(EXTRA_DATE)) {
+            Log.e(DEBUG_TAG, "BAILING OUT: There's no date!");
+            return;
+        }
         
         // Maybe we have a request ID!
         long requestId = intent.getLongExtra(EXTRA_REQUEST_ID, -1);
@@ -211,14 +235,20 @@ public class StockService extends WakefulIntentService {
         Parcelable p = intent.getParcelableExtra(EXTRA_GRATICULE);
 
         // Remember, the Graticule MIGHT be null if it's a globalhash.
-        if(p != null && !(p instanceof Graticule)) return;
+        if(p != null && !(p instanceof Graticule)) {
+            Log.e(DEBUG_TAG, "BAILING OUT: p is not null and isn't a Graticule!");
+            return;
+        }
         Graticule graticule = (Graticule)p;
         
         // Calendar, well, we can't parcelize that, but we CAN serialize it,
         // which is almost as good!
         Serializable s = intent.getSerializableExtra(EXTRA_DATE);
         
-        if(s == null || !(s instanceof Calendar)) return;
+        if(s == null || !(s instanceof Calendar)) {
+            Log.e(DEBUG_TAG, "BAILING OUT: s is null or not a Calendar!");
+            return;
+        }
         Calendar cal = (Calendar)s;
         
         // First, ask the stock cache if we've got an Info we can throw back.
@@ -235,6 +265,7 @@ public class StockService extends WakefulIntentService {
             // Otherwise, we need to go to the web.
             if(!AndroidUtil.isConnected(this)) {
                 // ...if we CAN go to the web, that is.
+                Log.i(DEBUG_TAG, "We're not connected, stopping now.");
                 dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null);
             } else {
                 StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule, null);
@@ -242,10 +273,11 @@ public class StockService extends WakefulIntentService {
 
                 // And the results are in!
                 int result = runner.getStatus();
-                
+
                 switch(result) {
                     case HashBuilder.StockRunner.ALL_OKAY:
                         // Hooray!  We win!  Dispatch an intent with the info.
+                        Log.d(DEBUG_TAG, "Stock's good!  Away it goes!");
                         Info[] nearby = null;
                         if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
                             nearby = getNearbyPoints(cal, graticule);
@@ -253,6 +285,7 @@ public class StockService extends WakefulIntentService {
                         break;
                     case HashBuilder.StockRunner.ERROR_NOT_POSTED:
                         // Aw.  It's not posted yet.
+                        Log.d(DEBUG_TAG, "Stock isn't posted yet.");
                         dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null, null);
                         break;
                     default:
@@ -261,6 +294,7 @@ public class StockService extends WakefulIntentService {
                         // we got IDLE, BUSY, or ABORTED, none of which make any
                         // sense in this context, which means something went
                         // horribly, horribly wrong.
+                        Log.e(DEBUG_TAG, "Network error!");
                         dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null, null);
                 }
             }
@@ -270,21 +304,26 @@ public class StockService extends WakefulIntentService {
     private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
-        
-        // Attach all the extras as need be.  I'm at least partly sure this is
-        // not at all what Intent broadcasting was made for, but hey.
-        intent.putExtra(EXTRA_RESPONSE_CODE, responseCode);
-        intent.putExtra(EXTRA_REQUEST_ID, requestId);
-        intent.putExtra(EXTRA_REQUEST_FLAGS, flags);
-        intent.putExtra(EXTRA_RESPONSE_FLAGS, respFlags);
-        intent.putExtra(EXTRA_DATE, date);
-        intent.putExtra(EXTRA_GRATICULE, graticule);
-        intent.putExtra(EXTRA_INFO, info);
+
+        // Stuff all the extras into a Bundle.  There's ClassLoader issues on
+        // some devices that require us to do it this way (see comments on
+        // EXTRA_STUFF).
+        Bundle bun = new Bundle();
+        bun.putInt(EXTRA_RESPONSE_CODE, responseCode);
+        bun.putLong(EXTRA_REQUEST_ID, requestId);
+        bun.putInt(EXTRA_REQUEST_FLAGS, flags);
+        bun.putInt(EXTRA_RESPONSE_FLAGS, respFlags);
+        bun.putSerializable(EXTRA_DATE, date);
+        bun.putParcelable(EXTRA_GRATICULE, graticule);
+        bun.putParcelable(EXTRA_INFO, info);
         if(nearby != null && nearby.length != 0) {
-            intent.putExtra(EXTRA_NEARBY_POINTS, nearby);
+            bun.putParcelableArray(EXTRA_NEARBY_POINTS, nearby);
         }
+
+        intent.putExtra(EXTRA_STUFF, bun);
         
         // And away it goes!
+        Log.d(DEBUG_TAG, "Dispatching intent...");
         sendBroadcast(intent);
     }
 
