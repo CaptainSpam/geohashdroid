@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.0.2" version="906" date="2015-12-26">
+        <title>Infinite Diversity In Infinite Combinations</title>
+        <header>Hopefully this bug didn't affect you, but if it did...</header>
+        <bullets>
+            <bullet>Fixed an issue where the stock price wasn't being properly downloaded for users of some Android devices.</bullet>
+            <bullet>Or some firmwares.</bullet>
+            <bullet>Or maybe some runtime environments.</bullet>
+            <bullet>Point is, it should hopefully be working right now.</bullet>
+        </bullets>
+        <footer>Thanks to George McBane for running tests on his phone to help me nail this one down.</footer>
+    </version>
     <version name="0.9.0.1" version="905" date="2015-12-04">
         <title>Maybe Not ALL Of Google Play Services</title>
         <header>Just a minor update this time.</header>
