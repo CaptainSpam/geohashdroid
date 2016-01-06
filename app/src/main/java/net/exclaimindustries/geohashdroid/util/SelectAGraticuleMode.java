@@ -8,8 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
@@ -19,6 +17,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -30,9 +30,9 @@ import com.google.android.gms.maps.model.PolygonOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
-import net.exclaimindustries.geohashdroid.fragments.GraticulePickerFragment;
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.geohashdroid.widgets.GraticulePicker;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.util.Calendar;
@@ -44,18 +44,16 @@ import java.util.Calendar;
 public class SelectAGraticuleMode
         extends CentralMap.CentralMapMode
         implements GoogleMap.OnMapClickListener,
-                   GraticulePickerFragment.GraticulePickerListener {
+                   GraticulePicker.GraticulePickerListener {
     private static final String DEBUG_TAG = "SelectAGraticuleMode";
 
     private static final double CLOSENESS_X = 2.5;
     private static final double CLOSENESS_Y_UP = 2;
     private static final double CLOSENESS_Y_DOWN = 3;
 
-    private static final String GRATICULE_PICKER_STACK = "GraticulePickerStack";
-
     private Polygon mPolygon;
 
-    private GraticulePickerFragment mFrag;
+    private GraticulePicker mPicker;
 
     /** The "working" calendar. */
     private Calendar mCalendar;
@@ -89,6 +87,8 @@ public class SelectAGraticuleMode
 
     @Override
     public void init(@Nullable Bundle bundle) {
+        Log.d(DEBUG_TAG, "Now initting Select-A-Graticule Mode...");
+
         // Hi, map!
         mMap.setOnMapClickListener(this);
 
@@ -129,38 +129,18 @@ public class SelectAGraticuleMode
         mLastGoodGraticule = mInitialGraticule;
         mLastGoodGlobal = mInitialGlobal;
 
-        // The fragment might already be there if the Activity's being rebuilt.
-        // If not, we need to place it there.
-        FragmentManager manager = mCentralMap.getFragmentManager();
-        mFrag = (GraticulePickerFragment)manager.findFragmentById(R.id.graticulepicker);
-        if(mFrag == null) {
-            // If the fragment's not there, let's make sure it IS there,
-            // complete with bonus data.
-            FragmentTransaction transaction = manager.beginTransaction();
-            transaction.setCustomAnimations(R.animator.slide_in_from_bottom,
-                    R.animator.slide_out_to_bottom,
-                    R.animator.slide_in_from_bottom,
-                    R.animator.slide_out_to_bottom);
+        // Make us a GraticulePicker and make it do what needs doing.
+        mPicker = new GraticulePicker(mCentralMap);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mPicker, params);
 
-            mFrag = new GraticulePickerFragment();
-            mFrag.setListener(this);
-
-            // Toss in the current Graticule so the thing knows where to start.
-            Bundle args = new Bundle();
-            args.putParcelable(GraticulePickerFragment.GRATICULE, mInitialGraticule);
-            args.putBoolean(GraticulePickerFragment.GLOBALHASH, mInitialGlobal);
-            args.putBoolean(GraticulePickerFragment.HIDE_FIND_CLOSEST, arePermissionsDenied());
-            mFrag.setArguments(args);
-
-            transaction.replace(R.id.graticulepicker, mFrag, "GraticulePicker");
-            transaction.addToBackStack(GRATICULE_PICKER_STACK);
-            transaction.commit();
-        } else {
-            // If the fragment already existed, re-assign the listener.
-            mFrag.setListener(this);
-            mFrag.triggerListener();
-            permissionsDenied(arePermissionsDenied());
-        }
+        mPicker.animateGraticulePickerVisible(true, null);
+        if(mInitialGraticule != null) mPicker.setNewGraticule(mInitialGraticule);
+        mPicker.setGlobalHash(mInitialGlobal);
+        mPicker.setClosestHidden(arePermissionsDenied());
+        mPicker.setListener(this);
 
         setTitle(R.string.title_graticule_picker);
 
@@ -178,9 +158,15 @@ public class SelectAGraticuleMode
         }
 
         // And bye, picker!
-        FragmentManager manager = mCentralMap.getFragmentManager();
-        if(manager.findFragmentById(R.id.graticulepicker) != null)
-            manager.popBackStack(GRATICULE_PICKER_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        if(mPicker != null) {
+            mPicker.setListener(null);
+            mPicker.animateGraticulePickerVisible(false, new Runnable() {
+                @Override
+                public void run() {
+                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mPicker);
+                }
+            });
+        }
 
         // Find Closest listener, you too!
         clearFindClosest();
@@ -188,8 +174,8 @@ public class SelectAGraticuleMode
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle bundle) {
-        Graticule g = mFrag.getGraticule();
-        boolean global = mFrag.isGlobalhash();
+        Graticule g = mPicker.getGraticule();
+        boolean global = mPicker.isGlobalhash();
 
         // If we didn't get any valid input (that is, the graticule is false AND
         // it's not a Globalhash)...
@@ -248,14 +234,14 @@ public class SelectAGraticuleMode
                 mCentralMap.getErrorBanner().animateBanner(false);
 
                 // This is a result from Find Closest.  To the findermatron!
-                if(mLastLocation == null || mFrag == null) return;
+                if(mLastLocation == null || mPicker == null) return;
 
                 Info nearest = Info.measureClosest(mLastLocation, info, nearby);
                 clearFindClosest();
 
                 // And that's our target!
                 Graticule g = new Graticule(nearest.getFinalLocation());
-                mFrag.setNewGraticule(g);
+                mPicker.setNewGraticule(g);
                 outlineGraticule(g);
             } else {
                 // If we get an Info in, plant a flag where it needs to be.
@@ -289,7 +275,7 @@ public class SelectAGraticuleMode
 
         // We can update the fragment with that.  We'll get updateGraticule back
         // so we can add the outline.
-        mFrag.setNewGraticule(g);
+        mPicker.setNewGraticule(g);
     }
 
     @Override
@@ -399,14 +385,14 @@ public class SelectAGraticuleMode
         // Unlike in ExpeditionMode, we can immediately set our concept of the
         // current Calendar now.  It'll just wipe out the current point.
         mCalendar = newDate;
-        if(mFrag.getGraticule() != null || mFrag.isGlobalhash())
-            updateGraticule(mFrag.getGraticule());
+        if(mPicker.getGraticule() != null || mPicker.isGlobalhash())
+            updateGraticule(mPicker.getGraticule());
     }
 
     private void clearFindClosest() {
         mWaitingOnFindClosest = false;
-        if(mFrag != null)
-            mFrag.resetFindClosest();
+        if(mPicker != null)
+            mPicker.resetFindClosest();
 
         mLastLocation = null;
     }
@@ -425,7 +411,7 @@ public class SelectAGraticuleMode
     @Override
     public void permissionsDenied(boolean denied) {
         // If permissions were denied, the Find Closest button is invalid.
-        if(mFrag != null) mFrag.setClosestHidden(denied);
+        if(mPicker != null) mPicker.setClosestHidden(denied);
 
         // Also, if there's a waiting error banner, get rid of it.
         if(denied)

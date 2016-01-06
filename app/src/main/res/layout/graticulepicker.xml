@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<view class="net.exclaimindustries.geohashdroid.widgets.AnimatedRelativeLayout"
-      xmlns:android="http://schemas.android.com/apk/res/android"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginBottom="@dimen/standard_padding"
-      android:background="@android:color/white"
-      android:clickable="true"
-      android:gravity="center_horizontal"
-      android:orientation="vertical"
-      android:padding="@dimen/standard_padding">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:layout_marginBottom="@dimen/standard_padding">
 
     <LinearLayout
         android:id="@+id/latlonrow"
@@ -83,4 +77,4 @@
         android:layout_alignTop="@+id/latlonrow"
         android:contentDescription="@string/close_label"
         android:src="@drawable/cancel_button"/>
-</view>
+</merge>

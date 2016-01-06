@@ -1,52 +1,37 @@
 /*
- * GraticulePickerFragment.java
- * Copyright (C) 2015 Nicholas Killewald
+ * GraticulePicker.java
+ * Copyright (C) 2016 Nicholas Killewald
  *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
 
-package net.exclaimindustries.geohashdroid.fragments;
+package net.exclaimindustries.geohashdroid.widgets;
 
-import android.app.Fragment;
-import android.os.Bundle;
+import android.content.Context;
+import android.os.Build;
 import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.LayoutInflater;
+import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 
 /**
- * This is the fragment that appears on the bottom of the map when it enters
- * Select-A-Graticule mode.
+ * This is the box of graticule-picking goodness that appears on the bottom of
+ * the map during Select-A-Graticule mode.
  */
-public class GraticulePickerFragment
-        extends Fragment {
-    /**
-     * Bundle key for a starter Graticule.  Note that the Graticule should be
-     * restored automatically in the case of a state change.
-     */
-    public final static String GRATICULE = "starterGraticule";
-    /**
-     * Bundle key for the globalhash checkbox.  Including both this and the
-     * Graticule key is a valid action; it'll just mean the input boxes are
-     * pre-filled and disabled.
-     */
-    public final static String GLOBALHASH = "globalHash";
-    /**
-     * Bundle key for hiding the Find Closest button in case the user refused to
-     * give permission for location checking.
-     */
-    public final static String HIDE_FIND_CLOSEST = "hideFindClosest";
+public class GraticulePicker extends RelativeLayout {
 
     private EditText mLat;
     private EditText mLon;
@@ -54,13 +39,15 @@ public class GraticulePickerFragment
     private Button mClosest;
 
     private boolean mExternalUpdate;
+    private boolean mAlreadyLaidOut = false;
+    private boolean mWaitingToShow = false;
 
     private GraticulePickerListener mListener;
 
     /**
-     * The interface of choice for when GraticuleInputFragment needs to talk
-     * back to something.  Make sure the Activity holding this implements this,
-     * else it will explode.
+     * The interface of choice for when GraticulePicker needs to talk back to
+     * something.  Make sure something implements this, else the whole thing
+     * will sort of not work.
      */
     public interface GraticulePickerListener {
         /**
@@ -75,33 +62,50 @@ public class GraticulePickerFragment
 
         /**
          * Called when the user presses the "Find Closest" button.  Later on,
-         * this Fragment should get setNewGraticule called on it with the
-         * results of said search (assuming it can get such a result).
+         * this widget should get setNewGraticule called on it with the results
+         * of said search (assuming it can get such a result).
          */
         void findClosest();
 
         /**
          * Called when the picker is closing.  For now, this just means when
          * the close button is pressed.  In the future, it might also mean if
-         * it gets swipe-to-dismiss'd.  Note that this Fragment won't do its own
-         * dismissal.  You need to handle that yourself.
+         * it gets swipe-to-dismiss'd.  Note that this won't do its own
+         * dismissal.  You need to handle that yourself once you get the
+         * callback.
          */
         void graticulePickerClosing();
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        super.onCreateView(inflater, container, savedInstanceState);
+    public GraticulePicker(Context c) {
+        this(c, null);
+    }
 
-        View v = inflater.inflate(R.layout.graticulepicker, container, false);
+    public GraticulePicker(Context c, AttributeSet attrs) {
+        super(c, attrs);
+
+        // Deal out a little bit of setup justice...
+        setBackgroundColor(getResources().getColor(android.R.color.white));
+        int padding = getResources().getDimensionPixelSize(R.dimen.standard_padding);
+        setPadding(padding, padding, padding, padding);
+        setGravity(Gravity.CENTER_HORIZONTAL);
+        setClickable(true);
+
+        // Who wants a neat-looking shadow effect as if this were some sort of
+        // material hovering a few dp above the map?  You do, assuming you're
+        // using Lollipop!
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            setElevation(getResources().getDimension(R.dimen.elevation_graticule_picker));
+
+        // Now then, let's get inflated.
+        inflate(c, R.layout.graticulepicker, this);
 
         // Here come the widgets.  Each is magical and unique.
-        mLat = (EditText)v.findViewById(R.id.grat_lat);
-        mLon = (EditText)v.findViewById(R.id.grat_lon);
-        mGlobal = (CheckBox)v.findViewById(R.id.grat_globalhash);
-        mClosest = (Button) v.findViewById(R.id.grat_closest);
-        ImageButton close = (ImageButton)v.findViewById(R.id.close);
+        mLat = (EditText)findViewById(R.id.grat_lat);
+        mLon = (EditText)findViewById(R.id.grat_lon);
+        mGlobal = (CheckBox)findViewById(R.id.grat_globalhash);
+        mClosest = (Button)findViewById(R.id.grat_closest);
+        ImageButton close = (ImageButton)findViewById(R.id.close);
 
         // And how ARE they magical?  Well, like this.  First, any time the
         // boxes are updated, send out a new Graticule to the Activity.
@@ -166,30 +170,63 @@ public class GraticulePickerFragment
             }
         });
 
-        // That said, we need some default values.
-        if(savedInstanceState == null) {
-            // If we're NOT coming back from a saved instance, check the
-            // arguments.
-            Bundle args = getArguments();
+        // And then there's this again.  Huh.  You'd think I should make a
+        // parent class to handle this.
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // Got a height!  Hopefully.
+                if(!mAlreadyLaidOut) {
+                    mAlreadyLaidOut = true;
 
-            Graticule g = args.getParcelable(GRATICULE);
-            boolean global = args.getBoolean(GLOBALHASH, false);
-
-            if(g != null) {
-                mLat.setText(g.getLatitudeString(true));
-                mLon.setText(g.getLongitudeString(true));
+                    // Make it off-screen first, then animate it on if need be.
+                    setGraticulePickerVisible(false);
+                    animateGraticulePickerVisible(mWaitingToShow, null);
+                }
             }
-
-            mGlobal.setChecked(global);
-
-            setClosestHidden(args.getBoolean(HIDE_FIND_CLOSEST, false));
-        }
-
-        return v;
+        });
     }
 
     /**
-     * Tells the fragment to trigger its listener so its {@link GraticulePickerListener#updateGraticule(Graticule)}
+     * Sets a new Graticule for the EditTexts.  This is called at startup and
+     * any time the user taps on the map to pick a new Graticule.
+     *
+     * @param g the new Graticule
+     */
+    public void setNewGraticule(Graticule g) {
+        // Make sure this flag is set so we don't wind up double-updating.
+        mExternalUpdate = true;
+
+        // This should NEVER be a globalhash, as that isn't possible from the
+        // map.  But, it could be null, and we're nothing if not defensive here.
+        if(g == null) {
+            mGlobal.setChecked(true);
+        } else {
+            // Update text as need be.  Remember, negative zero IS valid!
+            mGlobal.setChecked(false);
+            mLat.setText(g.getLatitudeString(true));
+            mLon.setText(g.getLongitudeString(true));
+        }
+
+        // And we're done, so unset the flag.
+        mExternalUpdate = false;
+
+        // NOW we can dispatch the change.
+        dispatchGraticule();
+    }
+
+    /**
+     * Sets the globalhash checkbox to be checked or not.  This may dispatch a
+     * new Graticule.
+     *
+     * @param global true to check, false to uncheck
+     */
+    public void setGlobalHash(boolean global) {
+        mGlobal.setChecked(global);
+    }
+
+    /**
+     * Tells the widget to trigger its listener so its {@link GraticulePickerListener#updateGraticule(Graticule)}
      * method will be called if need be.
      */
     public void triggerListener() {
@@ -222,34 +259,6 @@ public class GraticulePickerFragment
             // be.
             return new Graticule(mLat.getText().toString(), mLon.getText().toString());
         }
-    }
-
-    /**
-     * Sets a new Graticule for the EditTexts.  This is called when the user
-     * taps on the map to pick a new Graticule.
-     *
-     * @param g the new Graticule
-     */
-    public void setNewGraticule(Graticule g) {
-        // Make sure this flag is set so we don't wind up double-updating.
-        mExternalUpdate = true;
-
-        // This should NEVER be a globalhash, as that isn't possible from the
-        // map.  But, we're nothing if not defensive here.
-        if(g == null) {
-            mGlobal.setChecked(true);
-        } else {
-            // Update text as need be.  Remember, negative zero IS valid!
-            mGlobal.setChecked(false);
-            mLat.setText(g.getLatitudeString(true));
-            mLon.setText(g.getLongitudeString(true));
-        }
-
-        // And we're done, so unset the flag.
-        mExternalUpdate = false;
-
-        // NOW we can dispatch the change.
-        dispatchGraticule();
     }
 
     /**
@@ -303,5 +312,42 @@ public class GraticulePickerFragment
      *
      * @param hidden true to be {@link View#INVISIBLE}, false for {@link View#VISIBLE}
      */
-    public void setClosestHidden(boolean hidden) { mClosest.setVisibility(hidden ? View.INVISIBLE : View.VISIBLE);}
+    public void setClosestHidden(boolean hidden) {
+        mClosest.setVisibility(hidden ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    /**
+     * Slides the picker in to or out of view.
+     *
+     * @param visible true to slide in, false to slide out
+     * @param endAction action to perform when animation ends (can be null)
+     */
+    public void animateGraticulePickerVisible(boolean visible, @Nullable Runnable endAction) {
+        if(!mAlreadyLaidOut) {
+            mWaitingToShow = visible;
+        } else {
+            if(!visible) {
+                // Slide out!
+                animate().translationY(getHeight()).alpha(0.0f).withEndAction(endAction);
+            } else {
+                // Slide in!
+                animate().translationY(0.0f).alpha(1.0f).withEndAction(endAction);
+            }
+        }
+    }
+
+    /**
+     * Makes the picker be in or out of view without animating it.
+     *
+     * @param visible true to appear, false to vanish
+     */
+    public void setGraticulePickerVisible(boolean visible) {
+        if(!visible) {
+            setTranslationY(getHeight());
+            setAlpha(0.0f);
+        } else {
+            setTranslationY(0.0f);
+            setAlpha(1.0f);
+        }
+    }
 }
