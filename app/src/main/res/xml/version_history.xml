@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.0.3" version="907" date="2016-01-07">
+        <title>Picking Up The Fragments</title>
+        <header>This should cover a slightly different device-specific issue.</header>
+        <bullets>
+            <bullet>Fixed the Graticule picker box not showing up on all devices.</bullet>
+            <bullet>Also made the same picker more robust on devices where it DID show up.</bullet>
+            <bullet>It also animates more smoothly.</bullet>
+        </bullets>
+        <footer>Once again, thanks to George McBane for the help with tracking this down and making sure it was working.</footer>
+    </version>
     <version name="0.9.0.2" version="906" date="2015-12-26">
         <title>Infinite Diversity In Infinite Combinations</title>
         <header>Hopefully this bug didn't affect you, but if it did...</header>
