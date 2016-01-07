@@ -32,17 +32,6 @@
             android:layout_margin="@dimen/standard_padding"
             android:visibility="gone"
             android:elevation="@dimen/elevation_error_banner"/>
-
-        <FrameLayout
-            android:id="@+id/graticulepicker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginLeft="@dimen/standard_padding"
-            android:layout_marginRight="@dimen/standard_padding"
-            android:layout_marginTop="@dimen/standard_padding"/>
-
     </RelativeLayout>
     <FrameLayout
         android:layout_width="0dp"
