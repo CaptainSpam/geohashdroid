@@ -56,6 +56,11 @@ public class InfoBox extends LinearLayout implements LocationListener {
     /** If the InfoBox should be visible and not off-screen. */
     private boolean mVisible = false;
 
+    // The last-seen states for each type (so we don't overwrite any animation
+    // in progress).
+    private boolean mLastFaded = false;
+    private boolean mLastVisible = false;
+
     public InfoBox(Context c) {
         this(c, null);
     }
@@ -236,6 +241,8 @@ public class InfoBox extends LinearLayout implements LocationListener {
     }
 
     private void resolveInfoBoxState() {
+        if(mVisible == mLastVisible && mFaded == mLastFaded) return;
+
         // Quick note: The size of the InfoBox might change due to the width
         // of the text shown (as well as the accuracy warning), but since we
         // alpha it out anyway, that shouldn't be a real major issue.
@@ -248,6 +255,9 @@ public class InfoBox extends LinearLayout implements LocationListener {
 
         // If the box is faded OR hidden, we can't click it.
         setClickable(mVisible && !mFaded);
+
+        mLastVisible = mVisible;
+        mLastFaded = mFaded;
     }
 
     private void forceInfoBoxState() {
@@ -264,6 +274,11 @@ public class InfoBox extends LinearLayout implements LocationListener {
         }
 
         setClickable(mVisible && !mFaded);
+
+        // Note that we don't bother checking if this has changed, since we
+        // should be overwriting any animation at this point anyway.
+        mLastVisible = mVisible;
+        mLastFaded = mFaded;
     }
 
     /**
