@@ -13,7 +13,9 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -35,6 +37,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -109,6 +112,12 @@ public class ExpeditionMode
     // Then there's this one empty start boolean.
     private boolean mWaitingOnEmptyStartInfo = false;
 
+    private Rect mMarkerDimens = new Rect();
+    private Rect mInfoBoxDimens = new Rect();
+
+    private int mMarkerWidth = -1;
+    private int mMarkerHeight = -1;
+
     private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -119,6 +128,13 @@ public class ExpeditionMode
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
         super.setCentralMap(centralMap);
+
+        // Get the size of the marker.  We'll need this for later.
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(centralMap.getResources(), R.drawable.final_destination, opts);
+        mMarkerWidth = opts.outWidth;
+        mMarkerHeight = opts.outHeight;
 
         // Build up our metrics, too.
         mMetrics = new DisplayMetrics();
@@ -495,6 +511,43 @@ public class ExpeditionMode
         }
     }
 
+    private void checkInfoBoxFading() {
+        if(mCurrentInfo == null) return;
+
+        boolean fade;
+        mInfoBox.getLocationRect(mInfoBoxDimens);
+
+        // First, check the final destination marker.  The pin on the flag is
+        // where the point is, so we would want to check against the entire
+        // height of it to see if it crashes into the InfoBox.
+        Projection proj = mMap.getProjection();
+        Point p = proj.toScreenLocation(mCurrentInfo.getFinalDestinationLatLng());
+        mMarkerDimens.set(p.x - (mMarkerWidth / 2),
+                p.y - mMarkerHeight,
+                p.x + (mMarkerWidth / 2),
+                p.y);
+        fade = Rect.intersects(mMarkerDimens, mInfoBoxDimens);
+
+        if(!fade) {
+            // Continue with current location checking.  We'll use the same
+            // bounds as the final destination marker, just for convenience.
+            Location loc = getLastKnownLocation();
+            if(LocationUtil.isLocationNewEnough(loc)) {
+                p = proj.toScreenLocation(new LatLng(loc.getLatitude(), loc.getLongitude()));
+                // Except, remember, the current location marker is pinned at
+                // the CENTER of the image.  Tricky!
+                mMarkerDimens.set(p.x - (mMarkerWidth / 2),
+                        p.y - (mMarkerHeight / 2),
+                        p.x + (mMarkerWidth / 2),
+                        p.y + (mMarkerHeight / 2));
+
+                fade = Rect.intersects(mMarkerDimens, mInfoBoxDimens);
+            }
+        }
+
+        mInfoBox.fadeOutInfoBox(fade);
+    }
+
     private void doNearbyPoints(Info[] nearby) {
         removeNearbyPoints();
 
@@ -738,6 +791,9 @@ public class ExpeditionMode
         // tricks.
         for(Marker m : mNearbyPoints.keySet())
             checkMarkerVisibility(m);
+
+        // Also, let's get the infobox faded as need be.
+        checkInfoBoxFading();
     }
 
     @Override
@@ -851,7 +907,7 @@ public class ExpeditionMode
     }
 
     private void clearExtraFragment() {
-        // This simply clears out the extra fragment
+        // This simply clears out the extra fragment.
         FragmentManager manager = mCentralMap.getFragmentManager();
         try {
             manager.popBackStack(EXTRA_FRAGMENT_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);

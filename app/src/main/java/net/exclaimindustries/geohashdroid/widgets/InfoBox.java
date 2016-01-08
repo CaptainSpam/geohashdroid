@@ -10,8 +10,10 @@ package net.exclaimindustries.geohashdroid.widgets;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Rect;
 import android.location.Location;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
@@ -300,5 +302,15 @@ public class InfoBox extends LinearLayout implements LocationListener {
         // Hey, look, a location!
         mLastLocation = location;
         updateBox();
+    }
+
+    /**
+     * Gets the current location and size of the InfoBox, as a Rect (pass one in
+     * and it'll be updated), relative to the parent view.
+     *
+     * @param output the Rect in which data will go
+     */
+    public void getLocationRect(@NonNull Rect output) {
+        output.set(getLeft(), getTop(), getRight(), getBottom());
     }
 }
