@@ -181,7 +181,7 @@ public class GraticulePicker extends RelativeLayout {
 
                     // Make it off-screen first, then animate it on if need be.
                     setGraticulePickerVisible(false);
-                    animateGraticulePickerVisible(mWaitingToShow, null);
+                    animateGraticulePickerVisible(mWaitingToShow);
                 }
             }
         });
@@ -320,20 +320,28 @@ public class GraticulePicker extends RelativeLayout {
      * Slides the picker in to or out of view.
      *
      * @param visible true to slide in, false to slide out
-     * @param endAction action to perform when animation ends (can be null)
      */
-    public void animateGraticulePickerVisible(boolean visible, @Nullable Runnable endAction) {
+    public void animateGraticulePickerVisible(boolean visible) {
         if(!mAlreadyLaidOut) {
             mWaitingToShow = visible;
         } else {
             if(!visible) {
                 // Slide out!
-                animate().translationY(getHeight()).alpha(0.0f).withEndAction(endAction);
+                animate().translationY(getHeight()).alpha(0.0f);
             } else {
                 // Slide in!
-                animate().translationY(0.0f).alpha(1.0f).withEndAction(endAction);
+                animate().translationY(0.0f).alpha(1.0f);
             }
         }
+    }
+
+    /**
+     * Slides the picker out of view (ONLY out of view), with an ending action.
+     *
+     * @param endAction action to perform after animation completes
+     */
+    public void animateGraticulePickerOutWithEndAction(@Nullable Runnable endAction) {
+        animate().translationY(getHeight()).alpha(0.0f).withEndAction(endAction);
     }
 
     /**

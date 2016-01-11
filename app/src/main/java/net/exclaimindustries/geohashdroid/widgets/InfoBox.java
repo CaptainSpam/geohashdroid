@@ -207,8 +207,18 @@ public class InfoBox extends LinearLayout implements LocationListener {
             mWaitingToShow = visible;
         } else {
             mVisible = visible;
-            resolveInfoBoxState();
+            resolveInfoBoxState(null);
         }
+    }
+
+    /**
+     * Slides the InfoBox out of view (ONLY out of view), with an ending action.
+     *
+     * @param endAction action to perform after animation completes
+     */
+    public void animateInfoBoxOutWithEndAction(@Nullable Runnable endAction) {
+        mVisible = false;
+        resolveInfoBoxState(endAction);
     }
 
     /**
@@ -228,7 +238,7 @@ public class InfoBox extends LinearLayout implements LocationListener {
      */
     public void fadeOutInfoBox(boolean faded) {
         mFaded = faded;
-        resolveInfoBoxState();
+        resolveInfoBoxState(null);
     }
 
     /**
@@ -242,18 +252,18 @@ public class InfoBox extends LinearLayout implements LocationListener {
         forceInfoBoxState();
     }
 
-    private void resolveInfoBoxState() {
+    private void resolveInfoBoxState(Runnable endAction) {
         if(mVisible == mLastVisible && mFaded == mLastFaded) return;
 
         // Quick note: The size of the InfoBox might change due to the width
         // of the text shown (as well as the accuracy warning), but since we
         // alpha it out anyway, that shouldn't be a real major issue.
         if(!mVisible)
-            animate().translationX(getWidth()).alpha(0.0f);
+            animate().translationX(getWidth()).alpha(0.0f).withEndAction(endAction);
         else if(mFaded)
-            animate().translationX(0.0f).alpha(0.2f);
+            animate().translationX(0.0f).alpha(0.2f).withEndAction(endAction);
         else
-            animate().translationX(0.0f).alpha(1.0f);
+            animate().translationX(0.0f).alpha(1.0f).withEndAction(endAction);
 
         // If the box is faded OR hidden, we can't click it.
         setClickable(mVisible && !mFaded);

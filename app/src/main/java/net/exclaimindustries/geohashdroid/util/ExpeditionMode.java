@@ -235,7 +235,7 @@ public class ExpeditionMode
 
         // The InfoBox should also go away at this point.
         if(mInfoBox != null) {
-            mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
+            mInfoBox.animateInfoBoxOutWithEndAction(new Runnable() {
                 @Override
                 public void run() {
                     ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
@@ -939,7 +939,7 @@ public class ExpeditionMode
             if(container != null)
                 container.setVisibility(View.GONE);
             else
-                Log.w(DEBUG_TAG, "We got detailedInfoDestroying when there's no container in CentralMap for it!  The hell?");
+                Log.w(DEBUG_TAG, "We got extraFragmentDestroying when there's no container in CentralMap for it!  The hell?");
 
             mExtraFragment = null;
         }

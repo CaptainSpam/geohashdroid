@@ -136,7 +136,7 @@ public class SelectAGraticuleMode
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mPicker, params);
 
-        mPicker.animateGraticulePickerVisible(true, null);
+        mPicker.animateGraticulePickerVisible(true);
         if(mInitialGraticule != null) mPicker.setNewGraticule(mInitialGraticule);
         mPicker.setGlobalHash(mInitialGlobal);
         mPicker.setClosestHidden(arePermissionsDenied());
@@ -160,7 +160,7 @@ public class SelectAGraticuleMode
         // And bye, picker!
         if(mPicker != null) {
             mPicker.setListener(null);
-            mPicker.animateGraticulePickerVisible(false, new Runnable() {
+            mPicker.animateGraticulePickerOutWithEndAction(new Runnable() {
                 @Override
                 public void run() {
                     ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mPicker);
