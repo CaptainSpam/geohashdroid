@@ -297,8 +297,7 @@ public class AlarmService extends WakefulIntentService {
         mNotificationBuilder = new Notification.Builder(this)
             .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
             .setSmallIcon(R.drawable.ic_stat_file_file_download)
-            .setContentTitle(getString(R.string.notification_title))
-            .setOngoing(true);
+            .setContentTitle(getString(R.string.notification_title));
         
         // Oh, and if we're in Lollipop, we can go ahead and make this a public
         // Notification.  It's not really sensitive.
