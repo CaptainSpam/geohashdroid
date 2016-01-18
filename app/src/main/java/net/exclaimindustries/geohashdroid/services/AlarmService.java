@@ -410,7 +410,10 @@ public class AlarmService extends WakefulIntentService {
                 if(result == StockService.RESPONSE_OKAY) {
                     // An okay response means the Graticule IS good.  If not,
                     // fix StockService.
-                    if(g.uses30WRule()) {
+                    if(g == null) {
+                        Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
+                        clearNotification();
+                    } else if(g.uses30WRule()) {
                         // If the response we just checked for was a 30W one and
                         // it came back okay, then we fire off a check for the
                         // non-30W one.
