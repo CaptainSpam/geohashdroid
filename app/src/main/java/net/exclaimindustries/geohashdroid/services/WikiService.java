@@ -269,7 +269,7 @@ public class WikiService extends QueueService {
                 // Let's say there's an image specified.  So, we try to look it
                 // up via readImageInfo.
                 WikiImageUtils.ImageInfo imageInfo;
-                imageInfo = WikiImageUtils.readImageInfo(this, imageLocation, loc, timestamp);
+                imageInfo = WikiImageUtils.readImageInfo(imageLocation, loc, timestamp);
 
                 // Get the image's filename, too.  Well, that is, the name it'll
                 // have on the wiki.

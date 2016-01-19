@@ -10,26 +10,22 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.BitmapTools;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 
@@ -92,7 +88,7 @@ public class WikiImageUtils {
      * same timestamp.  So don't do that.
      *
      * @param info Info object containing expedition data
-     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Context, Uri, Location, Calendar)}
+     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Uri, Location, Calendar)}
      * @param username current username (must not be null)
      * @return the name of the image on the wiki
      */
@@ -112,14 +108,13 @@ public class WikiImageUtils {
      * document provider's methods.
      * </p>
      *
-     * @param context a Context from which ContentResolver comes
      * @param uri the URI of the image
      * @param locationIfNoneSet location to use if the image has no location metadata stored in it (it won't)
      * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it (it won't)
      * @return a brand new ImageInfo
      */
     @NonNull
-    public static ImageInfo readImageInfo(@NonNull Context context, @NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
+    public static ImageInfo readImageInfo(@NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
         // This got a lot simpler, but sadly much less robust, after the Android
         // change that broke permissions on MediaStore...
         ImageInfo toReturn = new ImageInfo();
