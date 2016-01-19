@@ -17,5 +17,4 @@ Beyond that, it should be a straightforward build in Android Studio/Gradle.  You
 
 ## Notes for future me to consider
 
-* Make GraticulePickerFragment not be a Fragment.  I really don't think that's gaining me anything, but I could be wrong.
 * Make the extra fragments (wiki and detailed info on tablets) enter the screen better.  Doing so will require me manually recalculating the centering/zooming tools if the map is still the same size as before but the focus is shifted to the left/top more.
