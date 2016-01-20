@@ -63,18 +63,18 @@ public final class GHDConstants {
      * Prefs key for the last-used latitude in a graticule.  Remember, this is a
      * STRING, not an INT, as it can be negative zero.
      */
-    public static final String PREF_DEFAULT_GRATICULE_LATITUDE = "DefaultLatitude";
+    public static final String PREF_DEFAULT_GRATICULE_LATITUDE = "LastLatitude";
     /**
      * Prefs key for the last-used longitude in a graticule.  Remember, this is
      * a STRING, not an INT, as it can be negative zero.
      */
-    public static final String PREF_DEFAULT_GRATICULE_LONGITUDE = "DefaultLongitude";
+    public static final String PREF_DEFAULT_GRATICULE_LONGITUDE = "LastLongitude";
     /**
      * Prefs key for whether or not the last-used graticule was, in fact, a
      * globalhash and not a graticule at all.  Check this first.  If this is
      * true, it overrides anything in the other defaults.
      */
-    public static final String PREF_DEFAULT_GRATICULE_GLOBALHASH = "DefaultGlobalhash";
+    public static final String PREF_DEFAULT_GRATICULE_GLOBALHASH = "LastGlobalhash";
 
     /**
      * Prefs key specifying if the background StockAlarm should be used.  Yes,

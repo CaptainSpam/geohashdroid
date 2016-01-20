@@ -735,6 +735,12 @@ public class ExpeditionMode
             banner.animateBanner(true);
 
             mWaitingOnInitialZoom = true;
+
+            // While we wait, though, zoom in on the destination point, if we
+            // have one.
+            if(mCurrentInfo != null) {
+                zoomToInitialCurrentLocation(mCurrentInfo.getFinalLocation());
+            }
         }
     }
 

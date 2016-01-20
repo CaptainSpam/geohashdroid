@@ -553,7 +553,10 @@ public class CentralMap
                     Info[] nearby = null;
                     if(pArr != null)
                         nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
-                    mCurrentMode.handleInfo(received, nearby, reqFlags);
+                    if(received != null) {
+                        updateLastGraticule(received);
+                        mCurrentMode.handleInfo(received, nearby, reqFlags);
+                    }
                 } else {
                     Log.w(DEBUG_TAG, "Request ID " + reqId + " was NOT expected by this mode, ignoring...");
                 }
@@ -676,17 +679,68 @@ public class CentralMap
             }
         });
 
-        // If at this point we don't have any mode bundle, we're starting in
-        // ExpeditionMode with a flag set.  This means that this overrides
-        // the boolean.
-        if(mLastModeBundle == null) {
-            mLastModeBundle = new Bundle();
-            mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
-            mSelectAGraticule = false;
-        }
-
         // Perform startup and cleanup work before the modes arrive.
         doStartupStuff();
+
+        // If at this point we don't have any mode bundle, we're going to the
+        // prefs to figure out where we start.
+        if(mLastModeBundle == null) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+            String startup = prefs.getString(GHDConstants.PREF_STARTUP_BEHAVIOR, GHDConstants.PREFVAL_STARTUP_CLOSEST);
+            mLastModeBundle = new Bundle();
+
+            if(startup.equals(GHDConstants.PREFVAL_STARTUP_CLOSEST)) {
+                // Closest point.  The default.
+                mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+                mSelectAGraticule = false;
+            } else {
+                // The other cases, we need to know the last-known graticule and
+                // globalhashiness.
+                String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALD");
+                String lastLon = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, "INVALID");
+                boolean globalHash = prefs.getBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, false);
+
+                Graticule g;
+
+                try {
+                    g = new Graticule(lastLat, lastLon);
+                } catch(Exception e) {
+                    // If a problem popped up, we just assume there was no
+                    // actual graticule data.
+                    g = null;
+                }
+
+                if(startup.equals(GHDConstants.PREFVAL_STARTUP_LAST_USED)) {
+                    mSelectAGraticule = false;
+
+                    // Last-used point.  Now, if we don't HAVE any such data, we
+                    // fall back to closest point behavior.
+                    if(g == null && !globalHash) {
+                        // Well, poop.
+                        mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+                    } else {
+                        // If we've got something, yay!  Add in data as appropriate.
+                        // Start with today.
+                        mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
+
+                        if(globalHash)
+                            mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, true);
+                        if(g != null)
+                            mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
+                    }
+                } else if(startup.equals(GHDConstants.PREFVAL_STARTUP_PICKER)) {
+                    // The graticule picker.  In theory, we MAY have a graticule to
+                    // start with.  With which to start.
+                    mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, globalHash);
+                    if(g != null)
+                        mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
+                    mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
+                    mSelectAGraticule = true;
+                }
+            }
+
+        }
 
         // Now, we get our initial mode set up based on mSelectAGraticule.  We
         // do NOT init it yet; we have to wait for both the map fragment and the
@@ -742,7 +796,7 @@ public class CentralMap
         // The receiver goes right off as soon as we stop.
         unregisterReceiver(mStockReceiver);
 
-        // TODO: I probably want this in onPause, not onStop, but the Google API
+        // I probably want this in onPause, not onStop, but the Google API
         // client disconnect hits here, not in onPause, so I'd have to keep
         // track of more things to make sure I know if I need to start listening
         // again on onResume or wait for the client to reconnect.  And I don't
@@ -912,7 +966,9 @@ public class CentralMap
 
         // These prefs either don't exist any more or we found better ways to
         // deal with them.
-        edit.remove("GlobalhashMode")
+        edit.remove("DefaultLatitude")
+                .remove("DefaultLongitude")
+                .remove("GlobalhashMode")
                 .remove("RememberGraticule")
                 .remove("ClosestOn")
                 .remove("AlwaysToday")
@@ -1287,5 +1343,22 @@ public class CentralMap
         }
 
         if(mCurrentMode != null) mCurrentMode.permissionsDenied(mPermissionsDenied);
+    }
+
+    private void updateLastGraticule(@NonNull Info info) {
+        // This'll just stash the last Graticule away in preferences so we can
+        // start with the last-used one if preferences demand it as such.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+
+        edit.putBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, info.isGlobalHash());
+        if(!info.isGlobalHash()) {
+            Graticule g = info.getGraticule();
+
+            edit.putString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, g.getLatitudeString(true));
+            edit.putString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, g.getLongitudeString(true));
+        }
+
+        edit.apply();
     }
 }
