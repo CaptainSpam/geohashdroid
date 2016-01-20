@@ -912,9 +912,7 @@ public class CentralMap
 
         // These prefs either don't exist any more or we found better ways to
         // deal with them.
-        edit.remove("DefaultLatitude")
-                .remove("DefaultLongitude")
-                .remove("GlobalhashMode")
+        edit.remove("GlobalhashMode")
                 .remove("RememberGraticule")
                 .remove("ClosestOn")
                 .remove("AlwaysToday")

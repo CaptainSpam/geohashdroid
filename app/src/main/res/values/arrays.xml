@@ -36,4 +36,14 @@
     	<item>50</item>
     	<item>100</item>
     </string-array>
+    <string-array name="pref_startup_entries">
+        <item>@string/pref_startup_useclosest</item>
+        <item>@string/pref_startup_lastused</item>
+        <item>@string/pref_startup_graticulepicker</item>
+    </string-array>
+    <string-array name="pref_startup_values">
+        <item>UseClosest</item>
+        <item>LastUsed</item>
+        <item>GraticulePicker</item>
+    </string-array>
 </resources>

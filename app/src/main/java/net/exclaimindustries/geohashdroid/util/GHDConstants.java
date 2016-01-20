@@ -50,6 +50,8 @@ public final class GHDConstants {
     public static final String PREF_WIKI_USER = "WikiUserName";
     /** Prefs key specifying wiki user pass. */
     public static final String PREF_WIKI_PASS = "WikiPassword";
+    /** Prefs key specifying how the app starts up. */
+    public static final String PREF_STARTUP_BEHAVIOR = "StartupBehavior";
     /**
      * Prefs key indicating the most recent version the user's seen in the
      * VersionHistoryDialog activity.  If this is lower than the current one
@@ -58,10 +60,22 @@ public final class GHDConstants {
      */
     public static final String PREF_LAST_SEEN_VERSION = "LastSeenVersion";
     /**
-     * Prefs key tracking if we've reported on the closeness of the user to the
-     * final destination.
+     * Prefs key for the last-used latitude in a graticule.  Remember, this is a
+     * STRING, not an INT, as it can be negative zero.
      */
-    public static final String PREF_CLOSENESS_REPORTED = "ClosenessReported";
+    public static final String PREF_DEFAULT_GRATICULE_LATITUDE = "DefaultLatitude";
+    /**
+     * Prefs key for the last-used longitude in a graticule.  Remember, this is
+     * a STRING, not an INT, as it can be negative zero.
+     */
+    public static final String PREF_DEFAULT_GRATICULE_LONGITUDE = "DefaultLongitude";
+    /**
+     * Prefs key for whether or not the last-used graticule was, in fact, a
+     * globalhash and not a graticule at all.  Check this first.  If this is
+     * true, it overrides anything in the other defaults.
+     */
+    public static final String PREF_DEFAULT_GRATICULE_GLOBALHASH = "DefaultGlobalhash";
+
     /**
      * Prefs key specifying if the background StockAlarm should be used.  Yes,
      * the name's from an older time when AlarmService was called StockService.
@@ -79,6 +93,16 @@ public final class GHDConstants {
     public static final String PREFVAL_COORD_MINUTES = "Minutes";
     /** Prefs value for coordinates in minutes and seconds. */
     public static final String PREFVAL_COORD_SECONDS = "Seconds";
+
+    /** Prefs value to start with the graticule with the closest hashpoint. */
+    public static final String PREFVAL_STARTUP_CLOSEST = "UseClosest";
+    /**
+     * Prefs value to start with the most recently-used graticule (defaults to
+     * UseClosest behavior if there is none set).
+     */
+    public static final String PREFVAL_STARTUP_LAST_USED = "LastUsed";
+    /** Prefs value to start with the graticule picker. */
+    public static final String PREFVAL_STARTUP_PICKER = "GraticulePicker";
     
     /** Threshold for the "Accuracy Low" warning (currently 64m). **/
     public static final int LOW_ACCURACY_THRESHOLD = 64;

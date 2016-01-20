@@ -60,4 +60,10 @@
     <string name="dialog_stockwipe_no">No, cancel</string>
     <string name="toast_stockwipe_success">The stock cache database has been cleared.</string>
     <string name="toast_stockwipe_failure">There was a problem clearing the stock cache database.</string>
+
+    <string name="pref_startup_title">Startup behavior</string>
+    <string name="pref_startup_dialogtitle">On startup, it should…</string>
+    <string name="pref_startup_useclosest">Find the closest hashpoint</string>
+    <string name="pref_startup_lastused">Start with the last-used graticule</string>
+    <string name="pref_startup_graticulepicker">Start with the graticule picker</string>
 </resources>
