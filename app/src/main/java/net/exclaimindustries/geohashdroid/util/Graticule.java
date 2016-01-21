@@ -158,7 +158,7 @@ public class Graticule implements Parcelable {
         // We already have all the data we need from the old Graticule.  But,
         // we need to account for passing through the Prime Meridian and/or
         // equator.  If the sign changes, decrement the amount of the change by
-        // one.  This logic is gratiutously loopy.
+        // one.  This logic is gratuitously loopy.
         boolean goingSouth = (latOff < 0);
         latOff = Math.abs(latOff);
 
