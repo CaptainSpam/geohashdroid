@@ -664,9 +664,14 @@ public class CentralMap
                 // infobox right around there.
                 set.setMyLocationButtonEnabled(false);
 
-                // Restore the map's type, if it was changed.
-                if(reallyMapType >= 0)
+                if(reallyMapType >= 0) {
+                    // Restore the map's type, if it was changed.
                     mMap.setMapType(reallyMapType);
+                } else {
+                    // Otherwise, go to the preference.
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+                    mMap.setMapType(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
+                }
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
@@ -1140,6 +1145,11 @@ public class CentralMap
         if(mMap != null) {
             mMap.setMapType(type);
         }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+        edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
+        edit.apply();
     }
 
     private void startListening() {
