@@ -117,6 +117,7 @@
     <string name="menu_item_globalhash">Globalhash</string>
     <string name="menu_item_geohash">Geohash</string>
     <string name="menu_item_radar">Radar</string>
+    <string name="menu_item_tomorrow">Try Tomorrow</string>
 
     <string name="menu_item_map_type_street">Street</string>
     <string name="menu_item_map_type_sat">Satellite</string>

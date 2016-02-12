@@ -342,6 +342,7 @@ public class ExpeditionMode
             menu.removeItem(R.id.action_send_to_radar);
             menu.removeItem(R.id.action_details);
             menu.removeItem(R.id.action_wiki);
+            menu.removeItem(R.id.action_try_tomorrow);
         }
     }
 
@@ -401,6 +402,16 @@ public class ExpeditionMode
                 }
 
                 return true;
+            }
+            case R.id.action_try_tomorrow: {
+                // Trying tomorrow is easy: Just get today, make it tomorrow,
+                // and try it.  What's more, we've already got the mechanisms in
+                // place to handle what happens if tomorrow doesn't exist yet.
+                if(mCurrentInfo != null) {
+                    Calendar cal = (Calendar)mCurrentInfo.getCalendar().clone();
+                    cal.add(Calendar.DATE, 1);
+                    changeCalendar(cal);
+                }
             }
         }
 
