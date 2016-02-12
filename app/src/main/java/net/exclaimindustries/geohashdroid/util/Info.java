@@ -66,7 +66,7 @@ public class Info implements Parcelable {
      * @param date
      *            the date
      */
-    public Info(double latitude, double longitude, Graticule graticule,
+    public Info(double latitude, double longitude, @Nullable Graticule graticule,
             @NonNull Calendar date) {
         mLatitude = latitude;
         mLongitude = longitude;
@@ -84,7 +84,7 @@ public class Info implements Parcelable {
      * @param graticule the graticule
      * @param date the date
      */
-    public Info(Graticule graticule, @NonNull Calendar date) {
+    public Info(@Nullable Graticule graticule, @NonNull Calendar date) {
         mLatitude = 0;
         mLongitude = 0;
         mGraticule = graticule;
@@ -159,6 +159,7 @@ public class Info implements Parcelable {
      *
      * @return a LatLng based on the data obtained from the connection
      */
+    @NonNull
     public LatLng getFinalDestinationLatLng() {
         return new LatLng(getLatitude(), getLongitude());
     }
@@ -170,6 +171,7 @@ public class Info implements Parcelable {
      * @return a providerless Location based on the data obtained from the
      *         connection
      */
+    @NonNull
     public Location getFinalLocation() {
         Location loc = new Location("");
         loc.setLatitude(getLatitude());
@@ -183,6 +185,7 @@ public class Info implements Parcelable {
      * 
      * @return the graticule
      */
+    @Nullable
     public Graticule getGraticule() {
         return mGraticule;
     }
@@ -216,7 +219,7 @@ public class Info implements Parcelable {
      *            Location to compare
      * @return the distance, in meters, to the final destination
      */
-    public float getDistanceInMeters(Location loc) {
+    public float getDistanceInMeters(@NonNull Location loc) {
         return loc.distanceTo(getFinalLocation());
     }
 
@@ -227,7 +230,7 @@ public class Info implements Parcelable {
      * @param latLng LatLng to compare
      * @return the distance, in meters, to the final destination
      */
-    public float getDistanceInMeters(LatLng latLng) {
+    public float getDistanceInMeters(@NonNull LatLng latLng) {
         return locationFromLatLng(latLng).distanceTo(getFinalLocation());
     }
     
@@ -253,7 +256,8 @@ public class Info implements Parcelable {
      *          null, assumes this is a globalhash which is always back a day)
      * @return a new adjusted Calendar
      */
-    public static Calendar makeAdjustedCalendar(Calendar c, Graticule g) {
+    @NonNull
+    public static Calendar makeAdjustedCalendar(@NonNull Calendar c, @Nullable Graticule g) {
         // This adjusts the calendar for both the 30W Rule and to clamp all
         // weekend stocks to the preceding Friday.  This saves a few database
         // entries, as the weekend will always be Friday's value.  Note that
@@ -282,7 +286,8 @@ public class Info implements Parcelable {
         return cal;
     }
 
-    private static Location locationFromLatLng(LatLng latLng) {
+    @NonNull
+    private static Location locationFromLatLng(@NonNull LatLng latLng) {
         Location loc = new Location("");
 
         loc.setLatitude(latLng.latitude);

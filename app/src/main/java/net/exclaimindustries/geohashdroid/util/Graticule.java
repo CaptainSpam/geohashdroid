@@ -13,6 +13,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 
 /**
  * <p>
@@ -154,7 +155,8 @@ public class Graticule implements Parcelable {
      * @param lonOff number of degrees east to offset (negative is west)
      * @return a brand spankin' new Graticule, offset as per suggestion
      */
-    public static Graticule createOffsetFrom(Graticule g, int latOff, int lonOff) {
+    @NonNull
+    public static Graticule createOffsetFrom(@NonNull Graticule g, int latOff, int lonOff) {
         // We already have all the data we need from the old Graticule.  But,
         // we need to account for passing through the Prime Meridian and/or
         // equator.  If the sign changes, decrement the amount of the change by
@@ -327,6 +329,7 @@ public class Graticule implements Parcelable {
      * @param useNegativeValues true to return values as negative for south and positive for north, false to return values with N and S indicators
      * @return the current latitude as a String
      */
+    @NonNull
     public String getLatitudeString(boolean useNegativeValues) {
         if (mSouth) {
             if(useNegativeValues) {
@@ -368,6 +371,7 @@ public class Graticule implements Parcelable {
      * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
      * @return the current longitude as a String
      */
+    @NonNull
     public String getLongitudeString(boolean useNegativeValues) {
         if (mWest) {
             if(useNegativeValues) {
@@ -407,6 +411,7 @@ public class Graticule implements Parcelable {
      *
      * @return a LatLng representing the center of this Graticule.
      */
+    @NonNull
     public LatLng getCenterLatLng() {
         double lat, lon;
 
@@ -431,6 +436,7 @@ public class Graticule implements Parcelable {
      *
      * @return a PolygonOptions set up as this Graticule sits.
      */
+    @NonNull
     public PolygonOptions getPolygon() {
         PolygonOptions toReturn = new PolygonOptions();
 
