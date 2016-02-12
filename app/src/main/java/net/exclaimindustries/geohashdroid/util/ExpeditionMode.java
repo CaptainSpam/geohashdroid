@@ -397,10 +397,10 @@ public class ExpeditionMode
         if(mInitComplete) {
             mCentralMap.getErrorBanner().animateBanner(false);
 
-            if(mWaitingOnEmptyStartInfo) {
+            if(mWaitingOnEmptyStartInfo && !info.isGlobalHash()) {
                 mWaitingOnEmptyStartInfo = false;
-                // Coming in from the initial setup, we should have nearbys.
-                // Get the closest one.
+                // Coming in from the initial setup, we might have nearbys.  Get
+                // the closest one.
                 Info inf = Info.measureClosest(mInitialCheckLocation, info, nearby);
 
                 // Presto!  We've got our Graticule AND Calendar!  Now, to make
@@ -682,6 +682,9 @@ public class ExpeditionMode
             banner.animateBanner(true);
 
             mWaitingOnInitialZoom = true;
+
+            if(mCurrentInfo != null)
+                zoomToPoint(mCurrentInfo.getFinalLocation());
         }
     }
 
@@ -754,8 +757,7 @@ public class ExpeditionMode
         // know what's going on later.
         Graticule g = null;
 
-        // Remember, this is ONLY checked on the initial lookup.  So it's safe
-        // to just change it like this every time.
+        // It should be pretty safe to just change it like this every time.
         mInitialCalendar = newDate;
 
         // The Graticule we use is either the one in our current Info (thus
@@ -763,12 +765,20 @@ public class ExpeditionMode
         // with.  The latter is in case we never came up with a valid Info if,
         // for instance, the check was made before the opening of the DJIA and
         // the user decided to pick a previous day.
-        if(mCurrentInfo != null)
-            g = mCurrentInfo.getGraticule();
-        else if(mInitialCheckLocation != null)
-            g = new Graticule(mInitialCheckLocation);
+        boolean isGlobalHash = false;
 
-        if(g != null)
+        if(mCurrentInfo != null) {
+            g = mCurrentInfo.getGraticule();
+            isGlobalHash = mCurrentInfo.isGlobalHash();
+        } else if(mInitialCheckLocation != null) {
+            g = new Graticule(mInitialCheckLocation);
+        }
+
+        // If we didn't get a Graticule back (AND this isn't a Globalhash), then
+        // we're clearly not ready to make stock requests and are currently
+        // waiting for an initial location (or for the user to switch to
+        // SelectAGraticuleMode instead).
+        if(g != null || isGlobalHash)
             requestStock(g, newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
