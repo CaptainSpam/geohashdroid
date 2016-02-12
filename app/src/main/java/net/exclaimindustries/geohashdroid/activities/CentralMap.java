@@ -102,7 +102,6 @@ public class CentralMap
     private static final String STATE_WERE_PERMISSIONS_DENIED = "permissionsDenied";
     private static final String STATE_LAST_GRATICULE = "lastGraticule";
     private static final String STATE_LAST_CALENDAR = "lastCalendar";
-    private static final String STATE_MAP_TYPE = "mapType";
     private static final String STATE_INFO = "info";
     private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
 
@@ -616,8 +615,6 @@ public class CentralMap
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        int mapType = -1;
-
         // Load up!
         if(savedInstanceState != null) {
             mCurrentInfo = savedInstanceState.getParcelable(STATE_INFO);
@@ -633,13 +630,7 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
-
-            // Map type?
-            mapType = savedInstanceState.getInt(STATE_MAP_TYPE, -1);
         }
-
-        // Finalize the map type.  That's going into a callback.
-        final int reallyMapType = mapType;
 
         setContentView(R.layout.centralmap);
 
@@ -667,9 +658,9 @@ public class CentralMap
                 // infobox right around there.
                 set.setMyLocationButtonEnabled(false);
 
-                // Restore the map's type, if it was changed.
-                if(reallyMapType >= 0)
-                    mMap.setMapType(reallyMapType);
+                // Go to preferences to figure out what map type we're using.
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+                mMap.setMapType(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
@@ -834,10 +825,6 @@ public class CentralMap
         // And some additional data.
         outState.putParcelable(STATE_LAST_GRATICULE, mLastGraticule);
         outState.putSerializable(STATE_LAST_CALENDAR, mLastCalendar);
-
-        // Aaaaaaaand the map type.
-        if(mMap != null)
-            outState.putInt(STATE_MAP_TYPE, mMap.getMapType());
 
         // Also, shut down the current mode.  We'll rebuild it later.  Also, if
         // init isn't complete yet, don't update the state.
@@ -1194,6 +1181,11 @@ public class CentralMap
         if(mMap != null) {
             mMap.setMapType(type);
         }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+        edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
+        edit.apply();
     }
 
     private void startListening() {

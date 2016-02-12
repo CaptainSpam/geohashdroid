@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.0.5" version="909" date="2016-02-12">
+        <title>Where The Streets Have No Name, And In Fact Aren't Even Shown On The Map</title>
+        <header>One minor feature and one bug fix later...</header>
+        <bullets>
+            <bullet>Geohash Droid will now remember the last map type you chose (street, satellite, terrain) and default to that when you start the app.</bullet>
+            <bullet>Fixed a bug where if you were in expedition mode (the main mode, where you're not picking a Graticule) with an active Globalhash, it wasn't recognizing if you changed the active date.</bullet>
+        </bullets>
+        <footer>0.9.1 might be right around the corner.</footer>
+    </version>
     <version name="0.9.0.4" version="908" date="2016-01-19">
         <title>-nodpi Means -nodpi</title>
         <header>Did you know the -nodpi resource qualifier is sometimes ignored in certain cases?  I didn't!</header>

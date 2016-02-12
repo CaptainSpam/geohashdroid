@@ -81,6 +81,12 @@ public final class GHDConstants {
      * the name's from an older time when AlarmService was called StockService.
      */
     public static final String PREF_STOCK_ALARM = "UseStockService";
+    /**
+     * Prefs key specifying the last map type the user picked.  This will
+     * default to the street map and be updated any time the user picks a new
+     * one.
+     */
+    public static final String PREF_LAST_MAP_TYPE = "LastMapType";
 
     /** Prefs value for metric distances. */
     public static final String PREFVAL_DIST_METRIC = "Metric";
