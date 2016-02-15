@@ -8,6 +8,9 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -15,8 +18,12 @@ import android.util.Log;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This represents a single known location.  It's got a LatLng and a name, as
@@ -66,6 +73,44 @@ public class KnownLocation {
     }
 
     /**
+     * Gets all KnownLocations from Preferences and returns them as a List.
+     *
+     * @param c a Context
+     * @return a List full of KnownLocations (or an empty List)
+     */
+    @NonNull
+    public static List<KnownLocation> getAllKnownLocations(@NonNull Context c) {
+        List<KnownLocation> toReturn = new ArrayList<>();
+
+        // To the preferences!
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        String blob = prefs.getString(GHDConstants.PREF_KNOWN_LOCATIONS, "[]");
+
+        // I really hope this is a JSONArray...
+        JSONArray arr;
+        try {
+            arr = new JSONArray(blob);
+        } catch(JSONException je) {
+            Log.e(DEBUG_TAG, "Couldn't parse the known locations JSON blob!", je);
+            return toReturn;
+        }
+
+        // What's more, I really hope every entry in the JSONArray is a
+        // JSONObject that happens to be a KnownLocation...
+        for(int i = 0; i < arr.length(); i++) {
+            try {
+                JSONObject obj = arr.getJSONObject(i);
+                KnownLocation kl = deserialize(obj);
+                if(kl != null) toReturn.add(kl);
+            } catch(JSONException je) {
+                Log.e(DEBUG_TAG, "Item " + i + " in the known locations JSON blob wasn't a JSONObject!", je);
+            }
+        }
+
+        return toReturn;
+    }
+
+    /**
      * Serializes this out into a single JSONObject.
      *
      * @return a JSONObject that can be used to store this data.
@@ -84,6 +129,28 @@ public class KnownLocation {
         }
 
         return toReturn;
+    }
+
+    /**
+     * Stores a bunch of KnownLocations to preferences.  Note that this <b>replaces</b>
+     * all currently-stored KnownLocations.
+     *
+     * @param c a Context
+     * @param locations a List of KnownLocations
+     */
+    public static void storeKnownLocations(Context c, List<KnownLocation> locations) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        SharedPreferences.Editor edit = prefs.edit();
+
+        JSONArray arr = new JSONArray();
+
+        for(KnownLocation kl : locations) {
+            arr.put(kl.serialize());
+        }
+
+        // Man, that's easy.
+        edit.putString(GHDConstants.PREF_KNOWN_LOCATIONS, arr.toString());
+        edit.apply();
     }
 
     /**
