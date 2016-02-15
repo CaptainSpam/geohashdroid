@@ -9,15 +9,10 @@ package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -34,8 +29,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -83,7 +76,7 @@ import java.util.Set;
  * exists on the legacy branch.
  */
 public class CentralMap
-        extends Activity
+        extends BaseMapActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
                    GHDDatePickerDialogFragment.GHDDatePickerCallback,
@@ -134,10 +127,6 @@ public class CentralMap
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
 
-    // Request code to use when launching the resolution activity.
-    private static final int REQUEST_RESOLVE_ERROR = 1001;
-    // Unique tag for the error dialog fragment.
-    private static final String DIALOG_API_ERROR = "ApiErrorDialog";
     // Bool to track whether the app is already resolving an error.
     private boolean mResolvingError = false;
     // Bool to track whether or not the user's refused permissions.
@@ -1049,31 +1038,6 @@ public class CentralMap
         stopListening();
     }
 
-    @Override
-    public void onConnectionFailed(ConnectionResult result) {
-        // Oh, so THAT'S how the connection can fail: If we're using Marshmallow
-        // and the user refused to give permissions to the API or the user
-        // doesn't have the Google Play Services installed.  Okay, that's fair.
-        // Let's deal with it, then.
-        if(!mResolvingError) {
-            if(result.hasResolution()) {
-                try {
-                    mResolvingError = true;
-                    result.startResolutionForResult(this, REQUEST_RESOLVE_ERROR);
-                } catch(IntentSender.SendIntentException e) {
-                    // We get this if something went wrong sending the intent.  So,
-                    // let's just try to connect again.
-                    mGoogleClient.connect();
-                }
-            } else {
-                // If we can't actually resolve this, give up and throw an error.
-                // doReadyChecks() won't ever be called.
-                showErrorDialog(result.getErrorCode());
-                mResolvingError = true;
-            }
-        }
-    }
-
     /**
      * Tells Select-A-Graticule to start.
      */
@@ -1210,56 +1174,6 @@ public class CentralMap
         }
     }
 
-    // Here's a chunk of stuff from the Android docs on just what to do when the
-    // API connect fails due to permissions:
-
-    private void showErrorDialog(int errorCode) {
-        // Create a fragment for the error dialog
-        ErrorDialogFragment dialogFragment = new ErrorDialogFragment();
-        // Pass the error that should be displayed
-        Bundle args = new Bundle();
-        args.putInt(DIALOG_API_ERROR, errorCode);
-        dialogFragment.setArguments(args);
-        dialogFragment.show(getFragmentManager(), "errordialog");
-    }
-
-    /* Called from ErrorDialogFragment when the dialog is dismissed. */
-    public void onDialogDismissed() {
-        mResolvingError = false;
-    }
-
-    /* A fragment to display an error dialog */
-    public static class ErrorDialogFragment extends DialogFragment {
-        public ErrorDialogFragment() { }
-
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            // Get the error code and retrieve the appropriate dialog
-            int errorCode = this.getArguments().getInt(DIALOG_API_ERROR);
-            return GoogleApiAvailability.getInstance().getErrorDialog(
-                    this.getActivity(), errorCode, REQUEST_RESOLVE_ERROR);
-        }
-
-        @Override
-        public void onDismiss(DialogInterface dialog) {
-            ((CentralMap) getActivity()).onDialogDismissed();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_RESOLVE_ERROR) {
-            mResolvingError = false;
-            if (resultCode == RESULT_OK) {
-                // Make sure the app is not already connected or attempting to connect
-                if (!mGoogleClient.isConnecting() &&
-                        !mGoogleClient.isConnected()) {
-                    mGoogleClient.connect();
-                }
-            }
-        }
-    }
-
     /**
      * <p>
      * Checks for permissions on {@link Manifest.permission#ACCESS_FINE_LOCATION},
@@ -1344,9 +1258,9 @@ public class CentralMap
         SharedPreferences.Editor edit = prefs.edit();
 
         edit.putBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, info.isGlobalHash());
-        if(!info.isGlobalHash()) {
-            Graticule g = info.getGraticule();
+        Graticule g = info.getGraticule();
 
+        if(g != null) {
             edit.putString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, g.getLatitudeString(true));
             edit.putString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, g.getLongitudeString(true));
         }
