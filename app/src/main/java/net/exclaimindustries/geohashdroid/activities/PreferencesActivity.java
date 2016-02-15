@@ -107,6 +107,16 @@ public class PreferencesActivity extends PreferenceActivity {
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_DIST_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_COORD_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_STARTUP_BEHAVIOR));
+
+            // The known locations manager is just another Activity.
+            findPreference("_knownLocations").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    Intent i = new Intent(getActivity(), KnownLocationsPicker.class);
+                    startActivity(i);
+                    return true;
+                }
+            });
         }
     }
 

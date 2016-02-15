@@ -27,6 +27,11 @@
     <string name="pref_nearbypoints_on">Put markers on the meetup points in nearby graticules</string>
     <string name="pref_nearbypoints_off">Don\'t draw nearby markers</string>
 
+    <string name="pref_knownlocations_title">Manage known locations</string>
+    <string name="pref_showknownlocations_title">Show known locations</string>
+    <string name="pref_showknownlocations_on">Place markers on main map</string>
+    <string name="pref_showknownlocations_off">Don\'t show markers on main map</string>
+
     <string name="pref_stockcachesize_title">Stock cache size</string>
     <string name="pref_stockcachesize_off">Don\'t use a stock cache database</string>
     <string name="pref_stockcachesize_10">Ten entries</string>

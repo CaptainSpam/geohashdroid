@@ -14,6 +14,7 @@
     <string name="title_about">About Geohash Droid</string>
     <string name="title_versionhistory">Version History</string>
     <string name="title_graticule_picker">Tap a graticule or enter one below</string>
+    <string name="title_known_locations">Known Locations Manager</string>
 
     <string name="title_part_globalhash">Globalhash</string>
 
@@ -150,4 +151,6 @@
     <string name="notification_detail">(now checking %1$s)</string>
 
     <string name="notification_wait_for_network">Waiting for the network&#8230;</string>
+
+    <string name="nearby_locations_search">Search (or coordinates)</string>
 </resources>

@@ -46,7 +46,7 @@ public class KnownLocation {
     }
 
     /**
-     * Deserializes a JSONObject into a KnownLocation.
+     * Deserializes a single JSONObject into a KnownLocation.
      *
      * @param obj the object to deserialize
      * @return a new KnownLocation, or null if something went wrong

@@ -46,6 +46,10 @@ public final class GHDConstants {
     public static final String PREF_STOCK_CACHE_SIZE = "StockCacheSize";
     /** Prefs key specifying to show nearby meetup points. */
     public static final String PREF_NEARBY_POINTS = "NearbyPoints";
+    /** Prefs key specifying to show known locations on the main map. */
+    public static final String PREF_SHOW_KNOWN_LOCATIONS = "ShowKnownLocations";
+    /** Prefs key that stores the known locations JSON blob. */
+    public static final String PREF_KNOWN_LOCATIONS = "KnownLocations";
     /** Prefs key specifying wiki user name. */
     public static final String PREF_WIKI_USER = "WikiUserName";
     /** Prefs key specifying wiki user pass. */

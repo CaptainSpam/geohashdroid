@@ -46,4 +46,16 @@
         android:summaryOff="@string/pref_nearbypoints_off"
         android:summaryOn="@string/pref_nearbypoints_on"
         android:title="@string/pref_nearbypoints_title" />
+
+    <Preference
+        android:key="_knownLocations"
+        android:title="@string/pref_knownlocations_title" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="ShowKnownLocations"
+        android:persistent="true"
+        android:summaryOff="@string/pref_showknownlocations_off"
+        android:summaryOn="@string/pref_showknownlocations_on"
+        android:title="@string/pref_showknownlocations_title" />
 </PreferenceScreen>

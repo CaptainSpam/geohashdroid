@@ -52,6 +52,12 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".activities.KnownLocationsPicker"
+            android:label="@string/title_known_locations"
+            android:uiOptions="splitActionBarWhenNarrow"
+            android:windowSoftInputMode="stateHidden">
+        </activity>
+        <activity
             android:name=".activities.LoginPromptDialog"
             android:label="@string/title_logindialog"
             android:launchMode="singleInstance"
