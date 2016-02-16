@@ -16,7 +16,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,8 +31,8 @@ import java.util.List;
  * itself into a JSON chunk.
  */
 public class KnownLocation {
-    private String name;
-    private LatLng location;
+    private String mName;
+    private LatLng mLocation;
 
     private static final String DEBUG_TAG = "KnownLocation";
 
@@ -44,12 +44,12 @@ public class KnownLocation {
     /**
      * Builds up a new KnownLocation.
      *
-     * @param name the name of this location
+     * @param name the name of this mLocation
      * @param location a LatLng where it can be found
      */
     public KnownLocation(@NonNull String name, @NonNull LatLng location) {
-        this.name = name;
-        this.location = location;
+        mName = name;
+        mLocation = location;
     }
 
     /**
@@ -63,11 +63,11 @@ public class KnownLocation {
         KnownLocation toReturn = new KnownLocation();
 
         try {
-            toReturn.name = obj.getString("name");
-            toReturn.location = new LatLng(obj.getDouble("lat"), obj.getDouble("lon"));
+            toReturn.mName = obj.getString("name");
+            toReturn.mLocation = new LatLng(obj.getDouble("lat"), obj.getDouble("lon"));
             return toReturn;
         } catch(JSONException je) {
-            Log.e(DEBUG_TAG, "Couldn't deserialize a location for some reason!", je);
+            Log.e(DEBUG_TAG, "Couldn't deserialize a mLocation for some reason!", je);
             return null;
         }
     }
@@ -120,9 +120,9 @@ public class KnownLocation {
         JSONObject toReturn = new JSONObject();
 
         try {
-            toReturn.put("name", name);
-            toReturn.put("lat", location.latitude);
-            toReturn.put("lon", location.longitude);
+            toReturn.put("name", mName);
+            toReturn.put("lat", mLocation.latitude);
+            toReturn.put("lon", mLocation.longitude);
         } catch(JSONException je) {
             // This really, REALLY shouldn't happen.  Really.
             Log.e("KnownLocation", "JSONException trying to add data into the to-return object?  The hell?", je);
@@ -154,13 +154,32 @@ public class KnownLocation {
     }
 
     /**
-     * Makes a Marker out of this KnownLocation.  This can be directly placed on
-     * the map, but you probably want to stick it in something that can build a
-     * cluster or something.
+     * Gets the name of this KnownLocation.
      *
-     * @return a Marker representing this KnownLocation
+     * @return a name
      */
-    public Marker makeMarker() {
+    public String getName() {
+        return mName;
+    }
+
+    /**
+     * Gets the LatLng this KnownLocation represents.
+     *
+     * @return a LatLng
+     */
+    public LatLng getLatLng() {
+        return mLocation;
+    }
+
+    /**
+     * Makes a MarkerOptions out of this KnownLocation (when added to the map,
+     * you get an actual Marker back).  This can be directly placed on the map,
+     * but you might want to stick it in something that can build a cluster or
+     * something.
+     *
+     * @return a MarkerOptions representing this KnownLocation
+     */
+    public MarkerOptions makeMarker() {
         // TODO: Make makeMarker make a Marker.
         return null;
     }
