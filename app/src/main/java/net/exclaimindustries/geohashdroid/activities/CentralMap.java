@@ -7,7 +7,6 @@
  */
 package net.exclaimindustries.geohashdroid.activities;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -22,7 +21,6 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -126,11 +124,6 @@ public class CentralMap
     private ErrorBanner mBanner;
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
-
-    // Bool to track whether the app is already resolving an error.
-    private boolean mResolvingError = false;
-    // Bool to track whether or not the user's refused permissions.
-    private boolean mPermissionsDenied = false;
 
     /**
      * <p>
@@ -1158,6 +1151,8 @@ public class CentralMap
             lRequest.setInterval(1000);
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
+            // Stupid Android Studio annotator and how it can't tell I've
+            // requested permissions already...
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
 
             // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
@@ -1172,55 +1167,6 @@ public class CentralMap
         if(mGoogleClient != null && checkLocationPermissions(LOCATION_PERMISSION_REQUEST, true)) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mLocationListener);
         }
-    }
-
-    /**
-     * <p>
-     * Checks for permissions on {@link Manifest.permission#ACCESS_FINE_LOCATION},
-     * automatically firing off the permission request if it hasn't been
-     * granted yet.  This method DOES return, mind; if it returns true, continue
-     * as normal, and if it returns false, don't do anything.  In the false
-     * case, it will (usually) ask for permissions, with CentralMap handling the
-     * callback.
-     * </p>
-     *
-     * <p>
-     * If skipRequest is set, permissions won't be asked for in the event that
-     * they're not already granted, and no explanation popup will show up,
-     * either.  Use that for cases like shutdowns where all the listeners are
-     * being unregistered.
-     * </p>
-     *
-     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
-     * @param skipRequest if true, don't bother requesting permission, just drop it and go on
-     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
-     */
-    public synchronized boolean checkLocationPermissions(int requestCode, boolean skipRequest) {
-        // First, the easy case: Permissions granted.
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Yay!
-            return true;
-        } else {
-            // Boo!  Now we need to fire off a permissions request!  If we were
-            // already denied permissions once, though, don't bother trying
-            // again.
-            if(!skipRequest && !mPermissionsDenied)
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        requestCode);
-            return false;
-        }
-    }
-
-    /**
-     * Convenience method that calls {@link #checkLocationPermissions(int, boolean)}
-     * with skipRequest set to false.
-     *
-     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
-     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
-     */
-    public synchronized boolean checkLocationPermissions(int requestCode) {
-        return checkLocationPermissions(requestCode, false);
     }
 
     @Override

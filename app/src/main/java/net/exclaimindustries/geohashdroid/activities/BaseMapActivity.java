@@ -8,13 +8,17 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -31,7 +35,10 @@ public abstract class BaseMapActivity
                    GoogleApiClient.OnConnectionFailedListener {
     protected GoogleApiClient mGoogleClient;
 
-    private boolean mResolvingError = false;
+    // Bool to track whether the app is already resolving an error.
+    protected boolean mResolvingError = false;
+    // Bool to track whether or not the user's refused permissions.
+    protected boolean mPermissionsDenied = false;
 
     /**
      * This is a fragment used to display an error dialog, used by both map
@@ -65,7 +72,7 @@ public abstract class BaseMapActivity
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult result) {
+    public void onConnectionFailed(@NonNull ConnectionResult result) {
         // Oh, so THAT'S how the connection can fail: If we're using Marshmallow
         // and the user refused to give permissions to the API or the user
         // doesn't have the Google Play Services installed.  Okay, that's fair.
@@ -114,5 +121,54 @@ public abstract class BaseMapActivity
                 }
             }
         }
+    }
+
+    /**
+     * <p>
+     * Checks for permissions on {@link Manifest.permission#ACCESS_FINE_LOCATION},
+     * automatically firing off the permission request if it hasn't been
+     * granted yet.  This method DOES return, mind; if it returns true, continue
+     * as normal, and if it returns false, don't do anything.  In the false
+     * case, it will (usually) ask for permissions, with CentralMap handling the
+     * callback.
+     * </p>
+     *
+     * <p>
+     * If skipRequest is set, permissions won't be asked for in the event that
+     * they're not already granted, and no explanation popup will show up,
+     * either.  Use that for cases like shutdowns where all the listeners are
+     * being unregistered.
+     * </p>
+     *
+     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
+     * @param skipRequest if true, don't bother requesting permission, just drop it and go on
+     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
+     */
+    public synchronized boolean checkLocationPermissions(int requestCode, boolean skipRequest) {
+        // First, the easy case: Permissions granted.
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Yay!
+            return true;
+        } else {
+            // Boo!  Now we need to fire off a permissions request!  If we were
+            // already denied permissions once, though, don't bother trying
+            // again.
+            if(!skipRequest && !mPermissionsDenied)
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        requestCode);
+            return false;
+        }
+    }
+
+    /**
+     * Convenience method that calls {@link #checkLocationPermissions(int, boolean)}
+     * with skipRequest set to false.
+     *
+     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
+     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
+     */
+    public synchronized boolean checkLocationPermissions(int requestCode) {
+        return checkLocationPermissions(requestCode, false);
     }
 }
