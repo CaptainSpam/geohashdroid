@@ -11,12 +11,14 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.util.Log;
+
+import com.google.android.gms.maps.model.LatLng;
 
 /**
  * This is a simple utility class which converts a distance output (in meters)
@@ -67,33 +69,36 @@ public class UnitConverter {
      *            the distance, as returned by Location's distanceTo method
      * @return a String of the distance, with units marked
      */
-    public static String makeDistanceString(Context c, DecimalFormat df,
-            float distance) {
+    @NonNull
+    public static String makeDistanceString(@NonNull Context c,
+                                            @NonNull DecimalFormat df,
+                                            float distance) {
         // First, get the current unit preference.
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
         String units = prefs.getString(GHDConstants.PREF_DIST_UNITS, GHDConstants.PREFVAL_DIST_METRIC);
 
         // Second, run the conversion.
-        if (units.equals(GHDConstants.PREFVAL_DIST_METRIC)) {
-            // Meters are easy, if only for the fact that, by default, the
-            // Location object returns distances in meters. And the fact that
-            // it's in powers of ten.
-            if (distance >= 1000) {
-                return df.format(distance / 1000) + "km";
-            } else {
-                return df.format(distance) + "m";
-            }
-        } else if (units.equals(GHDConstants.PREFVAL_DIST_IMPERIAL)) {
-            // Convert!
-            double feet = distance * FEET_PER_METER;
+        switch(units) {
+            case GHDConstants.PREFVAL_DIST_METRIC:
+                // Meters are easy, if only for the fact that, by default, the
+                // Location object returns distances in meters. And the fact
+                // that it's in powers of ten.
+                if(distance >= 1000) {
+                    return df.format(distance / 1000) + "km";
+                } else {
+                    return df.format(distance) + "m";
+                }
+            case GHDConstants.PREFVAL_DIST_IMPERIAL:
+                // Convert!
+                double feet = distance * FEET_PER_METER;
 
-            if (feet >= FEET_PER_MILE) {
-                return df.format(feet / FEET_PER_MILE) + "mi";
-            } else {
-                return df.format(feet) + "ft";
-            }
-        } else {
-            return units + "???";
+                if(feet >= FEET_PER_MILE) {
+                    return df.format(feet / FEET_PER_MILE) + "mi";
+                } else {
+                    return df.format(feet) + "ft";
+                }
+            default:
+                return units + "???";
         }
     }
     
@@ -113,10 +118,40 @@ public class UnitConverter {
      * @return
      *             a string form of the coordinates given
      */
-    public static String makeFullCoordinateString(Context c, Location l,
-            boolean useNegative, int format) {
+    @NonNull
+    public static String makeFullCoordinateString(@NonNull Context c,
+                                                  @NonNull Location l,
+                                                  boolean useNegative,
+                                                  int format) {
         return makeLatitudeCoordinateString(c, l.getLatitude(), useNegative, format) + " "
             + makeLongitudeCoordinateString(c, l.getLongitude(), useNegative, format);
+    }
+
+    /**
+     * Perform a coordinate conversion.  This will read in whatever preference
+     * is currently in play (degrees, minutes, seconds) and return a string with
+     * both latitude and longitude separated by a space.
+     *
+     * @param c
+     *            Context from whence the preference comes
+     * @param ll
+     *            LatLng to calculate
+     * @param useNegative
+     *            true to use positive/negative values, false to use N/S or E/W
+     * @param format
+     *            specify the output format using one of the OUTPUT_ statics
+     * @return
+     *             a string form of the coordinates given
+     */
+    @NonNull
+    public static String makeFullCoordinateString(@NonNull Context c,
+                                                  @NonNull LatLng ll,
+                                                  boolean useNegative,
+                                                  int format) {
+        Location l = new Location("");
+        l.setLatitude(ll.latitude);
+        l.setLongitude(ll.longitude);
+        return makeFullCoordinateString(c, l, useNegative, format);
     }
     
     /**
@@ -133,8 +168,11 @@ public class UnitConverter {
      * @return
      *             a string form of the latitude of the coordinates given
      */
-    public static String makeLatitudeCoordinateString(Context c, double lat,
-            boolean useNegative, int format) {
+    @NonNull
+    public static String makeLatitudeCoordinateString(@NonNull Context c,
+                                                      double lat,
+                                                      boolean useNegative,
+                                                      int format) {
         String units = getCoordUnitPreference(c);
         
         // Keep track of whether or not this is negative.  We'll attach the
@@ -175,8 +213,11 @@ public class UnitConverter {
      * @return
      *             a string form of the longitude of the coordinates given
      */
-    public static String makeLongitudeCoordinateString(Context c, double lon,
-            boolean useNegative, int format) {
+    @NonNull
+    public static String makeLongitudeCoordinateString(@NonNull Context c,
+                                                       double lon,
+                                                       boolean useNegative,
+                                                       int format) {
         String units = getCoordUnitPreference(c);
         
         // Keep track of whether or not this is negative.  We'll attach the
@@ -202,57 +243,63 @@ public class UnitConverter {
                 return coord + "E";
         }
     }
-    
-    private static String makeCoordinateString(String units, double coord, int format) {
+
+    @NonNull
+    private static String makeCoordinateString(@NonNull String units,
+                                               double coord,
+                                               int format) {
         // Just does the generic coordinate conversion stuff for coordinates.
         NumberFormat nf = NumberFormat.getInstance();
 
         try {
-            if(units.equals(GHDConstants.PREFVAL_COORD_DEGREES)) {
-                // Easy case: Use the result Location gives us, modified by the
-                // longForm boolean.
-                switch(format) {
-                    case OUTPUT_SHORT:
-                        return SHORT_FORMAT.format(coord) + "\u00b0";
-                    case OUTPUT_LONG:
-                        return LONG_FORMAT.format(coord) + "\u00b0";
-                    default:
-                        return DETAIL_FORMAT.format(coord) + "\u00b0";
+            switch(units) {
+                case GHDConstants.PREFVAL_COORD_DEGREES:
+                    // Easy case: Use the result Location gives us, modified by
+                    // the longForm boolean.
+                    switch(format) {
+                        case OUTPUT_SHORT:
+                            return SHORT_FORMAT.format(coord) + "\u00b0";
+                        case OUTPUT_LONG:
+                            return LONG_FORMAT.format(coord) + "\u00b0";
+                        default:
+                            return DETAIL_FORMAT.format(coord) + "\u00b0";
+                    }
+                case GHDConstants.PREFVAL_COORD_MINUTES: {
+                    // Harder case 1: Minutes.
+                    String temp = Location.convert(coord, Location.FORMAT_MINUTES);
+                    String[] split = temp.split(":");
+
+                    // Get the double form of the minutes...
+                    double minutes = nf.parse(split[1]).doubleValue();
+
+                    switch(format) {
+                        case OUTPUT_SHORT:
+                            return split[0] + "\u00b0" + SHORT_SECONDS_FORMAT.format(minutes) + "\u2032";
+                        case OUTPUT_LONG:
+                            return split[0] + "\u00b0" + LONG_SECONDS_FORMAT.format(minutes) + "\u2032";
+                        default:
+                            return split[0] + "\u00b0" + split[1] + "\u2032";
+                    }
                 }
-            } else if(units.equals(GHDConstants.PREFVAL_COORD_MINUTES)) {
-                // Harder case 1: Minutes.
-                String temp = Location.convert(coord, Location.FORMAT_MINUTES);
-                String[] split = temp.split(":");
-                
-                // Get the double form of the minutes...
-                double minutes = nf.parse(split[1]).doubleValue();
-                
-                switch(format) {
-                    case OUTPUT_SHORT:
-                        return split[0] + "\u00b0" + SHORT_SECONDS_FORMAT.format(minutes) + "\u2032";
-                    case OUTPUT_LONG:
-                        return split[0] + "\u00b0" + LONG_SECONDS_FORMAT.format(minutes) + "\u2032";
-                    default:
-                        return split[0] + "\u00b0" + split[1]+ "\u2032";
+                case GHDConstants.PREFVAL_COORD_SECONDS: {
+                    // Harder case 2: Seconds.
+                    String temp = Location.convert(coord, Location.FORMAT_SECONDS);
+                    String[] split = temp.split(":");
+
+                    // Get the double form of the seconds...
+                    double seconds = nf.parse(split[2]).doubleValue();
+
+                    switch(format) {
+                        case OUTPUT_SHORT:
+                            return split[0] + "\u00b0" + split[1] + "\u2032" + SHORT_SECONDS_FORMAT.format(seconds) + "\u2033";
+                        case OUTPUT_LONG:
+                            return split[0] + "\u00b0" + split[1] + "\u2032" + LONG_SECONDS_FORMAT.format(seconds) + "\u2033";
+                        default:
+                            return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
+                    }
                 }
-            } else if(units.equals(GHDConstants.PREFVAL_COORD_SECONDS)) {
-                // Harder case 2: Seconds.
-                String temp = Location.convert(coord, Location.FORMAT_SECONDS);
-                String[] split = temp.split(":");
-                
-                // Get the double form of the seconds...
-                double seconds = nf.parse(split[2]).doubleValue();
-                
-                switch(format) {
-                    case OUTPUT_SHORT:
-                        return split[0] + "\u00b0" + split[1] + "\u2032" + SHORT_SECONDS_FORMAT.format(seconds) + "\u2033";
-                    case OUTPUT_LONG:
-                        return split[0] + "\u00b0" + split[1] + "\u2032" + LONG_SECONDS_FORMAT.format(seconds) + "\u2033";
-                    default:
-                        return split[0] + "\u00b0" + split[1] + "\u2032" + split[2] + "\u2033";
-                }
-            } else {
-                return "???";
+                default:
+                    return "???";
             }
         } catch (Exception ex) {
             Log.e(DEBUG_TAG, "Exception thrown during coordinate conversion: " + ex.toString());
@@ -267,7 +314,8 @@ public class UnitConverter {
      * @param c Context from whence the preferences arise
      * @return "Degrees", "Minutes", or "Seconds"
      */
-    public static String getCoordUnitPreference(Context c) {
+    @NonNull
+    public static String getCoordUnitPreference(@NonNull Context c) {
         // Units GO!!!
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
         return prefs.getString(GHDConstants.PREF_COORD_UNITS, "Degrees");
