@@ -152,5 +152,6 @@
 
     <string name="notification_wait_for_network">Waiting for the network&#8230;</string>
 
-    <string name="nearby_locations_search">Search (or coordinates)</string>
+    <string name="known_locations_search">Search (or coordinates)</string>
+    <string name="known_locations_tap_to_add">Tap to add location</string>
 </resources>

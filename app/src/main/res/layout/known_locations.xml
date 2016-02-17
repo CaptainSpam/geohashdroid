@@ -32,7 +32,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/search"
-            android:hint="@string/nearby_locations_search"
+            android:hint="@string/known_locations_search"
             android:layout_weight="1"
             android:layout_gravity="center_vertical"/>
 
