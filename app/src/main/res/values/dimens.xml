@@ -85,4 +85,9 @@
 
     <dimen name="error_banner_height">64dp</dimen>
     <dimen name="map_zoom_padding">64dp</dimen>
+
+    <dimen name="known_location_pin_size">32dp</dimen>
+    <dimen name="known_location_pin_head_radius">4dp</dimen>
+    <dimen name="known_location_pin_base_length">24dp</dimen>
+    <dimen name="known_location_stroke">1dp</dimen>
 </resources>

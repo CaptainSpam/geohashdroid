@@ -10,13 +10,20 @@ package net.exclaimindustries.geohashdroid.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import net.exclaimindustries.geohashdroid.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -24,6 +31,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * This represents a single known location.  It's got a LatLng and a name, as
@@ -158,6 +166,7 @@ public class KnownLocation {
      *
      * @return a name
      */
+    @NonNull
     public String getName() {
         return mName;
     }
@@ -167,20 +176,114 @@ public class KnownLocation {
      *
      * @return a LatLng
      */
+    @NonNull
     public LatLng getLatLng() {
         return mLocation;
     }
 
     /**
      * Makes a MarkerOptions out of this KnownLocation (when added to the map,
-     * you get an actual Marker back).  This can be directly placed on the map,
+     * you get the actual Marker back).  This can be directly placed on the map,
      * but you might want to stick it in something that can build a cluster or
      * something.
      *
      * @return a MarkerOptions representing this KnownLocation
      */
-    public MarkerOptions makeMarker() {
-        // TODO: Make makeMarker make a Marker.
-        return null;
+    @NonNull
+    public MarkerOptions makeMarker(Context c) {
+        MarkerOptions toReturn = new MarkerOptions();
+
+        toReturn.flat(false)
+                .draggable(false)
+                .icon(BitmapDescriptorFactory.fromBitmap(buildMarkerBitmap(c)))
+                .anchor(0.5f, 0.5f)
+                .position(mLocation);
+
+        // TODO: Set REAL title and snippet!
+        toReturn.title(mName)
+                .snippet("TACOS");
+
+        return toReturn;
+    }
+
+    @NonNull
+    private Bitmap buildMarkerBitmap(Context c) {
+        // Oh, this is going to be FUN.
+        int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_pin_size);
+        float radius = c.getResources().getDimension(R.dimen.known_location_pin_head_radius);
+        float baseLength = c.getResources().getDimension(R.dimen.known_location_pin_base_length);
+
+        Bitmap bitmap = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+
+        Random random = makeRandom();
+
+        // For variety, we'll have three random elements: The angle at which the
+        // pin sits in the map (80...100 degrees)...
+        double pinAngle = Math.toRadians((random.nextDouble() * 20.0f) + 80.0f);
+
+        // ...the relative length of the pin itself...
+        float length = baseLength * (1 - (random.nextFloat() * 0.5f));
+
+        // ...and the color of the pin's head (we just randomize the hue).
+        int hue = random.nextInt(360);
+
+        // Draw the pin line first.  That goes from the bottom-center up to
+        // wherever the radius and length take us.
+        float topX = Double.valueOf((dim / 2) + (length * Math.cos(pinAngle))).floatValue();
+        float topY = Double.valueOf(dim - (length * Math.sin(pinAngle))).floatValue();
+        paint.setStrokeWidth(c.getResources().getDimension(R.dimen.known_location_stroke));
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setColor(Color.BLACK);
+
+        canvas.drawLine(dim / 2, dim, topX, topY, paint);
+
+        // On the top of that line, fill in a circle.
+        paint.setColor(Color.HSVToColor(new float[]{hue, 1.0f, 0.8f}));
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(topX, topY, radius, paint);
+
+        // And outline it.
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(topX, topY, radius, paint);
+
+        return bitmap;
+    }
+
+    @NonNull
+    private Random makeRandom() {
+        // What we're looking for here is a stable randomizer with the seed
+        // initialized to something (reasonably) unique to the location given
+        // in this KnownLocation (not the name).  java.util.Random, as the docs
+        // assure me, will ALWAYS be a certain algorithm for portability's sake,
+        // and thus always give the same results.  This hopefully isn't going to
+        // be something like a randomizer whose algorithm changes when someone
+        // discovers it's not random enough.  I'm looking more for a hashing
+        // function than a true (or even pseudo-true) random number here.
+
+        // So, to generate our seed, we're going to convert the latitude and
+        // longitude into 32-bit ints.  Sort of.  More like we're going to
+        // multiply them up so they're more reasonably in the domain of
+        // -(2^31 - 1)...2^31.  Then, we bit-shift one of them such that we can
+        // add both together into a long whose bits are reasonably unique,
+        // giving us a seed that's reasonably unique.  This is entirely the
+        // wrong way to do this.
+        long latPart = Math.round(mLocation.latitude * 23860929);
+        long lonPart = Math.round(mLocation.longitude * 11930464) << 32;
+
+        long seed = latPart + lonPart;
+
+        Log.d(DEBUG_TAG, "Seed for " + toString() + " is " + seed);
+
+        return new Random(seed);
+    }
+
+    @Override
+    public String toString() {
+        return "\"" + mName + "\": " + mLocation.latitude + ", " + mLocation.longitude;
     }
 }
