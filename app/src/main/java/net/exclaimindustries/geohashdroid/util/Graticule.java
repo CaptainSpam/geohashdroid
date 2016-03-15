@@ -468,6 +468,39 @@ public class Graticule implements Parcelable {
         return toReturn;
     }
 
+    /**
+     * <p>
+     * Makes a LatLng out of this Graticule and component fractional hash parts.
+     * In other words, this forces the fractional bits into a proper location
+     * based on this Graticule.
+     * </p>
+     *
+     * <p>
+     * TODO: HashBuilder could start calling this instead...
+     * </p>
+     *
+     * @param latHash the fractional latitude portion of the hash
+     * @param lonHash the fractional longitude portion of the hash
+     * @return a new LatLng
+     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
+     */
+    @NonNull
+    public LatLng makePointFromHash(double latHash, double lonHash) {
+        if(latHash < 0 || latHash > 1 || lonHash < 0 || latHash > 1)
+            throw new IllegalArgumentException("Those aren't valid hash values!");
+
+        // getLatitude and getLongitude are absolute values, so we can do this:
+        latHash += getLatitude();
+        lonHash += getLongitude();
+
+        // And then we adjust for south/west like so...
+        if(isSouth()) latHash *= -1;
+        if(isWest()) lonHash *= -1;
+
+        // And out it goes!
+        return new LatLng(latHash, lonHash);
+    }
+
     /*
      * (non-Javadoc)
      * 

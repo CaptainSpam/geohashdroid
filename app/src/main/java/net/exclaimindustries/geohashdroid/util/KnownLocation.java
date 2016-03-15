@@ -222,6 +222,50 @@ public class KnownLocation {
     }
 
     /**
+     * Determines if there is ANY valid non-global hashpoint close enough to
+     * this KnownLocation, given the hash values provided.  That is, it will
+     * check all nine graticules around this KnownLocation to see if any of them
+     * are within range.  Note that if the range was specified as zero or less,
+     * this will always return false.
+     *
+     * @param latHash fractional portion of the latitude hash
+     * @param lonHash fractional portion of the longitude hash
+     * @return true if anything is close enough, false if not
+     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
+     */
+    public boolean isCloseEnough(double latHash, double lonHash) {
+        if(latHash < 0 || latHash > 1 || lonHash < 0 || latHash > 1)
+            throw new IllegalArgumentException("Those aren't valid hash values!");
+
+        if(mRange < 0.0) return false;
+
+        // Let's base our check around the Graticule in which this KnownLocation
+        // actually lies.  The Graticule class itself can handle all the offset
+        // stuff and all the requisite hacks for the prime meridian, equator,
+        // and 180E/W lines.
+        Graticule base = new Graticule(mLocation);
+
+        for(int i = -1; i <= 1; i++) {
+            for(int j = -1; j <= 1; j++) {
+                // Offset the base Graticule, if need be...
+                Graticule check = base;
+                if(i != 0 && j != 0) {
+                    check = Graticule.createOffsetFrom(base, i, j);
+                }
+
+                // ...then, make a LatLng out of it...
+                LatLng loc = check.makePointFromHash(latHash, lonHash);
+
+                // ...and check.  Stop at the first success.
+                if(isCloseEnough(loc)) return true;
+            }
+        }
+
+        // If we fell out of the for loops, we failed.
+        return false;
+    }
+
+    /**
      * <p>
      * Makes a MarkerOptions out of this KnownLocation (when added to the map,
      * you get the actual Marker back).  This can be directly placed on the map,
