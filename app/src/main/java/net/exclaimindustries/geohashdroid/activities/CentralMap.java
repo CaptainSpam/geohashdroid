@@ -1153,13 +1153,22 @@ public class CentralMap
 
             // Stupid Android Studio annotator and how it can't tell I've
             // requested permissions already...
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
+            try {
+                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
 
-            // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
-            // locked method.  Which, to be honest, is a good thing, really, it
-            // didn't make much sense that you could turn that on without
-            // permissions before.
-            mMap.setMyLocationEnabled(true);
+                // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
+                // locked method.  Which, to be honest, is a good thing, really, it
+                // didn't make much sense that you could turn that on without
+                // permissions before.
+                mMap.setMyLocationEnabled(true);
+            } catch (SecurityException se) {
+                // We MUST have permissions at this point, given the call to
+                // checkLocationPermissions should have returned false if not.
+                // If we're in some situation where we STILL got a
+                // SecurityException, calling it again won't help, because
+                // that'll just bring us back here in an endless loop.  So, we
+                // ignore it.
+            }
         }
     }
 

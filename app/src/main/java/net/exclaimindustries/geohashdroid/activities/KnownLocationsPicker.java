@@ -148,7 +148,14 @@ public class KnownLocationsPicker
     }
 
     private void permissionsGranted() {
-        mMap.setMyLocationEnabled(true);
+        try {
+            mMap.setMyLocationEnabled(true);
+        } catch(SecurityException se) {
+            // This shouldn't happen (permissionsGranted is called AFTER we get
+            // permissions), but Android Studio simply is NOT going to be happy
+            // unless I surround it with a try/catch, so...
+            checkLocationPermissions(0);
+        }
     }
 
     private boolean doReadyChecks() {
