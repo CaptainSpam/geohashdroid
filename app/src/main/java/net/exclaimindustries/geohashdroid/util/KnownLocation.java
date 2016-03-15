@@ -14,6 +14,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.location.Location;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -41,6 +42,7 @@ import java.util.Random;
 public class KnownLocation {
     private String mName;
     private LatLng mLocation;
+    private double mRange;
 
     private static final String DEBUG_TAG = "KnownLocation";
 
@@ -54,9 +56,15 @@ public class KnownLocation {
      *
      * @param name the name of this mLocation
      * @param location a LatLng where it can be found
+     * @param range how close it has to be before it triggers a notification, in km
      */
-    public KnownLocation(@NonNull String name, @NonNull LatLng location) {
+    public KnownLocation(@NonNull String name, @NonNull LatLng location, double range) {
         mName = name;
+        mRange = range;
+
+        // The marker needs SOME title.
+        if(mName.isEmpty()) mName = "?";
+
         mLocation = location;
     }
 
@@ -73,6 +81,7 @@ public class KnownLocation {
         try {
             toReturn.mName = obj.getString("name");
             toReturn.mLocation = new LatLng(obj.getDouble("lat"), obj.getDouble("lon"));
+            toReturn.mRange = obj.getDouble("range");
             return toReturn;
         } catch(JSONException je) {
             Log.e(DEBUG_TAG, "Couldn't deserialize a mLocation for some reason!", je);
@@ -131,6 +140,7 @@ public class KnownLocation {
             toReturn.put("name", mName);
             toReturn.put("lat", mLocation.latitude);
             toReturn.put("lon", mLocation.longitude);
+            toReturn.put("range", mRange);
         } catch(JSONException je) {
             // This really, REALLY shouldn't happen.  Really.
             Log.e("KnownLocation", "JSONException trying to add data into the to-return object?  The hell?", je);
@@ -146,7 +156,7 @@ public class KnownLocation {
      * @param c a Context
      * @param locations a List of KnownLocations
      */
-    public static void storeKnownLocations(Context c, List<KnownLocation> locations) {
+    public static void storeKnownLocations(@NonNull Context c, @NonNull List<KnownLocation> locations) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
         SharedPreferences.Editor edit = prefs.edit();
 
@@ -182,32 +192,69 @@ public class KnownLocation {
     }
 
     /**
+     * Gets the range required before this KnownLocation will trigger a
+     * notification.
+     *
+     * @return the range
+     */
+    public double getRange() {
+        return mRange;
+    }
+
+    /**
+     * Determines if this KnownLocation is close enough to the given coordinates
+     * to trigger a notification.  Note that if the range was specified as zero
+     * or less, this will always return false.
+     *
+     * @param to the LatLng to which this is being compared
+     * @return true if close enough, false if not
+     */
+    public boolean isCloseEnough(@NonNull LatLng to) {
+        if(mRange <= 0.0) return false;
+
+        // Stupid LatLngs.  I didn't have to deal with these conversions back
+        // when everything just used Locations...
+        float dist[] = new float[1];
+
+        Location.distanceBetween(mLocation.latitude, mLocation.longitude, to.latitude, to.longitude, dist);
+
+        return dist[0] <= mRange;
+    }
+
+    /**
+     * <p>
      * Makes a MarkerOptions out of this KnownLocation (when added to the map,
      * you get the actual Marker back).  This can be directly placed on the map,
      * but you might want to stick it in something that can build a cluster or
      * something.
+     * </p>
      *
+     * <p>
+     * Note that this MarkerOptions won't have a snippet.  The caller has to set
+     * that itself.  The title, though, will be the KnownLocation's name.
+     * </p>
      * @return a MarkerOptions representing this KnownLocation
      */
     @NonNull
-    public MarkerOptions makeMarker(Context c) {
+    public MarkerOptions makeMarker(@NonNull Context c) {
         MarkerOptions toReturn = new MarkerOptions();
 
         toReturn.flat(false)
                 .draggable(false)
                 .icon(BitmapDescriptorFactory.fromBitmap(buildMarkerBitmap(c)))
                 .anchor(0.5f, 0.5f)
-                .position(mLocation);
+                .position(mLocation)
+                .title(mName);
 
-        // TODO: Set REAL title and snippet!
-        toReturn.title(mName)
-                .snippet("TACOS");
+        // The snippet should be set by the caller.  That'll either be
+        // instructions to tap it again to edit/add it or the distance from it
+        // to the hashpoint.
 
         return toReturn;
     }
 
     @NonNull
-    private Bitmap buildMarkerBitmap(Context c) {
+    private Bitmap buildMarkerBitmap(@NonNull Context c) {
         // Oh, this is going to be FUN.
         int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_pin_size);
         float radius = c.getResources().getDimension(R.dimen.known_location_pin_head_radius);
