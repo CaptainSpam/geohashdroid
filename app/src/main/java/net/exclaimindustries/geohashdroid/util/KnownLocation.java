@@ -84,7 +84,7 @@ public class KnownLocation {
             toReturn.mRange = obj.getDouble("range");
             return toReturn;
         } catch(JSONException je) {
-            Log.e(DEBUG_TAG, "Couldn't deserialize a mLocation for some reason!", je);
+            Log.e(DEBUG_TAG, "Couldn't deserialize a KnownLocation for some reason!", je);
             return null;
         }
     }

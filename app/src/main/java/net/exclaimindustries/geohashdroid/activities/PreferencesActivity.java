@@ -196,7 +196,7 @@ public class PreferencesActivity extends PreferenceActivity {
             public Dialog onCreateDialog(Bundle savedInstanceState) {
                 return new AlertDialog.Builder(getActivity()).setMessage(R.string.pref_stockwipe_dialog_text)
                         .setTitle(R.string.pref_stockwipe_title)
-                        .setPositiveButton(getString(R.string.dialog_stockwipe_yes), new DialogInterface.OnClickListener() {
+                        .setPositiveButton(R.string.dialog_stockwipe_yes, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 // Well, you heard the orders!
@@ -215,7 +215,7 @@ public class PreferencesActivity extends PreferenceActivity {
                                 }
                             }
                         })
-                        .setNegativeButton(getString(R.string.dialog_stockwipe_no), new DialogInterface.OnClickListener() {
+                        .setNegativeButton(R.string.dialog_stockwipe_no, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 dismiss();
