@@ -46,4 +46,26 @@
         <item>LastUsed</item>
         <item>GraticulePicker</item>
     </string-array>
+
+    <string-array name="known_locations_ranges_metric">
+        <item>@string/known_locations_range_metric_1</item>
+        <item>@string/known_locations_range_metric_2</item>
+        <item>@string/known_locations_range_metric_3</item>
+        <item>@string/known_locations_range_metric_4</item>
+    </string-array>
+
+    <string-array name="known_locations_ranges_imperial">
+        <item>@string/known_locations_range_imperial_1</item>
+        <item>@string/known_locations_range_imperial_2</item>
+        <item>@string/known_locations_range_imperial_3</item>
+        <item>@string/known_locations_range_imperial_4</item>
+    </string-array>
+
+    <!-- Remember, these are all in km. -->
+    <integer-array name="known_locations_values">
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+    </integer-array>
 </resources>
