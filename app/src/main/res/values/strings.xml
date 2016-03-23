@@ -162,13 +162,13 @@
     <string name="known_locations_add_range">Notification range</string>
     <string name="known_locations_delete">Delete this location</string>
 
-    <string name="known_locations_range_metric_1">Really close (~1.2mi)</string>
-    <string name="known_locations_range_metric_2">Pretty close (~3.1mi)</string>
-    <string name="known_locations_range_metric_3">Sort of close (~6.2mi)</string>
-    <string name="known_locations_range_metric_4">Not all that close (~12.4mi)</string>
+    <string name="known_locations_range_imperial_1">Really close (~1.2mi)</string>
+    <string name="known_locations_range_imperial_2">Pretty close (~3.1mi)</string>
+    <string name="known_locations_range_imperial_3">Sort of close (~6.2mi)</string>
+    <string name="known_locations_range_imperial_4">Not all that close (~12.4mi)</string>
 
-    <string name="known_locations_range_imperial_1">Really close (~2km)</string>
-    <string name="known_locations_range_imperial_2">Pretty close (~5km)</string>
-    <string name="known_locations_range_imperial_3">Sort of close (~10km)</string>
-    <string name="known_locations_range_imperial_4">Not all that close (~20km)</string>
+    <string name="known_locations_range_metric_1">Really close (~2km)</string>
+    <string name="known_locations_range_metric_2">Pretty close (~5km)</string>
+    <string name="known_locations_range_metric_3">Sort of close (~10km)</string>
+    <string name="known_locations_range_metric_4">Not all that close (~20km)</string>
 </resources>
