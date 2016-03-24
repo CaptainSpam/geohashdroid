@@ -15,6 +15,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.location.Location;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -39,7 +41,7 @@ import java.util.Random;
  * well as a way to serialize itself out to a preference, mostly by making
  * itself into a JSON chunk.
  */
-public class KnownLocation {
+public class KnownLocation implements Parcelable {
     private String mName;
     private LatLng mLocation;
     private double mRange;
@@ -67,6 +69,42 @@ public class KnownLocation {
 
         mLocation = location;
     }
+
+    private KnownLocation(Parcel in) {
+        readFromParcel(in);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        // Nice how this is easily parcelable.
+        dest.writeString(mName);
+        dest.writeParcelable(mLocation, 0);
+        dest.writeDouble(mRange);
+    }
+
+    public void readFromParcel(Parcel in) {
+        // Same way it went out.
+        mName = in.readString();
+        mLocation = in.readParcelable(KnownLocation.class.getClassLoader());
+        mRange = in.readDouble();
+    }
+
+    public static final Parcelable.Creator<KnownLocation> CREATOR = new Parcelable.Creator<KnownLocation>() {
+        @Override
+        public KnownLocation createFromParcel(Parcel source) {
+            return new KnownLocation(source);
+        }
+
+        @Override
+        public KnownLocation[] newArray(int size) {
+            return new KnownLocation[size];
+        }
+    };
 
     /**
      * Deserializes a single JSONObject into a KnownLocation.
