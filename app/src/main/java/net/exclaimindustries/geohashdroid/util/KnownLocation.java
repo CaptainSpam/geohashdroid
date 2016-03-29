@@ -406,8 +406,6 @@ public class KnownLocation implements Parcelable {
 
         long seed = latPart + lonPart;
 
-        Log.d(DEBUG_TAG, "Seed for " + toString() + " is " + seed);
-
         return new Random(seed);
     }
 
