@@ -59,7 +59,7 @@ import java.util.Map;
  */
 public class KnownLocationsPicker
         extends BaseMapActivity
-        implements GoogleMap.OnMapClickListener,
+        implements GoogleMap.OnMapLongClickListener,
                    GoogleMap.OnMarkerClickListener,
                    GoogleMap.OnInfoWindowClickListener {
     // These get passed into the dialog.
@@ -243,7 +243,7 @@ public class KnownLocationsPicker
                 set.setMyLocationButtonEnabled(false);
 
                 // Get ready to listen for clicks!
-                mMap.setOnMapClickListener(KnownLocationsPicker.this);
+                mMap.setOnMapLongClickListener(KnownLocationsPicker.this);
                 mMap.setOnInfoWindowClickListener(KnownLocationsPicker.this);
 
                 // Activate My Location if permissions are right.
@@ -341,17 +341,15 @@ public class KnownLocationsPicker
     }
 
     @Override
-    public void onMapClick(LatLng latLng) {
-        // If there's already a marker, just clear it out.
+    public void onMapLongClick(LatLng latLng) {
+        // If there's already a marker, clear it out.
         if(mMapClickMarker != null) {
             mMapClickMarker.remove();
             mMapClickMarker = null;
-            return;
         }
 
-        // If the user taps the map (and NOT a marker or info window), we place
-        // a marker on the map and offer the user the option to add that as a
-        // known location.
+        // If the user long-taps the map, we place a marker on the map and offer
+        // the user the option to add that as a known location.
         MarkerOptions options = createMarker(latLng, null);
 
         mMapClickMarker = mMap.addMarker(options);
