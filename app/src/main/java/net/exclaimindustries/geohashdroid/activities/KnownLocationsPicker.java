@@ -242,6 +242,10 @@ public class KnownLocationsPicker
                 // of takes up that space.
                 set.setMyLocationButtonEnabled(false);
 
+                // Also, get rid of the map toolbar.  That just doesn't make any
+                // sense here if we've already got a search widget handy.
+                set.setMapToolbarEnabled(false);
+
                 // Get ready to listen for clicks!
                 mMap.setOnMapLongClickListener(KnownLocationsPicker.this);
                 mMap.setOnInfoWindowClickListener(KnownLocationsPicker.this);
