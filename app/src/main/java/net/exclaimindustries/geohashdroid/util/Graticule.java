@@ -509,10 +509,11 @@ public class Graticule implements Parcelable {
     @Override
     public boolean equals(Object o) {
         // First, this better be a Graticule.
+        if(o == this) return true;
         if (!(o instanceof Graticule))
             return false;
 
-        Graticule g = (Graticule)o;
+        final Graticule g = (Graticule)o;
 
         // If everything matches up, these are identical. Two int checks and
         // two boolean checks are probably a lot faster than two String checks,
@@ -520,6 +521,20 @@ public class Graticule implements Parcelable {
         return !(g.getLatitude() != getLatitude()
                 || g.getLongitude() != getLongitude()
                 || g.isSouth() != isSouth() || g.isWest() != isWest());
+    }
+
+    @Override
+    public int hashCode() {
+        // Um... 11!  That's a prime number, right?
+        int toReturn = 11;
+
+        // And so's 37!
+        toReturn = 37 * toReturn + mLatitude;
+        toReturn = 37 * toReturn + mLongitude;
+        toReturn = 37 * toReturn + (mSouth ? 0 : 1);
+        toReturn = 37 * toReturn + (mWest ? 0 : 1);
+
+        return toReturn;
     }
 
     @Override

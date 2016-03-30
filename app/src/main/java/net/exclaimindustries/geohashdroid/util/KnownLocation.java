@@ -401,8 +401,8 @@ public class KnownLocation implements Parcelable {
         // add both together into a long whose bits are reasonably unique,
         // giving us a seed that's reasonably unique.  This is entirely the
         // wrong way to do this.
-        long latPart = Math.round(mLocation.latitude * 23860929);
-        long lonPart = Math.round(mLocation.longitude * 11930464) << 32;
+        long latPart = Double.doubleToLongBits(mLocation.latitude);
+        long lonPart = Double.doubleToLongBits(mLocation.longitude) << 32;
 
         long seed = latPart + lonPart;
 
@@ -412,5 +412,33 @@ public class KnownLocation implements Parcelable {
     @Override
     public String toString() {
         return "\"" + mName + "\": " + mLocation.latitude + ", " + mLocation.longitude;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o == this) return true;
+
+        if(!(o instanceof KnownLocation)) return false;
+
+        // Locations should have identical names, locations, and ranges if
+        // we're expecting them to be identical.
+        final KnownLocation other = (KnownLocation)o;
+
+        return (mName == null ? other.mName == null : mName.equals(other.mName))
+                && mRange == other.mRange
+                && (mLocation == null ? other.mLocation == null : mLocation.equals(other.mLocation));
+    }
+
+    @Override
+    public int hashCode() {
+        // Good thing there's only three fields to hash up...
+        int toReturn = 17;
+
+        long convert = Double.doubleToLongBits(mRange);
+        toReturn = 31 * toReturn + (int)(convert & (convert >>> 32));
+        toReturn = 31 * toReturn + (mLocation == null ? 0 : mLocation.hashCode());
+        toReturn = 31 * toReturn + (mName == null ? 0 : mName.hashCode());
+
+        return toReturn;
     }
 }

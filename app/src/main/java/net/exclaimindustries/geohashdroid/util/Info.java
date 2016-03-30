@@ -481,9 +481,10 @@ public class Info implements Parcelable {
 
     @Override
     public boolean equals(Object o) {
+        if(o == this) return true;
         if(!(o instanceof Info)) return false;
 
-        Info other = (Info)o;
+        final Info other = (Info)o;
 
         // I'm really sure I could make this clearer and/or more efficient if I
         // really thought more about it, and was not in a room full of other
@@ -503,5 +504,22 @@ public class Info implements Parcelable {
 
         // Otherwise, we match!
         return true;
+    }
+
+    @Override
+    public int hashCode() {
+        // Hash!
+        int toReturn = 13;
+
+        toReturn = 27 * toReturn + (mValid ? 1 : 0);
+        toReturn = 27 * toReturn + (mRetroHash ? 1 : 0);
+        long convert = Double.doubleToLongBits(mLatitude);
+        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
+        convert = Double.doubleToLongBits(mLongitude);
+        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
+        toReturn = 27 * toReturn + (mGraticule == null ? 0 : mGraticule.hashCode());
+        toReturn = 27 * toReturn + (mDate == null ? 0 : mDate.hashCode());
+
+        return toReturn;
     }
 }
