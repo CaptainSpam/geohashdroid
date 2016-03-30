@@ -36,6 +36,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -67,6 +68,9 @@ public class KnownLocationsPicker
     private static final String LATLNG = "latLng";
     private static final String RANGE = "range";
     private static final String EXISTS = "exists";
+
+    // This is for restoring the map from an instance bundle.
+    private static final String CLICKED_MARKER = "clickedMarker";
 
     private static final String EDIT_DIALOG = "editDialog";
 
@@ -202,6 +206,7 @@ public class KnownLocationsPicker
 
     private List<KnownLocation> mLocations;
     private Marker mMapClickMarker;
+    private MarkerOptions mMapClickMarkerOptions;
 
     private KnownLocation mActiveKnownLocation;
     private Marker mActiveMarker;
@@ -250,6 +255,14 @@ public class KnownLocationsPicker
                 mMap.setOnMapLongClickListener(KnownLocationsPicker.this);
                 mMap.setOnInfoWindowClickListener(KnownLocationsPicker.this);
 
+                // Were we waiting on a long-tapped marker?
+                if(mMapClickMarkerOptions != null) {
+                    // Well, then put the marker back on the map!
+                    mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
+                    mActiveMarker = mMapClickMarker;
+                    mMapClickMarker.showInfoWindow();
+                }
+
                 // Activate My Location if permissions are right.
                 if(checkLocationPermissions(0))
                     permissionsGranted();
@@ -276,6 +289,27 @@ public class KnownLocationsPicker
         mGoogleClient.disconnect();
 
         super.onStop();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // If we were looking at a click marker, hold on to it.
+        if(mMapClickMarkerOptions != null) {
+            outState.putParcelable(CLICKED_MARKER, mMapClickMarkerOptions);
+        }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        // Did we have a click marker?  Once the map's ready, we'll put it back
+        // in place.
+        if(savedInstanceState.containsKey(CLICKED_MARKER)) {
+            mMapClickMarkerOptions = savedInstanceState.getParcelable(CLICKED_MARKER);
+        }
     }
 
     @Override
@@ -323,18 +357,35 @@ public class KnownLocationsPicker
             // Otherwise, well, default to dead zero, I guess.
             Log.d(DEBUG_TAG, "There are " + mLocations.size() + " known location(s).");
 
+            CameraUpdate cam;
+
             if(!mLocations.isEmpty()) {
                 // Also, let's put the initial markers down.
                 initKnownLocations();
 
-                LatLngBounds.Builder builder = LatLngBounds.builder();
+                // The initial zoom should either be enough to hold all known
+                // locations, or just wherever the long-tap marker was if we're
+                // coming in from a restart.
+                if(mMapClickMarkerOptions != null) {
+                    // This will still be not null; the map ready callback
+                    // hasn't reset that.
+                    cam = CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.builder()
+                                .target(mMapClickMarkerOptions.getPosition())
+                                .zoom(14.0f)
+                                .build()
+                    );
+                } else {
+                    LatLngBounds.Builder builder = LatLngBounds.builder();
 
-                for(KnownLocation kl : mLocations) {
-                    builder.include(kl.getLatLng());
+                    for(KnownLocation kl : mLocations) {
+                        builder.include(kl.getLatLng());
+                    }
+
+                    LatLngBounds bounds = builder.build();
+                    cam = CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
                 }
 
-                LatLngBounds bounds = builder.build();
-                CameraUpdate cam = CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
                 mMap.animateCamera(cam);
             }
 
@@ -350,13 +401,16 @@ public class KnownLocationsPicker
         if(mMapClickMarker != null) {
             mMapClickMarker.remove();
             mMapClickMarker = null;
+            mMapClickMarkerOptions = null;
         }
 
         // If the user long-taps the map, we place a marker on the map and offer
-        // the user the option to add that as a known location.
-        MarkerOptions options = createMarker(latLng, null);
+        // the user the option to add that as a known location.  We want to keep
+        // track of the MarkerOptions object because that's Parcelable, allowing
+        // us to stash it away if we need to save the activity's bundle state.
+        mMapClickMarkerOptions = createMarker(latLng, null);
 
-        mMapClickMarker = mMap.addMarker(options);
+        mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
         mMapClickMarker.showInfoWindow();
     }
 
@@ -477,5 +531,6 @@ public class KnownLocationsPicker
     private void removeActiveKnownLocation() {
         mActiveMarker = null;
         mActiveKnownLocation = null;
+        mMapClickMarkerOptions = null;
     }
 }
