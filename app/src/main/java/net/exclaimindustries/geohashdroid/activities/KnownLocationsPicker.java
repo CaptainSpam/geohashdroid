@@ -41,15 +41,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * KnownLocationsPicker is another map-containing Activity.  This one allows the
@@ -67,7 +67,7 @@ public class KnownLocationsPicker
     private static final String NAME = "name";
     private static final String LATLNG = "latLng";
     private static final String RANGE = "range";
-    private static final String EXISTS = "exists";
+    private static final String EXISTING = "existing";
 
     // This is for restoring the map from an instance bundle.
     private static final String CLICKED_MARKER = "clickedMarker";
@@ -79,6 +79,7 @@ public class KnownLocationsPicker
      */
     public static class EditKnownLocationDialog extends DialogFragment {
         private LatLng mLocation;
+        private KnownLocation mExisting;
 
         @Override
         @SuppressLint("InflateParams")
@@ -92,7 +93,7 @@ public class KnownLocationsPicker
 
             // The arguments MUST be defined, else we're not doing anything.
             Bundle args = getArguments();
-            if(args == null || !args.containsKey(RANGE) || !args.containsKey(LATLNG) || !args.containsKey(NAME) || !args.containsKey(EXISTS)) {
+            if(args == null || !args.containsKey(RANGE) || !args.containsKey(LATLNG) || !args.containsKey(NAME)) {
                 throw new IllegalArgumentException("Missing arguments to EditKnownLocationDialog!");
             }
 
@@ -103,12 +104,11 @@ public class KnownLocationsPicker
 
             String name;
             int range;
-            boolean exists;
 
             // Right!  Go to the arguments first.
             name = args.getString(NAME);
             range = convertRangeToPosition(args.getDouble(RANGE));
-            exists = args.getBoolean(EXISTS);
+            mExisting = args.getParcelable(EXISTING);
             mLocation = args.getParcelable(LATLNG);
 
             // If there's a saved instance state, that overrides the name and
@@ -122,13 +122,14 @@ public class KnownLocationsPicker
             // Now then!  Let's create this mess.  First, if this is a location
             // that already exists, the user can delete it.  Otherwise, that
             // button goes away.
-            if(!exists) {
-                dialogView.findViewById(R.id.delete_location).setVisibility(View.GONE);
+            View deleteButton = dialogView.findViewById(R.id.delete_location);
+            if(mExisting == null) {
+                deleteButton.setVisibility(View.GONE);
             } else {
-                dialogView.findViewById(R.id.delete_location).setOnClickListener(new View.OnClickListener() {
+                deleteButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        pickerActivity.deleteActiveKnownLocation();
+                        pickerActivity.deleteActiveKnownLocation(mExisting);
                         dismiss();
                     }
                 });
@@ -158,14 +159,15 @@ public class KnownLocationsPicker
             // There!  Now, let's make it a dialog.
             return new AlertDialog.Builder(pickerActivity)
                     .setView(dialogView)
-                    .setTitle(exists ? R.string.known_locations_title_edit : R.string.known_locations_title_add)
+                    .setTitle(mExisting != null ? R.string.known_locations_title_edit : R.string.known_locations_title_add)
                     .setPositiveButton(R.string.ok_label, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             pickerActivity.confirmKnownLocationFromDialog(
                                     nameInput.getText().toString(),
                                     mLocation,
-                                    convertPositionToRange(spinner.getSelectedItemPosition()));
+                                    convertPositionToRange(spinner.getSelectedItemPosition()),
+                                    mExisting);
                             dismiss();
                         }
                     })
@@ -202,13 +204,12 @@ public class KnownLocationsPicker
 
     private boolean mMapIsReady = false;
 
-    private Map<Marker, KnownLocation> mMarkerMap;
+    private BiMap<Marker, KnownLocation> mMarkerMap;
 
     private List<KnownLocation> mLocations;
     private Marker mMapClickMarker;
     private MarkerOptions mMapClickMarkerOptions;
 
-    private KnownLocation mActiveKnownLocation;
     private Marker mActiveMarker;
 
     @Override
@@ -224,7 +225,7 @@ public class KnownLocationsPicker
         mLocations = KnownLocation.getAllKnownLocations(this);
 
         // We need a map.
-        mMarkerMap = new HashMap<>();
+        mMarkerMap = HashBiMap.create();
 
         // Prep a client (it'll get going during onStart)!
         mGoogleClient = new GoogleApiClient.Builder(this)
@@ -421,11 +422,13 @@ public class KnownLocationsPicker
         // active KnownLocation/Marker pair.
         String name = "";
         double range = 5.0;
+
+        KnownLocation loc = null;
         if(mMarkerMap.containsKey(marker)) {
             // Got it!
-            mActiveKnownLocation = mMarkerMap.get(marker);
-            name = mActiveKnownLocation.getName();
-            range = mActiveKnownLocation.getRange();
+            loc = mMarkerMap.get(marker);
+            name = loc.getName();
+            range = loc.getRange();
         }
 
         mActiveMarker = marker;
@@ -433,7 +436,7 @@ public class KnownLocationsPicker
         // Now, we've got a dialog to pop up!
         Bundle args = new Bundle();
         args.putString(NAME, name);
-        args.putBoolean(EXISTS, mActiveKnownLocation != null);
+        args.putParcelable(EXISTING, loc);
         args.putParcelable(LATLNG, marker.getPosition());
         args.putDouble(RANGE, range);
 
@@ -466,7 +469,7 @@ public class KnownLocationsPicker
     }
 
     private void initKnownLocations() {
-        mMarkerMap = new HashMap<>();
+        mMarkerMap = HashBiMap.create();
 
         for(KnownLocation kl : mLocations) {
             // Each KnownLocation gives us a MarkerOptions we can use.
@@ -480,21 +483,24 @@ public class KnownLocationsPicker
         return loc.makeMarker(this).snippet(getString(R.string.known_locations_tap_to_edit));
     }
 
-    private void confirmKnownLocationFromDialog(@NonNull String name, @NonNull LatLng location, double range) {
+    private void confirmKnownLocationFromDialog(@NonNull String name,
+                                                @NonNull LatLng location,
+                                                double range,
+                                                @Nullable KnownLocation existing) {
         // Okay, we got location data in.  Make one!
         KnownLocation newLoc = new KnownLocation(name, location, range);
 
         // Is this new or a replacement?
-        if(mActiveKnownLocation != null && mActiveMarker != null) {
+        if(existing != null) {
             // Replacement!  Or rather, remove the old one and re-add the new
             // one in place.
-            int oldIndex = mLocations.indexOf(mActiveKnownLocation);
+            int oldIndex = mLocations.indexOf(existing);
             mLocations.remove(oldIndex);
             mLocations.add(oldIndex, newLoc);
 
-            // Remove the marker from the map, too.  Not, y'know, the visual
-            // map.  The data structure one.
-            mMarkerMap.remove(mActiveMarker);
+            // Since this is an existing KnownLocation, the marker should be in
+            // that map, ripe for removal.
+            mMarkerMap.inverse().remove(existing).remove();
         } else {
             // Brand new!
             mLocations.add(newLoc);
@@ -502,26 +508,29 @@ public class KnownLocationsPicker
 
         // In both cases, store the data and add a new marker.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
-        mMarkerMap.put(newMark, newLoc);
+        mMarkerMap.forcePut(newMark, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // And remove the marker from the map.  The visual one this time.
-        mActiveMarker.remove();
+        // TODO: Null-checking shouldn't be necessary here.
+        if(mActiveMarker != null) mActiveMarker.remove();
 
         // And end the active parts.
         removeActiveKnownLocation();
     }
 
-    private void deleteActiveKnownLocation() {
-        if(mActiveKnownLocation == null || mActiveMarker == null) return;
+    private void deleteActiveKnownLocation(@NonNull KnownLocation existing) {
+        // This better exist, else we're in trouble.
+        if(!mMarkerMap.containsValue(existing)) return;
 
         // Clear it from the map and from the marker list.
-        mActiveMarker.remove();
-        mMarkerMap.remove(mActiveMarker);
+        Marker marker = mMarkerMap.inverse().get(existing);
+        marker.remove();
+        mMarkerMap.remove(marker);
 
         // Then, remove it from the location list and push that back to the
         // preferences.
-        mLocations.remove(mActiveKnownLocation);
+        mLocations.remove(existing);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // Also, clear out the active location and marker.
@@ -530,7 +539,6 @@ public class KnownLocationsPicker
 
     private void removeActiveKnownLocation() {
         mActiveMarker = null;
-        mActiveKnownLocation = null;
         mMapClickMarkerOptions = null;
     }
 }
