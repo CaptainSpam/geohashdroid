@@ -47,6 +47,12 @@
         <item>GraticulePicker</item>
     </string-array>
 
+    <string-array name="menu_item_map_types">
+        <item>@string/menu_item_map_type_street</item>
+        <item>@string/menu_item_map_type_sat</item>
+        <item>@string/menu_item_map_type_terrain</item>
+    </string-array>
+
     <string-array name="known_locations_ranges_metric">
         <item>@string/known_locations_range_metric_1</item>
         <item>@string/known_locations_range_metric_2</item>

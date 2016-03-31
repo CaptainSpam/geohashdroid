@@ -16,6 +16,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -41,6 +44,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.VisibleRegion;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
@@ -49,6 +53,8 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -63,6 +69,8 @@ public class KnownLocationsPicker
         implements GoogleMap.OnMapLongClickListener,
                    GoogleMap.OnMarkerClickListener,
                    GoogleMap.OnInfoWindowClickListener {
+    private static final String DEBUG_TAG = "KnownLocationsPicker";
+
     // These get passed into the dialog.
     private static final String NAME = "name";
     private static final String LATLNG = "latLng";
@@ -73,6 +81,13 @@ public class KnownLocationsPicker
     private static final String CLICKED_MARKER = "clickedMarker";
 
     private static final String EDIT_DIALOG = "editDialog";
+
+    public enum LookupErrorCode {
+        OKAY,
+        IO_ERROR,
+        NO_GEOCODER,
+        INTERNAL_ERROR
+    }
 
     /**
      * This dialog pops up when either adding or editing a KnownLocation.
@@ -198,9 +213,124 @@ public class KnownLocationsPicker
         }
     }
 
-    private static final String DEBUG_TAG = "KnownLocationsPicker";
+    private class LocationSearchTask extends AsyncTask<String, Void, LookupErrorCode> {
+        private List<Address> mAddresses = new ArrayList<>();
+        private VisibleRegion mVis;
+        private float mBearing;
+
+        public LocationSearchTask(VisibleRegion vis, float bearing) {
+            super();
+
+            mVis = vis;
+            mBearing = bearing;
+        }
+
+        @Override
+        protected LookupErrorCode doInBackground(String... params) {
+            if(mGeocoder == null) return LookupErrorCode.NO_GEOCODER;
+
+            LookupErrorCode toReturn = LookupErrorCode.OKAY;
+
+            // As initial tests proved, we really should try to narrow down the
+            // location to roughly where the user is looking at the time.
+            // Remember that the projection can do all sorts of crazy stuff, so
+            // let's get the biggest rectangle we can from there.
+            double lowerLeftLat, lowerLeftLon, upperRightLat, upperRightLon;
+
+            // All we need is more or less an estimate of what the proper
+            // rectangle is.  Since we have the visible region AND we know what
+            // the rotation is, we can guess at a decent rectangle quickly.  And
+            // more than a bit hackishly.  Come with me on this journey.
+            if(mBearing >= 0.0f && mBearing < 45.0f) {
+                // 0 - 45: The near-left and far-right coordinates are directly
+                // what we want, more or less.
+                lowerLeftLat = mVis.nearLeft.latitude;
+                lowerLeftLon = mVis.nearLeft.longitude;
+                upperRightLat = mVis.farRight.latitude;
+                upperRightLon = mVis.farRight.longitude;
+            } else if(mBearing >= 45.0f && mBearing < 90.0f) {
+                // 45 - 90: Near-left works for the left boundary, but we need
+                // near-right for the bottom.  Similarly, far-left is the top
+                // and far-right is the right.
+                lowerLeftLat = mVis.nearRight.latitude;
+                lowerLeftLon = mVis.nearLeft.longitude;
+                upperRightLat = mVis.farLeft.latitude;
+                upperRightLon = mVis.farRight.longitude;
+            } else if(mBearing >= 90.0f && mBearing < 135.0f) {
+                // And we continue rotating in that manner.
+                lowerLeftLat = mVis.nearRight.latitude;
+                lowerLeftLon = mVis.nearRight.longitude;
+                upperRightLat = mVis.farLeft.latitude;
+                upperRightLon = mVis.farLeft.longitude;
+            } else if(mBearing >= 135.0f && mBearing < 180.0f) {
+                lowerLeftLat = mVis.farRight.latitude;
+                lowerLeftLon = mVis.nearRight.longitude;
+                upperRightLat = mVis.nearLeft.latitude;
+                upperRightLon = mVis.farLeft.longitude;
+            } else if(mBearing >= 180.0f && mBearing < 225.0f) {
+                lowerLeftLat = mVis.farRight.latitude;
+                lowerLeftLon = mVis.farRight.longitude;
+                upperRightLat = mVis.nearLeft.latitude;
+                upperRightLon = mVis.nearLeft.longitude;
+            } else if(mBearing >= 225.0f && mBearing < 270.0f) {
+                lowerLeftLat = mVis.farLeft.latitude;
+                lowerLeftLon = mVis.farRight.longitude;
+                upperRightLat = mVis.nearRight.latitude;
+                upperRightLon = mVis.nearLeft.longitude;
+            } else if(mBearing >= 270.0f && mBearing < 315.0f) {
+                lowerLeftLat = mVis.farLeft.latitude;
+                lowerLeftLon = mVis.farLeft.longitude;
+                upperRightLat = mVis.nearRight.latitude;
+                upperRightLon = mVis.nearRight.longitude;
+            } else {
+                lowerLeftLat = mVis.nearLeft.latitude;
+                lowerLeftLon = mVis.farRight.longitude;
+                upperRightLat = mVis.farRight.latitude;
+                upperRightLon = mVis.nearLeft.longitude;
+            }
+
+            // I really hope we're not calling this with a bunch of Strings, but
+            // sure, let's be defensive, why not?
+            try {
+                for(String s : params) {
+                    if(isCancelled()) break;
+
+                    List<Address> result = mGeocoder.getFromLocationName(
+                            s,
+                            10,
+                            lowerLeftLat,
+                            lowerLeftLon,
+                            upperRightLat,
+                            upperRightLon);
+
+                    // If there was no result, well, broaden the search.
+                    if(result == null || result.isEmpty())
+                        result = mGeocoder.getFromLocationName(s, 10);
+
+                    if(result != null)
+                        mAddresses.addAll(result);
+                }
+            } catch (IOException ioe) {
+                toReturn = LookupErrorCode.IO_ERROR;
+            } catch (IllegalArgumentException iae) {
+                toReturn = LookupErrorCode.INTERNAL_ERROR;
+            }
+
+            // Remember, we're returning the error code, not the list of
+            // addresses, since we want to report that error if need be.
+            return toReturn;
+        }
+
+        @Override
+        protected void onPostExecute(LookupErrorCode code) {
+            // Got a response!  Go go go!
+            searchResults(code, mAddresses);
+        }
+    }
 
     private GoogleMap mMap;
+    private Geocoder mGeocoder;
+    private LocationSearchTask mSearchTask;
 
     private boolean mMapIsReady = false;
 
@@ -233,6 +363,24 @@ public class KnownLocationsPicker
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+
+        // We need a Geocoder!  Well, not really; if we can't get one, remove
+        // the search option.
+        if(Geocoder.isPresent()) {
+            mGeocoder = new Geocoder(this);
+
+            // A valid Geocoder also means we can attach the click listner.
+            final EditText input = (EditText)findViewById(R.id.search);
+            findViewById(R.id.search_go).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    searchForLocation(input.getText().toString());
+                }
+            });
+
+        } else {
+            findViewById(R.id.search_box).setVisibility(View.GONE);
+        }
 
         // Our friend the map needs to get ready, too.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
@@ -288,6 +436,9 @@ public class KnownLocationsPicker
     protected void onStop() {
         // Service down!
         mGoogleClient.disconnect();
+
+        if(mSearchTask != null)
+            mSearchTask.cancel(true);
 
         super.onStop();
     }
@@ -540,5 +691,42 @@ public class KnownLocationsPicker
     private void removeActiveKnownLocation() {
         mActiveMarker = null;
         mMapClickMarkerOptions = null;
+    }
+
+    private void searchForLocation(@NonNull String input) {
+        // If we didn't init a Geocoder by this point, that means the search box
+        // shouldn't have been available.
+        if(mGeocoder == null) return;
+
+        // Same if this was a blank input.
+        if(input.trim().isEmpty()) return;
+
+        // Disable the input field and search button until we're done.
+        findViewById(R.id.search).setEnabled(false);
+        findViewById(R.id.search_go).setEnabled(false);
+
+        // Let's do it this way: We try to search, and if the Activity goes away
+        // by the time it comes back, we act like it never happened.  That's the
+        // simplest way around it.
+        if(mSearchTask != null) {
+            mSearchTask.cancel(false);
+        }
+
+        // Fire up a task!  Remember, getProjection and getCameraPosition need
+        // to be called on main, so we pass those in to the AsyncTask.
+        mSearchTask = new LocationSearchTask(mMap.getProjection().getVisibleRegion(), mMap.getCameraPosition().bearing);
+        mSearchTask.execute(input);
+    }
+
+    private void searchResults(LookupErrorCode code, @NonNull List<Address> addresses) {
+        // No matter what, a result means the searchy parts come back on.
+        findViewById(R.id.search).setEnabled(true);
+        findViewById(R.id.search_go).setEnabled(true);
+
+        Log.d(DEBUG_TAG, "Addresses found: " + addresses.size());
+
+        for(Address a : addresses) {
+            Log.d(DEBUG_TAG, "Address: " + a.toString());
+        }
     }
 }
