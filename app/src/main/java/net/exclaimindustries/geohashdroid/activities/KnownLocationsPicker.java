@@ -24,11 +24,14 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -39,7 +42,6 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -55,6 +57,7 @@ import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -79,11 +82,14 @@ public class KnownLocationsPicker
 
     // This is for restoring the map from an instance bundle.
     private static final String CLICKED_MARKER = "clickedMarker";
+    private static final String LAST_ADDRESSES = "lastAddresses";
+    private static final String RELOADING = "reloading";
 
     private static final String EDIT_DIALOG = "editDialog";
 
     public enum LookupErrorCode {
         OKAY,
+        NO_RESULTS,
         IO_ERROR,
         NO_GEOCODER,
         INTERNAL_ERROR
@@ -214,7 +220,7 @@ public class KnownLocationsPicker
     }
 
     private class LocationSearchTask extends AsyncTask<String, Void, LookupErrorCode> {
-        private List<Address> mAddresses = new ArrayList<>();
+        private List<Address> mAddresses;
         private VisibleRegion mVis;
         private float mBearing;
 
@@ -229,6 +235,7 @@ public class KnownLocationsPicker
         protected LookupErrorCode doInBackground(String... params) {
             if(mGeocoder == null) return LookupErrorCode.NO_GEOCODER;
 
+            mAddresses = new ArrayList<>();
             LookupErrorCode toReturn = LookupErrorCode.OKAY;
 
             // As initial tests proved, we really should try to narrow down the
@@ -318,6 +325,9 @@ public class KnownLocationsPicker
 
             // Remember, we're returning the error code, not the list of
             // addresses, since we want to report that error if need be.
+            if(mAddresses.isEmpty())
+                toReturn = LookupErrorCode.NO_RESULTS;
+
             return toReturn;
         }
 
@@ -333,12 +343,16 @@ public class KnownLocationsPicker
     private LocationSearchTask mSearchTask;
 
     private boolean mMapIsReady = false;
+    private boolean mReloaded = false;
 
     private BiMap<Marker, KnownLocation> mMarkerMap;
 
     private List<KnownLocation> mLocations;
     private Marker mMapClickMarker;
     private MarkerOptions mMapClickMarkerOptions;
+
+    private List<Address> mActiveAddresses;
+    private BiMap<Marker, Address> mActiveAddressMap;
 
     private Marker mActiveMarker;
 
@@ -369,12 +383,25 @@ public class KnownLocationsPicker
         if(Geocoder.isPresent()) {
             mGeocoder = new Geocoder(this);
 
-            // A valid Geocoder also means we can attach the click listner.
+            // A valid Geocoder also means we can attach the click listener.
             final EditText input = (EditText)findViewById(R.id.search);
-            findViewById(R.id.search_go).setOnClickListener(new View.OnClickListener() {
+            final View go = findViewById(R.id.search_go);
+            go.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     searchForLocation(input.getText().toString());
+                }
+            });
+
+            input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if(actionId == EditorInfo.IME_ACTION_GO) {
+                        searchForLocation(v.getText().toString());
+                        return true;
+                    }
+
+                    return false;
                 }
             });
 
@@ -447,9 +474,18 @@ public class KnownLocationsPicker
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        outState.putBoolean(RELOADING, true);
+
         // If we were looking at a click marker, hold on to it.
         if(mMapClickMarkerOptions != null) {
             outState.putParcelable(CLICKED_MARKER, mMapClickMarkerOptions);
+        }
+
+        if(mActiveAddresses != null) {
+            // mActiveAddresses is a List, not an ArrayList, so we have to do
+            // this manually.
+            Address addresses[] = new Address[mActiveAddresses.size()];
+            outState.putParcelableArray(LAST_ADDRESSES, mActiveAddresses.toArray(addresses));
         }
     }
 
@@ -457,10 +493,25 @@ public class KnownLocationsPicker
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
 
-        // Did we have a click marker?  Once the map's ready, we'll put it back
-        // in place.
-        if(savedInstanceState.containsKey(CLICKED_MARKER)) {
-            mMapClickMarkerOptions = savedInstanceState.getParcelable(CLICKED_MARKER);
+        if(savedInstanceState != null) {
+            mReloaded = savedInstanceState.getBoolean(RELOADING, false);
+
+            // Did we have a click marker?  Once the map's ready, we'll put it
+            // back in place.
+            if(savedInstanceState.containsKey(CLICKED_MARKER)) {
+                mMapClickMarkerOptions = savedInstanceState.getParcelable(CLICKED_MARKER);
+            }
+
+            if(savedInstanceState.containsKey(LAST_ADDRESSES)) {
+                // I'm actually surprised Geocoder doesn't return an ArrayList,
+                // or that there's no direct putParcelableList method.
+                Address[] addresses = (Address[])savedInstanceState.getParcelableArray(LAST_ADDRESSES);
+
+                if(addresses != null) {
+                    mActiveAddresses = new ArrayList<>();
+                    Collections.addAll(mActiveAddresses, addresses);
+                }
+            }
         }
     }
 
@@ -509,25 +560,19 @@ public class KnownLocationsPicker
             // Otherwise, well, default to dead zero, I guess.
             Log.d(DEBUG_TAG, "There are " + mLocations.size() + " known location(s).");
 
-            CameraUpdate cam;
+            // Throw any search addresses back on the map.
+            if(mActiveAddresses != null)
+                doAddressMarkers(mActiveAddresses);
 
-            if(!mLocations.isEmpty()) {
-                // Also, let's put the initial markers down.
-                initKnownLocations();
+            // Known locations also ought to be initialized.
+            initKnownLocations();
 
-                // The initial zoom should either be enough to hold all known
-                // locations, or just wherever the long-tap marker was if we're
-                // coming in from a restart.
-                if(mMapClickMarkerOptions != null) {
-                    // This will still be not null; the map ready callback
-                    // hasn't reset that.
-                    cam = CameraUpdateFactory.newCameraPosition(
-                            CameraPosition.builder()
-                                .target(mMapClickMarkerOptions.getPosition())
-                                .zoom(14.0f)
-                                .build()
-                    );
-                } else {
+            if(!mReloaded) {
+                // If we're reloading, I think the map fragment knows to restore
+                // itself.  If not, we default to the current KnownLocations.
+                if(!mLocations.isEmpty()) {
+                    CameraUpdate cam;
+
                     LatLngBounds.Builder builder = LatLngBounds.builder();
 
                     for(KnownLocation kl : mLocations) {
@@ -536,9 +581,8 @@ public class KnownLocationsPicker
 
                     LatLngBounds bounds = builder.build();
                     cam = CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.map_zoom_padding));
+                    mMap.animateCamera(cam);
                 }
-
-                mMap.animateCamera(cam);
             }
 
             return true;
@@ -622,10 +666,12 @@ public class KnownLocationsPicker
     private void initKnownLocations() {
         mMarkerMap = HashBiMap.create();
 
-        for(KnownLocation kl : mLocations) {
-            // Each KnownLocation gives us a MarkerOptions we can use.
-            Marker newMark = mMap.addMarker(makeExistingMarker(kl));
-            mMarkerMap.put(newMark, kl);
+        if(!mLocations.isEmpty()) {
+            for(KnownLocation kl : mLocations) {
+                // Each KnownLocation gives us a MarkerOptions we can use.
+                Marker newMark = mMap.addMarker(makeExistingMarker(kl));
+                mMarkerMap.put(newMark, kl);
+            }
         }
     }
 
@@ -723,10 +769,53 @@ public class KnownLocationsPicker
         findViewById(R.id.search).setEnabled(true);
         findViewById(R.id.search_go).setEnabled(true);
 
-        Log.d(DEBUG_TAG, "Addresses found: " + addresses.size());
+        // If anything went wrong, report it, but don't remove any markers we
+        // already have on the map.  But if we got something...
+        if(code == LookupErrorCode.OKAY) {
+            Log.d(DEBUG_TAG, "Addresses found: " + addresses.size());
 
+            for(Address a : addresses) {
+                Log.d(DEBUG_TAG, "Address: " + a.toString());
+            }
+
+            doAddressMarkers(addresses);
+
+            // Reposition the map, too.
+            LatLngBounds.Builder builder = LatLngBounds.builder();
+
+            for(Address a : addresses) {
+                builder.include(new LatLng(a.getLatitude(), a.getLongitude()));
+            }
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), getResources().getDimensionPixelSize(R.dimen.map_zoom_padding)));
+        } else {
+            Log.d(DEBUG_TAG, "SOMETHING BAD");
+        }
+    }
+
+    private void doAddressMarkers(@NonNull List<Address> addresses) {
+        // Wipe out any current markers, if any.
+        if(mActiveAddressMap != null) {
+            for(Marker m : mActiveAddressMap.keySet()) {
+                m.remove();
+            }
+        }
+
+        mActiveAddressMap = HashBiMap.create();
+
+        // Keep track of the current address list.
+        mActiveAddresses = addresses;
+
+        // Now, throw down a bunch of brand new markers.
         for(Address a : addresses) {
-            Log.d(DEBUG_TAG, "Address: " + a.toString());
+            LatLng curPos = new LatLng(a.getLatitude(), a.getLongitude());
+
+            MarkerOptions opts = new MarkerOptions()
+                    .position(curPos)
+                    .title(a.getFeatureName() == null ? curPos.latitude + ", " + curPos.longitude : a.getFeatureName())
+                    .snippet(getString(R.string.known_locations_tap_to_add));
+
+            mActiveAddressMap.put(mMap.addMarker(opts), a);
         }
     }
 }

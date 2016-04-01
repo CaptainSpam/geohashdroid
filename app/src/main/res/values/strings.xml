@@ -146,7 +146,7 @@
 
     <string name="notification_wait_for_network">Waiting for the network&#8230;</string>
 
-    <string name="known_locations_search">Search (or coordinates)</string>
+    <string name="known_locations_search">Search (or long-tap the map)</string>
     <string name="known_locations_search_description">Search</string>
     <string name="known_locations_tap_to_add">Tap to add location</string>
     <string name="known_locations_tap_to_edit">Tap to edit location</string>

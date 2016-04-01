@@ -22,7 +22,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_margin="@dimen/double_padding"
         android:background="@android:color/white"
@@ -35,7 +35,10 @@
             android:id="@+id/search"
             android:hint="@string/known_locations_search"
             android:layout_weight="1"
-            android:layout_gravity="center_vertical"/>
+            android:layout_gravity="center_vertical"
+            android:maxLines="1"
+            android:inputType="text"
+            android:imeOptions="actionGo"/>
 
         <ImageButton
             android:layout_width="wrap_content"
