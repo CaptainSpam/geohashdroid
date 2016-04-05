@@ -79,6 +79,7 @@ public class KnownLocationsPicker
     private static final String LATLNG = "latLng";
     private static final String RANGE = "range";
     private static final String EXISTING = "existing";
+    private static final String ADDRESS = "address";
 
     // This is for restoring the map from an instance bundle.
     private static final String CLICKED_MARKER = "clickedMarker";
@@ -101,6 +102,7 @@ public class KnownLocationsPicker
     public static class EditKnownLocationDialog extends DialogFragment {
         private LatLng mLocation;
         private KnownLocation mExisting;
+        private Address mAddress;
 
         @Override
         @SuppressLint("InflateParams")
@@ -130,6 +132,7 @@ public class KnownLocationsPicker
             name = args.getString(NAME);
             range = convertRangeToPosition(args.getDouble(RANGE));
             mExisting = args.getParcelable(EXISTING);
+            mAddress = args.getParcelable(ADDRESS);
             mLocation = args.getParcelable(LATLNG);
 
             // If there's a saved instance state, that overrides the name and
@@ -184,11 +187,19 @@ public class KnownLocationsPicker
                     .setPositiveButton(R.string.ok_label, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            pickerActivity.confirmKnownLocationFromDialog(
-                                    nameInput.getText().toString(),
-                                    mLocation,
-                                    convertPositionToRange(spinner.getSelectedItemPosition()),
-                                    mExisting);
+                            // There HAS to be a better way to do this...
+                            if(mAddress != null)
+                                pickerActivity.confirmKnownLocationFromDialog(
+                                        nameInput.getText().toString(),
+                                        mLocation,
+                                        convertPositionToRange(spinner.getSelectedItemPosition()),
+                                        mAddress);
+                            else
+                                pickerActivity.confirmKnownLocationFromDialog(
+                                        nameInput.getText().toString(),
+                                        mLocation,
+                                        convertPositionToRange(spinner.getSelectedItemPosition()),
+                                        mExisting);
                             dismiss();
                         }
                     })
@@ -612,18 +623,22 @@ public class KnownLocationsPicker
 
     @Override
     public void onInfoWindowClick(Marker marker) {
-        // Is this marker associated with a KnownLocation?  If so, we use the
-        // data from that to init the dialog, AND we keep track of it being an
-        // active KnownLocation/Marker pair.
+        // Is this marker associated with a KnownLocation or Address?  If so, we
+        // can init the data with that, AND keep track of it.
         String name = "";
         double range = 5.0;
 
         KnownLocation loc = null;
+        Address address = null;
         if(mMarkerMap.containsKey(marker)) {
             // Got it!
             loc = mMarkerMap.get(marker);
             name = loc.getName();
             range = loc.getRange();
+        } else if(mActiveAddressMap.containsKey(marker)) {
+            // An address!
+            address = mActiveAddressMap.get(marker);
+            name = address.getFeatureName();
         }
 
         mActiveMarker = marker;
@@ -632,6 +647,7 @@ public class KnownLocationsPicker
         Bundle args = new Bundle();
         args.putString(NAME, name);
         args.putParcelable(EXISTING, loc);
+        args.putParcelable(ADDRESS, address);
         args.putParcelable(LATLNG, marker.getPosition());
         args.putDouble(RANGE, range);
 
@@ -678,6 +694,31 @@ public class KnownLocationsPicker
     @NonNull
     private MarkerOptions makeExistingMarker(@NonNull KnownLocation loc) {
         return loc.makeMarker(this).snippet(getString(R.string.known_locations_tap_to_edit));
+    }
+
+    private void confirmKnownLocationFromDialog(@NonNull String name,
+                                                @NonNull LatLng location,
+                                                double range,
+                                                @NonNull Address address) {
+        // An address!  We know what to do with this, right?
+        KnownLocation newLoc = new KnownLocation(name, location, range);
+
+        // Of course we do!  It's guaranteed to be a new marker!
+        mLocations.add(newLoc);
+
+        // And what's more, it's guaranteed to have an old version on the map!
+        mActiveAddressMap.inverse().remove(address).remove();
+
+        // Then, replace it with the new one.
+        Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
+        mMarkerMap.forcePut(newMark, newLoc);
+        KnownLocation.storeKnownLocations(this, mLocations);
+
+        mActiveAddresses.remove(address);
+        if(mActiveMarker != null) mActiveMarker.remove();
+
+        // Done!
+        removeActiveKnownLocation();
     }
 
     private void confirmKnownLocationFromDialog(@NonNull String name,
