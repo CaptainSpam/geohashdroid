@@ -51,6 +51,7 @@ import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
@@ -65,6 +66,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -124,6 +127,8 @@ public class CentralMap
     private ErrorBanner mBanner;
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
+
+    private List<Marker> mKnownLocationMarkers;
 
     /**
      * <p>
@@ -1098,6 +1103,26 @@ public class CentralMap
             if(mLastKnownLocation != null && LocationUtil.isLocationNewEnough(mLastKnownLocation))
                 mCurrentMode.onLocationChanged(mLastKnownLocation);
             invalidateOptionsMenu();
+
+            // Now, read all the KnownLocations and put them on the map.  Remove
+            // anything we had before.
+            if(mKnownLocationMarkers != null)
+                for(Marker m : mKnownLocationMarkers)
+                    m.remove();
+
+            mKnownLocationMarkers = new LinkedList<>();
+
+            // Now, ONLY if prefs say so...
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+            if(prefs.getBoolean(GHDConstants.PREF_SHOW_KNOWN_LOCATIONS, true)) {
+                for(KnownLocation kl : KnownLocation.getAllKnownLocations(this)) {
+                    // No snippet this time; there's nothing to do with the marker
+                    // other than show its name.
+                    Marker mark = mMap.addMarker(kl.makeMarker(this));
+                    mKnownLocationMarkers.add(mark);
+                }
+            }
 
             return true;
         } else {
