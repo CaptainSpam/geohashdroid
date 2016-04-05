@@ -324,7 +324,7 @@ public class KnownLocation implements Parcelable {
         toReturn.flat(false)
                 .draggable(false)
                 .icon(BitmapDescriptorFactory.fromBitmap(buildMarkerBitmap(c)))
-                .anchor(0.5f, 0.5f)
+                .anchor(0.5f, 1.0f)
                 .position(mLocation)
                 .title(mName);
 
