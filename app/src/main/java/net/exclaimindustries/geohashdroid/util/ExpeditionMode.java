@@ -854,7 +854,7 @@ public class ExpeditionMode
 
     private boolean needsNearbyPoints() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
-        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
+        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true);
     }
 
     private boolean showInfoBox() {

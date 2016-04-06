@@ -17,13 +17,6 @@ import java.text.DecimalFormat;
  */
 public final class GHDConstants {
     /**
-     * What was once the preferences base.  Now it shouldn't be used except in
-     * cases where we need to convert the user's old preferences into the new
-     * default SharedPreferences object.
-     */
-    public static final String PREFS_BASE = "GeohashDroid";
-
-    /**
      * The Intent action used to start the radar.  That's... a thing people
      * still use, right?
      */

@@ -40,7 +40,7 @@
         android:title="@string/pref_coordunits_title" />
 
     <CheckBoxPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="NearbyPoints"
         android:persistent="true"
         android:summaryOff="@string/pref_nearbypoints_off"
