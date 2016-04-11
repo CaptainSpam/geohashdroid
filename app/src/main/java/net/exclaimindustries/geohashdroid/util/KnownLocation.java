@@ -33,6 +33,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
 
@@ -261,26 +262,20 @@ public class KnownLocation implements Parcelable {
 
     /**
      * Determines if there is ANY valid non-global hashpoint close enough to
-     * this KnownLocation, given the hash values provided.  That is, it will
-     * check all nine graticules around this KnownLocation to see if any of them
-     * are within range.  Note that if the range was specified as zero or less,
-     * this will always return false.
+     * this KnownLocation.  That is, it will check all nine graticules around
+     * this KnownLocation to see if any of them are within range.  Note that if
+     * the range was specified as zero or less, this will always return false.
      *
-     * @param latHash fractional portion of the latitude hash
-     * @param lonHash fractional portion of the longitude hash
+     * @param con a Context so we can get additional Infos
+     * @param cal a Calendar representing the date to use
      * @return true if anything is close enough, false if not
-     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
+     * @throws IllegalArgumentException if there isn't any stock data for the given Calendar
      */
-    public boolean isCloseEnough(double latHash, double lonHash) {
-        if(latHash < 0 || latHash > 1 || lonHash < 0 || latHash > 1)
-            throw new IllegalArgumentException("Those aren't valid hash values!");
+    public boolean isCloseEnough(@NonNull Context con,
+                                 @NonNull Calendar cal) throws IllegalArgumentException {
+        if(mRange <= 0.0) return false;
 
-        if(mRange < 0.0) return false;
-
-        // Let's base our check around the Graticule in which this KnownLocation
-        // actually lies.  The Graticule class itself can handle all the offset
-        // stuff and all the requisite hacks for the prime meridian, equator,
-        // and 180E/W lines.
+        // Get us a base Graticule.
         Graticule base = new Graticule(mLocation);
 
         for(int i = -1; i <= 1; i++) {
@@ -291,11 +286,20 @@ public class KnownLocation implements Parcelable {
                     check = Graticule.createOffsetFrom(base, i, j);
                 }
 
-                // ...then, make a LatLng out of it...
-                LatLng loc = check.makePointFromHash(latHash, lonHash);
+                // Okay, now we can get an Info...
+                Info info = HashBuilder.getStoredInfo(con, cal, check);
 
-                // ...and check.  Stop at the first success.
-                if(isCloseEnough(loc)) return true;
+                if(info == null) {
+                    // If the info is ever null, we're asking for a date that
+                    // doesn't exist yet.  Doesn't matter if some of the infos
+                    // in this loop succeeded (unless we already returned true);
+                    // ALL the infos SHOULD ALWAYS exist if any of them do, so
+                    // that's still really really bad.
+                    throw new IllegalArgumentException("Info didn't exist in the cache for that date!");
+                }
+
+                // We have a location!
+                if(isCloseEnough(info.getFinalDestinationLatLng())) return true;
             }
         }
 
