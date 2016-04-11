@@ -157,6 +157,9 @@ public class Graticule implements Parcelable {
      */
     @NonNull
     public static Graticule createOffsetFrom(@NonNull Graticule g, int latOff, int lonOff) {
+        // If we're just returning the same Graticule, seriously, come on now.
+        if(latOff == 0 && lonOff == 0) return g;
+
         // We already have all the data we need from the old Graticule.  But,
         // we need to account for passing through the Prime Meridian and/or
         // equator.  If the sign changes, decrement the amount of the change by
