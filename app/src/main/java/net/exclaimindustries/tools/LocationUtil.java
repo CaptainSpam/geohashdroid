@@ -9,7 +9,10 @@
 package net.exclaimindustries.tools;
 
 import android.location.Location;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
+import com.google.android.gms.maps.model.LatLng;
 
 /**
  * <code>LocationUtil</code> holds any interesting {@link Location}-related
@@ -45,5 +48,20 @@ public class LocationUtil {
      */
     public static boolean isLocationNewEnough(@Nullable Location l, long age) {
         return l != null && System.currentTimeMillis() - l.getTime() < age;
+    }
+
+    /**
+     * Returns a Location based on the given LatLng.
+     *
+     * @param latLng a LatLng to Locationify
+     * @return a Location
+     */
+    @NonNull
+    public static Location latLngToLocation(@NonNull LatLng latLng) {
+        Location loc = new Location("");
+        loc.setLatitude(latLng.latitude);
+        loc.setLongitude(latLng.longitude);
+
+        return loc;
     }
 }

@@ -27,6 +27,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.tools.LocationUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -241,6 +242,17 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
+     * Convenience method to determine the distance from this KnownLocation to
+     * the given Info.
+     *
+     * @param info the Info to check
+     * @return the distance from here to the Info, in meters
+     */
+    public double getDistanceFrom(@NonNull Info info) {
+        return (double)LocationUtil.latLngToLocation(mLocation).distanceTo(info.getFinalLocation());
+    }
+
+    /**
      * Determines if this KnownLocation is close enough to the given coordinates
      * to trigger a notification.  Note that if the range was specified as zero
      * or less, this will always return false.
@@ -261,22 +273,23 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
-     * Determines if there is ANY valid non-global hashpoint close enough to
-     * this KnownLocation.  That is, it will check all nine graticules around
-     * this KnownLocation to see if any of them are within range.  Note that if
-     * the range was specified as zero or less, this will always return false.
+     * Determines the closest non-globalhash Info to this KnownLocation for the
+     * given date.  That is, it will check all nine graticules around this
+     * KnownLocation and figures out which has the closest hashpoint.
      *
      * @param con a Context so we can get additional Infos
      * @param cal a Calendar representing the date to use
-     * @return true if anything is close enough, false if not
+     * @return the closest Info to this KnownLocation
      * @throws IllegalArgumentException if there isn't any stock data for the given Calendar
      */
-    public boolean isCloseEnough(@NonNull Context con,
-                                 @NonNull Calendar cal) throws IllegalArgumentException {
-        if(mRange <= 0.0) return false;
-
+    @NonNull
+    public Info getClosestInfo(@NonNull Context con,
+                               @NonNull Calendar cal) throws IllegalArgumentException {
         // Get us a base Graticule.
         Graticule base = new Graticule(mLocation);
+
+        double bestSoFar = Double.MAX_VALUE;
+        Info bestInfo = null;
 
         for(int i = -1; i <= 1; i++) {
             for(int j = -1; j <= 1; j++) {
@@ -298,13 +311,20 @@ public class KnownLocation implements Parcelable {
                     throw new IllegalArgumentException("Info didn't exist in the cache for that date!");
                 }
 
-                // We have a location!
-                if(isCloseEnough(info.getFinalDestinationLatLng())) return true;
+                // Now, how close is it?
+                double dist = getDistanceFrom(info);
+                if(dist < bestSoFar) {
+                    bestSoFar = dist;
+                    bestInfo = info;
+                }
             }
         }
 
-        // If we fell out of the for loops, we failed.
-        return false;
+        // Well, whatever we have, it's the closest!
+        if(bestInfo == null)
+            throw new IllegalArgumentException("Couldn't find any Infos at all to compare!  The hell?");
+
+        return bestInfo;
     }
 
     /**
