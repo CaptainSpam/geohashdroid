@@ -47,6 +47,7 @@ public class KnownLocation implements Parcelable {
     private String mName;
     private LatLng mLocation;
     private double mRange;
+    private boolean mRestrictGraticule = false;
 
     private static final String DEBUG_TAG = "KnownLocation";
 
@@ -61,10 +62,12 @@ public class KnownLocation implements Parcelable {
      * @param name the name of this mLocation
      * @param location a LatLng where it can be found
      * @param range how close it has to be before it triggers a notification, in km
+     * @param restrictGraticule true to only consider the location's native graticule for range purposes, rather than find the closest one
      */
-    public KnownLocation(@NonNull String name, @NonNull LatLng location, double range) {
+    public KnownLocation(@NonNull String name, @NonNull LatLng location, double range, boolean restrictGraticule) {
         mName = name;
         mRange = range;
+        mRestrictGraticule = restrictGraticule;
 
         // The marker needs SOME title.
         if(mName.isEmpty()) mName = "?";
@@ -87,6 +90,7 @@ public class KnownLocation implements Parcelable {
         dest.writeString(mName);
         dest.writeParcelable(mLocation, 0);
         dest.writeDouble(mRange);
+        dest.writeByte((byte)(mRestrictGraticule ? 0 : 1));
     }
 
     public void readFromParcel(Parcel in) {
@@ -94,6 +98,7 @@ public class KnownLocation implements Parcelable {
         mName = in.readString();
         mLocation = in.readParcelable(KnownLocation.class.getClassLoader());
         mRange = in.readDouble();
+        mRestrictGraticule = in.readByte() != 0;
     }
 
     public static final Parcelable.Creator<KnownLocation> CREATOR = new Parcelable.Creator<KnownLocation>() {
@@ -242,6 +247,27 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
+     * <p>
+     * Returns whether or not this KnownLocation is graticule-restricted.  That
+     * is, if it should ONLY compare the location's native Graticule when
+     * looking for the closest Info.
+     * </p>
+     *
+     * <p>
+     * I'll be honest, I'm not sure how often this'll be used, but given I
+     * seriously misjudged how much everyone missed "always start in a specific
+     * Graticule" mode (as opposed to "always start with the closest hashpoint"
+     * mode, which was the default as per 0.9.0), I feel I ought to include this
+     * option.
+     * </p>
+     *
+     * @return true if this is graticule-restricted, false if not
+     */
+    public boolean isRestrictedGraticule() {
+        return mRestrictGraticule;
+    }
+
+    /**
      * Convenience method to determine the distance from this KnownLocation to
      * the given Info.
      *
@@ -275,7 +301,9 @@ public class KnownLocation implements Parcelable {
     /**
      * Determines the closest non-globalhash Info to this KnownLocation for the
      * given date.  That is, it will check all nine graticules around this
-     * KnownLocation and figures out which has the closest hashpoint.
+     * KnownLocation and figures out which has the closest hashpoint.  Note that
+     * if graticule restriction is on for this KnownLocation, it will ALWAYS
+     * return the Info for the graticule in which this location lives.
      *
      * @param con a Context so we can get additional Infos
      * @param cal a Calendar representing the date to use
@@ -287,6 +315,17 @@ public class KnownLocation implements Parcelable {
                                @NonNull Calendar cal) throws IllegalArgumentException {
         // Get us a base Graticule.
         Graticule base = new Graticule(mLocation);
+
+        // If we're in graticule restriction, short-circuit it to ONLY stick
+        // to the base Graticule.
+        if(mRestrictGraticule) {
+            Info info = HashBuilder.getStoredInfo(con, cal, base);
+
+            if(info == null)
+                throw new IllegalArgumentException("Info didn't exist in the cache for that date!");
+
+            return info;
+        }
 
         double bestSoFar = Double.MAX_VALUE;
         Info bestInfo = null;
