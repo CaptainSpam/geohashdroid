@@ -450,6 +450,8 @@ public class Info implements Parcelable {
         // Now, loop through all the nearby Infos to see if any of those are any
         // better.
         for(Info i : nearby) {
+            if(i == null) continue;
+
             float dist = loc.distanceTo(i.getFinalLocation());
 
             if(dist < bestDistance) {

@@ -29,6 +29,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 /**
@@ -390,31 +391,7 @@ public class HashBuilder {
 
             return tempstring.toString();
         }
-        
-        /**
-         * Updates the Handler that will be informed when this thread is done.
-         * 
-         * @param h the Handler what gets updaterin' (can be null)
-         */
-        public void changeHandler(Handler h) {
-            mHandler = h;
-        }
-        
-        /**
-         * Abort the current connection, if one exists.
-         */
-        public void abort() {
-            if(mRequest != null)
-            {
-                // Bail out of the request (if there is one)...
-                mRequest.abort();
-            }
-            // Put the brakes on the handler...
-            mHandler = null;
-            // And change status.
-            mStatus = ABORTED;
-        }
-        
+
         /**
          * Returns whatever the current status is.  This is returned as a part
          * of the Handler callback, but if, for instance, the Activity was
@@ -430,17 +407,7 @@ public class HashBuilder {
 
     // You don't construct a HashBuilder!  You gotta EARN it!
     private HashBuilder() { }
-   
-    /**
-     * Initializes HashBuilder.  This should be called only once.  Well, it can
-     * be called more often, but it won't do anything past the first time.
-     */
-    public static synchronized void initialize(Context c) {
-        if(mStore == null) {
-            mStore = new StockStoreDatabase(c).init();
-        }
-    }
-    
+
     /**
      * Initializes and returns a StockStoreDatabase object.  This should be used
      * in ALL cases the mStore is needed to ensure it actually exists.  It can,
@@ -470,25 +437,6 @@ public class HashBuilder {
     public static StockRunner requestStockRunner(Context con, Calendar c, Graticule g, Handler h) {
         return new StockRunner(con, c, g, h);
     }
-    
-    /**
-     * Checks if the stock price for the given date and graticule (accounting
-     * for the 30W rule) is stored and can be retrieved without going to the
-     * internet.  If this returns true, the interface should NOT display a popup
-     * and should expect to receive a new Info object quickly.
-     * 
-     * @param con Context used to retrieve the database, if needed
-     * @param c Calendar object with the adventure date requested (this will
-     *          account for the 30W Rule, so don't put it in) 
-     * @param g Graticule to use
-     * @return true if the stock value is stored, false if we need to go to the
-     *         internet for it
-     */
-    public static boolean hasStockStored(Context con, Calendar c, Graticule g) {
-//        Calendar sCal = Info.makeAdjustedCalendar(c, g);
-        
-        return getQuickCache(c, g) != null || getStore(con).getInfo(c, g) != null;
-    }
 
     /**
      * Attempt to construct an Info object from stored info and return it,
@@ -502,11 +450,9 @@ public class HashBuilder {
      * @return the Info object for the given data, or null if can't be built
      *         without going to the internet.
      */
+    @Nullable
     public static Info getStoredInfo(Context con, Calendar c, Graticule g) {
-        // First, check the quick cache.
-//        Calendar sCal = Info.makeAdjustedCalendar(c, g);
-
-        // If it's in the quick cache, use it.
+        // First, check the quick cache.  If it's in the quick cache, use it.
         Log.v(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c)
                 + ((g == null || g.uses30WRule()) ? " with 30W rule" : " without 30W rule"));
         Info result = getQuickCache(c, g);
