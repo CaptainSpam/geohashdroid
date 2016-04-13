@@ -29,6 +29,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -78,6 +79,7 @@ public class KnownLocationsPicker
     private static final String NAME = "name";
     private static final String LATLNG = "latLng";
     private static final String RANGE = "range";
+    private static final String RESTRICT = "restrict";
     private static final String EXISTING = "existing";
     private static final String ADDRESS = "address";
 
@@ -127,10 +129,12 @@ public class KnownLocationsPicker
 
             String name;
             int range;
+            boolean restrict;
 
             // Right!  Go to the arguments first.
             name = args.getString(NAME);
             range = convertRangeToPosition(args.getDouble(RANGE));
+            restrict = args.getBoolean(RESTRICT);
             mExisting = args.getParcelable(EXISTING);
             mAddress = args.getParcelable(ADDRESS);
             mLocation = args.getParcelable(LATLNG);
@@ -141,6 +145,7 @@ public class KnownLocationsPicker
             if(savedInstanceState != null) {
                 name = savedInstanceState.getString(NAME);
                 range = savedInstanceState.getInt(RANGE);
+                restrict = savedInstanceState.getBoolean(RESTRICT);
             }
 
             // Now then!  Let's create this mess.  First, if this is a location
@@ -180,6 +185,9 @@ public class KnownLocationsPicker
             spinner.setAdapter(adapter);
             spinner.setSelection(range);
 
+            final CheckBox restrictBox = (CheckBox)dialogView.findViewById(R.id.restrict);
+            restrictBox.setChecked(restrict);
+
             // There!  Now, let's make it a dialog.
             return new AlertDialog.Builder(pickerActivity)
                     .setView(dialogView)
@@ -193,12 +201,14 @@ public class KnownLocationsPicker
                                         nameInput.getText().toString(),
                                         mLocation,
                                         convertPositionToRange(spinner.getSelectedItemPosition()),
+                                        restrictBox.isChecked(),
                                         mAddress);
                             else
                                 pickerActivity.confirmKnownLocationFromDialog(
                                         nameInput.getText().toString(),
                                         mLocation,
                                         convertPositionToRange(spinner.getSelectedItemPosition()),
+                                        restrictBox.isChecked(),
                                         mExisting);
                             dismiss();
                         }
@@ -574,6 +584,8 @@ public class KnownLocationsPicker
             // Throw any search addresses back on the map.
             if(mActiveAddresses != null)
                 doAddressMarkers(mActiveAddresses);
+            else
+                mActiveAddressMap = HashBiMap.create();
 
             // Known locations also ought to be initialized.
             initKnownLocations();
@@ -627,6 +639,7 @@ public class KnownLocationsPicker
         // can init the data with that, AND keep track of it.
         String name = "";
         double range = 5.0;
+        boolean restrict = false;
 
         KnownLocation loc = null;
         Address address = null;
@@ -635,6 +648,7 @@ public class KnownLocationsPicker
             loc = mMarkerMap.get(marker);
             name = loc.getName();
             range = loc.getRange();
+            restrict = loc.isRestrictedGraticule();
         } else if(mActiveAddressMap.containsKey(marker)) {
             // An address!
             address = mActiveAddressMap.get(marker);
@@ -650,6 +664,7 @@ public class KnownLocationsPicker
         args.putParcelable(ADDRESS, address);
         args.putParcelable(LATLNG, marker.getPosition());
         args.putDouble(RANGE, range);
+        args.putBoolean(RESTRICT, restrict);
 
         EditKnownLocationDialog dialog = new EditKnownLocationDialog();
         dialog.setArguments(args);
@@ -699,9 +714,10 @@ public class KnownLocationsPicker
     private void confirmKnownLocationFromDialog(@NonNull String name,
                                                 @NonNull LatLng location,
                                                 double range,
+                                                boolean restrictGraticule,
                                                 @NonNull Address address) {
         // An address!  We know what to do with this, right?
-        KnownLocation newLoc = new KnownLocation(name, location, range);
+        KnownLocation newLoc = new KnownLocation(name, location, range, restrictGraticule);
 
         // Of course we do!  It's guaranteed to be a new marker!
         mLocations.add(newLoc);
@@ -724,9 +740,10 @@ public class KnownLocationsPicker
     private void confirmKnownLocationFromDialog(@NonNull String name,
                                                 @NonNull LatLng location,
                                                 double range,
+                                                boolean restrictGraticule,
                                                 @Nullable KnownLocation existing) {
         // Okay, we got location data in.  Make one!
-        KnownLocation newLoc = new KnownLocation(name, location, range);
+        KnownLocation newLoc = new KnownLocation(name, location, range, restrictGraticule);
 
         // Is this new or a replacement?
         if(existing != null) {

@@ -155,6 +155,7 @@
     <string name="known_locations_add_name">Location name</string>
     <string name="known_locations_add_name_hint">Name</string>
     <string name="known_locations_add_range">Notification range</string>
+    <string name="known_locations_add_restrict">Only match with hashpoints in this graticule (and globalhashes)</string>
     <string name="known_locations_delete">Delete this location</string>
 
     <string name="known_locations_range_imperial_1">Really close (~1.2mi)</string>
