@@ -360,7 +360,7 @@ public class AlarmService extends WakefulIntentService {
             // themselves.
             Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
             Calendar alarmTime = makeNineThirty(cal);
-            
+
             if(alarmTime.before(cal)) {
                 alarmTime.add(Calendar.DAY_OF_MONTH, 1);
             }
@@ -532,13 +532,8 @@ public class AlarmService extends WakefulIntentService {
             Collections.sort(matched);
 
             // First one's the winner!
-            Notification.Builder builder = getFreshNotificationBuilder();
-            builder.setContentTitle(getString(R.string.known_locations_alarm_title, matched.get(0).knownLocation.getName()));
-
-            if(matched.size() > 1)
-                builder.setContentText(getString(R.string.known_locations_alarm_more, matched.size() - 1));
-            else
-                builder.setContentText(getString(R.string.known_locations_alarm_distance, UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)matched.get(0).distance)));
+            Notification.Builder builder = getFreshNotificationBuilder(matched);
+            builder.setContentTitle(getString(R.string.known_locations_alarm_title));
 
             Intent intent = new Intent(this, CentralMap.class)
                     .setAction(START_GRATICULE)
@@ -554,13 +549,8 @@ public class AlarmService extends WakefulIntentService {
         if(!matchedGlobal.isEmpty()) {
             Collections.sort(matchedGlobal);
 
-            Notification.Builder builder = getFreshNotificationBuilder();
-            builder.setContentTitle(getString(R.string.known_locations_alarm_title_global, matched.get(0).knownLocation.getName()));
-
-            if(matchedGlobal.size() > 1)
-                builder.setContentText(getString(R.string.known_locations_alarm_more, matchedGlobal.size() - 1));
-            else
-                builder.setContentText(getString(R.string.known_locations_alarm_distance, UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)matched.get(0).distance)));
+            Notification.Builder builder = getFreshNotificationBuilder(matchedGlobal);
+            builder.setContentTitle(getString(R.string.known_locations_alarm_title_global));
 
             Intent intent = new Intent(this, CentralMap.class)
                     .setAction(START_GLOBALHASH)
@@ -568,17 +558,32 @@ public class AlarmService extends WakefulIntentService {
 
             builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
 
-            mNotificationManager.notify(R.id.alarm_known_location, builder.build());
+            mNotificationManager.notify(R.id.alarm_known_location_global, builder.build());
         }
     }
 
-    private Notification.Builder getFreshNotificationBuilder() {
+    private Notification.Builder getFreshNotificationBuilder(List<KnownLocationMatchData> data) {
+        KnownLocationMatchData match = data.get(0);
+        String contentText = getString(R.string.known_locations_alarm_distance,
+                UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),
+                match.knownLocation.getName());
+        String summaryText = getResources().getQuantityString(R.plurals.known_locations_alarm_more, data.size() - 1, data.size() - 1);
+
         Notification.Builder builder = new Notification.Builder(this)
                 .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
                 .setSmallIcon(R.drawable.ic_stat_av_new_releases)
                 .setAutoCancel(true)
                 .setOngoing(false)
-                .setLights(Color.WHITE, 500, 2000);
+                .setLights(Color.WHITE, 500, 2000)
+                .setContentText(contentText);
+
+        // If there's more than one known location nearby, make the notification
+        // expandable with a bit of extra text mentioning just how many more.
+        if(data.size() > 1) {
+            builder.setStyle(new Notification.BigTextStyle()
+                    .bigText(contentText)
+                    .setSummaryText(summaryText));
+        }
 
         // Since these notifications will be displaying location names, they
         // may as well be private.

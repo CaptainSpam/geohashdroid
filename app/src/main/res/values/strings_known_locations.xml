@@ -22,8 +22,12 @@
     <string name="known_locations_range_metric_3">Sort of close (~10km)</string>
     <string name="known_locations_range_metric_4">Not all that close (~20km)</string>
 
-    <string name="known_locations_alarm_title">A hashpoint is close to %1$s!</string>
-    <string name="known_locations_alarm_title_global">The Globalhash is close to %1$s!</string>
-    <string name="known_locations_alarm_distance">It\'s just %1$s away!</string>
-    <string name="known_locations_alarm_more">(it\'s also close to %1$d more)</string>
+    <string name="known_locations_alarm_title">A hashpoint is nearby!</string>
+    <string name="known_locations_alarm_title_global">The Globalhash is nearby!</string>
+    <string name="known_locations_alarm_distance">It\'s just %1$s away from %2$s!</string>
+
+    <plurals name="known_locations_alarm_more">
+        <item quantity="one">(it\'s also close to %1$d more known location!)</item>
+        <item quantity="other">(it\'s also close to %1$d more known locations!)</item>
+    </plurals>
 </resources>
