@@ -169,8 +169,12 @@ public class AlarmService extends WakefulIntentService {
         public void onReceive(Context context, Intent intent) {
             // Check the Intent for the alarm flag.  We'll just straight give up
             // if it's not an alarm, since we don't really care.
-            int flags = intent.getIntExtra(StockService.EXTRA_REQUEST_FLAGS, 0);
-            
+            Bundle stuff = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            int flags = 0;
+            if(stuff != null) {
+                flags = stuff.getInt(StockService.EXTRA_REQUEST_FLAGS, 0);
+            }
+
             if((flags & StockService.FLAG_ALARM) != 0)
             {
                 Log.d(DEBUG_TAG, "StockService returned with an alarming response!");
@@ -295,7 +299,7 @@ public class AlarmService extends WakefulIntentService {
         request.setAction(StockService.ACTION_STOCK_REQUEST)
             .putExtra(StockService.EXTRA_GRATICULE, g)
             .putExtra(StockService.EXTRA_DATE, cal)
-            .putExtra(StockService.EXTRA_REQUEST_ID, (int)(cal.getTimeInMillis() / 1000))
+            .putExtra(StockService.EXTRA_REQUEST_ID, cal.getTimeInMillis() / 1000)
             .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM);
         
         // The notification goes up first.
