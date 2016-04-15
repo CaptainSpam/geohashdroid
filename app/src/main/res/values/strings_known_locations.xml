@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="known_locations_search">Search (or long-tap the map)</string>
+    <string name="known_locations_search_description">Search</string>
+    <string name="known_locations_tap_to_add">Tap to add location</string>
+    <string name="known_locations_tap_to_edit">Tap to edit location</string>
+    <string name="known_locations_title_add">Add new location</string>
+    <string name="known_locations_title_edit">Edit location</string>
+    <string name="known_locations_add_name">Location name</string>
+    <string name="known_locations_add_name_hint">Name</string>
+    <string name="known_locations_add_range">Notification range</string>
+    <string name="known_locations_add_restrict">Only match with hashpoints in this graticule (and globalhashes)</string>
+    <string name="known_locations_delete">Delete this location</string>
+
+    <string name="known_locations_range_imperial_1">Really close (~1.2mi)</string>
+    <string name="known_locations_range_imperial_2">Pretty close (~3.1mi)</string>
+    <string name="known_locations_range_imperial_3">Sort of close (~6.2mi)</string>
+    <string name="known_locations_range_imperial_4">Not all that close (~12.4mi)</string>
+
+    <string name="known_locations_range_metric_1">Really close (~2km)</string>
+    <string name="known_locations_range_metric_2">Pretty close (~5km)</string>
+    <string name="known_locations_range_metric_3">Sort of close (~10km)</string>
+    <string name="known_locations_range_metric_4">Not all that close (~20km)</string>
+
+    <string name="known_locations_alarm_title">A hashpoint is close to %1$s!</string>
+    <string name="known_locations_alarm_title_global">The Globalhash is close to %1$s!</string>
+    <string name="known_locations_alarm_distance">It\'s just %1$s away!</string>
+    <string name="known_locations_alarm_more">(it\'s also close to %1$d more)</string>
+</resources>

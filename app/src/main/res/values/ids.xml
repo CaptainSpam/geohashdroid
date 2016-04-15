@@ -2,6 +2,10 @@
 <resources>
     <!-- Notification ID for when the alarm is grabbing stocks. -->
     <item name="alarm_notification" type="id" />
+    <!-- Notification ID for listing known locations near the hashpoint. -->
+    <item name="alarm_known_location" type="id" />
+    <!-- Notification ID for listing known locations near the globalhash. -->
+    <item name="alarm_known_location_global" type="id" />
     <!-- Notification ID for when an active wiki connection is going on. -->
     <item name="wiki_working_notification" type="id" />
     <!-- Notification ID for when we're waiting for a connection for the wiki or

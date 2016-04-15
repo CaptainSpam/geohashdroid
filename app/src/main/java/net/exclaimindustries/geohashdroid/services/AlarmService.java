@@ -7,7 +7,6 @@
  */
 package net.exclaimindustries.geohashdroid.services;
 
-import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -16,20 +15,29 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.KnownLocation;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.AndroidUtil;
 
 import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -98,7 +106,22 @@ public class AlarmService extends WakefulIntentService {
      * Directed intent to tell StockService to cancel the alarms.
      */
     public static final String STOCK_ALARM_OFF = "net.exclaimindustries.geohashdroid.STOCK_ALARM_OFF";
-    
+
+    /**
+     * Directed intent to tell CentralMap to go directly to a Graticule.
+     */
+    public static final String START_GRATICULE = "net.exclaimindustries.geohashdroid.START_GRATICULE";
+
+    /**
+     * Directed intent to tell CentralMap to go directly to the Globalhash.
+     */
+    public static final String START_GLOBALHASH = "net.exclaimindustries.geohashdroid.START_GLOBALHASH";
+
+    /**
+     * Intent extra that carries a Graticule.
+     */
+    public static final String EXTRA_GRATICULE = "graticule";
+
     /**
      * This receiver listens for network connectivity changes in case we ran
      * into a problem with network connectivity and wanted to know if that
@@ -282,7 +305,6 @@ public class AlarmService extends WakefulIntentService {
         WakefulIntentService.sendWakefulWork(this, request);
     }
 
-    @SuppressLint("NewApi")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -424,6 +446,10 @@ public class AlarmService extends WakefulIntentService {
                         // done!  Yay!
                         Log.d(DEBUG_TAG, "The 30W response!  We're done!");
                         clearNotification();
+
+                        // And since it's done, we can go off to the part where
+                        // we deal with KnownLocations!
+                        doKnownLocations();
                     }
                 }
             } else {
@@ -437,5 +463,124 @@ public class AlarmService extends WakefulIntentService {
             // Stop doing this!
             Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
         }
+    }
+
+    /**
+     * Convenient container for all the data we need for matches.
+     */
+    private static class KnownLocationMatchData implements Comparable<KnownLocationMatchData> {
+        public KnownLocation knownLocation;
+        public Info bestInfo;
+        public double distance;
+
+        public KnownLocationMatchData(@NonNull KnownLocation kl, @NonNull Info info, double dist) {
+            knownLocation = kl;
+            bestInfo = info;
+            distance = dist;
+        }
+
+        @Override
+        public int compareTo(@NonNull KnownLocationMatchData another) {
+            // We want to sort this by how close it is.  The LOWEST number
+            // should go first (that's the closest one).  I hope I got the
+            // order right.
+            if(distance < another.distance) return -1;
+            if(distance > another.distance) return 1;
+            return 0;
+        }
+    }
+
+    private void doKnownLocations() {
+        // First things first, do we even need to do this?
+        List<KnownLocation> locations = KnownLocation.getAllKnownLocations(this);
+
+        if(locations.isEmpty()) return;
+
+        List<KnownLocationMatchData> matched = new LinkedList<>();
+        List<KnownLocationMatchData> matchedGlobal = new LinkedList<>();
+
+        Calendar today = Calendar.getInstance();
+
+        Info global = HashBuilder.getStoredInfo(this, today, null);
+
+        for(KnownLocation kl : locations) {
+            // Every KnownLocation has a method to do this.  Maybe it's a wee
+            // bit inefficient and inelegant, but it does the job.
+            Info best = kl.getClosestInfo(this, today);
+
+            if(kl.isCloseEnough(best.getFinalDestinationLatLng())) {
+                KnownLocationMatchData data = new KnownLocationMatchData(kl, best, kl.getDistanceFrom(best));
+                matched.add(data);
+            }
+
+            // The Globalhash will be handled as a separate notification,
+            // because frankly, that's sort of special.
+            if(global != null && kl.isCloseEnough(global.getFinalDestinationLatLng())) {
+                KnownLocationMatchData data = new KnownLocationMatchData(kl, global, kl.getDistanceFrom(global));
+                matchedGlobal.add(data);
+            }
+        }
+
+        // Did we get anything?  Anything AT ALL?
+        if(!matched.isEmpty()) {
+            // We did!  So here's what we do: Note the BEST match in a
+            // notification, but also mention the others.
+            Collections.sort(matched);
+
+            // First one's the winner!
+            Notification.Builder builder = getFreshNotificationBuilder();
+            builder.setContentTitle(getString(R.string.known_locations_alarm_title, matched.get(0).knownLocation.getName()));
+
+            if(matched.size() > 1)
+                builder.setContentText(getString(R.string.known_locations_alarm_more, matched.size() - 1));
+            else
+                builder.setContentText(getString(R.string.known_locations_alarm_distance, UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)matched.get(0).distance)));
+
+            Intent intent = new Intent(this, CentralMap.class)
+                    .setAction(START_GRATICULE)
+                    .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(EXTRA_GRATICULE, matched.get(0).bestInfo.getGraticule());
+
+            builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+
+            mNotificationManager.notify(R.id.alarm_known_location, builder.build());
+        }
+
+        // Now, the Globalhash notification.
+        if(!matchedGlobal.isEmpty()) {
+            Collections.sort(matchedGlobal);
+
+            Notification.Builder builder = getFreshNotificationBuilder();
+            builder.setContentTitle(getString(R.string.known_locations_alarm_title_global, matched.get(0).knownLocation.getName()));
+
+            if(matchedGlobal.size() > 1)
+                builder.setContentText(getString(R.string.known_locations_alarm_more, matchedGlobal.size() - 1));
+            else
+                builder.setContentText(getString(R.string.known_locations_alarm_distance, UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)matched.get(0).distance)));
+
+            Intent intent = new Intent(this, CentralMap.class)
+                    .setAction(START_GLOBALHASH)
+                    .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+            builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+
+            mNotificationManager.notify(R.id.alarm_known_location, builder.build());
+        }
+    }
+
+    private Notification.Builder getFreshNotificationBuilder() {
+        Notification.Builder builder = new Notification.Builder(this)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                .setSmallIcon(R.drawable.ic_stat_av_new_releases)
+                .setAutoCancel(true)
+                .setOngoing(false)
+                .setLights(Color.WHITE, 500, 2000);
+
+        // Since these notifications will be displaying location names, they
+        // may as well be private.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            builder.setVisibility(Notification.VISIBILITY_PRIVATE);
+
+        return builder;
     }
 }
