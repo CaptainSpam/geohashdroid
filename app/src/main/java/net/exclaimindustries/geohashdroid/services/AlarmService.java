@@ -495,9 +495,14 @@ public class AlarmService extends WakefulIntentService {
     }
 
     private void doKnownLocations() {
-        // First things first, do we even need to do this?
+        // First things first, clear out any old notifications.  If those are
+        // still around, they're from previous days, so they're no longer valid.
+        mNotificationManager.cancel(R.id.alarm_known_location);
+        mNotificationManager.cancel(R.id.alarm_known_location_global);
+
         List<KnownLocation> locations = KnownLocation.getAllKnownLocations(this);
 
+        // If there are no KnownLocations, give up now.
         if(locations.isEmpty()) return;
 
         List<KnownLocationMatchData> matched = new LinkedList<>();
