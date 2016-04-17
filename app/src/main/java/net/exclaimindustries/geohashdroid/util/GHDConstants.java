@@ -85,6 +85,12 @@ public final class GHDConstants {
      */
     public static final String PREF_LAST_MAP_TYPE = "LastMapType";
 
+    /**
+     * Prefs key specifying whether or not the user asked us to stop popping up
+     * the "stock prefetch is off" warning in KnownLocationsPicker.
+     */
+    public static final String PREF_STOP_BUGGING_ME_PREFETCH_WARNING = "StopBuggingPrefetch";
+
     /** Prefs value for metric distances. */
     public static final String PREFVAL_DIST_METRIC = "Metric";
     /** Prefs value for not-metric distances. */

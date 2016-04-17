@@ -12,6 +12,8 @@
     <string name="known_locations_add_restrict">Only match with hashpoints in this graticule (and globalhashes)</string>
     <string name="known_locations_delete">Delete this location</string>
 
+    <string name="known_locations_prefetch_is_off">It looks like you\'ve got stock prefetching turned off.  In order for Geohash Droid to notify you if a hashpoint is near a known location, you\'ll need to turn that on.  The known locations can still appear on the main map regardless, though.</string>
+
     <string name="known_locations_range_imperial_1">Really close (~1.2mi)</string>
     <string name="known_locations_range_imperial_2">Pretty close (~3.1mi)</string>
     <string name="known_locations_range_imperial_3">Sort of close (~6.2mi)</string>

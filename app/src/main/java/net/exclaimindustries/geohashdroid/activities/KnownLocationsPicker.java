@@ -470,6 +470,33 @@ public class KnownLocationsPicker
                 doReadyChecks();
             }
         });
+
+        // Now, this only kicks in if stock pre-fetching is on.  If it isn't, we
+        // ought to make sure the user knows this.
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        if(!prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)
+                && !prefs.getBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, false)) {
+            // Dialog!
+            new AlertDialog.Builder(this)
+                    .setMessage(R.string.known_locations_prefetch_is_off)
+                    .setNegativeButton(R.string.stop_reminding_me_label, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
+                            editor.apply();
+
+                            dialog.dismiss();
+                        }
+                    })
+                    .setPositiveButton(R.string.gotcha_label, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+        }
     }
 
     @Override
