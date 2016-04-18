@@ -18,7 +18,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.StringRes;
 import android.util.Log;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
@@ -108,19 +110,9 @@ public class AlarmService extends WakefulIntentService {
     public static final String STOCK_ALARM_OFF = "net.exclaimindustries.geohashdroid.STOCK_ALARM_OFF";
 
     /**
-     * Directed intent to tell CentralMap to go directly to a Graticule.
+     * Directed intent to tell CentralMap to go directly to this Info.
      */
-    public static final String START_GRATICULE = "net.exclaimindustries.geohashdroid.START_GRATICULE";
-
-    /**
-     * Directed intent to tell CentralMap to go directly to the Globalhash.
-     */
-    public static final String START_GLOBALHASH = "net.exclaimindustries.geohashdroid.START_GLOBALHASH";
-
-    /**
-     * Intent extra that carries a Graticule.
-     */
-    public static final String EXTRA_GRATICULE = "graticule";
+    public static final String START_INFO = "net.exclaimindustries.geohashdroid.START_INFO";
 
     /**
      * This receiver listens for network connectivity changes in case we ran
@@ -532,42 +524,34 @@ public class AlarmService extends WakefulIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
-            // We did!  So here's what we do: Note the BEST match in a
-            // notification, but also mention the others.
-            Collections.sort(matched);
-
-            // First one's the winner!
-            Notification.Builder builder = getFreshNotificationBuilder(matched);
-            builder.setContentTitle(getString(R.string.known_locations_alarm_title));
-
-            Intent intent = new Intent(this, CentralMap.class)
-                    .setAction(START_GRATICULE)
-                    .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    .putExtra(EXTRA_GRATICULE, matched.get(0).bestInfo.getGraticule());
-
-            builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
-
-            mNotificationManager.notify(R.id.alarm_known_location, builder.build());
+            launchNotification(matched, R.id.alarm_known_location, R.string.known_locations_alarm_title);
         }
 
         // Now, the Globalhash notification.
         if(!matchedGlobal.isEmpty()) {
-            Collections.sort(matchedGlobal);
-
-            Notification.Builder builder = getFreshNotificationBuilder(matchedGlobal);
-            builder.setContentTitle(getString(R.string.known_locations_alarm_title_global));
-
-            Intent intent = new Intent(this, CentralMap.class)
-                    .setAction(START_GLOBALHASH)
-                    .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-            builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
-
-            mNotificationManager.notify(R.id.alarm_known_location_global, builder.build());
+            launchNotification(matchedGlobal, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
         }
     }
 
-    private Notification.Builder getFreshNotificationBuilder(List<KnownLocationMatchData> data) {
+    private void launchNotification(List<KnownLocationMatchData> matched, @IdRes int notificationId, @StringRes int titleId) {
+        // So here's what we do: Note the BEST match in a notification, but also
+        // mention the others.
+        Collections.sort(matched);
+
+        // First one's the winner!
+        Notification.Builder builder = getFreshNotificationBuilder(matched, titleId);
+
+        Intent intent = new Intent(this, CentralMap.class)
+                .setAction(START_INFO)
+                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(StockService.EXTRA_INFO, matched.get(0).bestInfo);
+
+        builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+
+        mNotificationManager.notify(notificationId, builder.build());
+    }
+
+    private Notification.Builder getFreshNotificationBuilder(List<KnownLocationMatchData> data, @StringRes int titleId) {
         KnownLocationMatchData match = data.get(0);
         String contentText = getString(R.string.known_locations_alarm_distance,
                 UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),
@@ -580,7 +564,8 @@ public class AlarmService extends WakefulIntentService {
                 .setAutoCancel(true)
                 .setOngoing(false)
                 .setLights(Color.WHITE, 500, 2000)
-                .setContentText(contentText);
+                .setContentText(contentText)
+                .setContentTitle(getString(titleId));
 
         // If there's more than one known location nearby, make the notification
         // expandable with a bit of extra text mentioning just how many more.
