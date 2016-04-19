@@ -152,6 +152,9 @@ public class CentralMap
         protected boolean mInitComplete = false;
         private boolean mCleanedUp = false;
 
+        /** Flag indicating a handleInfo call comes from a notification. */
+        protected final static int FLAG_FROM_NOTIFICATION = 0x1000000;
+
         /** Bundle key for the current Graticule. */
         public final static String GRATICULE = "graticule";
         /** Bundle key for the current date, as a Calendar. */
@@ -796,6 +799,41 @@ public class CentralMap
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        // An Intent just came in!  That's telling us to go off to a new
+        // Graticule.  Since onNewIntent is only called if the Activity's
+        // already going, it just means we need to tell ExpeditionMode that it
+        // has a new Info (or tell SelectAGraticuleMode to leave first).
+        Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+        if(bun == null) return;
+
+        Info info = bun.getParcelable(StockService.EXTRA_INFO);
+        if(info == null) return;
+
+        // Presumably, we're ready.  If the user can somehow be in this Activity
+        // and get the notification fired off before the ready checks commence,
+        // I'll need to rethink this.  But for now, either switch modes or tell
+        // ExpeditionMode to handle a new Info.
+        if(mSelectAGraticule) {
+            // It's like exiting Select-A-Graticule Mode, but without caring
+            // what sort of data was in there.
+            mSelectAGraticule = false;
+            mCurrentMode.cleanUp();
+
+            mLastModeBundle = new Bundle();
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, info);
+
+            mStockReceiver.clearWaitingList();
+            mCurrentMode = new ExpeditionMode();
+            doReadyChecks();
+        } else {
+            // Otherwise, we tell the active mode (ExpeditionMode) to update
+            // itself.
+            mCurrentMode.handleInfo(info, null, CentralMapMode.FLAG_FROM_NOTIFICATION);
+        }
+    }
+
+    @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
@@ -1087,11 +1125,15 @@ public class CentralMap
             super.onBackPressed();
     }
 
-    private boolean doReadyChecks() {
+    private boolean isReadyToGo() {
+        return !mCurrentMode.isCleanedUp() && mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected();
+    }
+
+    private void doReadyChecks() {
         // This should be called any time the Google API client or MapFragment
         // become ready.  It'll check to see if both are up, starting the
         // current mode when so.
-        if(!mCurrentMode.isCleanedUp() && mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected()) {
+        if(isReadyToGo()) {
             if(mCurrentMode.isInitComplete()) {
                 mCurrentMode.resume();
             } else {
@@ -1123,10 +1165,6 @@ public class CentralMap
                     mKnownLocationMarkers.add(mark);
                 }
             }
-
-            return true;
-        } else {
-            return false;
         }
     }
 

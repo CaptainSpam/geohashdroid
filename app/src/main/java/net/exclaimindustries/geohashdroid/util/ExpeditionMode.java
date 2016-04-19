@@ -424,7 +424,17 @@ public class ExpeditionMode
         if(mInitComplete) {
             mCentralMap.getErrorBanner().animateBanner(false);
 
-            if(mWaitingOnEmptyStartInfo && !info.isGlobalHash()) {
+            if((flags & FLAG_FROM_NOTIFICATION) != 0) {
+                // We've got an Info here.  We're also (at least) paused.  So
+                // let's just try inserting it into the usual flow, minus the
+                // point where we check for the closest Info...
+                if(!info.isGlobalHash())
+                    requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                else {
+                    setInfo(info);
+                    doNearbyPoints(null);
+                }
+            } else if(mWaitingOnEmptyStartInfo && !info.isGlobalHash()) {
                 mWaitingOnEmptyStartInfo = false;
                 // Coming in from the initial setup, we might have nearbys.  Get
                 // the closest one.
@@ -450,7 +460,9 @@ public class ExpeditionMode
         // Nothing here yet.
     }
 
-    private void addNearbyPoint(Info info) {
+    private void addNearbyPoint(@NonNull Info info) {
+        if(info.isGlobalHash()) return;
+
         // This will get called repeatedly up to eight times (in rare cases,
         // five times) when we ask for nearby points.  All we need to do is put
         // those points on the map, and stuff them in the map.  Two different
@@ -559,7 +571,7 @@ public class ExpeditionMode
         mInfoBox.fadeOutInfoBox(fade);
     }
 
-    private void doNearbyPoints(Info[] nearby) {
+    private void doNearbyPoints(@Nullable Info[] nearby) {
         removeNearbyPoints();
 
         // We should just be able to toss one point in for each Info here.
