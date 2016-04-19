@@ -223,7 +223,7 @@ public class StockService extends WakefulIntentService {
         }
         
         // Maybe we have a request ID!
-        long requestId = intent.getLongExtra(EXTRA_REQUEST_ID, -1);
+        long requestId = intent.getLongExtra(EXTRA_REQUEST_ID, -1L);
 
         // Maybe we have flags!
         int flags = intent.getIntExtra(EXTRA_REQUEST_FLAGS, 0);

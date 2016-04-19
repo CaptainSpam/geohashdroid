@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:defaultValue="UseClosest"
+        android:dialogTitle="@string/pref_startup_dialogtitle"
+        android:entries="@array/pref_startup_entries"
+        android:entryValues="@array/pref_startup_values"
+        android:key="StartupBehavior"
+        android:persistent="true"
+        android:title="@string/pref_startup_title" />
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="InfoBox"
@@ -32,10 +40,22 @@
         android:title="@string/pref_coordunits_title" />
 
     <CheckBoxPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="NearbyPoints"
         android:persistent="true"
         android:summaryOff="@string/pref_nearbypoints_off"
         android:summaryOn="@string/pref_nearbypoints_on"
         android:title="@string/pref_nearbypoints_title" />
+
+    <Preference
+        android:key="_knownLocations"
+        android:title="@string/pref_knownlocations_title" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="ShowKnownLocations"
+        android:persistent="true"
+        android:summaryOff="@string/pref_showknownlocations_off"
+        android:summaryOn="@string/pref_showknownlocations_on"
+        android:title="@string/pref_showknownlocations_title" />
 </PreferenceScreen>

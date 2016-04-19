@@ -7,17 +7,11 @@
  */
 package net.exclaimindustries.geohashdroid.activities;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -27,15 +21,12 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -60,6 +51,7 @@ import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
 import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
@@ -75,6 +67,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -84,7 +78,7 @@ import java.util.Set;
  * exists on the legacy branch.
  */
 public class CentralMap
-        extends Activity
+        extends BaseMapActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
                    GHDDatePickerDialogFragment.GHDDatePickerCallback,
@@ -103,7 +97,6 @@ public class CentralMap
     private static final String STATE_WERE_PERMISSIONS_DENIED = "permissionsDenied";
     private static final String STATE_LAST_GRATICULE = "lastGraticule";
     private static final String STATE_LAST_CALENDAR = "lastCalendar";
-    private static final String STATE_MAP_TYPE = "mapType";
     private static final String STATE_INFO = "info";
     private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
 
@@ -136,14 +129,7 @@ public class CentralMap
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
 
-    // Request code to use when launching the resolution activity.
-    private static final int REQUEST_RESOLVE_ERROR = 1001;
-    // Unique tag for the error dialog fragment.
-    private static final String DIALOG_API_ERROR = "ApiErrorDialog";
-    // Bool to track whether the app is already resolving an error.
-    private boolean mResolvingError = false;
-    // Bool to track whether or not the user's refused permissions.
-    private boolean mPermissionsDenied = false;
+    private List<Marker> mKnownLocationMarkers;
 
     /**
      * <p>
@@ -166,6 +152,9 @@ public class CentralMap
                                                            PermissionsDeniedListener {
         protected boolean mInitComplete = false;
         private boolean mCleanedUp = false;
+
+        /** Flag indicating a handleInfo call comes from a notification. */
+        protected final static int FLAG_FROM_NOTIFICATION = 0x1000000;
 
         /** Bundle key for the current Graticule. */
         public final static String GRATICULE = "graticule";
@@ -554,7 +543,10 @@ public class CentralMap
                     Info[] nearby = null;
                     if(pArr != null)
                         nearby = Arrays.copyOf(pArr, pArr.length, Info[].class);
-                    mCurrentMode.handleInfo(received, nearby, reqFlags);
+                    if(received != null) {
+                        updateLastGraticule(received);
+                        mCurrentMode.handleInfo(received, nearby, reqFlags);
+                    }
                 } else {
                     Log.w(DEBUG_TAG, "Request ID " + reqId + " was NOT expected by this mode, ignoring...");
                 }
@@ -614,7 +606,7 @@ public class CentralMap
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        int mapType = -1;
+        Intent intent = getIntent();
 
         // Load up!
         if(savedInstanceState != null) {
@@ -631,13 +623,12 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
-
-            // Map type?
-            mapType = savedInstanceState.getInt(STATE_MAP_TYPE, -1);
+        } else if(intent != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
+            // savedInstanceState should override the Intent.
+            mLastModeBundle = new Bundle();
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
+            mSelectAGraticule = false;
         }
-
-        // Finalize the map type.  That's going into a callback.
-        final int reallyMapType = mapType;
 
         setContentView(R.layout.centralmap);
 
@@ -665,9 +656,9 @@ public class CentralMap
                 // infobox right around there.
                 set.setMyLocationButtonEnabled(false);
 
-                // Restore the map's type, if it was changed.
-                if(reallyMapType >= 0)
-                    mMap.setMapType(reallyMapType);
+                // Go to preferences to figure out what map type we're using.
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+                mMap.setMapType(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
@@ -677,17 +668,68 @@ public class CentralMap
             }
         });
 
-        // If at this point we don't have any mode bundle, we're starting in
-        // ExpeditionMode with a flag set.  This means that this overrides
-        // the boolean.
-        if(mLastModeBundle == null) {
-            mLastModeBundle = new Bundle();
-            mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
-            mSelectAGraticule = false;
-        }
-
         // Perform startup and cleanup work before the modes arrive.
         doStartupStuff();
+
+        // If at this point we don't have any mode bundle, we're going to the
+        // prefs to figure out where we start.
+        if(mLastModeBundle == null) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+            String startup = prefs.getString(GHDConstants.PREF_STARTUP_BEHAVIOR, GHDConstants.PREFVAL_STARTUP_CLOSEST);
+            mLastModeBundle = new Bundle();
+
+            if(startup.equals(GHDConstants.PREFVAL_STARTUP_CLOSEST)) {
+                // Closest point.  The default.
+                mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+                mSelectAGraticule = false;
+            } else {
+                // The other cases, we need to know the last-known graticule and
+                // globalhashiness.
+                String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALD");
+                String lastLon = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, "INVALID");
+                boolean globalHash = prefs.getBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, false);
+
+                Graticule g;
+
+                try {
+                    g = new Graticule(lastLat, lastLon);
+                } catch(Exception e) {
+                    // If a problem popped up, we just assume there was no
+                    // actual graticule data.
+                    g = null;
+                }
+
+                if(startup.equals(GHDConstants.PREFVAL_STARTUP_LAST_USED)) {
+                    mSelectAGraticule = false;
+
+                    // Last-used point.  Now, if we don't HAVE any such data, we
+                    // fall back to closest point behavior.
+                    if(g == null && !globalHash) {
+                        // Well, poop.
+                        mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+                    } else {
+                        // If we've got something, yay!  Add in data as appropriate.
+                        // Start with today.
+                        mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
+
+                        if(globalHash)
+                            mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, true);
+                        if(g != null)
+                            mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
+                    }
+                } else if(startup.equals(GHDConstants.PREFVAL_STARTUP_PICKER)) {
+                    // The graticule picker.  In theory, we MAY have a graticule to
+                    // start with.  With which to start.
+                    mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, globalHash);
+                    if(g != null)
+                        mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
+                    mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
+                    mSelectAGraticule = true;
+                }
+            }
+
+        }
 
         // Now, we get our initial mode set up based on mSelectAGraticule.  We
         // do NOT init it yet; we have to wait for both the map fragment and the
@@ -743,7 +785,7 @@ public class CentralMap
         // The receiver goes right off as soon as we stop.
         unregisterReceiver(mStockReceiver);
 
-        // TODO: I probably want this in onPause, not onStop, but the Google API
+        // I probably want this in onPause, not onStop, but the Google API
         // client disconnect hits here, not in onPause, so I'd have to keep
         // track of more things to make sure I know if I need to start listening
         // again on onResume or wait for the client to reconnect.  And I don't
@@ -765,6 +807,41 @@ public class CentralMap
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        // An Intent just came in!  That's telling us to go off to a new
+        // Graticule.  Since onNewIntent is only called if the Activity's
+        // already going, it just means we need to tell ExpeditionMode that it
+        // has a new Info (or tell SelectAGraticuleMode to leave first).
+        Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+        if(bun == null) return;
+
+        Info info = bun.getParcelable(StockService.EXTRA_INFO);
+        if(info == null) return;
+
+        // Presumably, we're ready.  If the user can somehow be in this Activity
+        // and get the notification fired off before the ready checks commence,
+        // I'll need to rethink this.  But for now, either switch modes or tell
+        // ExpeditionMode to handle a new Info.
+        if(mSelectAGraticule) {
+            // It's like exiting Select-A-Graticule Mode, but without caring
+            // what sort of data was in there.
+            mSelectAGraticule = false;
+            mCurrentMode.cleanUp();
+
+            mLastModeBundle = new Bundle();
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, info);
+
+            mStockReceiver.clearWaitingList();
+            mCurrentMode = new ExpeditionMode();
+            doReadyChecks();
+        } else {
+            // Otherwise, we tell the active mode (ExpeditionMode) to update
+            // itself.
+            mCurrentMode.handleInfo(info, null, CentralMapMode.FLAG_FROM_NOTIFICATION);
+        }
+    }
+
+    @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
@@ -781,10 +858,6 @@ public class CentralMap
         // And some additional data.
         outState.putParcelable(STATE_LAST_GRATICULE, mLastGraticule);
         outState.putSerializable(STATE_LAST_CALENDAR, mLastCalendar);
-
-        // Aaaaaaaand the map type.
-        if(mMap != null)
-            outState.putInt(STATE_MAP_TYPE, mMap.getMapType());
 
         // Also, shut down the current mode.  We'll rebuild it later.  Also, if
         // init isn't complete yet, don't update the state.
@@ -1014,31 +1087,6 @@ public class CentralMap
         stopListening();
     }
 
-    @Override
-    public void onConnectionFailed(ConnectionResult result) {
-        // Oh, so THAT'S how the connection can fail: If we're using Marshmallow
-        // and the user refused to give permissions to the API or the user
-        // doesn't have the Google Play Services installed.  Okay, that's fair.
-        // Let's deal with it, then.
-        if(!mResolvingError) {
-            if(result.hasResolution()) {
-                try {
-                    mResolvingError = true;
-                    result.startResolutionForResult(this, REQUEST_RESOLVE_ERROR);
-                } catch(IntentSender.SendIntentException e) {
-                    // We get this if something went wrong sending the intent.  So,
-                    // let's just try to connect again.
-                    mGoogleClient.connect();
-                }
-            } else {
-                // If we can't actually resolve this, give up and throw an error.
-                // doReadyChecks() won't ever be called.
-                showErrorDialog(result.getErrorCode());
-                mResolvingError = true;
-            }
-        }
-    }
-
     /**
      * Tells Select-A-Graticule to start.
      */
@@ -1090,11 +1138,15 @@ public class CentralMap
             super.onBackPressed();
     }
 
-    private boolean doReadyChecks() {
+    private boolean isReadyToGo() {
+        return !mCurrentMode.isCleanedUp() && mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected();
+    }
+
+    private void doReadyChecks() {
         // This should be called any time the Google API client or MapFragment
         // become ready.  It'll check to see if both are up, starting the
         // current mode when so.
-        if(!mCurrentMode.isCleanedUp() && mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected()) {
+        if(isReadyToGo()) {
             if(mCurrentMode.isInitComplete()) {
                 mCurrentMode.resume();
             } else {
@@ -1107,9 +1159,25 @@ public class CentralMap
                 mCurrentMode.onLocationChanged(mLastKnownLocation);
             invalidateOptionsMenu();
 
-            return true;
-        } else {
-            return false;
+            // Now, read all the KnownLocations and put them on the map.  Remove
+            // anything we had before.
+            if(mKnownLocationMarkers != null)
+                for(Marker m : mKnownLocationMarkers)
+                    m.remove();
+
+            mKnownLocationMarkers = new LinkedList<>();
+
+            // Now, ONLY if prefs say so...
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+            if(prefs.getBoolean(GHDConstants.PREF_SHOW_KNOWN_LOCATIONS, true)) {
+                for(KnownLocation kl : KnownLocation.getAllKnownLocations(this)) {
+                    // No snippet this time; there's nothing to do with the marker
+                    // other than show its name.
+                    Marker mark = mMap.addMarker(kl.makeMarker(this));
+                    mKnownLocationMarkers.add(mark);
+                }
+            }
         }
     }
 
@@ -1146,6 +1214,11 @@ public class CentralMap
         if(mMap != null) {
             mMap.setMapType(type);
         }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+        edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
+        edit.apply();
     }
 
     private void startListening() {
@@ -1154,13 +1227,24 @@ public class CentralMap
             lRequest.setInterval(1000);
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
+            // Stupid Android Studio annotator and how it can't tell I've
+            // requested permissions already...
+            try {
+                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
 
-            // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
-            // locked method.  Which, to be honest, is a good thing, really, it
-            // didn't make much sense that you could turn that on without
-            // permissions before.
-            mMap.setMyLocationEnabled(true);
+                // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
+                // locked method.  Which, to be honest, is a good thing, really, it
+                // didn't make much sense that you could turn that on without
+                // permissions before.
+                mMap.setMyLocationEnabled(true);
+            } catch (SecurityException se) {
+                // We MUST have permissions at this point, given the call to
+                // checkLocationPermissions should have returned false if not.
+                // If we're in some situation where we STILL got a
+                // SecurityException, calling it again won't help, because
+                // that'll just bring us back here in an endless loop.  So, we
+                // ignore it.
+            }
         }
     }
 
@@ -1168,105 +1252,6 @@ public class CentralMap
         if(mGoogleClient != null && checkLocationPermissions(LOCATION_PERMISSION_REQUEST, true)) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mLocationListener);
         }
-    }
-
-    // Here's a chunk of stuff from the Android docs on just what to do when the
-    // API connect fails due to permissions:
-
-    private void showErrorDialog(int errorCode) {
-        // Create a fragment for the error dialog
-        ErrorDialogFragment dialogFragment = new ErrorDialogFragment();
-        // Pass the error that should be displayed
-        Bundle args = new Bundle();
-        args.putInt(DIALOG_API_ERROR, errorCode);
-        dialogFragment.setArguments(args);
-        dialogFragment.show(getFragmentManager(), "errordialog");
-    }
-
-    /* Called from ErrorDialogFragment when the dialog is dismissed. */
-    public void onDialogDismissed() {
-        mResolvingError = false;
-    }
-
-    /* A fragment to display an error dialog */
-    public static class ErrorDialogFragment extends DialogFragment {
-        public ErrorDialogFragment() { }
-
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            // Get the error code and retrieve the appropriate dialog
-            int errorCode = this.getArguments().getInt(DIALOG_API_ERROR);
-            return GoogleApiAvailability.getInstance().getErrorDialog(
-                    this.getActivity(), errorCode, REQUEST_RESOLVE_ERROR);
-        }
-
-        @Override
-        public void onDismiss(DialogInterface dialog) {
-            ((CentralMap) getActivity()).onDialogDismissed();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_RESOLVE_ERROR) {
-            mResolvingError = false;
-            if (resultCode == RESULT_OK) {
-                // Make sure the app is not already connected or attempting to connect
-                if (!mGoogleClient.isConnecting() &&
-                        !mGoogleClient.isConnected()) {
-                    mGoogleClient.connect();
-                }
-            }
-        }
-    }
-
-    /**
-     * <p>
-     * Checks for permissions on {@link Manifest.permission#ACCESS_FINE_LOCATION},
-     * automatically firing off the permission request if it hasn't been
-     * granted yet.  This method DOES return, mind; if it returns true, continue
-     * as normal, and if it returns false, don't do anything.  In the false
-     * case, it will (usually) ask for permissions, with CentralMap handling the
-     * callback.
-     * </p>
-     *
-     * <p>
-     * If skipRequest is set, permissions won't be asked for in the event that
-     * they're not already granted, and no explanation popup will show up,
-     * either.  Use that for cases like shutdowns where all the listeners are
-     * being unregistered.
-     * </p>
-     *
-     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
-     * @param skipRequest if true, don't bother requesting permission, just drop it and go on
-     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
-     */
-    public synchronized boolean checkLocationPermissions(int requestCode, boolean skipRequest) {
-        // First, the easy case: Permissions granted.
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Yay!
-            return true;
-        } else {
-            // Boo!  Now we need to fire off a permissions request!  If we were
-            // already denied permissions once, though, don't bother trying
-            // again.
-            if(!skipRequest && !mPermissionsDenied)
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        requestCode);
-            return false;
-        }
-    }
-
-    /**
-     * Convenience method that calls {@link #checkLocationPermissions(int, boolean)}
-     * with skipRequest set to false.
-     *
-     * @param requestCode the type of check this is, so that whatever it was can be tried again on permissions being granted
-     * @return true if permissions are good, false if not (in the false case, a request might be in progress)
-     */
-    public synchronized boolean checkLocationPermissions(int requestCode) {
-        return checkLocationPermissions(requestCode, false);
     }
 
     @Override
@@ -1295,5 +1280,22 @@ public class CentralMap
         }
 
         if(mCurrentMode != null) mCurrentMode.permissionsDenied(mPermissionsDenied);
+    }
+
+    private void updateLastGraticule(@NonNull Info info) {
+        // This'll just stash the last Graticule away in preferences so we can
+        // start with the last-used one if preferences demand it as such.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+
+        edit.putBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, info.isGlobalHash());
+        Graticule g = info.getGraticule();
+
+        if(g != null) {
+            edit.putString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, g.getLatitudeString(true));
+            edit.putString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, g.getLongitudeString(true));
+        }
+
+        edit.apply();
     }
 }

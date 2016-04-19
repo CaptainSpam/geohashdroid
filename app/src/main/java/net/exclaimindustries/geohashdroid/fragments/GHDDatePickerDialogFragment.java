@@ -109,7 +109,7 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
         return new AlertDialog.Builder(getActivity())
                 .setView(dialogView)
                 .setTitle(R.string.dialog_date_picker_title)
-                .setPositiveButton(getString(R.string.ok_label), new DialogInterface.OnClickListener() {
+                .setPositiveButton(R.string.ok_label, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         // Well, you heard the orders!
@@ -122,7 +122,7 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
                             Log.e(DEBUG_TAG, "You didn't specify a callback!");
                     }
                 })
-                .setNegativeButton(getString(R.string.cancel_label), new DialogInterface.OnClickListener() {
+                .setNegativeButton(R.string.cancel_label, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dismiss();

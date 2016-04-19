@@ -13,6 +13,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 
 /**
  * <p>
@@ -154,11 +155,15 @@ public class Graticule implements Parcelable {
      * @param lonOff number of degrees east to offset (negative is west)
      * @return a brand spankin' new Graticule, offset as per suggestion
      */
-    public static Graticule createOffsetFrom(Graticule g, int latOff, int lonOff) {
+    @NonNull
+    public static Graticule createOffsetFrom(@NonNull Graticule g, int latOff, int lonOff) {
+        // If we're just returning the same Graticule, seriously, come on now.
+        if(latOff == 0 && lonOff == 0) return g;
+
         // We already have all the data we need from the old Graticule.  But,
         // we need to account for passing through the Prime Meridian and/or
         // equator.  If the sign changes, decrement the amount of the change by
-        // one.  This logic is gratiutously loopy.
+        // one.  This logic is gratuitously loopy.
         boolean goingSouth = (latOff < 0);
         latOff = Math.abs(latOff);
 
@@ -327,6 +332,7 @@ public class Graticule implements Parcelable {
      * @param useNegativeValues true to return values as negative for south and positive for north, false to return values with N and S indicators
      * @return the current latitude as a String
      */
+    @NonNull
     public String getLatitudeString(boolean useNegativeValues) {
         if (mSouth) {
             if(useNegativeValues) {
@@ -368,6 +374,7 @@ public class Graticule implements Parcelable {
      * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
      * @return the current longitude as a String
      */
+    @NonNull
     public String getLongitudeString(boolean useNegativeValues) {
         if (mWest) {
             if(useNegativeValues) {
@@ -407,6 +414,7 @@ public class Graticule implements Parcelable {
      *
      * @return a LatLng representing the center of this Graticule.
      */
+    @NonNull
     public LatLng getCenterLatLng() {
         double lat, lon;
 
@@ -431,6 +439,7 @@ public class Graticule implements Parcelable {
      *
      * @return a PolygonOptions set up as this Graticule sits.
      */
+    @NonNull
     public PolygonOptions getPolygon() {
         PolygonOptions toReturn = new PolygonOptions();
 
@@ -462,6 +471,39 @@ public class Graticule implements Parcelable {
         return toReturn;
     }
 
+    /**
+     * <p>
+     * Makes a LatLng out of this Graticule and component fractional hash parts.
+     * In other words, this forces the fractional bits into a proper location
+     * based on this Graticule.
+     * </p>
+     *
+     * <p>
+     * TODO: HashBuilder could start calling this instead...
+     * </p>
+     *
+     * @param latHash the fractional latitude portion of the hash
+     * @param lonHash the fractional longitude portion of the hash
+     * @return a new LatLng
+     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
+     */
+    @NonNull
+    public LatLng makePointFromHash(double latHash, double lonHash) {
+        if(latHash < 0 || latHash > 1 || lonHash < 0 || latHash > 1)
+            throw new IllegalArgumentException("Those aren't valid hash values!");
+
+        // getLatitude and getLongitude are absolute values, so we can do this:
+        latHash += getLatitude();
+        lonHash += getLongitude();
+
+        // And then we adjust for south/west like so...
+        if(isSouth()) latHash *= -1;
+        if(isWest()) lonHash *= -1;
+
+        // And out it goes!
+        return new LatLng(latHash, lonHash);
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -470,10 +512,11 @@ public class Graticule implements Parcelable {
     @Override
     public boolean equals(Object o) {
         // First, this better be a Graticule.
+        if(o == this) return true;
         if (!(o instanceof Graticule))
             return false;
 
-        Graticule g = (Graticule)o;
+        final Graticule g = (Graticule)o;
 
         // If everything matches up, these are identical. Two int checks and
         // two boolean checks are probably a lot faster than two String checks,
@@ -481,6 +524,20 @@ public class Graticule implements Parcelable {
         return !(g.getLatitude() != getLatitude()
                 || g.getLongitude() != getLongitude()
                 || g.isSouth() != isSouth() || g.isWest() != isWest());
+    }
+
+    @Override
+    public int hashCode() {
+        // Um... 11!  That's a prime number, right?
+        int toReturn = 11;
+
+        // And so's 37!
+        toReturn = 37 * toReturn + mLatitude;
+        toReturn = 37 * toReturn + mLongitude;
+        toReturn = 37 * toReturn + (mSouth ? 0 : 1);
+        toReturn = 37 * toReturn + (mWest ? 0 : 1);
+
+        return toReturn;
     }
 
     @Override

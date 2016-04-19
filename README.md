@@ -5,7 +5,7 @@ A Geohashing app for Android devices.
 
 This is an Android app for Randall Munroe's Geohashing activity (see [its wiki](http://wiki.xkcd.com/geohashing/)).  It downloads stock values for the current day's hash points, puts them on a map for you to visit, and uploads pictures and live comments to the aforementioned wiki.
 
-It's also in the process of a major overhaul.  If you want to check out the code behind what's currently on the Google Play store, look at the legacy branch.
+If you want to check out the code behind the really old, pre-tablet version that existed before 0.9.0 was released, look at the legacy branch.
 
 ## If you want to build this yourself
 
@@ -17,5 +17,4 @@ Beyond that, it should be a straightforward build in Android Studio/Gradle.  You
 
 ## Notes for future me to consider
 
-* Make GraticulePickerFragment not be a Fragment.  I really don't think that's gaining me anything, but I could be wrong.
 * Make the extra fragments (wiki and detailed info on tablets) enter the screen better.  Doing so will require me manually recalculating the centering/zooming tools if the map is still the same size as before but the focus is shifted to the left/top more.

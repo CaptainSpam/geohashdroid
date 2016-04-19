@@ -2,8 +2,8 @@
 <manifest package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="906"
-          android:versionName="0.9.0.2">
+          android:versionCode="909"
+          android:versionName="0.9.0.5">
 
     <uses-sdk
         android:minSdkVersion="16"
@@ -50,6 +50,12 @@
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".activities.KnownLocationsPicker"
+            android:label="@string/title_known_locations"
+            android:uiOptions="splitActionBarWhenNarrow"
+            android:windowSoftInputMode="stateHidden">
         </activity>
         <activity
             android:name=".activities.LoginPromptDialog"

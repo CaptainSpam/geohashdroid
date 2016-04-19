@@ -13,7 +13,9 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -35,6 +37,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -109,6 +112,12 @@ public class ExpeditionMode
     // Then there's this one empty start boolean.
     private boolean mWaitingOnEmptyStartInfo = false;
 
+    private Rect mMarkerDimens = new Rect();
+    private Rect mInfoBoxDimens = new Rect();
+
+    private int mMarkerWidth = -1;
+    private int mMarkerHeight = -1;
+
     private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -119,6 +128,13 @@ public class ExpeditionMode
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
         super.setCentralMap(centralMap);
+
+        // Get the size of the marker.  We'll need this for later.
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(centralMap.getResources(), R.drawable.final_destination, opts);
+        mMarkerWidth = opts.outWidth;
+        mMarkerHeight = opts.outHeight;
 
         // Build up our metrics, too.
         mMetrics = new DisplayMetrics();
@@ -219,7 +235,7 @@ public class ExpeditionMode
 
         // The InfoBox should also go away at this point.
         if(mInfoBox != null) {
-            mInfoBox.animate().translationX(mInfoBox.getWidth()).alpha(0.0f).withEndAction(new Runnable() {
+            mInfoBox.animateInfoBoxOutWithEndAction(new Runnable() {
                 @Override
                 public void run() {
                     ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
@@ -326,6 +342,7 @@ public class ExpeditionMode
             menu.removeItem(R.id.action_send_to_radar);
             menu.removeItem(R.id.action_details);
             menu.removeItem(R.id.action_wiki);
+            menu.removeItem(R.id.action_try_tomorrow);
         }
     }
 
@@ -386,6 +403,16 @@ public class ExpeditionMode
 
                 return true;
             }
+            case R.id.action_try_tomorrow: {
+                // Trying tomorrow is easy: Just get today, make it tomorrow,
+                // and try it.  What's more, we've already got the mechanisms in
+                // place to handle what happens if tomorrow doesn't exist yet.
+                if(mCurrentInfo != null) {
+                    Calendar cal = (Calendar)mCurrentInfo.getCalendar().clone();
+                    cal.add(Calendar.DATE, 1);
+                    changeCalendar(cal);
+                }
+            }
         }
 
         return false;
@@ -397,10 +424,20 @@ public class ExpeditionMode
         if(mInitComplete) {
             mCentralMap.getErrorBanner().animateBanner(false);
 
-            if(mWaitingOnEmptyStartInfo) {
+            if((flags & FLAG_FROM_NOTIFICATION) != 0) {
+                // We've got an Info here.  We're also (at least) paused.  So
+                // let's just try inserting it into the usual flow, minus the
+                // point where we check for the closest Info...
+                if(!info.isGlobalHash())
+                    requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                else {
+                    setInfo(info);
+                    doNearbyPoints(null);
+                }
+            } else if(mWaitingOnEmptyStartInfo && !info.isGlobalHash()) {
                 mWaitingOnEmptyStartInfo = false;
-                // Coming in from the initial setup, we should have nearbys.
-                // Get the closest one.
+                // Coming in from the initial setup, we might have nearbys.  Get
+                // the closest one.
                 Info inf = Info.measureClosest(mInitialCheckLocation, info, nearby);
 
                 // Presto!  We've got our Graticule AND Calendar!  Now, to make
@@ -423,7 +460,9 @@ public class ExpeditionMode
         // Nothing here yet.
     }
 
-    private void addNearbyPoint(Info info) {
+    private void addNearbyPoint(@NonNull Info info) {
+        if(info.isGlobalHash()) return;
+
         // This will get called repeatedly up to eight times (in rare cases,
         // five times) when we ask for nearby points.  All we need to do is put
         // those points on the map, and stuff them in the map.  Two different
@@ -495,7 +534,44 @@ public class ExpeditionMode
         }
     }
 
-    private void doNearbyPoints(Info[] nearby) {
+    private void checkInfoBoxFading() {
+        if(mCurrentInfo == null) return;
+
+        boolean fade;
+        mInfoBox.getLocationRect(mInfoBoxDimens);
+
+        // First, check the final destination marker.  The pin on the flag is
+        // where the point is, so we would want to check against the entire
+        // height of it to see if it crashes into the InfoBox.
+        Projection proj = mMap.getProjection();
+        Point p = proj.toScreenLocation(mCurrentInfo.getFinalDestinationLatLng());
+        mMarkerDimens.set(p.x - (mMarkerWidth / 2),
+                p.y - mMarkerHeight,
+                p.x + (mMarkerWidth / 2),
+                p.y);
+        fade = Rect.intersects(mMarkerDimens, mInfoBoxDimens);
+
+        if(!fade) {
+            // Continue with current location checking.  We'll use the same
+            // bounds as the final destination marker, just for convenience.
+            Location loc = getLastKnownLocation();
+            if(LocationUtil.isLocationNewEnough(loc)) {
+                p = proj.toScreenLocation(new LatLng(loc.getLatitude(), loc.getLongitude()));
+                // Except, remember, the current location marker is pinned at
+                // the CENTER of the image.  Tricky!
+                mMarkerDimens.set(p.x - (mMarkerWidth / 2),
+                        p.y - (mMarkerHeight / 2),
+                        p.x + (mMarkerWidth / 2),
+                        p.y + (mMarkerHeight / 2));
+
+                fade = Rect.intersects(mMarkerDimens, mInfoBoxDimens);
+            }
+        }
+
+        mInfoBox.fadeOutInfoBox(fade);
+    }
+
+    private void doNearbyPoints(@Nullable Info[] nearby) {
         removeNearbyPoints();
 
         // We should just be able to toss one point in for each Info here.
@@ -682,6 +758,12 @@ public class ExpeditionMode
             banner.animateBanner(true);
 
             mWaitingOnInitialZoom = true;
+
+            // While we wait, though, zoom in on the destination point, if we
+            // have one.
+            if(mCurrentInfo != null) {
+                zoomToInitialCurrentLocation(mCurrentInfo.getFinalLocation());
+            }
         }
     }
 
@@ -738,6 +820,9 @@ public class ExpeditionMode
         // tricks.
         for(Marker m : mNearbyPoints.keySet())
             checkMarkerVisibility(m);
+
+        // Also, let's get the infobox faded as need be.
+        checkInfoBoxFading();
     }
 
     @Override
@@ -754,8 +839,7 @@ public class ExpeditionMode
         // know what's going on later.
         Graticule g = null;
 
-        // Remember, this is ONLY checked on the initial lookup.  So it's safe
-        // to just change it like this every time.
+        // It should be pretty safe to just change it like this every time.
         mInitialCalendar = newDate;
 
         // The Graticule we use is either the one in our current Info (thus
@@ -763,18 +847,26 @@ public class ExpeditionMode
         // with.  The latter is in case we never came up with a valid Info if,
         // for instance, the check was made before the opening of the DJIA and
         // the user decided to pick a previous day.
-        if(mCurrentInfo != null)
-            g = mCurrentInfo.getGraticule();
-        else if(mInitialCheckLocation != null)
-            g = new Graticule(mInitialCheckLocation);
+        boolean isGlobalHash = false;
 
-        if(g != null)
+        if(mCurrentInfo != null) {
+            g = mCurrentInfo.getGraticule();
+            isGlobalHash = mCurrentInfo.isGlobalHash();
+        } else if(mInitialCheckLocation != null) {
+            g = new Graticule(mInitialCheckLocation);
+        }
+
+        // If we didn't get a Graticule back (AND this isn't a Globalhash), then
+        // we're clearly not ready to make stock requests and are currently
+        // waiting for an initial location (or for the user to switch to
+        // SelectAGraticuleMode instead).
+        if(g != null || isGlobalHash)
             requestStock(g, newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     private boolean needsNearbyPoints() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mCentralMap);
-        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, false);
+        return prefs.getBoolean(GHDConstants.PREF_NEARBY_POINTS, true);
     }
 
     private boolean showInfoBox() {
@@ -851,7 +943,7 @@ public class ExpeditionMode
     }
 
     private void clearExtraFragment() {
-        // This simply clears out the extra fragment
+        // This simply clears out the extra fragment.
         FragmentManager manager = mCentralMap.getFragmentManager();
         try {
             manager.popBackStack(EXTRA_FRAGMENT_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
@@ -883,7 +975,7 @@ public class ExpeditionMode
             if(container != null)
                 container.setVisibility(View.GONE);
             else
-                Log.w(DEBUG_TAG, "We got detailedInfoDestroying when there's no container in CentralMap for it!  The hell?");
+                Log.w(DEBUG_TAG, "We got extraFragmentDestroying when there's no container in CentralMap for it!  The hell?");
 
             mExtraFragment = null;
         }

@@ -66,7 +66,7 @@ public class Info implements Parcelable {
      * @param date
      *            the date
      */
-    public Info(double latitude, double longitude, Graticule graticule,
+    public Info(double latitude, double longitude, @Nullable Graticule graticule,
             @NonNull Calendar date) {
         mLatitude = latitude;
         mLongitude = longitude;
@@ -84,7 +84,7 @@ public class Info implements Parcelable {
      * @param graticule the graticule
      * @param date the date
      */
-    public Info(Graticule graticule, @NonNull Calendar date) {
+    public Info(@Nullable Graticule graticule, @NonNull Calendar date) {
         mLatitude = 0;
         mLongitude = 0;
         mGraticule = graticule;
@@ -159,6 +159,7 @@ public class Info implements Parcelable {
      *
      * @return a LatLng based on the data obtained from the connection
      */
+    @NonNull
     public LatLng getFinalDestinationLatLng() {
         return new LatLng(getLatitude(), getLongitude());
     }
@@ -170,6 +171,7 @@ public class Info implements Parcelable {
      * @return a providerless Location based on the data obtained from the
      *         connection
      */
+    @NonNull
     public Location getFinalLocation() {
         Location loc = new Location("");
         loc.setLatitude(getLatitude());
@@ -183,6 +185,7 @@ public class Info implements Parcelable {
      * 
      * @return the graticule
      */
+    @Nullable
     public Graticule getGraticule() {
         return mGraticule;
     }
@@ -216,7 +219,7 @@ public class Info implements Parcelable {
      *            Location to compare
      * @return the distance, in meters, to the final destination
      */
-    public float getDistanceInMeters(Location loc) {
+    public float getDistanceInMeters(@NonNull Location loc) {
         return loc.distanceTo(getFinalLocation());
     }
 
@@ -227,7 +230,7 @@ public class Info implements Parcelable {
      * @param latLng LatLng to compare
      * @return the distance, in meters, to the final destination
      */
-    public float getDistanceInMeters(LatLng latLng) {
+    public float getDistanceInMeters(@NonNull LatLng latLng) {
         return locationFromLatLng(latLng).distanceTo(getFinalLocation());
     }
     
@@ -253,7 +256,8 @@ public class Info implements Parcelable {
      *          null, assumes this is a globalhash which is always back a day)
      * @return a new adjusted Calendar
      */
-    public static Calendar makeAdjustedCalendar(Calendar c, Graticule g) {
+    @NonNull
+    public static Calendar makeAdjustedCalendar(@NonNull Calendar c, @Nullable Graticule g) {
         // This adjusts the calendar for both the 30W Rule and to clamp all
         // weekend stocks to the preceding Friday.  This saves a few database
         // entries, as the weekend will always be Friday's value.  Note that
@@ -282,7 +286,8 @@ public class Info implements Parcelable {
         return cal;
     }
 
-    private static Location locationFromLatLng(LatLng latLng) {
+    @NonNull
+    private static Location locationFromLatLng(@NonNull LatLng latLng) {
         Location loc = new Location("");
 
         loc.setLatitude(latLng.latitude);
@@ -445,6 +450,8 @@ public class Info implements Parcelable {
         // Now, loop through all the nearby Infos to see if any of those are any
         // better.
         for(Info i : nearby) {
+            if(i == null) continue;
+
             float dist = loc.distanceTo(i.getFinalLocation());
 
             if(dist < bestDistance) {
@@ -476,9 +483,10 @@ public class Info implements Parcelable {
 
     @Override
     public boolean equals(Object o) {
+        if(o == this) return true;
         if(!(o instanceof Info)) return false;
 
-        Info other = (Info)o;
+        final Info other = (Info)o;
 
         // I'm really sure I could make this clearer and/or more efficient if I
         // really thought more about it, and was not in a room full of other
@@ -498,5 +506,22 @@ public class Info implements Parcelable {
 
         // Otherwise, we match!
         return true;
+    }
+
+    @Override
+    public int hashCode() {
+        // Hash!
+        int toReturn = 13;
+
+        toReturn = 27 * toReturn + (mValid ? 1 : 0);
+        toReturn = 27 * toReturn + (mRetroHash ? 1 : 0);
+        long convert = Double.doubleToLongBits(mLatitude);
+        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
+        convert = Double.doubleToLongBits(mLongitude);
+        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
+        toReturn = 27 * toReturn + (mGraticule == null ? 0 : mGraticule.hashCode());
+        toReturn = 27 * toReturn + (mDate == null ? 0 : mDate.hashCode());
+
+        return toReturn;
     }
 }

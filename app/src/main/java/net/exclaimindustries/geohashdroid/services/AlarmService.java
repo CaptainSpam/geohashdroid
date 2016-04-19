@@ -7,7 +7,6 @@
  */
 package net.exclaimindustries.geohashdroid.services;
 
-import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -16,20 +15,31 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
+import android.support.annotation.NonNull;
+import android.support.annotation.StringRes;
 import android.util.Log;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.KnownLocation;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.AndroidUtil;
 
 import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -98,7 +108,19 @@ public class AlarmService extends WakefulIntentService {
      * Directed intent to tell StockService to cancel the alarms.
      */
     public static final String STOCK_ALARM_OFF = "net.exclaimindustries.geohashdroid.STOCK_ALARM_OFF";
-    
+
+    /**
+     * Directed intent to tell CentralMap to go directly to this Info.
+     */
+    public static final String START_INFO = "net.exclaimindustries.geohashdroid.START_INFO";
+    /**
+     * Directed intent to tell CentralMap to go directly to this Info, and it's
+     * also a globalhash, and this helps make it different enough from the other
+     * intent that isn't a globalhash such that PendingIntent won't overwrite
+     * one with the other.
+     */
+    public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
+
     /**
      * This receiver listens for network connectivity changes in case we ran
      * into a problem with network connectivity and wanted to know if that
@@ -146,8 +168,12 @@ public class AlarmService extends WakefulIntentService {
         public void onReceive(Context context, Intent intent) {
             // Check the Intent for the alarm flag.  We'll just straight give up
             // if it's not an alarm, since we don't really care.
-            int flags = intent.getIntExtra(StockService.EXTRA_REQUEST_FLAGS, 0);
-            
+            Bundle stuff = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            int flags = 0;
+            if(stuff != null) {
+                flags = stuff.getInt(StockService.EXTRA_REQUEST_FLAGS, 0);
+            }
+
             if((flags & StockService.FLAG_ALARM) != 0)
             {
                 Log.d(DEBUG_TAG, "StockService returned with an alarming response!");
@@ -272,7 +298,7 @@ public class AlarmService extends WakefulIntentService {
         request.setAction(StockService.ACTION_STOCK_REQUEST)
             .putExtra(StockService.EXTRA_GRATICULE, g)
             .putExtra(StockService.EXTRA_DATE, cal)
-            .putExtra(StockService.EXTRA_REQUEST_ID, (int)(cal.getTimeInMillis() / 1000))
+            .putExtra(StockService.EXTRA_REQUEST_ID, cal.getTimeInMillis() / 1000)
             .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM);
         
         // The notification goes up first.
@@ -282,7 +308,6 @@ public class AlarmService extends WakefulIntentService {
         WakefulIntentService.sendWakefulWork(this, request);
     }
 
-    @SuppressLint("NewApi")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -297,8 +322,7 @@ public class AlarmService extends WakefulIntentService {
         mNotificationBuilder = new Notification.Builder(this)
             .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
             .setSmallIcon(R.drawable.ic_stat_file_file_download)
-            .setContentTitle(getString(R.string.notification_title))
-            .setOngoing(true);
+            .setContentTitle(getString(R.string.notification_title));
         
         // Oh, and if we're in Lollipop, we can go ahead and make this a public
         // Notification.  It's not really sensitive.
@@ -335,7 +359,7 @@ public class AlarmService extends WakefulIntentService {
             // themselves.
             Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
             Calendar alarmTime = makeNineThirty(cal);
-            
+
             if(alarmTime.before(cal)) {
                 alarmTime.add(Calendar.DAY_OF_MONTH, 1);
             }
@@ -411,7 +435,10 @@ public class AlarmService extends WakefulIntentService {
                 if(result == StockService.RESPONSE_OKAY) {
                     // An okay response means the Graticule IS good.  If not,
                     // fix StockService.
-                    if(g.uses30WRule()) {
+                    if(g == null) {
+                        Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
+                        clearNotification();
+                    } else if(g.uses30WRule()) {
                         // If the response we just checked for was a 30W one and
                         // it came back okay, then we fire off a check for the
                         // non-30W one.
@@ -422,6 +449,10 @@ public class AlarmService extends WakefulIntentService {
                         // done!  Yay!
                         Log.d(DEBUG_TAG, "The 30W response!  We're done!");
                         clearNotification();
+
+                        // And since it's done, we can go off to the part where
+                        // we deal with KnownLocations!
+                        doKnownLocations();
                     }
                 }
             } else {
@@ -435,5 +466,133 @@ public class AlarmService extends WakefulIntentService {
             // Stop doing this!
             Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
         }
+    }
+
+    /**
+     * Convenient container for all the data we need for matches.
+     */
+    private static class KnownLocationMatchData implements Comparable<KnownLocationMatchData> {
+        public KnownLocation knownLocation;
+        public Info bestInfo;
+        public double distance;
+
+        public KnownLocationMatchData(@NonNull KnownLocation kl, @NonNull Info info, double dist) {
+            knownLocation = kl;
+            bestInfo = info;
+            distance = dist;
+        }
+
+        @Override
+        public int compareTo(@NonNull KnownLocationMatchData another) {
+            // We want to sort this by how close it is.  The LOWEST number
+            // should go first (that's the closest one).  I hope I got the
+            // order right.
+            if(distance < another.distance) return -1;
+            if(distance > another.distance) return 1;
+            return 0;
+        }
+    }
+
+    private void doKnownLocations() {
+        // First things first, clear out any old notifications.  If those are
+        // still around, they're from previous days, so they're no longer valid.
+        mNotificationManager.cancel(R.id.alarm_known_location);
+        mNotificationManager.cancel(R.id.alarm_known_location_global);
+
+        List<KnownLocation> locations = KnownLocation.getAllKnownLocations(this);
+
+        // If there are no KnownLocations, give up now.
+        if(locations.isEmpty()) return;
+
+        List<KnownLocationMatchData> matched = new LinkedList<>();
+        List<KnownLocationMatchData> matchedGlobal = new LinkedList<>();
+
+        Calendar today = Calendar.getInstance();
+
+        Info global = HashBuilder.getStoredInfo(this, today, null);
+
+        for(KnownLocation kl : locations) {
+            // Every KnownLocation has a method to do this.  Maybe it's a wee
+            // bit inefficient and inelegant, but it does the job.
+            Info best = kl.getClosestInfo(this, today);
+
+            if(kl.isCloseEnough(best.getFinalDestinationLatLng())) {
+                KnownLocationMatchData data = new KnownLocationMatchData(kl, best, kl.getDistanceFrom(best));
+                matched.add(data);
+            }
+
+            // The Globalhash will be handled as a separate notification,
+            // because frankly, that's sort of special.
+            if(global != null && kl.isCloseEnough(global.getFinalDestinationLatLng())) {
+                KnownLocationMatchData data = new KnownLocationMatchData(kl, global, kl.getDistanceFrom(global));
+                matchedGlobal.add(data);
+            }
+        }
+
+        // Did we get anything?  Anything AT ALL?
+        if(!matched.isEmpty()) {
+            launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title);
+        }
+
+        // Now, the Globalhash notification.
+        if(!matchedGlobal.isEmpty()) {
+            launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
+        }
+    }
+
+    private void launchNotification(@NonNull List<KnownLocationMatchData> matched,
+                                    @NonNull String action,
+                                    @IdRes int notificationId,
+                                    @StringRes int titleId) {
+        // So here's what we do: Note the BEST match in a notification, but also
+        // mention the others.
+        Collections.sort(matched);
+
+        // First one's the winner!
+        Notification.Builder builder = getFreshNotificationBuilder(matched, titleId);
+
+        Bundle bun = new Bundle();
+        bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
+
+        Intent intent = new Intent(this, CentralMap.class)
+                .setAction(action)
+                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(StockService.EXTRA_STUFF, bun);
+
+        builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+
+        mNotificationManager.notify(notificationId, builder.build());
+    }
+
+    private Notification.Builder getFreshNotificationBuilder(List<KnownLocationMatchData> data, @StringRes int titleId) {
+        KnownLocationMatchData match = data.get(0);
+        String contentText = getString(R.string.known_locations_alarm_distance,
+                UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),
+                match.knownLocation.getName());
+        String summaryText = getResources().getQuantityString(R.plurals.known_locations_alarm_more, data.size() - 1, data.size() - 1);
+
+        Notification.Builder builder = new Notification.Builder(this)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                .setSmallIcon(R.drawable.ic_stat_av_new_releases)
+                .setAutoCancel(true)
+                .setOngoing(false)
+                .setLights(Color.WHITE, 500, 2000)
+                .setContentText(contentText)
+                .setContentTitle(getString(titleId));
+
+        // If there's more than one known location nearby, make the notification
+        // expandable with a bit of extra text mentioning just how many more.
+        if(data.size() > 1) {
+            builder.setStyle(new Notification.BigTextStyle()
+                    .bigText(contentText)
+                    .setSummaryText(summaryText));
+        }
+
+        // Since these notifications will be displaying location names, they
+        // may as well be private.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            builder.setVisibility(Notification.VISIBILITY_PRIVATE);
+
+        return builder;
     }
 }

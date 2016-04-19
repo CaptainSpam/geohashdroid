@@ -10,8 +10,10 @@ package net.exclaimindustries.geohashdroid.widgets;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Rect;
 import android.location.Location;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
@@ -51,6 +53,15 @@ public class InfoBox extends LinearLayout implements LocationListener {
     private boolean mWaitingToShow = false;
     private boolean mUnavailable = false;
 
+    /** If the InfoBox should be faded out. */
+    private boolean mFaded = false;
+    /** If the InfoBox should be visible and not off-screen. */
+    private boolean mVisible = false;
+
+    // The last-seen states for each type (so we don't overwrite any animation
+    // in progress).
+    private boolean mLastFaded = false;
+    private boolean mLastVisible = false;
 
     public InfoBox(Context c) {
         this(c, null);
@@ -78,6 +89,10 @@ public class InfoBox extends LinearLayout implements LocationListener {
         mDistance = (TextView)findViewById(R.id.infobox_distance);
         mAccuracyLow = (TextView)findViewById(R.id.infobox_accuracy_low);
         mAccuracyReallyLow = (TextView)findViewById(R.id.infobox_accuracy_really_low);
+
+        // Make it not visible immediately.  We'll re-enable it if need be once
+        // we get the global layout listener called.
+        setAlpha(0.0f);
 
         // As usual, make sure the view's just gone until we need it.
         // ExpeditionMode will pull it back in.
@@ -191,17 +206,19 @@ public class InfoBox extends LinearLayout implements LocationListener {
         if(!mAlreadyLaidOut) {
             mWaitingToShow = visible;
         } else {
-            // Quick note: The size of the InfoBox might change due to the width
-            // of the text shown (as well as the accuracy warning), but since we
-            // alpha it out anyway, that shouldn't be a real major issue.
-            if(!visible) {
-                // Slide out!
-                animate().translationX(getWidth()).alpha(0.0f);
-            } else {
-                // Slide in!
-                animate().translationX(0.0f).alpha(1.0f);
-            }
+            mVisible = visible;
+            resolveInfoBoxState(null);
         }
+    }
+
+    /**
+     * Slides the InfoBox out of view (ONLY out of view), with an ending action.
+     *
+     * @param endAction action to perform after animation completes
+     */
+    public void animateInfoBoxOutWithEndAction(@Nullable Runnable endAction) {
+        mVisible = false;
+        resolveInfoBoxState(endAction);
     }
 
     /**
@@ -209,13 +226,71 @@ public class InfoBox extends LinearLayout implements LocationListener {
      * @param visible true to appear, false to vanish
      */
     public void setInfoBoxVisible(boolean visible) {
-        if(!visible) {
+        mVisible = visible;
+        forceInfoBoxState();
+    }
+
+    /**
+     * Fades out the InfoBox and shuts off the click handler.  This is used to
+     * keep the final destination flag visible if it's underneath the box.
+     *
+     * @param faded true to be faded, false to be normal
+     */
+    public void fadeOutInfoBox(boolean faded) {
+        mFaded = faded;
+        resolveInfoBoxState(null);
+    }
+
+    /**
+     * Forces the InfoBox to the faded state, shutting off the click handler in
+     * the process.
+     *
+     * @param faded true to be faded, false to be normal
+     */
+    public void setInfoBoxFaded(boolean faded) {
+        mFaded = faded;
+        forceInfoBoxState();
+    }
+
+    private void resolveInfoBoxState(Runnable endAction) {
+        if(mVisible == mLastVisible && mFaded == mLastFaded) return;
+
+        // Quick note: The size of the InfoBox might change due to the width
+        // of the text shown (as well as the accuracy warning), but since we
+        // alpha it out anyway, that shouldn't be a real major issue.
+        if(!mVisible)
+            animate().translationX(getWidth()).alpha(0.0f).withEndAction(endAction);
+        else if(mFaded)
+            animate().translationX(0.0f).alpha(0.2f).withEndAction(endAction);
+        else
+            animate().translationX(0.0f).alpha(1.0f).withEndAction(endAction);
+
+        // If the box is faded OR hidden, we can't click it.
+        setClickable(mVisible && !mFaded);
+
+        mLastVisible = mVisible;
+        mLastFaded = mFaded;
+    }
+
+    private void forceInfoBoxState() {
+        // Same as in resolve, but without animation.
+        if(!mVisible) {
             setTranslationX(getWidth());
             setAlpha(0.0f);
+        } else if(mFaded) {
+            setTranslationX(0.0f);
+            setAlpha(0.2f);
         } else {
             setTranslationX(0.0f);
             setAlpha(1.0f);
         }
+
+        setClickable(mVisible && !mFaded);
+
+        // Note that we don't bother checking if this has changed, since we
+        // should be overwriting any animation at this point anyway.
+        mLastVisible = mVisible;
+        mLastFaded = mFaded;
     }
 
     /**
@@ -237,5 +312,15 @@ public class InfoBox extends LinearLayout implements LocationListener {
         // Hey, look, a location!
         mLastLocation = location;
         updateBox();
+    }
+
+    /**
+     * Gets the current location and size of the InfoBox, as a Rect (pass one in
+     * and it'll be updated), relative to the parent view.
+     *
+     * @param output the Rect in which data will go
+     */
+    public void getLocationRect(@NonNull Rect output) {
+        output.set(getLeft(), getTop(), getRight(), getBottom());
     }
 }

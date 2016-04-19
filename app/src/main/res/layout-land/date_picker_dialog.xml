@@ -16,6 +16,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="@dimen/dialog_padding"
+        android:layout_marginStart="@dimen/dialog_padding"
         android:text="@string/today_label"
         android:id="@+id/today"
         android:layout_gravity="center_vertical"/>

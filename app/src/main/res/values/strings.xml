@@ -14,6 +14,7 @@
     <string name="title_about">About Geohash Droid</string>
     <string name="title_versionhistory">Version History</string>
     <string name="title_graticule_picker">Tap a graticule or enter one below</string>
+    <string name="title_known_locations">Known Locations Manager</string>
 
     <string name="title_part_globalhash">Globalhash</string>
 
@@ -30,6 +31,8 @@
     <string name="go_disabled_label">Enter a graticule</string>
     <string name="ok_label">Okay</string>
     <string name="cool_label">Cool</string>
+    <string name="gotcha_label">Gotcha</string>
+    <string name="stop_reminding_me_label">Stop reminding me!</string>
     <string name="gratmap_go_label">Use this one</string>
     <string name="backtomap_label">Back to the map</string>
     <string name="closest_label">Find Closest</string>
@@ -117,16 +120,11 @@
     <string name="menu_item_globalhash">Globalhash</string>
     <string name="menu_item_geohash">Geohash</string>
     <string name="menu_item_radar">Radar</string>
+    <string name="menu_item_tomorrow">Try Tomorrow</string>
 
     <string name="menu_item_map_type_street">Street</string>
     <string name="menu_item_map_type_sat">Satellite</string>
     <string name="menu_item_map_type_terrain">Terrain</string>
-
-    <string-array name="menu_item_map_types">
-        <item>@string/menu_item_map_type_street</item>
-        <item>@string/menu_item_map_type_sat</item>
-        <item>@string/menu_item_map_type_terrain</item>
-    </string-array>
 
     <string name="infobox_dist">Dist:</string>
     <string name="infobox_final">To:</string>

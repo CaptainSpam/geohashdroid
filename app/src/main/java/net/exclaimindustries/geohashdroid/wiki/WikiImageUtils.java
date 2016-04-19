@@ -9,25 +9,23 @@
 package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
-import android.database.Cursor;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.BitmapTools;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 
@@ -90,7 +88,7 @@ public class WikiImageUtils {
      * same timestamp.  So don't do that.
      *
      * @param info Info object containing expedition data
-     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Context, Uri, Location, Calendar)}
+     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Uri, Location, Calendar)}
      * @param username current username (must not be null)
      * @return the name of the image on the wiki
      */
@@ -110,14 +108,13 @@ public class WikiImageUtils {
      * document provider's methods.
      * </p>
      *
-     * @param context a Context from which ContentResolver comes
      * @param uri the URI of the image
      * @param locationIfNoneSet location to use if the image has no location metadata stored in it (it won't)
      * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it (it won't)
      * @return a brand new ImageInfo
      */
     @NonNull
-    public static ImageInfo readImageInfo(@NonNull Context context, @NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
+    public static ImageInfo readImageInfo(@NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
         // This got a lot simpler, but sadly much less robust, after the Android
         // change that broke permissions on MediaStore...
         ImageInfo toReturn = new ImageInfo();
@@ -214,7 +211,7 @@ public class WikiImageUtils {
             icons[1] = R.drawable.current_location_wiki_image;
         }
 
-        drawStrings(context, strings, icons, c, mTextPaint, mBackgroundPaint);
+        drawStrings(context.getResources(), strings, icons, c, mTextPaint, mBackgroundPaint);
     }
 
     private static void makePaints(Context context) {
@@ -233,23 +230,29 @@ public class WikiImageUtils {
         }
     }
 
-    private static void drawStrings(Context context, String[] strings, int[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
-        // All we do here is prepare the Drawables before tossing them to the
-        // OTHER method.  Hence the need for a Context.
-        Drawable[] drawables = new Drawable[icons.length];
+    private static void drawStrings(Resources resources, String[] strings, int[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
+        // All we do here is prepare the Bitmaps before tossing them to the
+        // OTHER method.  Hence the need for a Resources.
+        Bitmap[] bitmaps = new Bitmap[icons.length];
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+
         for(int i = 0; i < icons.length; i++) {
-            drawables[i] = context.getResources().getDrawable(icons[i]);
+            bitmaps[i] = BitmapFactory.decodeResource(resources, icons[i], opts);
         }
 
-        drawStrings(strings, drawables, c, textPaint, backgroundPaint);
+        drawStrings(strings, bitmaps, c, textPaint, backgroundPaint);
     }
 
-    private static void drawStrings(String[] strings, Drawable[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
+    private static void drawStrings(String[] strings, Bitmap[] bitmaps, Canvas c, Paint textPaint, Paint backgroundPaint) {
+        // The default paint should do, right?
+        Paint paint = new Paint();
+
         // We need SOME strings.  If we've got nothing, bail out.  This doesn't
         // apply to icons, though; if there's fewer icons than there are
         // strings, the strings just get placed on the left margin.
         if(strings.length < 1) return;
-        if(icons == null) icons = new Drawable[0];
+        if(bitmaps == null) bitmaps = new Bitmap[0];
 
         // First, init our variables.  This is as good a place as any to do so.
         Rect textBounds = new Rect();
@@ -271,10 +274,10 @@ public class WikiImageUtils {
             int iconHeight = 0;
 
             // If we even HAVE an icon for this...
-            if(icons.length > i) {
+            if(bitmaps.length > i) {
                 // With an extra shot of padding for the icon...
-                iconWidth = icons[i].getIntrinsicWidth() + INFOBOX_ITEM_PADDING;
-                iconHeight = icons[i].getIntrinsicHeight();
+                iconWidth = bitmaps[i].getWidth() + INFOBOX_ITEM_PADDING;
+                iconHeight = bitmaps[i].getHeight();
             }
 
             // Now, add the tallest of those into the height...
@@ -337,14 +340,13 @@ public class WikiImageUtils {
             // icons were, but knowing me, this could change at any time.
 
             // Icon!
-            if(icons.length > i) {
-                icons[i].setBounds(drawBounds.left + INFOBOX_BOX_PADDING,
-                        curHeight + iconOffset,
-                        drawBounds.left + INFOBOX_BOX_PADDING + icons[i].getIntrinsicWidth(),
-                        curHeight + iconOffset + icons[i].getIntrinsicHeight());
-                icons[i].draw(c);
+            if(bitmaps.length > i) {
+                c.drawBitmap(bitmaps[i], drawBounds.left + INFOBOX_BOX_PADDING, curHeight + iconOffset, paint);
 
-                textOffsetX = icons[i].getIntrinsicWidth() + INFOBOX_ITEM_PADDING;
+                textOffsetX = bitmaps[i].getWidth() + INFOBOX_ITEM_PADDING;
+
+                // Oh, and jettison that Bitmap.
+                bitmaps[i].recycle();
             }
 
             // Text!
