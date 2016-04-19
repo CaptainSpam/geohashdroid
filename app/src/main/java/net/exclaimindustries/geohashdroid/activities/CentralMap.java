@@ -605,6 +605,8 @@ public class CentralMap
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Intent intent = getIntent();
+
         // Load up!
         if(savedInstanceState != null) {
             mCurrentInfo = savedInstanceState.getParcelable(STATE_INFO);
@@ -620,6 +622,11 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
+        } else if(intent != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
+            // savedInstanceState should override the Intent.
+            mLastModeBundle = new Bundle();
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
+            mSelectAGraticule = false;
         }
 
         setContentView(R.layout.centralmap);
