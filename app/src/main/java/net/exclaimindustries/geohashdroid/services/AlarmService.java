@@ -541,10 +541,13 @@ public class AlarmService extends WakefulIntentService {
         // First one's the winner!
         Notification.Builder builder = getFreshNotificationBuilder(matched, titleId);
 
+        Bundle bun = new Bundle();
+        bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
+
         Intent intent = new Intent(this, CentralMap.class)
                 .setAction(START_INFO)
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra(StockService.EXTRA_INFO, matched.get(0).bestInfo);
+                .putExtra(StockService.EXTRA_STUFF, bun);
 
         builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
 
