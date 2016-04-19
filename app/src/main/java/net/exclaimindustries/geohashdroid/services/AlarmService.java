@@ -113,6 +113,13 @@ public class AlarmService extends WakefulIntentService {
      * Directed intent to tell CentralMap to go directly to this Info.
      */
     public static final String START_INFO = "net.exclaimindustries.geohashdroid.START_INFO";
+    /**
+     * Directed intent to tell CentralMap to go directly to this Info, and it's
+     * also a globalhash, and this helps make it different enough from the other
+     * intent that isn't a globalhash such that PendingIntent won't overwrite
+     * one with the other.
+     */
+    public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
 
     /**
      * This receiver listens for network connectivity changes in case we ran
@@ -524,16 +531,19 @@ public class AlarmService extends WakefulIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
-            launchNotification(matched, R.id.alarm_known_location, R.string.known_locations_alarm_title);
+            launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title);
         }
 
         // Now, the Globalhash notification.
         if(!matchedGlobal.isEmpty()) {
-            launchNotification(matchedGlobal, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
+            launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
         }
     }
 
-    private void launchNotification(List<KnownLocationMatchData> matched, @IdRes int notificationId, @StringRes int titleId) {
+    private void launchNotification(@NonNull List<KnownLocationMatchData> matched,
+                                    @NonNull String action,
+                                    @IdRes int notificationId,
+                                    @StringRes int titleId) {
         // So here's what we do: Note the BEST match in a notification, but also
         // mention the others.
         Collections.sort(matched);
@@ -545,7 +555,7 @@ public class AlarmService extends WakefulIntentService {
         bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
 
         Intent intent = new Intent(this, CentralMap.class)
-                .setAction(START_INFO)
+                .setAction(action)
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(StockService.EXTRA_STUFF, bun);
 
