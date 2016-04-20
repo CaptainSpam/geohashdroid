@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1-pre1" version="910" date="2016-04-20">
+        <title>A Familiar Place, A Familiar Beginning, All Happening Tomorrow</title>
+        <header>Almost ready to go with 0.9.1.  There's a lot going on here, too.  Check it out:</header>
+        <bullets>
+            <bullet>There's a known locations system now!  Accessible through the Map Options part of Preferences, you can now add in locations that you consider to be "known".  If stock pre-fetching is on, those points will be checked for any nearby hashpoints (you can restrict each to its respective home Graticule) or the globalhash for the day, and you'll get a notification if anything's close enough.</bullet>
+            <bullet>Remember how the pre-0.9.0 versions started with the Graticule selection screen and also remembered the last Graticule you used?  Now there's a preference (again, in Map Options) to have Geohash Droid start with either of those, rather than the default of picking the nearest hashpoint regardless of which Graticule it's in!</bullet>
+            <bullet>In the options menu on the main expedition map, there's a brand new "Try Tomorrow" option.  That'll increment the date to tomorrow, just in case you wanted to check the entire weekend's worth of hashpoints quickly on a Friday.</bullet>
+            <bullet>The InfoBox will now fade out if either your location or the final destination are directly underneath it.  Easier to see that way.</bullet>
+            <bullet>Fixed the fact that stock pre-fetching wasn't actually working the way it should have been.</bullet>
+            <bullet>Updates to Play Services.</bullet>
+            <bullet>The usual sort of minor fixes and such.</bullet>
+        </bullets>
+        <footer>I still need new marker graphics for the known location picker (when you search for a location), as well as any last-second usability tweaks I didn't account for.</footer>
+    </version>
     <version name="0.9.0.5" version="909" date="2016-02-12">
         <title>Where The Streets Have No Name, And In Fact Aren't Even Shown On The Map</title>
         <header>One minor feature and one bug fix later...</header>
