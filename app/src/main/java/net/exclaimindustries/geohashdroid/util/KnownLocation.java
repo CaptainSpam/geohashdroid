@@ -36,7 +36,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Random;
 
 /**
  * This represents a single known location.  It's got a LatLng and a name, as
@@ -403,7 +402,6 @@ public class KnownLocation implements Parcelable {
         // Oh, this is going to be FUN.
         int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_pin_size);
         float radius = c.getResources().getDimension(R.dimen.known_location_pin_head_radius);
-        float baseLength = c.getResources().getDimension(R.dimen.known_location_pin_base_length);
 
         Bitmap bitmap = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -411,22 +409,12 @@ public class KnownLocation implements Parcelable {
         Paint paint = new Paint();
         paint.setAntiAlias(true);
 
-        Random random = makeRandom();
-
-        // For variety, we'll have three random elements: The angle at which the
-        // pin sits in the map (80...100 degrees)...
-        double pinAngle = Math.toRadians((random.nextDouble() * 20.0f) + 80.0f);
-
-        // ...the relative length of the pin itself...
-        float length = baseLength * (1 - (random.nextFloat() * 0.5f));
-
-        // ...and the color of the pin's head (we just randomize the hue).
-        int hue = random.nextInt(360);
+        KnownLocationPinData pinData = new KnownLocationPinData(c, mLocation);
 
         // Draw the pin line first.  That goes from the bottom-center up to
         // wherever the radius and length take us.
-        float topX = Double.valueOf((dim / 2) + (length * Math.cos(pinAngle))).floatValue();
-        float topY = Double.valueOf(dim - (length * Math.sin(pinAngle))).floatValue();
+        float topX = Double.valueOf((dim / 2) + (pinData.getLength() * Math.cos(pinData.getAngle()))).floatValue();
+        float topY = Double.valueOf(dim - (pinData.getLength() * Math.sin(pinData.getAngle()))).floatValue();
         paint.setStrokeWidth(c.getResources().getDimension(R.dimen.known_location_stroke));
         paint.setStyle(Paint.Style.STROKE);
         paint.setColor(Color.BLACK);
@@ -434,7 +422,7 @@ public class KnownLocation implements Parcelable {
         canvas.drawLine(dim / 2, dim, topX, topY, paint);
 
         // On the top of that line, fill in a circle.
-        paint.setColor(Color.HSVToColor(new float[]{hue, 1.0f, 0.8f}));
+        paint.setColor(pinData.getColor());
         paint.setStyle(Paint.Style.FILL);
         canvas.drawCircle(topX, topY, radius, paint);
 
@@ -444,32 +432,6 @@ public class KnownLocation implements Parcelable {
         canvas.drawCircle(topX, topY, radius, paint);
 
         return bitmap;
-    }
-
-    @NonNull
-    private Random makeRandom() {
-        // What we're looking for here is a stable randomizer with the seed
-        // initialized to something (reasonably) unique to the location given
-        // in this KnownLocation (not the name).  java.util.Random, as the docs
-        // assure me, will ALWAYS be a certain algorithm for portability's sake,
-        // and thus always give the same results.  This hopefully isn't going to
-        // be something like a randomizer whose algorithm changes when someone
-        // discovers it's not random enough.  I'm looking more for a hashing
-        // function than a true (or even pseudo-true) random number here.
-
-        // So, to generate our seed, we're going to convert the latitude and
-        // longitude into 32-bit ints.  Sort of.  More like we're going to
-        // multiply them up so they're more reasonably in the domain of
-        // -(2^31 - 1)...2^31.  Then, we bit-shift one of them such that we can
-        // add both together into a long whose bits are reasonably unique,
-        // giving us a seed that's reasonably unique.  This is entirely the
-        // wrong way to do this.
-        long latPart = Double.doubleToLongBits(mLocation.latitude);
-        long lonPart = Double.doubleToLongBits(mLocation.longitude) << 32;
-
-        long seed = latPart + lonPart;
-
-        return new Random(seed);
     }
 
     @Override
