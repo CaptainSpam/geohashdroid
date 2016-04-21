@@ -898,6 +898,8 @@ public class KnownLocationsPicker
             MarkerOptions opts = new MarkerOptions()
                     .position(curPos)
                     .title(a.getFeatureName() == null ? curPos.latitude + ", " + curPos.longitude : a.getFeatureName())
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.known_location_search_marker))
+                    .anchor(0.5f, 0.5f)
                     .snippet(getString(R.string.known_locations_tap_to_add));
 
             mActiveAddressMap.put(mMap.addMarker(opts), a);
