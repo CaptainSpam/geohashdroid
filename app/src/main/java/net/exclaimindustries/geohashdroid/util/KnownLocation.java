@@ -400,7 +400,7 @@ public class KnownLocation implements Parcelable {
     @NonNull
     private Bitmap buildMarkerBitmap(@NonNull Context c) {
         // Oh, this is going to be FUN.
-        int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_pin_size);
+        int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_marker_canvas_size);
         float radius = c.getResources().getDimension(R.dimen.known_location_pin_head_radius);
 
         Bitmap bitmap = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);

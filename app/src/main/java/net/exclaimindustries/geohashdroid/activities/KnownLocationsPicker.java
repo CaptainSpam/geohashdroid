@@ -16,6 +16,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.AsyncTask;
@@ -54,6 +58,7 @@ import com.google.common.collect.HashBiMap;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
+import net.exclaimindustries.geohashdroid.util.KnownLocationPinData;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
 import java.io.IOException;
@@ -874,6 +879,7 @@ public class KnownLocationsPicker
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), getResources().getDimensionPixelSize(R.dimen.map_zoom_padding)));
         } else {
+            // TODO: Toast?
             Log.d(DEBUG_TAG, "SOMETHING BAD");
         }
     }
@@ -898,11 +904,65 @@ public class KnownLocationsPicker
             MarkerOptions opts = new MarkerOptions()
                     .position(curPos)
                     .title(a.getFeatureName() == null ? curPos.latitude + ", " + curPos.longitude : a.getFeatureName())
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.known_location_search_marker))
-                    .anchor(0.5f, 0.5f)
+                    .icon(BitmapDescriptorFactory.fromBitmap(makeAddressBitmap(curPos)))
+                    .anchor(0.5f, 1.0f)
                     .snippet(getString(R.string.known_locations_tap_to_add));
 
             mActiveAddressMap.put(mMap.addMarker(opts), a);
         }
+    }
+
+    @NonNull
+    private Bitmap makeAddressBitmap(LatLng loc) {
+        // The signpost for address search results will just be two rectangles.
+        // The top rectangle will be the color the pin will be.
+        int dim = getResources().getDimensionPixelSize(R.dimen.known_location_marker_canvas_size);
+
+        Bitmap bitmap = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setStrokeWidth(getResources().getDimension(R.dimen.known_location_stroke));
+
+
+        KnownLocationPinData pinData = new KnownLocationPinData(this, loc);
+
+        // Draw us a rectangle.  Centered horizontally, anchored to the bottom
+        // of the canvas.  Draw the color block first, then outline it.
+        int width = getResources().getDimensionPixelSize(R.dimen.known_location_address_post_width);
+        int height = getResources().getDimensionPixelSize(R.dimen.known_location_address_post_height);
+
+        paint.setColor(Color.HSVToColor(new float[]{25, 1.0f, 0.36f}));
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawRect((dim - width) / 2, dim - height, (dim + width) / 2, dim, paint);
+
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect((dim - width) / 2, dim - height, (dim + width) / 2, dim, paint);
+
+        // Then, draw us another rectangle.  Center it horizontally again, inset
+        // it from the top by a little bit.
+        width = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_width);
+        height = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_height);
+        int inset = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_inset);
+
+        paint.setColor(pinData.getColor());
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawRect((dim - width) / 2, inset, (dim + width) / 2, inset + height, paint);
+
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect((dim - width) / 2, inset, (dim + width) / 2, inset + height, paint);
+
+        // And one white rectangle so the sign isn't completely blank.  No
+        // outline this time around.
+        int innerInset = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_inner_inset);
+
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawRect((dim - width) / 2 + innerInset, inset + innerInset, (dim + width) / 2 - innerInset, inset + height - innerInset, paint);
+
+        return bitmap;
     }
 }
