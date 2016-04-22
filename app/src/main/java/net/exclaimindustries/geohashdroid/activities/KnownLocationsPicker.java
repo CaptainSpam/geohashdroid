@@ -37,6 +37,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -879,8 +880,30 @@ public class KnownLocationsPicker
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), getResources().getDimensionPixelSize(R.dimen.map_zoom_padding)));
         } else {
-            // TODO: Toast?
-            Log.d(DEBUG_TAG, "SOMETHING BAD");
+            // Else we TOAST!
+            int resId = R.string.known_locations_search_error_internal_error;
+            String debugString = "Fell through the switch?";
+            switch(code) {
+                case NO_RESULTS:
+                    resId = R.string.known_locations_search_error_no_results;
+                    debugString = "There weren't any results.";
+                    break;
+                case IO_ERROR:
+                    resId = R.string.known_locations_search_error_io_error;
+                    debugString = "IO error; probably no network connection.";
+                    break;
+                case NO_GEOCODER:
+                    resId = R.string.known_locations_search_error_no_geocoder;
+                    debugString = "No geocoder; how did we get here in the first place?";
+                    break;
+                case INTERNAL_ERROR:
+                    resId = R.string.known_locations_search_error_internal_error;
+                    debugString = "Internal error; this'll probably result in a bug report...";
+                    break;
+            }
+
+            Toast.makeText(this, resId, Toast.LENGTH_LONG).show();
+            Log.w(DEBUG_TAG, "Location search lookup error: " + debugString);
         }
     }
 

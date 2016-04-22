@@ -32,4 +32,9 @@
         <item quantity="one">(it\'s also close to %1$d more known location!)</item>
         <item quantity="other">(it\'s also close to %1$d more known locations!)</item>
     </plurals>
+
+    <string name="known_locations_search_error_no_results">That search didn\'t turn up any results.</string>
+    <string name="known_locations_search_error_no_geocoder">It doesn\'t look like there\'s any way to perform a location lookup on this device.  Do you have a basic geocoder installed?</string>
+    <string name="known_locations_search_error_io_error">Something went wrong performing the search.  Do you have a network connection?</string>
+    <string name="known_locations_search_error_internal_error">Some sort of internal error occurred.  Oops.</string>
 </resources>
