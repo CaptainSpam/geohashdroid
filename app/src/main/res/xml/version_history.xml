@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1-pre2" version="911" date="2016-04-22">
+        <title>And Some Dry White Toast</title>
+        <header>Almost there...</header>
+        <bullets>
+            <bullet>There's custom images for the search result markers in the known locations manager.  What's more, they'll be the same color as the pin that goes into the map if you actually add the point.</bullet>
+            <bullet>Added in the toast messages I forgot to put in for search errors.</bullet>
+        </bullets>
+        <footer>I think this'll do it.  Unless I hear objections, I'll probably make a proper 0.9.1 release (pre-release version notes will go away and be replaced by one release note) very soon.</footer>
+    </version>
     <version name="0.9.1-pre1" version="910" date="2016-04-20">
         <title>A Familiar Place, A Familiar Beginning, All Happening Tomorrow</title>
         <header>Almost ready to go with 0.9.1.  There's a lot going on here, too.  Check it out:</header>
