@@ -23,6 +23,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -377,6 +378,8 @@ public class KnownLocation implements Parcelable {
      * Note that this MarkerOptions won't have a snippet.  The caller has to set
      * that itself.  The title, though, will be the KnownLocation's name.
      * </p>
+     *
+     * @param c a Context
      * @return a MarkerOptions representing this KnownLocation
      */
     @NonNull
@@ -393,6 +396,39 @@ public class KnownLocation implements Parcelable {
         // The snippet should be set by the caller.  That'll either be
         // instructions to tap it again to edit/add it or the distance from it
         // to the hashpoint.
+
+        return toReturn;
+    }
+
+    /**
+     * Makes a CircleOptions out of this KnownLocation (when added to the map,
+     * you get the actual Circle back.  This is used in KnownLocationsPicker to
+     * give the user a better idea of what the range looks like.
+     *
+     * @param c a Context
+     * @return a CircleOptions representing this KnownLocation's location and range
+     */
+    @NonNull
+    public CircleOptions makeCircle(@NonNull Context c) {
+        CircleOptions toReturn = new CircleOptions();
+
+        KnownLocationPinData data = new KnownLocationPinData(c, mLocation);
+        int baseColor = data.getColor();
+
+        toReturn.center(mLocation)
+                .radius(mRange)
+                .strokeWidth(c.getResources().getInteger(R.integer.known_location_circle_stroke_width))
+                .strokeColor(Color.argb(
+                        c.getResources().getInteger(R.integer.known_location_circle_stroke_alpha),
+                        Color.red(baseColor),
+                        Color.green(baseColor),
+                        Color.blue(baseColor)))
+                .fillColor(
+                        Color.argb(
+                                c.getResources().getInteger(R.integer.known_location_circle_alpha),
+                                Color.red(baseColor),
+                                Color.green(baseColor),
+                                Color.blue(baseColor)));
 
         return toReturn;
     }

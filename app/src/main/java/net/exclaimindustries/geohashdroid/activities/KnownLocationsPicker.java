@@ -48,6 +48,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -373,6 +374,7 @@ public class KnownLocationsPicker
     private boolean mReloaded = false;
 
     private BiMap<Marker, KnownLocation> mMarkerMap;
+    private BiMap<Circle, KnownLocation> mCircleMap;
 
     private List<KnownLocation> mLocations;
     private Marker mMapClickMarker;
@@ -395,8 +397,9 @@ public class KnownLocationsPicker
         // have to wait on the map callbacks, but still, let's fetch them now.
         mLocations = KnownLocation.getAllKnownLocations(this);
 
-        // We need a map.
+        // We need maps.
         mMarkerMap = HashBiMap.create();
+        mCircleMap = HashBiMap.create();
 
         // Prep a client (it'll get going during onStart)!
         mGoogleClient = new GoogleApiClient.Builder(this)
@@ -729,13 +732,16 @@ public class KnownLocationsPicker
 
     private void initKnownLocations() {
         mMarkerMap = HashBiMap.create();
+        mCircleMap = HashBiMap.create();
 
         if(!mLocations.isEmpty()) {
             for(KnownLocation kl : mLocations) {
                 // Each KnownLocation gives us a MarkerOptions we can use.
                 Log.d(DEBUG_TAG, "Making marker for KnownLocation " + kl.toString() + " at a range of " + kl.getRange() + "m");
                 Marker newMark = mMap.addMarker(makeExistingMarker(kl));
+                Circle newCircle = mMap.addCircle(kl.makeCircle(this));
                 mMarkerMap.put(newMark, kl);
+                mCircleMap.put(newCircle, kl);
             }
         }
     }
@@ -761,7 +767,9 @@ public class KnownLocationsPicker
 
         // Then, replace it with the new one.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
+        Circle newCircle = mMap.addCircle(newLoc.makeCircle(this));
         mMarkerMap.forcePut(newMark, newLoc);
+        mCircleMap.forcePut(newCircle, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         mActiveAddresses.remove(address);
@@ -790,6 +798,7 @@ public class KnownLocationsPicker
             // Since this is an existing KnownLocation, the marker should be in
             // that map, ripe for removal.
             mMarkerMap.inverse().remove(existing).remove();
+            mCircleMap.inverse().remove(existing).remove();
         } else {
             // Brand new!
             mLocations.add(newLoc);
@@ -797,7 +806,9 @@ public class KnownLocationsPicker
 
         // In both cases, store the data and add a new marker.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
+        Circle newCircle = mMap.addCircle(newLoc.makeCircle(this));
         mMarkerMap.forcePut(newMark, newLoc);
+        mCircleMap.forcePut(newCircle, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // And remove the marker from the map.  The visual one this time.
