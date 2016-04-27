@@ -733,6 +733,7 @@ public class KnownLocationsPicker
         if(!mLocations.isEmpty()) {
             for(KnownLocation kl : mLocations) {
                 // Each KnownLocation gives us a MarkerOptions we can use.
+                Log.d(DEBUG_TAG, "Making marker for KnownLocation " + kl.toString() + " at a range of " + kl.getRange() + "m");
                 Marker newMark = mMap.addMarker(makeExistingMarker(kl));
                 mMarkerMap.put(newMark, kl);
             }

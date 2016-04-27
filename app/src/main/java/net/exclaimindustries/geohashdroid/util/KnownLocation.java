@@ -60,7 +60,7 @@ public class KnownLocation implements Parcelable {
      *
      * @param name the name of this mLocation
      * @param location a LatLng where it can be found
-     * @param range how close it has to be before it triggers a notification, in km
+     * @param range how close it has to be before it triggers a notification, in m
      * @param restrictGraticule true to only consider the location's native graticule for range purposes, rather than find the closest one
      */
     public KnownLocation(@NonNull String name, @NonNull LatLng location, double range, boolean restrictGraticule) {
@@ -236,7 +236,7 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
-     * Gets the range required before this KnownLocation will trigger a
+     * Gets the range (in m) required before this KnownLocation will trigger a
      * notification.
      *
      * @return the range
