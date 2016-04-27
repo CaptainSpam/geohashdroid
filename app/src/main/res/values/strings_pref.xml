@@ -66,6 +66,13 @@
     <string name="toast_stockwipe_success">The stock cache database has been cleared.</string>
     <string name="toast_stockwipe_failure">There was a problem clearing the stock cache database.</string>
 
+    <string name="pref_reset_bugging_me_title">Reset \"Stop Reminding Me\" prompts</string>
+    <string name="pref_reset_butting_me_dialog_text">Are you sure you want to be reminded of all the things you didn\'t want to be reminded of?</string>
+
+    <string name="dialog_reset_bugging_me_yes">Yes, start reminding me</string>
+    <string name="dialog_reset_bugging_me_no">No, keep not reminding me</string>
+    <string name="toast_reset_bugging_me_success">You will be reminded.</string>
+
     <string name="pref_startup_title">Startup behavior</string>
     <string name="pref_startup_dialogtitle">On startup, it should…</string>
     <string name="pref_startup_useclosest">Find the closest hashpoint</string>

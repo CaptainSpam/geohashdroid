@@ -13,6 +13,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -185,6 +186,7 @@ public class PreferencesActivity extends PreferenceActivity {
      */
     public static class OtherPreferenceFragment extends PreferenceFragment {
         private static final String WIPE_DIALOG = "wipeDialog";
+        private static final String RESET_BUGGING_ME_DIALOG = "resetBuggingMe";
 
         /**
          * This is the {@link DialogFragment} that shows up when the user wants
@@ -216,6 +218,43 @@ public class PreferencesActivity extends PreferenceActivity {
                             }
                         })
                         .setNegativeButton(R.string.dialog_stockwipe_no, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dismiss();
+                            }
+                        })
+                        .create();
+            }
+        }
+
+        public static class ResetBuggingMeDialogFragment extends DialogFragment {
+            @Override
+            public Dialog onCreateDialog(Bundle savedInstanceState) {
+                return new AlertDialog.Builder(getActivity()).setMessage(R.string.pref_reset_butting_me_dialog_text)
+                        .setTitle(R.string.pref_reset_bugging_me_title)
+                        .setPositiveButton(R.string.dialog_reset_bugging_me_yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // Well, you heard the orders!
+                                dismiss();
+
+                                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                                SharedPreferences.Editor editor = prefs.edit();
+
+                                // This list will grow and grow as I keep adding
+                                // in new prompts until I get sick of it and
+                                // come up with a more efficient way to do this.
+                                editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, false);
+
+                                editor.apply();
+
+                                Toast.makeText(
+                                        getActivity(),
+                                        R.string.toast_reset_bugging_me_success,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setNegativeButton(R.string.dialog_reset_bugging_me_no, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 dismiss();
@@ -264,8 +303,18 @@ public class PreferencesActivity extends PreferenceActivity {
             findPreference("_stockWipe").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
-                    WipeCacheDialogFragment frag = new WipeCacheDialogFragment();
+                    DialogFragment frag = new WipeCacheDialogFragment();
                     frag.show(getFragmentManager(), WIPE_DIALOG);
+                    return true;
+                }
+            });
+
+            // As is the reminder unremindening.
+            findPreference("_resetBuggingMe").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    DialogFragment frag = new ResetBuggingMeDialogFragment();
+                    frag.show(getFragmentManager(), RESET_BUGGING_ME_DIALOG);
                     return true;
                 }
             });
