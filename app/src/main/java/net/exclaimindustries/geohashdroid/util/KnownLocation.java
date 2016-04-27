@@ -402,7 +402,7 @@ public class KnownLocation implements Parcelable {
 
     /**
      * Makes a CircleOptions out of this KnownLocation (when added to the map,
-     * you get the actual Circle back.  This is used in KnownLocationsPicker to
+     * you get the actual Circle back).  This is used in KnownLocationsPicker to
      * give the user a better idea of what the range looks like.
      *
      * @param c a Context
@@ -418,11 +418,12 @@ public class KnownLocation implements Parcelable {
         toReturn.center(mLocation)
                 .radius(mRange)
                 .strokeWidth(c.getResources().getInteger(R.integer.known_location_circle_stroke_width))
-                .strokeColor(Color.argb(
-                        c.getResources().getInteger(R.integer.known_location_circle_stroke_alpha),
-                        Color.red(baseColor),
-                        Color.green(baseColor),
-                        Color.blue(baseColor)))
+                .strokeColor(
+                        Color.argb(
+                                c.getResources().getInteger(R.integer.known_location_circle_stroke_alpha),
+                                Color.red(baseColor),
+                                Color.green(baseColor),
+                                Color.blue(baseColor)))
                 .fillColor(
                         Color.argb(
                                 c.getResources().getInteger(R.integer.known_location_circle_alpha),
