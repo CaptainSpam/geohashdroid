@@ -1,17 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
-    <version name="0.9.1-pre2" version="911" date="2016-04-22">
-        <title>And Some Dry White Toast</title>
-        <header>Almost there...</header>
-        <bullets>
-            <bullet>There's custom images for the search result markers in the known locations manager.  What's more, they'll be the same color as the pin that goes into the map if you actually add the point.</bullet>
-            <bullet>Added in the toast messages I forgot to put in for search errors.</bullet>
-        </bullets>
-        <footer>I think this'll do it.  Unless I hear objections, I'll probably make a proper 0.9.1 release (pre-release version notes will go away and be replaced by one release note) very soon.</footer>
-    </version>
-    <version name="0.9.1-pre1" version="910" date="2016-04-20">
-        <title>A Familiar Place, A Familiar Beginning, All Happening Tomorrow</title>
-        <header>Almost ready to go with 0.9.1.  There's a lot going on here, too.  Check it out:</header>
+    <version name="0.9.1" version="912" date="2016-04-28">
+        <title>That Familiar Place Down The Street</title>
+        <header>It's version 0.9.1!  There's a lot going on here!  Check it out:</header>
         <bullets>
             <bullet>There's a known locations system now!  Accessible through the Map Options part of Preferences, you can now add in locations that you consider to be "known".  If stock pre-fetching is on, those points will be checked for any nearby hashpoints (you can restrict each to its respective home Graticule) or the globalhash for the day, and you'll get a notification if anything's close enough.</bullet>
             <bullet>Remember how the pre-0.9.0 versions started with the Graticule selection screen and also remembered the last Graticule you used?  Now there's a preference (again, in Map Options) to have Geohash Droid start with either of those, rather than the default of picking the nearest hashpoint regardless of which Graticule it's in!</bullet>
@@ -21,7 +12,7 @@
             <bullet>Updates to Play Services.</bullet>
             <bullet>The usual sort of minor fixes and such.</bullet>
         </bullets>
-        <footer>I still need new marker graphics for the known location picker (when you search for a location), as well as any last-second usability tweaks I didn't account for.</footer>
+        <footer>The Known Locations system is the big thing here.  I did as much testing as I reasonably could, and I think it'll work the way I'm expecting it to, but there might be some glitches.  Let me know (in GitHub) if something's really wrong with it.</footer>
     </version>
     <version name="0.9.0.5" version="909" date="2016-02-12">
         <title>Where The Streets Have No Name, And In Fact Aren't Even Shown On The Map</title>
