@@ -570,6 +570,7 @@ public class WikiUtils {
             return date + "_global";
         } else {
             Graticule grat = info.getGraticule();
+            assert(grat != null);
             String lat = grat.getLatitudeString(true);
             String lon = grat.getLongitudeString(true);
 
@@ -624,6 +625,7 @@ public class WikiUtils {
 
         } else {
             Graticule grat = info.getGraticule();
+            assert(grat != null);
             String lat = grat.getLatitudeString(true);
             String lon = grat.getLongitudeString(true);
 
@@ -647,6 +649,7 @@ public class WikiUtils {
             return toReturn + "[[Category:Globalhash]]";
         } else {
             Graticule grat = info.getGraticule();
+            assert(grat != null);
             String lat = grat.getLatitudeString(true);
             String lon = grat.getLongitudeString(true);
 

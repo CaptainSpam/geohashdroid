@@ -19,6 +19,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.LocationUtil;
@@ -77,6 +78,8 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
         final Info info = getArguments().getParcelable("info");
         final Location location = getArguments().getParcelable("location");
 
+        assert(info != null);
+
         String message;
         if(LocationUtil.isLocationNewEnough(location)) {
             message = getString(R.string.dialog_switch_graticule_text,
@@ -89,9 +92,12 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
 
         // Fortunately, we've got GHDBasicDialogBuilder on-hand for just such
         // basic dialog purposes!
+        Graticule g = info.getGraticule();
+        assert(g != null);
+
         return new AlertDialog.Builder(getActivity())
                 .setMessage(message)
-                .setTitle(info.getGraticule().getLatitudeString(false) + " " + info.getGraticule().getLongitudeString(false))
+                .setTitle(g.getLatitudeString(false) + " " + g.getLongitudeString(false))
                 .setPositiveButton(getString(R.string.dialog_switch_graticule_okay), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

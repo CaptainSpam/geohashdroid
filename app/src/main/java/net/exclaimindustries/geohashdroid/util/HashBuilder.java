@@ -340,6 +340,7 @@ public class HashBuilder {
                 // With that done, we try to convert the output to the float.
                 // If this fails, we got bogus data and should roll on.
                 try {
+                    //noinspection ResultOfMethodCallIgnored
                     Float.parseFloat(result);
                 } catch (NumberFormatException nfe) {
                     result = "";
@@ -526,16 +527,6 @@ public class HashBuilder {
         store.storeStock(cal, stock);
         store.cleanup();
     }
-    
-    /**
-     * Cleans up the database with whatever cleanup needs to be done.
-     * Generally, this means pruning it.
-     * 
-     * @param con Context used to retrieve the database, if needed
-     */
-    public synchronized static void cleanupDatabase(Context con) {
-        getStore(con).cleanup();
-    }
 
     /**
      * Wipes out the entire stock cache.  No, seriously.
@@ -606,9 +597,12 @@ public class HashBuilder {
     protected static Info cloneInfo(Info i, Graticule g) {
         if(i.isGlobalHash() || g == null)
             throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
+
+        Graticule source = i.getGraticule();
+        assert(source != null);
         
         // This sort of requires the 30W-itude of both to match.
-        if(i.getGraticule().uses30WRule() != g.uses30WRule())
+        if(source.uses30WRule() != g.uses30WRule())
             throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line; this should not have happened.");
         
         // Get the destination set...

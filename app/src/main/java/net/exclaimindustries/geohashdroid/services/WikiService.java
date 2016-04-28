@@ -329,6 +329,8 @@ public class WikiService extends QueueService {
                 String before;
                 String after;
 
+                assert(page != null);
+
                 Matcher expeditionq = RE_EXPEDITION.matcher(page);
                 if (expeditionq.matches()) {
                     before = expeditionq.group(1) + expeditionq.group(2);
@@ -470,6 +472,7 @@ public class WikiService extends QueueService {
 
                 if(!info.isGlobalHash()) {
                     Graticule g = info.getGraticule();
+                    assert(g != null);
                     builder.append(Integer.toString(g.getLatitude()))
                             .append(':')
                             .append(g.isSouth() ? '1' : '0')
