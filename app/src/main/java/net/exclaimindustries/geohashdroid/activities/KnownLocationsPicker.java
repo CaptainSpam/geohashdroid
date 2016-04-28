@@ -731,6 +731,16 @@ public class KnownLocationsPicker
     }
 
     private void initKnownLocations() {
+        if(mMarkerMap != null) {
+            for(Marker m : mMarkerMap.keySet())
+                m.remove();
+        }
+
+        if(mCircleMap != null) {
+            for(Circle c : mCircleMap.keySet())
+                c.remove();
+        }
+
         mMarkerMap = HashBiMap.create();
         mCircleMap = HashBiMap.create();
 
@@ -827,6 +837,7 @@ public class KnownLocationsPicker
         Marker marker = mMarkerMap.inverse().get(existing);
         marker.remove();
         mMarkerMap.remove(marker);
+        mCircleMap.inverse().remove(existing).remove();
 
         // Then, remove it from the location list and push that back to the
         // preferences.
