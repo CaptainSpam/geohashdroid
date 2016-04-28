@@ -417,7 +417,7 @@ public class KnownLocation implements Parcelable {
 
         toReturn.center(mLocation)
                 .radius(mRange)
-                .strokeWidth(c.getResources().getInteger(R.integer.known_location_circle_stroke_width))
+                .strokeWidth(c.getResources().getDimension(R.dimen.known_location_circle_stroke_width))
                 .strokeColor(
                         Color.argb(
                                 c.getResources().getInteger(R.integer.known_location_circle_stroke_alpha),
