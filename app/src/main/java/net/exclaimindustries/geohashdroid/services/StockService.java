@@ -27,9 +27,10 @@ import java.util.List;
 
 /**
  * <p>
- * StockService, made possible by the sleepless efforts of Mark "CommonsGuy"
- * Murphy, handles all stock retrieval duties.  You ask it for a stock, it'll
- * later broadcast an Intent either with that stock or some error.
+ * StockService, whose wakefulness is made possible by the sleepless efforts of
+ * Mark "CommonsGuy" Murphy, handles all stock retrieval duties.  You ask it for
+ * a stock, it'll later broadcast an Intent either with that stock or some
+ * error.
  * </p>
  * 
  * <p>
