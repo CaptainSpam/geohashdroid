@@ -14,6 +14,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -24,6 +25,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -491,11 +493,22 @@ public class KnownLocationsPicker
                     .setNegativeButton(R.string.stop_reminding_me_label, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+
                             SharedPreferences.Editor editor = prefs.edit();
                             editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
                             editor.apply();
-
+                        }
+                    })
+                    .setNeutralButton(R.string.go_to_preference, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
+
+                            Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class);
+                            intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, PreferencesScreen.OtherPreferenceFragment.class.getName());
+                            intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                            startActivity(intent);
                         }
                     })
                     .setPositiveButton(R.string.gotcha_label, new DialogInterface.OnClickListener() {

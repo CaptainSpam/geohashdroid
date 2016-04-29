@@ -33,6 +33,7 @@
     <string name="cool_label">Cool</string>
     <string name="gotcha_label">Gotcha</string>
     <string name="stop_reminding_me_label">Stop reminding me</string>
+    <string name="go_to_preference">Take me there</string>
     <string name="gratmap_go_label">Use this one</string>
     <string name="backtomap_label">Back to the map</string>
     <string name="closest_label">Find Closest</string>
