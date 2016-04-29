@@ -7,6 +7,17 @@
  */
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
+import android.os.PowerManager;
+import android.support.annotation.Nullable;
+import android.util.Log;
+
+import net.exclaimindustries.tools.DateTools;
+import net.exclaimindustries.tools.HexFraction;
+import net.exclaimindustries.tools.MD5Tools;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,21 +27,10 @@ import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.Calendar;
 
-import net.exclaimindustries.tools.DateTools;
-import net.exclaimindustries.tools.HexFraction;
-import net.exclaimindustries.tools.MD5Tools;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
-import android.content.Context;
-import android.os.Handler;
-import android.os.Message;
-import android.os.PowerManager;
-import android.support.annotation.Nullable;
-import android.util.Log;
+import cz.msebera.android.httpclient.HttpResponse;
+import cz.msebera.android.httpclient.client.methods.HttpGet;
+import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
+import cz.msebera.android.httpclient.impl.client.HttpClients;
 
 /**
  * <p>
@@ -305,7 +305,7 @@ public class HashBuilder {
                 Log.v(DEBUG_TAG, "Trying " + location + "...");
                 
                 // And go fetch!
-                HttpClient client = new DefaultHttpClient();
+                CloseableHttpClient client = HttpClients.createDefault();
                 mRequest = new HttpGet(location);
                 HttpResponse response;
                 
@@ -316,6 +316,11 @@ public class HashBuilder {
                     // response (aborting throws an IOException).  If not, there
                     // was a legitimate problem with this particular server.
                     if(mStatus == ABORTED) {
+                        try {
+                            client.close();
+                        } catch(Exception ex) {
+                            // Nothing.
+                        }
                         return "";
                     }
                     continue;
@@ -323,6 +328,11 @@ public class HashBuilder {
                 
                 // Make sure we've caught an abort...
                 if(mStatus == ABORTED) {
+                    try {
+                        client.close();
+                    } catch(Exception ex) {
+                        // Nothing!
+                    }
                     return "";
                 }
                 
@@ -349,6 +359,7 @@ public class HashBuilder {
                 
                 // We survived!  Set the status flag and keep going!
                 curStatus = ALL_OKAY;
+                client.close();
                 break;
             }
             

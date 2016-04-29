@@ -38,9 +38,6 @@ import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.QueueService;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,6 +48,9 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
+import cz.msebera.android.httpclient.impl.client.HttpClients;
 
 /**
  * <code>WikiService</code> is a background service that handles all wiki
@@ -206,7 +206,7 @@ public class WikiService extends QueueService {
         }
 
         // Prep an HttpClient for later...
-        HttpClient client = new DefaultHttpClient();
+        CloseableHttpClient client = HttpClients.createDefault();
 
         // To Preferences!
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -385,6 +385,12 @@ public class WikiService extends QueueService {
             }
 
             return ReturnCode.PAUSE;
+        } finally {
+            try {
+                client.close();
+            } catch(Exception ex) {
+                // Eh, forget it.
+            }
         }
     }
 
