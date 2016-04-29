@@ -9,8 +9,11 @@ gen/
 .directory
 
 app/build/*
-/.idea/workspace.xml
-/.idea/libraries
+
+*.iml
 .gradle
 /local.properties
+/.idea/workspace.xml
+/.idea/libraries
 /build
+/captures
