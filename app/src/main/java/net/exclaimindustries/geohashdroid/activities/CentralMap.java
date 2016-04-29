@@ -931,7 +931,7 @@ public class CentralMap
             }
             case R.id.action_preferences: {
                 // Preferences!  To the Preferencemobile!
-                Intent i = new Intent(this, PreferencesActivity.class);
+                Intent i = new Intent(this, PreferencesScreen.class);
                 startActivity(i);
                 return true;
             }

@@ -64,7 +64,7 @@
             android:theme="@android:style/Theme.DeviceDefault.Light.Dialog">
         </activity>
         <activity
-            android:name=".activities.PreferencesActivity"
+            android:name=".activities.PreferencesScreen"
             android:label="@string/title_preferences">
         </activity>
 

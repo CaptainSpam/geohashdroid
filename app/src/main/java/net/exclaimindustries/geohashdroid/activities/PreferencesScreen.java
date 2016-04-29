@@ -33,10 +33,11 @@ import java.util.List;
 
 /**
  * So, the actual Android class is already called "{@link PreferenceActivity}",
- * it turns out.  So let's call this one <code>PreferencesActivity</code> this
- * time around, right?  That certainly won't be confusing!
+ * it turns out.  So let's call this one <code>PreferencesScreen</code>, because
+ * it got really confusing to call it <code>PreferencesActivity</code> like it
+ * used to be.
  */
-public class PreferencesActivity extends PreferenceActivity {
+public class PreferencesScreen extends PreferenceActivity {
     /**
      * This largely comes from Android Studio's default Setting Activity wizard
      * thingamajig.  It conveniently updates preferences with summaries.

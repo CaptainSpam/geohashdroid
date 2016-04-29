@@ -165,7 +165,7 @@ public abstract class CentralMapExtraActivity extends Activity
             }
             case R.id.action_preferences: {
                 // We've got preferences, so we've got an Activity.
-                Intent i = new Intent(this, PreferencesActivity.class);
+                Intent i = new Intent(this, PreferencesScreen.class);
                 startActivity(i);
                 return true;
             }
