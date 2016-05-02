@@ -11,6 +11,7 @@ package net.exclaimindustries.geohashdroid.activities;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.backup.BackupManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -120,6 +121,14 @@ public class PreferencesScreen extends PreferenceActivity {
                 }
             });
         }
+
+        @Override
+        public void onStop() {
+            BackupManager bm = new BackupManager(getActivity());
+            bm.dataChanged();
+
+            super.onStop();
+        }
     }
 
     /**
@@ -177,6 +186,9 @@ public class PreferencesScreen extends PreferenceActivity {
                 i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
                 getActivity().startService(i);
             }
+
+            BackupManager bm = new BackupManager(getActivity());
+            bm.dataChanged();
 
             super.onStop();
         }
@@ -246,7 +258,6 @@ public class PreferencesScreen extends PreferenceActivity {
                                 // in new prompts until I get sick of it and
                                 // come up with a more efficient way to do this.
                                 editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, false);
-
                                 editor.apply();
 
                                 Toast.makeText(
@@ -319,6 +330,14 @@ public class PreferencesScreen extends PreferenceActivity {
                     return true;
                 }
             });
+        }
+
+        @Override
+        public void onStop() {
+            BackupManager bm = new BackupManager(getActivity());
+            bm.dataChanged();
+
+            super.onStop();
         }
     }
 }

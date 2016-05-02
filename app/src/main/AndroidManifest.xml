@@ -37,7 +37,8 @@
         android:description="@string/app_description"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.GeohashDroid">
+        android:theme="@style/Theme.GeohashDroid"
+        android:backupAgent=".util.GHDBackupAgent">
         <uses-library android:name="com.google.android.maps"/>
 
         <activity
@@ -84,6 +85,9 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version"/>
+        <meta-data
+            android:name="com.google.android.backup.api_key"
+            android:value="AEdPqrEAAAAIxajkVFxG7E4azqw2ZbbW9yvUaUSn2l4Lc7tfFA" />
 
         <service
             android:name=".services.StockService"

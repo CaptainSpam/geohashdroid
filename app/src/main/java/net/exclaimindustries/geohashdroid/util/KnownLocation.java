@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -214,6 +215,9 @@ public class KnownLocation implements Parcelable {
         // Man, that's easy.
         edit.putString(GHDConstants.PREF_KNOWN_LOCATIONS, arr.toString());
         edit.apply();
+
+        BackupManager bm = new BackupManager(c);
+        bm.dataChanged();
     }
 
     /**

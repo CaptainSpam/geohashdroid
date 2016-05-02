@@ -12,6 +12,7 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -504,6 +505,9 @@ public class KnownLocationsPicker
                             SharedPreferences.Editor editor = prefs.edit();
                             editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
                             editor.apply();
+
+                            BackupManager bm = new BackupManager(KnownLocationsPicker.this);
+                            bm.dataChanged();
                         }
                     })
                     .setNeutralButton(R.string.go_to_preference, new DialogInterface.OnClickListener() {
