@@ -65,6 +65,12 @@ import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.KnownLocationPinData;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
+import org.opensextant.geodesy.Angle;
+import org.opensextant.geodesy.Geodetic2DArc;
+import org.opensextant.geodesy.Geodetic2DPoint;
+import org.opensextant.geodesy.Latitude;
+import org.opensextant.geodesy.Longitude;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -648,7 +654,31 @@ public class KnownLocationsPicker
                     LatLngBounds.Builder builder = LatLngBounds.builder();
 
                     for(KnownLocation kl : mLocations) {
-                        builder.include(kl.getLatLng());
+                        // Now, we want to include the range of each location,
+                        // too.  Unfortunately, Android doesn't supply us with
+                        // a method for "calculate point that is X distance at Y
+                        // heading from another point" (or, the inverse geodetic
+                        // problem, as it's better known).  So for this, we turn
+                        // to the OpenSextant library!
+                        Geodetic2DPoint gPoint = new Geodetic2DPoint(
+                                new Longitude(kl.getLatLng().longitude, Angle.DEGREES),
+                                new Latitude(kl.getLatLng().latitude, Angle.DEGREES));
+
+                        // Start at due north and include it.
+                        Geodetic2DArc gArc = new Geodetic2DArc(gPoint, kl.getRange(), new Angle(0, Angle.DEGREES));
+
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
+
+                        // Repeat for the other cardinal directions.  That'll
+                        // give us what we need to fit the circle.
+                        gArc.setForwardAzimuth(new Angle(90, Angle.DEGREES));
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
+
+                        gArc.setForwardAzimuth(new Angle(180, Angle.DEGREES));
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
+
+                        gArc.setForwardAzimuth(new Angle(270, Angle.DEGREES));
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
                     }
 
                     LatLngBounds bounds = builder.build();

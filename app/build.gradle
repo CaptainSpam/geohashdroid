@@ -25,4 +25,5 @@ dependencies {
     compile 'com.google.android.gms:play-services-location:8.4.0'
     compile 'com.google.guava:guava:19.0'
     compile 'cz.msebera.android:httpclient:4.4.1.1'
+    compile 'org.opensextant:geodesy:2.0.1'
 }
