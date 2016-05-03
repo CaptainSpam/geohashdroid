@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.1" version="914" date="2016-05-03">
+        <title>The Old Backup Plan</title>
+        <header>Have some updates and minor feature cleanups!</header>
+        <bullets>
+            <bullet>The popup that reminds you that you need to turn on stock pre-fetching to use known locations now has a third button, one that directly goes to the Other Options section of Preferences so that you can change that right away.</bullet>
+            <bullet>The initial zoom on the known locations picker will now try to make sure all the range rings are fully on-screen.  That should fix some odd cases where it opens to a map where those rings spill way off the screen.</bullet>
+            <bullet>Added in proper preference backup stuff for pre-Marshmallow devices.  Backups should've already been working on Marshmallow.</bullet>
+            <bullet>Updated HttpClient to newer, fresher libraries for newer, fresher wiki posting and stock fetching.</bullet>
+        </bullets>
+        <footer>Enjoy!</footer>
+    </version>
     <version name="0.9.1" version="913" date="2016-04-28">
         <title>That Familiar Place Down The Street</title>
         <header>It's version 0.9.1!  There's a lot going on here!  Check it out:</header>
