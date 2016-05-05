@@ -87,7 +87,7 @@
             android:value="@integer/google_play_services_version"/>
         <meta-data
             android:name="com.google.android.backup.api_key"
-            android:value="AEdPqrEAAAAIxajkVFxG7E4azqw2ZbbW9yvUaUSn2l4Lc7tfFA" />
+            android:value="AEdPqrEAAAAIiLB2kd_jpNzDrXCqYyq_4zXLg4Nw3bAwNRVtzA" />
 
         <service
             android:name=".services.StockService"
