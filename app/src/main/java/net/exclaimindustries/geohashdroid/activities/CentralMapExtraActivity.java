@@ -16,6 +16,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -165,7 +166,7 @@ public abstract class CentralMapExtraActivity extends Activity
             }
             case R.id.action_preferences: {
                 // We've got preferences, so we've got an Activity.
-                Intent i = new Intent(this, PreferencesActivity.class);
+                Intent i = new Intent(this, PreferencesScreen.class);
                 startActivity(i);
                 return true;
             }
@@ -264,7 +265,7 @@ public abstract class CentralMapExtraActivity extends Activity
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         // If the connection failed, forget it.  That means the user's already
         // denied permission somehow, so we're not asking again.
         mFrag.permissionsDenied(true);

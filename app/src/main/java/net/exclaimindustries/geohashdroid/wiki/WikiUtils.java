@@ -9,6 +9,22 @@
 
 package net.exclaimindustries.geohashdroid.wiki;
 
+import android.content.Context;
+import android.location.Location;
+import android.support.annotation.NonNull;
+import android.text.format.DateFormat;
+import android.util.Log;
+
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.Graticule;
+import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.tools.DOMUtil;
+import net.exclaimindustries.tools.DateTools;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,35 +38,19 @@ import java.util.Locale;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
-import net.exclaimindustries.geohashdroid.util.Graticule;
-import net.exclaimindustries.geohashdroid.util.Info;
-import net.exclaimindustries.tools.DOMUtil;
-import net.exclaimindustries.tools.DateTools;
-
-import org.apache.commons.httpclient.methods.multipart.ByteArrayPartSource;
-import org.apache.commons.httpclient.methods.multipart.FilePart;
-import org.apache.commons.httpclient.methods.multipart.MultipartEntity;
-import org.apache.commons.httpclient.methods.multipart.Part;
-import org.apache.commons.httpclient.methods.multipart.StringPart;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.message.BasicNameValuePair;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import android.content.Context;
-import android.location.Location;
-import android.support.annotation.NonNull;
-import android.text.format.DateFormat;
-import android.util.Log;
+import cz.msebera.android.httpclient.HttpEntity;
+import cz.msebera.android.httpclient.HttpResponse;
+import cz.msebera.android.httpclient.NameValuePair;
+import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
+import cz.msebera.android.httpclient.client.methods.HttpGet;
+import cz.msebera.android.httpclient.client.methods.HttpPost;
+import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
+import cz.msebera.android.httpclient.entity.ContentType;
+import cz.msebera.android.httpclient.entity.mime.MultipartEntityBuilder;
+import cz.msebera.android.httpclient.entity.mime.content.ByteArrayBody;
+import cz.msebera.android.httpclient.entity.mime.content.StringBody;
+import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
+import cz.msebera.android.httpclient.message.BasicNameValuePair;
 
 /**
  * Various stateless utility methods to query a mediawiki server
@@ -133,7 +133,7 @@ public class WikiUtils {
      * @param httpreq    an HTTP request (GET or POST)
      * @return a Document containing the contents of the response
      */
-    private static Document getHttpDocument(HttpClient httpclient,
+    private static Document getHttpDocument(CloseableHttpClient httpclient,
                                             HttpUriRequest httpreq) throws Exception {
         // Remember the last request. We might want to abort it later.
         mLastRequest = httpreq;
@@ -154,7 +154,7 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static boolean doesWikiPageExist(HttpClient httpclient, String pagename) throws Exception {
+    public static boolean doesWikiPageExist(CloseableHttpClient httpclient, String pagename) throws Exception {
         // It's GET time!  This is basically the same as the content request, but
         // we really don't need ANY data other than whether or not the page
         // exists, so we won't call for anything.
@@ -195,7 +195,7 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static String getWikiPage(HttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
+    public static String getWikiPage(CloseableHttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
         // We can use a GET statement here.
         HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&prop="
                 + URLEncoder.encode("info|revisions", "UTF-8")
@@ -263,7 +263,7 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void putWikiPage(HttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws Exception {
+    public static void putWikiPage(CloseableHttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws Exception {
         // If there's no edit token in the hash map, we can't do anything.
         if(!formfields.containsKey("token")) {
             throw new WikiException(R.string.wiki_error_protected);
@@ -303,7 +303,7 @@ public class WikiUtils {
      * @param formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
      * @param data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
      */
-    public static void putWikiImage(HttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
+    public static void putWikiImage(CloseableHttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
         if(!formfields.containsKey("token")) {
             throw new WikiException(R.string.wiki_error_unknown);
         }
@@ -333,18 +333,23 @@ public class WikiUtils {
             throw new WikiException(R.string.wiki_error_xml);
         }
 
+        // We very much need an edit token here.
+        if(token == null) {
+            throw new WikiException(R.string.wiki_error_xml);
+        }
+
         // TOKEN GET!  Now we've got us enough to get our upload on!
-        Part[] nvps = new Part[]{
-                new StringPart("action", "upload", "utf-8"),
-                new StringPart("filename", filename, "utf-8"),
-                new StringPart("comment", description, "utf-8"),
-                new StringPart("watch", "true", "utf-8"),
-                new StringPart("ignorewarnings", "true", "utf-8"),
-                new StringPart("token", token, "utf-8"),
-                new StringPart("format", "xml", "utf-8"),
-                new FilePart("file", new ByteArrayPartSource(filename, data), "image/jpeg", "utf-8"),
-        };
-        httppost.setEntity(new MultipartEntity(nvps, httppost.getParams()));
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+                .addPart("action", new StringBody("upload", ContentType.TEXT_PLAIN))
+                .addPart("filename", new StringBody(filename, ContentType.TEXT_PLAIN))
+                .addPart("comment", new StringBody(description, ContentType.TEXT_PLAIN))
+                .addPart("watch", new StringBody("true", ContentType.TEXT_PLAIN))
+                .addPart("ignorewarnings", new StringBody("true", ContentType.TEXT_PLAIN))
+                .addPart("token", new StringBody(token, ContentType.TEXT_PLAIN))
+                .addPart("format", new StringBody("xml", ContentType.TEXT_PLAIN))
+                .addPart("file", new ByteArrayBody(data, ContentType.create("image/jpeg", "utf-8"), filename));
+
+        httppost.setEntity(builder.build());
 
         response = getHttpDocument(httpclient, httppost);
 
@@ -358,7 +363,7 @@ public class WikiUtils {
 
     /**
      * Retrieves valid login cookies for an HTTP session.  These will be added
-     * to the HttpClient value passed in, so re-use it for future wiki
+     * to the CloseableHttpClient value passed in, so re-use it for future wiki
      * transactions.
      *
      * @param httpclient an active HTTP session.
@@ -367,7 +372,7 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void login(HttpClient httpclient, String wpName, String wpPassword) throws Exception {
+    public static void login(CloseableHttpClient httpclient, String wpName, String wpPassword) throws Exception {
         HttpPost httppost = new HttpPost(WIKI_API_URL);
 
         ArrayList<NameValuePair> nvps = new ArrayList<>();
@@ -570,6 +575,7 @@ public class WikiUtils {
             return date + "_global";
         } else {
             Graticule grat = info.getGraticule();
+            assert(grat != null);
             String lat = grat.getLatitudeString(true);
             String lon = grat.getLongitudeString(true);
 
@@ -624,6 +630,7 @@ public class WikiUtils {
 
         } else {
             Graticule grat = info.getGraticule();
+            assert(grat != null);
             String lat = grat.getLatitudeString(true);
             String lon = grat.getLongitudeString(true);
 
@@ -647,6 +654,7 @@ public class WikiUtils {
             return toReturn + "[[Category:Globalhash]]";
         } else {
             Graticule grat = info.getGraticule();
+            assert(grat != null);
             String lat = grat.getLatitudeString(true);
             String lon = grat.getLongitudeString(true);
 

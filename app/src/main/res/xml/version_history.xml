@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.1" version="914" date="2016-05-03">
+        <title>The Old Backup Plan</title>
+        <header>Have some updates and minor feature cleanups!</header>
+        <bullets>
+            <bullet>The popup that reminds you that you need to turn on stock pre-fetching to use known locations now has a third button, one that directly goes to the Other Options section of Preferences so that you can change that right away.</bullet>
+            <bullet>The initial zoom on the known locations picker will now try to make sure all the range rings are fully on-screen.  That should fix some odd cases where it opens to a map where those rings spill way off the screen.</bullet>
+            <bullet>Added in proper preference backup stuff for pre-Marshmallow devices.  Backups should've already been working on Marshmallow.</bullet>
+            <bullet>Updated HttpClient to newer, fresher libraries for newer, fresher wiki posting and stock fetching.</bullet>
+        </bullets>
+        <footer>Enjoy!</footer>
+    </version>
+    <version name="0.9.1" version="913" date="2016-04-28">
+        <title>That Familiar Place Down The Street</title>
+        <header>It's version 0.9.1!  There's a lot going on here!  Check it out:</header>
+        <bullets>
+            <bullet>There's a known locations system now!  Accessible through the Map Options part of Preferences, you can now add in locations that you consider to be "known".  If stock pre-fetching is on, those points will be checked for any nearby hashpoints (you can restrict each to its respective home Graticule) or the globalhash for the day, and you'll get a notification if anything's close enough.</bullet>
+            <bullet>Remember how the pre-0.9.0 versions started with the Graticule selection screen and also remembered the last Graticule you used?  Now there's a preference (again, in Map Options) to have Geohash Droid start with either of those, rather than the default of picking the nearest hashpoint regardless of which Graticule it's in!</bullet>
+            <bullet>In the options menu on the main expedition map, there's a brand new "Try Tomorrow" option.  That'll increment the date to tomorrow, just in case you wanted to check the entire weekend's worth of hashpoints quickly on a Friday.</bullet>
+            <bullet>The InfoBox will now fade out if either your location or the final destination are directly underneath it.  Easier to see that way.</bullet>
+            <bullet>Fixed the fact that stock pre-fetching wasn't actually working the way it should have been.</bullet>
+            <bullet>Updates to Play Services.</bullet>
+            <bullet>The usual sort of minor fixes and such.</bullet>
+        </bullets>
+        <footer>The Known Locations system is the big thing here.  I did as much testing as I reasonably could, and I think it'll work the way I'm expecting it to, but there might be some glitches.  Let me know (in GitHub) if something's really wrong with it.</footer>
+    </version>
     <version name="0.9.0.5" version="909" date="2016-02-12">
         <title>Where The Streets Have No Name, And In Fact Aren't Even Shown On The Map</title>
         <header>One minor feature and one bug fix later...</header>

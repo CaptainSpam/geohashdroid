@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -23,6 +24,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -36,7 +38,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Random;
 
 /**
  * This represents a single known location.  It's got a LatLng and a name, as
@@ -61,7 +62,7 @@ public class KnownLocation implements Parcelable {
      *
      * @param name the name of this mLocation
      * @param location a LatLng where it can be found
-     * @param range how close it has to be before it triggers a notification, in km
+     * @param range how close it has to be before it triggers a notification, in m
      * @param restrictGraticule true to only consider the location's native graticule for range purposes, rather than find the closest one
      */
     public KnownLocation(@NonNull String name, @NonNull LatLng location, double range, boolean restrictGraticule) {
@@ -214,6 +215,9 @@ public class KnownLocation implements Parcelable {
         // Man, that's easy.
         edit.putString(GHDConstants.PREF_KNOWN_LOCATIONS, arr.toString());
         edit.apply();
+
+        BackupManager bm = new BackupManager(c);
+        bm.dataChanged();
     }
 
     /**
@@ -237,7 +241,7 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
-     * Gets the range required before this KnownLocation will trigger a
+     * Gets the range (in m) required before this KnownLocation will trigger a
      * notification.
      *
      * @return the range
@@ -378,6 +382,8 @@ public class KnownLocation implements Parcelable {
      * Note that this MarkerOptions won't have a snippet.  The caller has to set
      * that itself.  The title, though, will be the KnownLocation's name.
      * </p>
+     *
+     * @param c a Context
      * @return a MarkerOptions representing this KnownLocation
      */
     @NonNull
@@ -398,12 +404,45 @@ public class KnownLocation implements Parcelable {
         return toReturn;
     }
 
+    /**
+     * Makes a CircleOptions out of this KnownLocation (when added to the map,
+     * you get the actual Circle back).  This is used in KnownLocationsPicker to
+     * give the user a better idea of what the range looks like.
+     *
+     * @param c a Context
+     * @return a CircleOptions representing this KnownLocation's location and range
+     */
+    @NonNull
+    public CircleOptions makeCircle(@NonNull Context c) {
+        CircleOptions toReturn = new CircleOptions();
+
+        KnownLocationPinData data = new KnownLocationPinData(c, mLocation);
+        int baseColor = data.getColor();
+
+        toReturn.center(mLocation)
+                .radius(mRange)
+                .strokeWidth(c.getResources().getDimension(R.dimen.known_location_circle_stroke_width))
+                .strokeColor(
+                        Color.argb(
+                                c.getResources().getInteger(R.integer.known_location_circle_stroke_alpha),
+                                Color.red(baseColor),
+                                Color.green(baseColor),
+                                Color.blue(baseColor)))
+                .fillColor(
+                        Color.argb(
+                                c.getResources().getInteger(R.integer.known_location_circle_alpha),
+                                Color.red(baseColor),
+                                Color.green(baseColor),
+                                Color.blue(baseColor)));
+
+        return toReturn;
+    }
+
     @NonNull
     private Bitmap buildMarkerBitmap(@NonNull Context c) {
         // Oh, this is going to be FUN.
-        int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_pin_size);
+        int dim = c.getResources().getDimensionPixelSize(R.dimen.known_location_marker_canvas_size);
         float radius = c.getResources().getDimension(R.dimen.known_location_pin_head_radius);
-        float baseLength = c.getResources().getDimension(R.dimen.known_location_pin_base_length);
 
         Bitmap bitmap = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -411,22 +450,12 @@ public class KnownLocation implements Parcelable {
         Paint paint = new Paint();
         paint.setAntiAlias(true);
 
-        Random random = makeRandom();
-
-        // For variety, we'll have three random elements: The angle at which the
-        // pin sits in the map (80...100 degrees)...
-        double pinAngle = Math.toRadians((random.nextDouble() * 20.0f) + 80.0f);
-
-        // ...the relative length of the pin itself...
-        float length = baseLength * (1 - (random.nextFloat() * 0.5f));
-
-        // ...and the color of the pin's head (we just randomize the hue).
-        int hue = random.nextInt(360);
+        KnownLocationPinData pinData = new KnownLocationPinData(c, mLocation);
 
         // Draw the pin line first.  That goes from the bottom-center up to
         // wherever the radius and length take us.
-        float topX = Double.valueOf((dim / 2) + (length * Math.cos(pinAngle))).floatValue();
-        float topY = Double.valueOf(dim - (length * Math.sin(pinAngle))).floatValue();
+        float topX = Double.valueOf((dim / 2) + (pinData.getLength() * Math.cos(pinData.getAngle()))).floatValue();
+        float topY = Double.valueOf(dim - (pinData.getLength() * Math.sin(pinData.getAngle()))).floatValue();
         paint.setStrokeWidth(c.getResources().getDimension(R.dimen.known_location_stroke));
         paint.setStyle(Paint.Style.STROKE);
         paint.setColor(Color.BLACK);
@@ -434,7 +463,7 @@ public class KnownLocation implements Parcelable {
         canvas.drawLine(dim / 2, dim, topX, topY, paint);
 
         // On the top of that line, fill in a circle.
-        paint.setColor(Color.HSVToColor(new float[]{hue, 1.0f, 0.8f}));
+        paint.setColor(pinData.getColor());
         paint.setStyle(Paint.Style.FILL);
         canvas.drawCircle(topX, topY, radius, paint);
 
@@ -444,32 +473,6 @@ public class KnownLocation implements Parcelable {
         canvas.drawCircle(topX, topY, radius, paint);
 
         return bitmap;
-    }
-
-    @NonNull
-    private Random makeRandom() {
-        // What we're looking for here is a stable randomizer with the seed
-        // initialized to something (reasonably) unique to the location given
-        // in this KnownLocation (not the name).  java.util.Random, as the docs
-        // assure me, will ALWAYS be a certain algorithm for portability's sake,
-        // and thus always give the same results.  This hopefully isn't going to
-        // be something like a randomizer whose algorithm changes when someone
-        // discovers it's not random enough.  I'm looking more for a hashing
-        // function than a true (or even pseudo-true) random number here.
-
-        // So, to generate our seed, we're going to convert the latitude and
-        // longitude into 32-bit ints.  Sort of.  More like we're going to
-        // multiply them up so they're more reasonably in the domain of
-        // -(2^31 - 1)...2^31.  Then, we bit-shift one of them such that we can
-        // add both together into a long whose bits are reasonably unique,
-        // giving us a seed that's reasonably unique.  This is entirely the
-        // wrong way to do this.
-        long latPart = Double.doubleToLongBits(mLocation.latitude);
-        long lonPart = Double.doubleToLongBits(mLocation.longitude) << 32;
-
-        long seed = latPart + lonPart;
-
-        return new Random(seed);
     }
 
     @Override

@@ -463,6 +463,9 @@ public class ExpeditionMode
     private void addNearbyPoint(@NonNull Info info) {
         if(info.isGlobalHash()) return;
 
+        final Graticule g = info.getGraticule();
+        assert(g != null);
+
         // This will get called repeatedly up to eight times (in rare cases,
         // five times) when we ask for nearby points.  All we need to do is put
         // those points on the map, and stuff them in the map.  Two different
@@ -472,7 +475,7 @@ public class ExpeditionMode
             // the graticule's location.  We DO know that this isn't a
             // Globalhash, though.
             String title;
-            String gratString = info.getGraticule().getLatitudeString(false) + " " + info.getGraticule().getLongitudeString(false);
+            String gratString = g.getLatitudeString(false) + " " + g.getLongitudeString(false);
             if(info.isRetroHash()) {
                 title = mCentralMap.getString(R.string.marker_title_nearby_retro_hashpoint,
                         DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate()),
@@ -631,8 +634,11 @@ public class ExpeditionMode
                     StringBuilder newTitle = new StringBuilder();
                     if(mCurrentInfo.isGlobalHash())
                         newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
-                    else
-                        newTitle.append(mCurrentInfo.getGraticule().getLatitudeString(false)).append(' ').append(mCurrentInfo.getGraticule().getLongitudeString(false));
+                    else {
+                        Graticule g = mCurrentInfo.getGraticule();
+                        assert(g != null);
+                        newTitle.append(g.getLatitudeString(false)).append(' ').append(g.getLongitudeString(false));
+                    }
                     newTitle.append(", ");
                     newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));
                     setTitle(newTitle.toString());

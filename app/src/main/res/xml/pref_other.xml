@@ -20,4 +20,8 @@
     <Preference
         android:key="_stockWipe"
         android:title="@string/pref_stockwipe_title" />
+
+    <Preference
+        android:key="_resetBuggingMe"
+        android:title="@string/pref_reset_bugging_me_title" />
 </PreferenceScreen>

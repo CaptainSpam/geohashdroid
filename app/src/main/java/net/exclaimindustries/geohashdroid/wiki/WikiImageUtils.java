@@ -79,7 +79,7 @@ public class WikiImageUtils {
          */
         public Location location;
         /** The timestamp of the image, if possible.  Defaults to -1. */
-        public long timestamp = -1l;
+        public long timestamp = -1L;
     }
 
     /**

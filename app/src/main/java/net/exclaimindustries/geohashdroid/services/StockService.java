@@ -27,9 +27,10 @@ import java.util.List;
 
 /**
  * <p>
- * StockService, made possible by the sleepless efforts of Mark "CommonsGuy"
- * Murphy, handles all stock retrieval duties.  You ask it for a stock, it'll
- * later broadcast an Intent either with that stock or some error.
+ * StockService, whose wakefulness is made possible by the sleepless efforts of
+ * Mark "CommonsGuy" Murphy, handles all stock retrieval duties.  You ask it for
+ * a stock, it'll later broadcast an Intent either with that stock or some
+ * error.
  * </p>
  * 
  * <p>
@@ -195,18 +196,7 @@ public class StockService extends WakefulIntentService {
     public static final int RESPONSE_NO_CONNECTION = -2;
     /** Error response if there was some network error involved. */
     public static final int RESPONSE_NETWORK_ERROR = -3;
-    
-    /**
-     * A dummy Graticule that uses the 30W rule, and thus needs yesterday's date
-     * to work.
-     */
-    public static final Graticule DUMMY_YESTERDAY = new Graticule(51, false, 0, true);
-    /**
-     * A dummy Graticule that doesn't use the 30W rule, and thus needs today's
-     * date to work.
-     */
-    public static final Graticule DUMMY_TODAY = new Graticule(38, false, 84, true);
-    
+
     public StockService() {
         super("StockService");
     }

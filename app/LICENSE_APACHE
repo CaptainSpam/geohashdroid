@@ -1,7 +1,9 @@
-Some parts of GeohashDroid (namely, anything in the org.apache.commons[...]
-package) are parts of Apache Commons.  It is distributed in accordance with the
-Apache License.  The following header is included in those parts, and is
-repeated here for convenience:
+Some parts of GeohashDroid may include or have been made using machinery that
+uses parts of Apache Commons (so check your allergies).  None of the source code
+from those parts are included with the source distribution of this app anymore
+(not since the HttpClient deprecation incident), but I guess it doesn't hurt to
+include this notice regarding the Apache License as it applies to the parts used
+that are covered by it:
 
 /*
  * ====================================================================

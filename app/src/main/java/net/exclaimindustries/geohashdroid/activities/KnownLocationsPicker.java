@@ -12,14 +12,21 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -33,6 +40,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -43,6 +51,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -54,7 +63,14 @@ import com.google.common.collect.HashBiMap;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
+import net.exclaimindustries.geohashdroid.util.KnownLocationPinData;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+
+import org.opensextant.geodesy.Angle;
+import org.opensextant.geodesy.Geodetic2DArc;
+import org.opensextant.geodesy.Geodetic2DPoint;
+import org.opensextant.geodesy.Latitude;
+import org.opensextant.geodesy.Longitude;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -367,6 +383,7 @@ public class KnownLocationsPicker
     private boolean mReloaded = false;
 
     private BiMap<Marker, KnownLocation> mMarkerMap;
+    private BiMap<Circle, KnownLocation> mCircleMap;
 
     private List<KnownLocation> mLocations;
     private Marker mMapClickMarker;
@@ -389,8 +406,9 @@ public class KnownLocationsPicker
         // have to wait on the map callbacks, but still, let's fetch them now.
         mLocations = KnownLocation.getAllKnownLocations(this);
 
-        // We need a map.
+        // We need maps.
         mMarkerMap = HashBiMap.create();
+        mCircleMap = HashBiMap.create();
 
         // Prep a client (it'll get going during onStart)!
         mGoogleClient = new GoogleApiClient.Builder(this)
@@ -482,11 +500,25 @@ public class KnownLocationsPicker
                     .setNegativeButton(R.string.stop_reminding_me_label, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+
                             SharedPreferences.Editor editor = prefs.edit();
                             editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
                             editor.apply();
 
+                            BackupManager bm = new BackupManager(KnownLocationsPicker.this);
+                            bm.dataChanged();
+                        }
+                    })
+                    .setNeutralButton(R.string.go_to_preference, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
+
+                            Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class);
+                            intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, PreferencesScreen.OtherPreferenceFragment.class.getName());
+                            intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                            startActivity(intent);
                         }
                     })
                     .setPositiveButton(R.string.gotcha_label, new DialogInterface.OnClickListener() {
@@ -626,7 +658,31 @@ public class KnownLocationsPicker
                     LatLngBounds.Builder builder = LatLngBounds.builder();
 
                     for(KnownLocation kl : mLocations) {
-                        builder.include(kl.getLatLng());
+                        // Now, we want to include the range of each location,
+                        // too.  Unfortunately, Android doesn't supply us with
+                        // a method for "calculate point that is X distance at Y
+                        // heading from another point" (or, the inverse geodetic
+                        // problem, as it's better known).  So for this, we turn
+                        // to the OpenSextant library!
+                        Geodetic2DPoint gPoint = new Geodetic2DPoint(
+                                new Longitude(kl.getLatLng().longitude, Angle.DEGREES),
+                                new Latitude(kl.getLatLng().latitude, Angle.DEGREES));
+
+                        // Start at due north and include it.
+                        Geodetic2DArc gArc = new Geodetic2DArc(gPoint, kl.getRange(), new Angle(0, Angle.DEGREES));
+
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
+
+                        // Repeat for the other cardinal directions.  That'll
+                        // give us what we need to fit the circle.
+                        gArc.setForwardAzimuth(new Angle(90, Angle.DEGREES));
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
+
+                        gArc.setForwardAzimuth(new Angle(180, Angle.DEGREES));
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
+
+                        gArc.setForwardAzimuth(new Angle(270, Angle.DEGREES));
+                        builder.include(new LatLng(gArc.getPoint2().getLatitudeAsDegrees(), gArc.getPoint2().getLongitudeAsDegrees()));
                     }
 
                     LatLngBounds bounds = builder.build();
@@ -722,13 +778,27 @@ public class KnownLocationsPicker
     }
 
     private void initKnownLocations() {
+        if(mMarkerMap != null) {
+            for(Marker m : mMarkerMap.keySet())
+                m.remove();
+        }
+
+        if(mCircleMap != null) {
+            for(Circle c : mCircleMap.keySet())
+                c.remove();
+        }
+
         mMarkerMap = HashBiMap.create();
+        mCircleMap = HashBiMap.create();
 
         if(!mLocations.isEmpty()) {
             for(KnownLocation kl : mLocations) {
                 // Each KnownLocation gives us a MarkerOptions we can use.
+                Log.d(DEBUG_TAG, "Making marker for KnownLocation " + kl.toString() + " at a range of " + kl.getRange() + "m");
                 Marker newMark = mMap.addMarker(makeExistingMarker(kl));
+                Circle newCircle = mMap.addCircle(kl.makeCircle(this));
                 mMarkerMap.put(newMark, kl);
+                mCircleMap.put(newCircle, kl);
             }
         }
     }
@@ -754,7 +824,9 @@ public class KnownLocationsPicker
 
         // Then, replace it with the new one.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
+        Circle newCircle = mMap.addCircle(newLoc.makeCircle(this));
         mMarkerMap.forcePut(newMark, newLoc);
+        mCircleMap.forcePut(newCircle, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         mActiveAddresses.remove(address);
@@ -783,6 +855,7 @@ public class KnownLocationsPicker
             // Since this is an existing KnownLocation, the marker should be in
             // that map, ripe for removal.
             mMarkerMap.inverse().remove(existing).remove();
+            mCircleMap.inverse().remove(existing).remove();
         } else {
             // Brand new!
             mLocations.add(newLoc);
@@ -790,7 +863,9 @@ public class KnownLocationsPicker
 
         // In both cases, store the data and add a new marker.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
+        Circle newCircle = mMap.addCircle(newLoc.makeCircle(this));
         mMarkerMap.forcePut(newMark, newLoc);
+        mCircleMap.forcePut(newCircle, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // And remove the marker from the map.  The visual one this time.
@@ -809,6 +884,7 @@ public class KnownLocationsPicker
         Marker marker = mMarkerMap.inverse().get(existing);
         marker.remove();
         mMarkerMap.remove(marker);
+        mCircleMap.inverse().remove(existing).remove();
 
         // Then, remove it from the location list and push that back to the
         // preferences.
@@ -874,7 +950,30 @@ public class KnownLocationsPicker
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), getResources().getDimensionPixelSize(R.dimen.map_zoom_padding)));
         } else {
-            Log.d(DEBUG_TAG, "SOMETHING BAD");
+            // Else we TOAST!
+            int resId = R.string.known_locations_search_error_internal_error;
+            String debugString = "Fell through the switch?";
+            switch(code) {
+                case NO_RESULTS:
+                    resId = R.string.known_locations_search_error_no_results;
+                    debugString = "There weren't any results.";
+                    break;
+                case IO_ERROR:
+                    resId = R.string.known_locations_search_error_io_error;
+                    debugString = "IO error; probably no network connection.";
+                    break;
+                case NO_GEOCODER:
+                    resId = R.string.known_locations_search_error_no_geocoder;
+                    debugString = "No geocoder; how did we get here in the first place?";
+                    break;
+                case INTERNAL_ERROR:
+                    resId = R.string.known_locations_search_error_internal_error;
+                    debugString = "Internal error; this'll probably result in a bug report...";
+                    break;
+            }
+
+            Toast.makeText(this, resId, Toast.LENGTH_LONG).show();
+            Log.w(DEBUG_TAG, "Location search lookup error: " + debugString);
         }
     }
 
@@ -898,9 +997,65 @@ public class KnownLocationsPicker
             MarkerOptions opts = new MarkerOptions()
                     .position(curPos)
                     .title(a.getFeatureName() == null ? curPos.latitude + ", " + curPos.longitude : a.getFeatureName())
+                    .icon(BitmapDescriptorFactory.fromBitmap(makeAddressBitmap(curPos)))
+                    .anchor(0.5f, 1.0f)
                     .snippet(getString(R.string.known_locations_tap_to_add));
 
             mActiveAddressMap.put(mMap.addMarker(opts), a);
         }
+    }
+
+    @NonNull
+    private Bitmap makeAddressBitmap(LatLng loc) {
+        // The signpost for address search results will just be two rectangles.
+        // The top rectangle will be the color the pin will be.
+        int dim = getResources().getDimensionPixelSize(R.dimen.known_location_marker_canvas_size);
+
+        Bitmap bitmap = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setStrokeWidth(getResources().getDimension(R.dimen.known_location_stroke));
+
+
+        KnownLocationPinData pinData = new KnownLocationPinData(this, loc);
+
+        // Draw us a rectangle.  Centered horizontally, anchored to the bottom
+        // of the canvas.  Draw the color block first, then outline it.
+        int width = getResources().getDimensionPixelSize(R.dimen.known_location_address_post_width);
+        int height = getResources().getDimensionPixelSize(R.dimen.known_location_address_post_height);
+
+        paint.setColor(Color.HSVToColor(new float[]{25, 1.0f, 0.36f}));
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawRect((dim - width) / 2, dim - height, (dim + width) / 2, dim, paint);
+
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect((dim - width) / 2, dim - height, (dim + width) / 2, dim, paint);
+
+        // Then, draw us another rectangle.  Center it horizontally again, inset
+        // it from the top by a little bit.
+        width = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_width);
+        height = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_height);
+        int inset = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_inset);
+
+        paint.setColor(pinData.getColor());
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawRect((dim - width) / 2, inset, (dim + width) / 2, inset + height, paint);
+
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect((dim - width) / 2, inset, (dim + width) / 2, inset + height, paint);
+
+        // And one white rectangle so the sign isn't completely blank.  No
+        // outline this time around.
+        int innerInset = getResources().getDimensionPixelSize(R.dimen.known_location_address_sign_inner_inset);
+
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawRect((dim - width) / 2 + innerInset, inset + innerInset, (dim + width) / 2 - innerInset, inset + height - innerInset, paint);
+
+        return bitmap;
     }
 }

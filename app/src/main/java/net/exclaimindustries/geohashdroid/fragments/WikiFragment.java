@@ -36,6 +36,7 @@ import android.widget.Toast;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
+import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
@@ -364,11 +365,13 @@ public class WikiFragment extends CentralMapExtraFragment {
                 } else {
                     // Make sure it's underlined so it at least LOOKS like a
                     // thing someone might click.
+                    Graticule g = mInfo.getGraticule();
+
                     SpannableString text = new SpannableString(getString(R.string.wiki_dialog_header,
                             DateFormat.getDateInstance(DateFormat.MEDIUM).format(mInfo.getCalendar().getTime()),
-                            (mInfo.isGlobalHash()
+                            (g == null
                                     ? getString(R.string.globalhash_label)
-                                    : mInfo.getGraticule().getLatitudeString(false) + " " + mInfo.getGraticule().getLongitudeString(false))));
+                                    : g.getLatitudeString(false) + " " + g.getLongitudeString(false))));
                     text.setSpan(new UnderlineSpan(), 0, text.length(), 0);
                     mHeader.setText(text);
                 }

@@ -10,6 +10,7 @@ package net.exclaimindustries.geohashdroid.activities;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.backup.BackupManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -93,6 +94,9 @@ public class LoginPromptDialog extends Activity {
                 // operation will finish before WikiService kicks back in, but
                 // we should make sure.
                 edit.commit();
+
+                BackupManager bm = new BackupManager(LoginPromptDialog.this);
+                bm.dataChanged();
 
                 // Then, tell WikiService it can get back to work.
                 Intent in = new Intent(LoginPromptDialog.this, WikiService.class)

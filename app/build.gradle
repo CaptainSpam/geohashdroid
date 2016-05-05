@@ -8,20 +8,22 @@ android {
         minSdkVersion 16
         targetSdkVersion 23
     }
-    useLibrary 'org.apache.http.legacy'
-    productFlavors {
-    }
 }
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://s3.amazonaws.com/repo.commonsware.com"
+    }
 }
 
 dependencies {
-    compile files('libs/cwac-wakeful-1.0.3.jar')
-    compile 'com.android.support:support-v4:23.2.1'
-    compile 'com.android.support:support-v13:23.2.1'
+    compile 'com.commonsware.cwac:wakeful:1.0.3'
+    compile 'com.android.support:support-v4:23.3.0'
+    compile 'com.android.support:support-v13:23.3.0'
     compile 'com.google.android.gms:play-services-maps:8.4.0'
     compile 'com.google.android.gms:play-services-location:8.4.0'
     compile 'com.google.guava:guava:19.0'
+    compile 'cz.msebera.android:httpclient:4.4.1.1'
+    compile 'org.opensextant:geodesy:2.0.1'
 }

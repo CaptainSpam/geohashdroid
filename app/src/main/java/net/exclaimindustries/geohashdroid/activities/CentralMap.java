@@ -8,6 +8,7 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.annotation.SuppressLint;
+import android.app.backup.BackupManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -932,7 +933,7 @@ public class CentralMap
             }
             case R.id.action_preferences: {
                 // Preferences!  To the Preferencemobile!
-                Intent i = new Intent(this, PreferencesActivity.class);
+                Intent i = new Intent(this, PreferencesScreen.class);
                 startActivity(i);
                 return true;
             }
@@ -1040,6 +1041,10 @@ public class CentralMap
         // In any case, update the version.
         edit.putInt(GHDConstants.PREF_LAST_SEEN_VERSION, curVersion);
         edit.apply();
+
+        // Then, tell the BackupManager to do its thing.
+        BackupManager bm = new BackupManager(this);
+        bm.dataChanged();
     }
 
     /**
@@ -1219,6 +1224,9 @@ public class CentralMap
         SharedPreferences.Editor edit = prefs.edit();
         edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
         edit.apply();
+
+        BackupManager bm = new BackupManager(this);
+        bm.dataChanged();
     }
 
     private void startListening() {
@@ -1297,5 +1305,8 @@ public class CentralMap
         }
 
         edit.apply();
+
+        BackupManager bm = new BackupManager(this);
+        bm.dataChanged();
     }
 }

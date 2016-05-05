@@ -3,15 +3,15 @@
     <!-- These settings headers are only used on tablets. -->
 
     <header
-        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesActivity$MapPreferenceFragment"
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$MapPreferenceFragment"
         android:title="@string/pref_cat_map"/>
 
     <header
-        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesActivity$WikiPreferenceFragment"
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$WikiPreferenceFragment"
         android:title="@string/pref_cat_wiki"/>
 
     <header
-        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesActivity$OtherPreferenceFragment"
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$OtherPreferenceFragment"
         android:title="@string/pref_cat_other"/>
 
 </preference-headers>
