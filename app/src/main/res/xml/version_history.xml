@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.2" version="915" date="2016-05-10">
+        <title>Boldly Looking Forward</title>
+        <header>Here's a small bug I missed:</header>
+        <bullets>
+            <bullet>Fixed an issue where if you use Last Used Graticule as the startup mode and there wasn't a stock price posted yet when you checked, changing the date wouldn't trigger a new stock lookup unless you also changed the graticule.  Now it'll remember the graticule it started with and do things right.</bullet>
+        </bullets>
+        <footer>More to come!</footer>
+    </version>
     <version name="0.9.1.1" version="914" date="2016-05-03">
         <title>The Old Backup Plan</title>
         <header>Have some updates and minor feature cleanups!</header>
