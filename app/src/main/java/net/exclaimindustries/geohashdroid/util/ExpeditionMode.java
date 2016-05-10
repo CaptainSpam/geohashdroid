@@ -91,6 +91,12 @@ public class ExpeditionMode
     private Info mCurrentInfo;
     private DisplayMetrics mMetrics;
 
+    // We want to remember these long-term.  If a stock lookup fails in a start-
+    // from-last-used-graticule situation, we'll want to re-use these if the
+    // user switches the date.
+    private Graticule mStartingGraticule;
+    private boolean mStartingGlobalHash;
+
     // This is only used in really weird startup cases.  Otherwise, we'll be
     // explicitly using the Calendar from changeCalendar() or implicitly using
     // it from mCurrentInfo.
@@ -162,14 +168,14 @@ public class ExpeditionMode
             } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
                 // We've got a request to make!  Chances are, StockService will
                 // have this in cache.
-                Graticule g = bundle.getParcelable(GRATICULE);
-                boolean global = bundle.getBoolean(GLOBALHASH, false);
+                mStartingGraticule = bundle.getParcelable(GRATICULE);
+                mStartingGlobalHash = bundle.getBoolean(GLOBALHASH, false);
                 Calendar cal = (Calendar) bundle.getSerializable(CALENDAR);
 
                 // We only go through with this if we have a Calendar and
                 // either a globalhash or a Graticule.
-                if(cal != null && (global || g != null)) {
-                    requestStock((global ? null : g), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                if(cal != null && (mStartingGlobalHash || mStartingGraticule != null)) {
+                    requestStock((mStartingGlobalHash ? null : mStartingGraticule), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 }
             } else if(bundle.getBoolean(DO_INITIAL_START, false) && !arePermissionsDenied()) {
                 // If we didn't get an Info, well, maybe there's an initial
@@ -843,29 +849,40 @@ public class ExpeditionMode
         // necessarily mean a new point is coming in, but it does mean we're
         // making a request, at least.  The StockService broadcast will let us
         // know what's going on later.
-        Graticule g = null;
+        Graticule g;
 
         // It should be pretty safe to just change it like this every time.
         mInitialCalendar = newDate;
 
         // The Graticule we use is either the one in our current Info (thus
-        // recycling our current position) or whatever the initial check came up
-        // with.  The latter is in case we never came up with a valid Info if,
-        // for instance, the check was made before the opening of the DJIA and
-        // the user decided to pick a previous day.
+        // recycling our current position), whatever the initial check came up
+        // with, or the last-used graticule if we're in that startup mode.  The
+        // latter two are in case we never came up with a valid Info if, for
+        // instance, the check was made before the opening of the DJIA and the
+        // user decided to pick a previous day.
         boolean isGlobalHash = false;
 
         if(mCurrentInfo != null) {
+            // If we have a current info, use its graticule to make a new stock
+            // out of the calendar.
             g = mCurrentInfo.getGraticule();
             isGlobalHash = mCurrentInfo.isGlobalHash();
         } else if(mInitialCheckLocation != null) {
+            // If not, we might have an initial check location, so we can get
+            // started from there.
             g = new Graticule(mInitialCheckLocation);
+        } else {
+            // If not, we're in Last Used Graticule mode, we failed the first
+            // stock lookup, and we're changing the date.  Use the known
+            // starting graticule.
+            g = mStartingGraticule;
+            isGlobalHash = mStartingGlobalHash;
         }
 
-        // If we didn't get a Graticule back (AND this isn't a Globalhash), then
-        // we're clearly not ready to make stock requests and are currently
-        // waiting for an initial location (or for the user to switch to
-        // SelectAGraticuleMode instead).
+        // If we didn't get a Graticule back from any of that (AND this isn't a
+        // Globalhash), then we're clearly not ready to make stock requests and
+        // are currently waiting for an initial location (or for the user to
+        // switch to SelectAGraticuleMode instead).
         if(g != null || isGlobalHash)
             requestStock(g, newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
@@ -880,7 +897,7 @@ public class ExpeditionMode
         return mCurrentInfo != null && prefs.getBoolean(GHDConstants.PREF_INFOBOX, true);
     }
 
-    private void launchExtraFragment(CentralMapExtraFragment.FragmentType type) {
+    private void launchExtraFragment(@NonNull CentralMapExtraFragment.FragmentType type) {
         // First off, ignore this if there's no Info yet.
         if(mCurrentInfo == null) return;
 
