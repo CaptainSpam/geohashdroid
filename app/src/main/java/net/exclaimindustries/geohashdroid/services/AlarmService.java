@@ -14,10 +14,12 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
@@ -53,9 +55,7 @@ import java.util.TimeZone;
  * </p>
  * 
  * <p>
- * In the current implementation, it ONLY starts up when the app is run.  That
- * is, it won't come on at boot time.  That seems rude for a simple Geohashing
- * app, really.
+ * This WILL try to start itself at boot time (assuming we get the boot intent).
  * </p>
  *
  * @author Nicholas Killewald
@@ -181,6 +181,29 @@ public class AlarmService extends WakefulIntentService {
                 // It's ours!  Send it to the wakeful part!
                 intent.setClass(context, AlarmService.class);
                 WakefulIntentService.sendWakefulWork(context, intent);
+            }
+        }
+    }
+
+    /**
+     * When bootup happens, this makes sure AlarmService is ready to go if the
+     * user's got that set up.
+     */
+    public static class BootReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // It's boot time!  We might need to flip on the party alarm!
+            Log.i(DEBUG_TAG, "Gooooooood morning, 30W!  It's boot time in Geohashland!");
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
+                // Set the alarm!
+                Log.i(DEBUG_TAG, "The stock alarm is now being started...");
+                Intent i = new Intent(context, AlarmService.class);
+                i.setAction(AlarmService.STOCK_ALARM_ON);
+                context.startService(i);
+            } else {
+                Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
             }
         }
     }
