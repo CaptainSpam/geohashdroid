@@ -106,12 +106,20 @@ public class KnownLocationsPicker
 
     private static final String EDIT_DIALOG = "editDialog";
 
+    /** Response codes from LocationSearchTask. */
     public enum LookupErrorCode {
+        /** All is well, results are to follow. */
         OKAY,
+        /** All is well, but there were no results. */
         NO_RESULTS,
+        /** An I/O error occurred (probably no network connection). */
         IO_ERROR,
+        /** No geocoder is installed (and it's weird that we got this far). */
         NO_GEOCODER,
-        INTERNAL_ERROR
+        /** Some manner of internal error occurred. */
+        INTERNAL_ERROR,
+        /** This search was actually canceled, so ignore it. */
+        CANCELED
     }
 
     /**
@@ -337,7 +345,7 @@ public class KnownLocationsPicker
             // sure, let's be defensive, why not?
             try {
                 for(String s : params) {
-                    if(isCancelled()) break;
+                    if(isCancelled()) return LookupErrorCode.CANCELED;
 
                     List<Address> result = mGeocoder.getFromLocationName(
                             s,
@@ -347,9 +355,13 @@ public class KnownLocationsPicker
                             upperRightLat,
                             upperRightLon);
 
+                    if(isCancelled()) return LookupErrorCode.CANCELED;
+
                     // If there was no result, well, broaden the search.
                     if(result == null || result.isEmpty())
                         result = mGeocoder.getFromLocationName(s, 10);
+
+                    if(isCancelled()) return LookupErrorCode.CANCELED;
 
                     if(result != null)
                         mAddresses.addAll(result);
@@ -365,13 +377,17 @@ public class KnownLocationsPicker
             if(mAddresses.isEmpty())
                 toReturn = LookupErrorCode.NO_RESULTS;
 
+            // Last chance for the cancel check...
+            if(isCancelled()) return LookupErrorCode.CANCELED;
+
             return toReturn;
         }
 
         @Override
         protected void onPostExecute(LookupErrorCode code) {
-            // Got a response!  Go go go!
-            searchResults(code, mAddresses);
+            if(code != LookupErrorCode.CANCELED)
+                // Got a response!  Go go go!
+                searchResults(code, mAddresses);
         }
     }
 
@@ -960,7 +976,7 @@ public class KnownLocationsPicker
                     break;
                 case IO_ERROR:
                     resId = R.string.known_locations_search_error_io_error;
-                    debugString = "IO error; probably no network connection.";
+                    debugString = "I/O error; probably no network connection.";
                     break;
                 case NO_GEOCODER:
                     resId = R.string.known_locations_search_error_no_geocoder;
@@ -970,6 +986,11 @@ public class KnownLocationsPicker
                     resId = R.string.known_locations_search_error_internal_error;
                     debugString = "Internal error; this'll probably result in a bug report...";
                     break;
+                case CANCELED:
+                    // This really shouldn't have happened, but we can ignore it
+                    // anyway.
+                    Log.d(DEBUG_TAG, "Search was canceled; not actually sure how we got here, but ignoring...");
+                    return;
             }
 
             Toast.makeText(this, resId, Toast.LENGTH_LONG).show();
