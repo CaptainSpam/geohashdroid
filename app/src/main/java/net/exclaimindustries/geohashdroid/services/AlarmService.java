@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.util.Log;
 
@@ -254,7 +255,8 @@ public class AlarmService extends WakefulIntentService {
      * @return a new Calendar whose date is the most recent date a stock is
      *         likely to exist.
      */
-    private Calendar getMostRecentStockDate(Calendar source) {
+    @NonNull
+    private Calendar getMostRecentStockDate(@Nullable Calendar source) {
         Calendar base;
 
         if(source == null) {
@@ -280,7 +282,7 @@ public class AlarmService extends WakefulIntentService {
         super("AlarmService");
     }
     
-    private void showNotification(Calendar date) {
+    private void showNotification(@NonNull Calendar date) {
         // The notification in this case just says when there's an active
         // network transaction going.  We don't need to bug the user that we're
         // waiting for a network connection, as chances are, the user's also
@@ -310,7 +312,7 @@ public class AlarmService extends WakefulIntentService {
                 PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
     }
     
-    private void sendRequest(Graticule g) {
+    private void sendRequest(@NonNull Graticule g) {
         // The Graticule will be one of the dummies, as all we really care about
         // is if it's 30W or not.  And we don't really care about it THAT much,
         // just enough to put the right string in the notification.  Otherwise,
