@@ -202,7 +202,7 @@ public class AlarmService extends WakefulIntentService {
                 Log.i(DEBUG_TAG, "The stock alarm is now being started...");
                 Intent i = new Intent(context, AlarmService.class);
                 i.setAction(AlarmService.STOCK_ALARM_ON);
-                context.startService(i);
+                WakefulIntentService.sendWakefulWork(context, i);
             } else {
                 Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
             }

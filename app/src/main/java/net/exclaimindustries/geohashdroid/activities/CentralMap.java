@@ -962,7 +962,7 @@ public class CentralMap
             i.setAction(AlarmService.STOCK_ALARM_OFF);
         }
 
-        startService(i);
+        WakefulIntentService.sendWakefulWork(this, i);
 
         // Now for preference cleanup.  Unfortunately, this section will only
         // get bigger with time, as I can't guarantee what version the user
