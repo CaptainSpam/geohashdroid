@@ -218,7 +218,7 @@ public class AlarmService extends WakefulIntentService {
      *               new Calendar from scratch
      * @return a new Calendar for 9:30am ET for today's (or the supplied) date
      */
-    private Calendar makeNineThirty(Calendar source) {
+    private Calendar makeNineThirty(@Nullable Calendar source) {
         Calendar base;
 
         if(source == null) {
@@ -589,7 +589,7 @@ public class AlarmService extends WakefulIntentService {
         mNotificationManager.notify(notificationId, builder.build());
     }
 
-    private Notification.Builder getFreshNotificationBuilder(List<KnownLocationMatchData> data, @StringRes int titleId) {
+    private Notification.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data, @StringRes int titleId) {
         KnownLocationMatchData match = data.get(0);
         String contentText = getString(R.string.known_locations_alarm_distance,
                 UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),
