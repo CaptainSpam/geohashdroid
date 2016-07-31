@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.3" version="916" date="2016-07-31">
+        <title>Crox, Can You Hear Me?</title>
+        <header>Yeep.  Well, something went wrong with a stock provider recently.  Plus, new feature anyway!</header>
+        <bullets>
+            <bullet>Changed the stock price provider to give priority to Peeron over Crox.  Crox went kerflooey over the weekend, apparently, and did so in a way my code wasn't expecting.  Sorry about that.</bullet>
+            <bullet>The stock pre-fetcher will now start at boot time (if you have it turned on to begin with)!  No more starting up Geohash Droid once after a reboot just to make sure it notifies you if a point is nearby!</bullet>
+        </bullets>
+        <footer>The stock provider fix is a temporary thing.  I'm going to have to come up with a more robust way to handle fallbacks in that case.</footer>
+    </version>
     <version name="0.9.1.2" version="915" date="2016-05-10">
         <title>Boldly Looking Forward</title>
         <header>Here's a small bug I missed:</header>
