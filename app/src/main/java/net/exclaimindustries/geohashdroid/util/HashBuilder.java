@@ -124,8 +124,8 @@ public class HashBuilder {
         // THAT case, we'd need to make it not be a raw array.  The general form
         // is that %Y is the four-digit year, %m is the zero-padded month, and
         // %d is the zero-padded date.
-        private final static String[] mServers = { "http://geo.crox.net/djia/%Y/%m/%d",
-            "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d"};
+        private final static String[] mServers = { "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d",
+                "http://geo.crox.net/djia/%Y/%m/%d" };
 
         
         private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
