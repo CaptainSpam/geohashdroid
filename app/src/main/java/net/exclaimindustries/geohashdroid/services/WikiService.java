@@ -282,6 +282,13 @@ public class WikiService extends QueueService {
                     // Get us a byte array!  We'll be uploading this soon.
                     byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, includeLocation);
 
+                    if(image == null)
+                    {
+                        // No image is a problem at this point...
+                        showImageErrorNotification();
+                        return ReturnCode.CONTINUE;
+                    }
+
                     // And by "soon", I mean "right now", because that byte
                     // array takes up a decent amount of memory.
                     String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
