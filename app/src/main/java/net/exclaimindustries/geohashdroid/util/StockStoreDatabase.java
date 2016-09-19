@@ -17,6 +17,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import net.exclaimindustries.tools.DateTools;
 
@@ -31,7 +32,6 @@ import net.exclaimindustries.tools.DateTools;
  * @author Nicholas Killewald
  */
 public class StockStoreDatabase {
-    private final Context mContext;
     private DatabaseHelper mHelper;
     private SQLiteDatabase mDatabase;
     
@@ -104,16 +104,7 @@ public class StockStoreDatabase {
             }
         }
     }
-    
-    /**
-     * Constructs a StockStoreDatabase object.
-     * 
-     * @param c Context to be used to open the database later
-     */
-    public StockStoreDatabase(Context c) {
-        mContext = c;
-    }
-    
+
     /**
      * Checks to see if the database in this object is open.  If not, recreate
      * a new one.
@@ -128,13 +119,14 @@ public class StockStoreDatabase {
      * Initializes the store.  That is to say, opens the database for action.
      * Or creates it and THEN opens it.  Or just gives up and throws an
      * exception.
-     * 
+     *
+     * @param c the Context to use to make the database helper
      * @return this (self reference, allowing this to be chained in an
      *         initialization call)
      * @throws SQLException if the database could be neither opened or created
      */
-    public StockStoreDatabase init() throws SQLException {
-        mHelper = new DatabaseHelper(mContext);
+    public StockStoreDatabase init(@NonNull Context c) throws SQLException {
+        mHelper = new DatabaseHelper(c);
         mDatabase = mHelper.getWritableDatabase();
         return this;
     }
@@ -312,10 +304,12 @@ public class StockStoreDatabase {
     /**
      * Performs cache cleanup.  This involves pruning the cache down to however
      * many entries should be the max.
+     *
+     * @param c Context to use to get preferences and such
      */
-    public synchronized void cleanup() {
+    public synchronized void cleanup(@NonNull Context c) {
         synchronized(mDatabase) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
             
             Log.v(DEBUG_TAG, "Pruning database...");
             try {

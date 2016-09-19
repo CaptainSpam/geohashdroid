@@ -430,7 +430,7 @@ public class HashBuilder {
      */
     private static synchronized StockStoreDatabase getStore(Context c) {
         if(mStore == null) {
-            mStore = new StockStoreDatabase(c).init();
+            mStore = new StockStoreDatabase().init(c);
         }
         
         return mStore;
@@ -529,14 +529,14 @@ public class HashBuilder {
         
         // Then, write it to the database.
         store.storeInfo(i);
-        store.cleanup();
+        store.cleanup(con);
     }
     
     private synchronized static void storeStock(Context con, Calendar cal, String stock) {
         StockStoreDatabase store = getStore(con);
         
         store.storeStock(cal, stock);
-        store.cleanup();
+        store.cleanup(con);
     }
 
     /**
