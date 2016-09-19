@@ -610,7 +610,9 @@ public class HashBuilder {
             throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
 
         Graticule source = i.getGraticule();
-        assert(source != null);
+
+        if(source == null)
+            throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
         
         // This sort of requires the 30W-itude of both to match.
         if(source.uses30WRule() != g.uses30WRule())

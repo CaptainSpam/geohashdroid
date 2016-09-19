@@ -312,7 +312,10 @@ public class Info implements Parcelable {
     
     /**
      * Determines if this Info represents a globalhash (and thus doesn't have
-     * any sort of valid Graticule data).
+     * any sort of valid Graticule data).  Note that there's no way to set up
+     * inspections to understand that isGlobalHash() == true implies
+     * getGraticule() == null, so there may be issues that mean this rarely gets
+     * called.
      * 
      * @return true if global, false if not
      */
@@ -464,7 +467,8 @@ public class Info implements Parcelable {
         // info if it's not null, or at least one of the nearbys.  The only way
         // nearest can be null is if the distance of ALL the nearbys is equal to
         // Float.MAX_VALUE, which is just absurd.
-        assert(nearest != null);
+        if(nearest == null)
+            throw new IllegalArgumentException("You have impossible graticules that are somehow infinitely away from anything!");
 
         // And hey presto, we've got us a winner!
         return nearest;

@@ -568,16 +568,16 @@ public class WikiUtils {
      * @param info Info from which a page name will be derived
      * @return said pagename
      */
-    public static String getWikiPageName(Info info) {
+    public static String getWikiPageName(@NonNull Info info) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
-        if(info.isGlobalHash()) {
+        Graticule g = info.getGraticule();
+
+        if(g == null) {
             return date + "_global";
         } else {
-            Graticule grat = info.getGraticule();
-            assert(grat != null);
-            String lat = grat.getLatitudeString(true);
-            String lon = grat.getLongitudeString(true);
+            String lat = g.getLatitudeString(true);
+            String lon = g.getLongitudeString(true);
 
             return date + "_" + lat + "_" + lon;
         }
@@ -598,10 +598,12 @@ public class WikiUtils {
      * @param c    Context so we can grab the globalhash template if we need it
      * @return said template
      */
-    public static String getWikiExpeditionTemplate(Info info, Context c) {
+    public static String getWikiExpeditionTemplate(@NonNull Info info, @NonNull Context c) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
-        if(info.isGlobalHash()) {
+        Graticule g = info.getGraticule();
+
+        if(g == null) {
             // Until a proper template can be made in the wiki itself, we'll
             // have to settle for this...
             InputStream is = c.getResources().openRawResource(R.raw.globalhash_template);
@@ -629,10 +631,8 @@ public class WikiUtils {
             return toReturn.toString() + getWikiCategories(info);
 
         } else {
-            Graticule grat = info.getGraticule();
-            assert(grat != null);
-            String lat = grat.getLatitudeString(true);
-            String lon = grat.getLongitudeString(true);
+            String lat = g.getLatitudeString(true);
+            String lon = g.getLongitudeString(true);
 
             return "{{subst:Expedition|lat=" + lat + "|lon=" + lon + "|date=" + date + "}}";
         }
@@ -644,19 +644,19 @@ public class WikiUtils {
      * @param info Info from which categories will be generated
      * @return said categories
      */
-    public static String getWikiCategories(Info info) {
+    public static String getWikiCategories(@NonNull Info info) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
         String toReturn = "[[Category:Meetup on "
                 + date + "]]\n";
 
-        if(info.isGlobalHash()) {
+        Graticule g = info.getGraticule();
+
+        if(g == null) {
             return toReturn + "[[Category:Globalhash]]";
         } else {
-            Graticule grat = info.getGraticule();
-            assert(grat != null);
-            String lat = grat.getLatitudeString(true);
-            String lon = grat.getLongitudeString(true);
+            String lat = g.getLatitudeString(true);
+            String lon = g.getLongitudeString(true);
 
             return toReturn + "[[Category:Meetup in " + lat + " "
                     + lon + "]]";

@@ -329,7 +329,12 @@ public class WikiService extends QueueService {
                 String before;
                 String after;
 
-                assert(page != null);
+                if(page == null)
+                {
+                    // This shouldn't happen.  If it did, there's something very
+                    // wrong with the wiki.
+                    throw new WikiException(R.string.wiki_error_unknown);
+                }
 
                 Matcher expeditionq = RE_EXPEDITION.matcher(page);
                 if (expeditionq.matches()) {
@@ -476,9 +481,9 @@ public class WikiService extends QueueService {
                         .append(Long.toString(info.getDate().getTime()))
                         .append(':');
 
-                if(!info.isGlobalHash()) {
-                    Graticule g = info.getGraticule();
-                    assert(g != null);
+                Graticule g = info.getGraticule();
+
+                if(g != null) {
                     builder.append(Integer.toString(g.getLatitude()))
                             .append(':')
                             .append(g.isSouth() ? '1' : '0')

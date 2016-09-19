@@ -78,7 +78,7 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
         final Info info = getArguments().getParcelable("info");
         final Location location = getArguments().getParcelable("location");
 
-        assert(info != null);
+        if(info == null) return null;
 
         String message;
         if(LocationUtil.isLocationNewEnough(location)) {
@@ -93,7 +93,7 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
         // Fortunately, we've got GHDBasicDialogBuilder on-hand for just such
         // basic dialog purposes!
         Graticule g = info.getGraticule();
-        assert(g != null);
+        if(g == null) return null;
 
         return new AlertDialog.Builder(getActivity())
                 .setMessage(message)

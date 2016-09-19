@@ -467,10 +467,8 @@ public class ExpeditionMode
     }
 
     private void addNearbyPoint(@NonNull Info info) {
-        if(info.isGlobalHash()) return;
-
         final Graticule g = info.getGraticule();
-        assert(g != null);
+        if(g == null) return;
 
         // This will get called repeatedly up to eight times (in rare cases,
         // five times) when we ask for nearby points.  All we need to do is put
@@ -638,11 +636,10 @@ public class ExpeditionMode
 
                     // With an Info in hand, we can also change the title.
                     StringBuilder newTitle = new StringBuilder();
-                    if(mCurrentInfo.isGlobalHash())
+                    Graticule g = mCurrentInfo.getGraticule();
+                    if(g == null)
                         newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
                     else {
-                        Graticule g = mCurrentInfo.getGraticule();
-                        assert(g != null);
                         newTitle.append(g.getLatitudeString(false)).append(' ').append(g.getLongitudeString(false));
                     }
                     newTitle.append(", ");
