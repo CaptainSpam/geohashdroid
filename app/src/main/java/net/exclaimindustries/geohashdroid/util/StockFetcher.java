@@ -9,6 +9,7 @@
 package net.exclaimindustries.geohashdroid.util;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.util.Calendar;
 
@@ -23,7 +24,6 @@ import java.util.Calendar;
  * <p>
  * These classes are intended to be single-use; if a given instance is already
  * fetching a stock price, don't try to re-use it for another until it's done.
- * That'll throw exceptions.
  * </p>
  *
  * @author Nicholas Killewald
@@ -76,7 +76,7 @@ public interface StockFetcher {
      * @param callback a callback for when the stock comes back
      * @throws IllegalStateException if the fetcher was busy and couldn't start
      */
-    void fetchStock(@NonNull Calendar cal, @NonNull Callback callback) throws IllegalStateException;
+    void fetchStock(@NonNull Calendar cal, @Nullable Graticule g, @NonNull Callback callback) throws IllegalStateException;
 
     /**
      * Aborts whatever current fetch is in progress.  This won't return any sort
