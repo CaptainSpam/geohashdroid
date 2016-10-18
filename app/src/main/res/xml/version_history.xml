@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.4" version="917" date="2016-10-18">
+        <title>A Tale Of Persistence And Serialization</title>
+        <header>Well, here's a setting that slipped under the radar:</header>
+        <bullets>
+            <bullet>Fixed a bug where "Only match with hashpoints in this graticule" for Known Locations wasn't being honored, or, in fact, persisted at all.  If you used this, you'll need to manually turn this back on for each point you have set as a Known Location, as it defaults to false.</bullet>
+        </bullets>
+        <footer>Sorry about that.</footer>
+    </version>
     <version name="0.9.1.3" version="916" date="2016-07-31">
         <title>Crox, Can You Hear Me?</title>
         <header>Yeep.  Well, something went wrong with a stock provider recently.  Plus, new feature anyway!</header>
