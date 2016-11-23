@@ -258,7 +258,7 @@ public class StockService extends WakefulIntentService {
                 Log.i(DEBUG_TAG, "We're not connected, stopping now.");
                 dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null);
             } else {
-                StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule, null);
+                StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule);
                 runner.runStock();
 
                 // And the results are in!
@@ -347,7 +347,7 @@ public class StockService extends WakefulIntentService {
                 Info info = HashBuilder.getStoredInfo(this, cal, offset);
                 if(info == null) {
                     // It's not in the cache.  Try to make it be in the cache.
-                    StockRunner runner = HashBuilder.requestStockRunner(this, cal, offset, null);
+                    StockRunner runner = HashBuilder.requestStockRunner(this, cal, offset);
                     runner.runStock();
 
                     if(runner.getStatus() == HashBuilder.StockRunner.ALL_OKAY) {

@@ -8,9 +8,7 @@
 package net.exclaimindustries.geohashdroid.util;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Message;
-import android.os.PowerManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -70,15 +68,13 @@ public class HashBuilder {
     private static Info mTwoInfosAgo;
 
     /**
-     * <code>StockRunner</code> is what fetches the stocks.  It can be run as a
-     * separate thread where it will respond to the given Handler or in
-     * single-thread mode where you need to pull the data from the StockRunner
-     * when it's done.  Only one will run at a time for purposes of the stock
-     * cache database remaining sane.  Once it has the data, it'll go back to
-     * the static methods of HashBuilder to make the Info bundle and put it in
-     * the cache.
+     * <code>StockRunner</code> is what fetches the stocks.  It spawns off
+     * threads to fetch data, and once {@link #runStock()} returns, you'll be
+     * able to pull the data and act on it.  Once it has the data, it'll go back
+     * to the static methods of HashBuilder to make the Info bundle and put it
+     * in the cache.
      */
-    public static class StockRunner implements Runnable {
+    public static class StockRunner {
         private static final String DEBUG_TAG = "StockRunner";
 
         /**
@@ -113,12 +109,10 @@ public class HashBuilder {
         private Context mContext;
         private Calendar mCal;
         private Graticule mGrat;
-        private Handler mHandler;
         private HttpGet mRequest;
         private int mStatus;
         private Info mLastObject;
-        private PowerManager.WakeLock mWakeLock;
-        
+
         // This may be expanded later to allow a user-definable list, hence why
         // it doesn't follow the usual naming conventions I use.  Of course, in
         // THAT case, we'd need to make it not be a raw array.  The general form
@@ -127,30 +121,11 @@ public class HashBuilder {
         private final static String[] mServers = { "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d",
                 "http://geo.crox.net/djia/%Y/%m/%d" };
 
-        
-        private StockRunner(Context con, Calendar c, Graticule g, Handler h) {
+        private StockRunner(Context con, Calendar c, Graticule g) {
             mContext = con;
             mCal = c;
             mGrat = g;
-            mHandler = h;
             mStatus = IDLE;
-            mWakeLock = ((PowerManager)(con.getSystemService(Context.POWER_SERVICE))).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, DEBUG_TAG);
-        }
-        
-        @Override
-        public void run() {
-            // And STAY awake!  This might be called from a thread that hands
-            // off control here, so we need our own WakeLock to make sure it
-            // stays awake during the connection.
-            mWakeLock.acquire();
-           
-            // Call the actual meat of the matter.  That's peppered with return
-            // statements for the error cases, so wrapping the call with the
-            // wakelock controls here makes the most sense.
-            runStock();
-
-            // Now, release it.
-            mWakeLock.release();
         }
 
         /**
@@ -248,15 +223,6 @@ public class HashBuilder {
         
         private void sendMessage(Info toReturn) {
             mLastObject = toReturn;
-            
-            // If mHandler is null, either this is single-thread mode and the
-            // caller will get the return data some other way, or we've been
-            // told to abort and need to put the brakes on quick.
-            if(mHandler != null)
-            {
-                Message m = Message.obtain(mHandler, mStatus, toReturn);
-                m.sendToTarget();
-            }
         }
         
         /**
@@ -270,7 +236,7 @@ public class HashBuilder {
         public Info getLastResultObject() {
             return mLastObject;
         }
-        
+
         private String fetchStock(Calendar sCal) throws IOException {
             // Now, generate a string for the URL.
             String sMonthStr;
@@ -444,10 +410,9 @@ public class HashBuilder {
      * @param c Calendar object with the adventure date requested (this will
      *          account for the 30W Rule, so don't put it in) 
      * @param g Graticule to use
-     * @param h Handler to handle the response once it comes in (can be null)
      */
-    public static StockRunner requestStockRunner(Context con, Calendar c, Graticule g, Handler h) {
-        return new StockRunner(con, c, g, h);
+    public static StockRunner requestStockRunner(Context con, Calendar c, Graticule g) {
+        return new StockRunner(con, c, g);
     }
 
     /**
