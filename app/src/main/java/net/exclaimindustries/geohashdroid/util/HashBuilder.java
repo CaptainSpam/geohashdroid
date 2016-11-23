@@ -8,7 +8,6 @@
 package net.exclaimindustries.geohashdroid.util;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -24,6 +23,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.Calendar;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
@@ -77,6 +78,10 @@ public class HashBuilder {
     public static class StockRunner {
         private static final String DEBUG_TAG = "StockRunner";
 
+        // In milliseconds, remember.
+        private static final int CONNECTION_TIMEOUT_SEC = 10;
+        private static final int CONNECTION_TIMEOUT_MS = CONNECTION_TIMEOUT_SEC * 1000;
+
         /**
          * This is busy, either with getting the stock price or working out
          * the hash.
@@ -101,10 +106,10 @@ public class HashBuilder {
          * The last request couldn't be met because of some server error.
          */
         public static final int ERROR_SERVER = 4;
-        /**
-         * The user aborted the request.
-         */
-        public static final int ABORTED = 5;
+//        /**
+//         * The user aborted the request.
+//         */
+//        public static final int ABORTED = 5;
     
         private Context mContext;
         private Calendar mCal;
@@ -130,23 +135,15 @@ public class HashBuilder {
 
         /**
           <p>
-         * Runs the stock fetch in the current thread.  Use this if you're
-         * already in a separate thread and want it to be synchronous.  Don't
-         * use this if you're in the main thread, because it's stupid and wrong
-         * to put network I/O on the main thread.
+         * Runs the stock fetch in the current thread.  And by "current thread",
+         * I mean don't use this if you're in the main thread.  It's stupid and
+         * wrong to put network I/O on the main thread.
          * </p>
          *
          * <p>
-         * Note that if this is called directly (as opposed to starting this as
-         * a new thread), WakeLocks will NOT be applied.  That's on you.  If
-         * this IS called as a new thread, however, it will be surrounded by
-         * WakeLock calls.
-         * </p>
-         * 
-         * <p>
          * When this method returns, the cache will have been updated, if
-         * appropriate.  If you didn't have a Handler defined, you can retrieve
-         * the status and data from {@link #getStatus()} and {@link #getLastResultObject()}.
+         * appropriate.  You can retrieve the status and data from
+         * {@link #getStatus()} and {@link #getLastResultObject()}.
          * </p>
          */
         public void runStock() {
@@ -195,12 +192,6 @@ public class HashBuilder {
                     } catch (IOException ioe) {
                         // If we got anything else, assume a problem.
                         mStatus = ERROR_SERVER;
-                        sendMessage(createInvalidInfo(mCal, mGrat));
-                        return;
-                    }
-                    
-                    if(mStatus == ABORTED) {
-                        // If we aborted, send that back, too.
                         sendMessage(createInvalidInfo(mCal, mGrat));
                         return;
                     }
@@ -262,7 +253,7 @@ public class HashBuilder {
             // precedence.
             int curStatus = ERROR_SERVER;
             String result = "";
-            
+
             for(String s : mServers) {
                 // Do all our substitutions...
                 String location = s.replaceAll("%Y", Integer.toString(sCal.get(Calendar.YEAR)));
@@ -273,35 +264,40 @@ public class HashBuilder {
                 // And go fetch!
                 CloseableHttpClient client = HttpClients.createDefault();
                 mRequest = new HttpGet(location);
+
                 HttpResponse response;
-                
+
+                // Get ready to time out if need be.  You never know.
+                TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        Log.i(DEBUG_TAG, "Stock fetch connection timed out, aborting now.");
+                        try {
+                            mRequest.abort();
+                        } catch (NullPointerException npe) {
+                            // It COULD be null at that point.  If it is, we can
+                            // just safely ignore it.
+                        }
+                    }
+                };
+
+                // Timer goes now!  We'll start the client immediately in the
+                // upcoming try block.
+                new Timer(true).schedule(task, CONNECTION_TIMEOUT_MS);
+
                 try {
                     response = client.execute(mRequest);
+                    task.cancel();
+
+                    // If that came out aborted, it was a timeout, so move on.
+                    if(mRequest.isAborted()) continue;
                 } catch (IOException e) {
-                    // If there was an exception, but we aborted, return a blank
-                    // response (aborting throws an IOException).  If not, there
-                    // was a legitimate problem with this particular server.
-                    if(mStatus == ABORTED) {
-                        try {
-                            client.close();
-                        } catch(Exception ex) {
-                            // Nothing.
-                        }
-                        return "";
-                    }
+                    // If there was an exception, there was some issue with the
+                    // server.  It might've been aborted by timeout, but still,
+                    // move on to the next server.
                     continue;
                 }
-                
-                // Make sure we've caught an abort...
-                if(mStatus == ABORTED) {
-                    try {
-                        client.close();
-                    } catch(Exception ex) {
-                        // Nothing!
-                    }
-                    return "";
-                }
-                
+
                 if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
                     curStatus = ERROR_NOT_POSTED;
                 } else if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
@@ -330,11 +326,8 @@ public class HashBuilder {
             }
             
             // If we got this far and we still had an ERROR_SERVER or
-            // ERROR_NOT_POSTED, throw 'em.  We failed.  If we got an ABORTED,
-            // return a blank.
-            if(mStatus == ABORTED)
-                return "";
-            else if(curStatus == ERROR_NOT_POSTED)
+            // ERROR_NOT_POSTED, throw 'em.  We failed.
+            if(curStatus == ERROR_NOT_POSTED)
                 throw new FileNotFoundException();
             else if(curStatus == ERROR_SERVER)
                 throw new IOException();
