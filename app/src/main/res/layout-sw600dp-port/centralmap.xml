@@ -32,6 +32,22 @@
             android:layout_margin="@dimen/standard_padding"
             android:visibility="gone"
             android:elevation="@dimen/elevation_error_banner"/>
+
+        <FrameLayout
+            android:id="@+id/progress_container"
+            android:layout_width="@dimen/progress_spinner_size"
+            android:layout_height="@dimen/progress_spinner_size"
+            android:padding="@dimen/standard_padding"
+            android:layout_margin="@dimen/double_padding"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/progress_background"
+            android:elevation="4dp">
+            <ProgressBar
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:indeterminate="true"/>
+        </FrameLayout>
     </RelativeLayout>
     <FrameLayout
         android:layout_width="match_parent"

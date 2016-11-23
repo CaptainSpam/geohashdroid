@@ -99,4 +99,6 @@
     <dimen name="known_location_address_sign_height">20dp</dimen>
     <dimen name="known_location_address_sign_inset">2dp</dimen>
     <dimen name="known_location_address_sign_inner_inset">4dp</dimen>
+
+    <dimen name="progress_spinner_size">60dp</dimen>
 </resources>
