@@ -138,6 +138,12 @@
     <string name="details_you">You</string>
     <string name="details_dist">Distance:</string>
     <string name="details_accuracy">(Accurate to %1$s)</string>
+    <string name="details_toast_no_location">Nothing copied to clipboard &#8212; Your location is currently unknown.</string>
+    <string name="details_toast_stand_by">Nothing copied to clipboard &#8212; Stand by&#8230;</string>
+    <string name="details_toast_your_location">Copied your current coordinates to the clipboard.</string>
+    <string name="details_toast_final_location">Copied the hashpoint\'s coordinates to the clipboard.</string>
+    <string name="details_clip_your_location">Geohash Droid: Current user location</string>
+    <string name="details_clip_final_location">Geohash Droid: Hashpoint location for %1$s</string>
 
     <string name="hint_lat">Lat</string>
     <string name="hint_lon">Lon</string>

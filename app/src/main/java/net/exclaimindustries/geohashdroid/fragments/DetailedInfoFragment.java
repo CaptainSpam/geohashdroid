@@ -9,6 +9,9 @@
 package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -18,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
@@ -43,10 +47,55 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
 
     private Location mLastLocation;
 
+    private ClipboardManager mClipManager;
+
+    private View.OnLongClickListener mYouListener = new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+            // Only allow this if we actually HAVE data.
+            if(mLastLocation == null) {
+                Toast.makeText(getActivity(), R.string.details_toast_no_location, Toast.LENGTH_SHORT).show();
+            } else {
+                String clipText = UnitConverter.makeLatitudeCoordinateString(getActivity(), mLastLocation.getLatitude(), false, UnitConverter.OUTPUT_DETAILED)
+                        + " "
+                        + UnitConverter.makeLongitudeCoordinateString(getActivity(), mLastLocation.getLongitude(), false, UnitConverter.OUTPUT_DETAILED);
+                // Let's see if I know how the clipboard works...
+                ClipData clip = ClipData.newPlainText(getString(R.string.details_clip_your_location), clipText);
+                mClipManager.setPrimaryClip(clip);
+
+                Toast.makeText(getActivity(), R.string.details_toast_your_location, Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
+    };
+
+    private View.OnLongClickListener mDestListener = new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+            // Same deal, only this time with the final destination.
+            if(mInfo == null) {
+                Toast.makeText(getActivity(), R.string.details_toast_stand_by, Toast.LENGTH_SHORT).show();
+            } else {
+                String clipText = UnitConverter.makeLatitudeCoordinateString(getActivity(), mInfo.getLatitude(), false, UnitConverter.OUTPUT_DETAILED)
+                        + " "
+                        + UnitConverter.makeLongitudeCoordinateString(getActivity(), mInfo.getLongitude(), false, UnitConverter.OUTPUT_DETAILED);
+                ClipData clip = ClipData.newPlainText(getString(R.string.details_clip_final_location, DateFormat.getDateInstance(DateFormat.LONG)
+                        .format(mInfo.getCalendar().getTime())), clipText);
+                mClipManager.setPrimaryClip(clip);
+
+                Toast.makeText(getActivity(), R.string.details_toast_final_location, Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
+    };
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View layout = inflater.inflate(R.layout.detail, container, false);
+
+        // Clipboard!
+        mClipManager = (ClipboardManager)getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
 
         // TextViews!
         mDate = (TextView)layout.findViewById(R.id.detail_date);
@@ -58,6 +107,12 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         mAccuracy = (TextView)layout.findViewById(R.id.accuracy);
         mYouBlock = layout.findViewById(R.id.you_block);
         mDistanceBlock = layout.findViewById(R.id.distance_block);
+
+        // Long clicks!
+        mYouLat.setOnLongClickListener(mYouListener);
+        mYouLon.setOnLongClickListener(mYouListener);
+        mDestLat.setOnLongClickListener(mDestListener);
+        mDestLon.setOnLongClickListener(mDestListener);
 
         // Button!
         Button closeButton = (Button) layout.findViewById(R.id.close);
