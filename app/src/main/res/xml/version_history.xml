@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.5" version="918" date="2016-11-26">
+        <title>The Spiraling Shape Will Make You Go Insane</title>
+        <header>A couple neat new things this time around!  And a minor fix.</header>
+        <bullets>
+            <bullet>All stock fetching operations will time out after ten seconds (per server).  This should hopefully mitigate things if one of the stock providers has issues like what happened a few months back.</bullet>
+            <bullet>There's a spinny busy indicator thingy while a stock fetch is in progress!  Look at it spin!  Everybody loves spinny things, right?</bullet>
+            <bullet>Long-tapping on either your current location or the final destination on the Detailed Info screen will now copy the corresponding coordinates to the system clipboard.  Said coordinates will be in whatever format is shown on the screen as per your preferences (degrees/minutes/seconds).</bullet>
+        </bullets>
+        <footer>I'm also aware there's some issue with the Known Locations notifier (or, more specifically, the stock pre-fetcher which should be triggering said notifications).  I think I've got an idea what's going on there, but that's one of those annoying things that's tricky to test.  Regardless, I'll see what I can do.</footer>
+    </version>
     <version name="0.9.1.4" version="917" date="2016-10-18">
         <title>A Tale Of Persistence And Serialization</title>
         <header>Well, here's a setting that slipped under the radar:</header>
