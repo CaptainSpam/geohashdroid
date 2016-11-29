@@ -12,6 +12,7 @@ package net.exclaimindustries.geohashdroid.wiki;
 import android.content.Context;
 import android.location.Location;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -133,8 +134,8 @@ public class WikiUtils {
      * @param httpreq    an HTTP request (GET or POST)
      * @return a Document containing the contents of the response
      */
-    private static Document getHttpDocument(CloseableHttpClient httpclient,
-                                            HttpUriRequest httpreq) throws Exception {
+    private static Document getHttpDocument(@NonNull CloseableHttpClient httpclient,
+                                            @NonNull HttpUriRequest httpreq) throws Exception {
         // Remember the last request. We might want to abort it later.
         mLastRequest = httpreq;
 
@@ -154,7 +155,8 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static boolean doesWikiPageExist(CloseableHttpClient httpclient, String pagename) throws Exception {
+    public static boolean doesWikiPageExist(@NonNull CloseableHttpClient httpclient,
+                                            @NonNull String pagename) throws Exception {
         // It's GET time!  This is basically the same as the content request, but
         // we really don't need ANY data other than whether or not the page
         // exists, so we won't call for anything.
@@ -195,7 +197,9 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static String getWikiPage(CloseableHttpClient httpclient, String pagename, HashMap<String, String> formfields) throws Exception {
+    public static String getWikiPage(@NonNull CloseableHttpClient httpclient,
+                                     @NonNull String pagename,
+                                     @Nullable HashMap<String, String> formfields) throws Exception {
         // We can use a GET statement here.
         HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&prop="
                 + URLEncoder.encode("info|revisions", "UTF-8")
@@ -263,7 +267,9 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void putWikiPage(CloseableHttpClient httpclient, String pagename, String content, HashMap<String, String> formfields) throws Exception {
+    public static void putWikiPage(@NonNull CloseableHttpClient httpclient,
+                                   @NonNull String pagename, String content,
+                                   @NonNull HashMap<String, String> formfields) throws Exception {
         // If there's no edit token in the hash map, we can't do anything.
         if(!formfields.containsKey("token")) {
             throw new WikiException(R.string.wiki_error_protected);
@@ -303,7 +309,11 @@ public class WikiUtils {
      * @param formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
      * @param data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
      */
-    public static void putWikiImage(CloseableHttpClient httpclient, String filename, String description, HashMap<String, String> formfields, byte[] data) throws Exception {
+    public static void putWikiImage(@NonNull CloseableHttpClient httpclient,
+                                    @NonNull String filename,
+                                    @NonNull String description,
+                                    @NonNull HashMap<String, String> formfields,
+                                    @NonNull byte[] data) throws Exception {
         if(!formfields.containsKey("token")) {
             throw new WikiException(R.string.wiki_error_unknown);
         }
@@ -372,7 +382,9 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void login(CloseableHttpClient httpclient, String wpName, String wpPassword) throws Exception {
+    public static void login(@NonNull CloseableHttpClient httpclient,
+                             @NonNull String wpName,
+                             @NonNull String wpPassword) throws Exception {
         HttpPost httppost = new HttpPost(WIKI_API_URL);
 
         ArrayList<NameValuePair> nvps = new ArrayList<>();
@@ -454,10 +466,12 @@ public class WikiUtils {
      * @param code String returned from the wiki
      * @return text ID that corresponds to that error
      */
-    private static int getErrorTextId(String code) {
+    private static int getErrorTextId(@Nullable String code) {
         // If we don't recognize the error (or shouldn't get it at all), we use
         // this, because we don't have the slightest clue what's wrong.
         int error = R.string.wiki_error_unknown;
+
+        if(code == null) return error;
 
         // First, general errors.  These are the only general ones we care
         // about; there's more, but those aren't likely to come up.
@@ -542,7 +556,7 @@ public class WikiUtils {
         return error;
     }
 
-    private static boolean doesResponseHaveError(Element elem) {
+    private static boolean doesResponseHaveError(@Nullable Element elem) {
         try {
             DOMUtil.getFirstElement(elem, "error");
         } catch(Exception ex) {
@@ -552,7 +566,7 @@ public class WikiUtils {
         return true;
     }
 
-    private static String findErrorCode(Element elem) {
+    private static String findErrorCode(@Nullable Element elem) {
         try {
             Element error = DOMUtil.getFirstElement(elem, "error");
             return DOMUtil.getSimpleAttributeText(error, "code");
@@ -568,16 +582,16 @@ public class WikiUtils {
      * @param info Info from which a page name will be derived
      * @return said pagename
      */
-    public static String getWikiPageName(Info info) {
+    public static String getWikiPageName(@NonNull Info info) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
-        if(info.isGlobalHash()) {
+        Graticule g = info.getGraticule();
+
+        if(g == null) {
             return date + "_global";
         } else {
-            Graticule grat = info.getGraticule();
-            assert(grat != null);
-            String lat = grat.getLatitudeString(true);
-            String lon = grat.getLongitudeString(true);
+            String lat = g.getLatitudeString(true);
+            String lon = g.getLongitudeString(true);
 
             return date + "_" + lat + "_" + lon;
         }
@@ -598,10 +612,13 @@ public class WikiUtils {
      * @param c    Context so we can grab the globalhash template if we need it
      * @return said template
      */
-    public static String getWikiExpeditionTemplate(Info info, Context c) {
+    public static String getWikiExpeditionTemplate(@NonNull Info info,
+                                                   @NonNull Context c) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
-        if(info.isGlobalHash()) {
+        Graticule g = info.getGraticule();
+
+        if(g == null) {
             // Until a proper template can be made in the wiki itself, we'll
             // have to settle for this...
             InputStream is = c.getResources().openRawResource(R.raw.globalhash_template);
@@ -629,10 +646,8 @@ public class WikiUtils {
             return toReturn.toString() + getWikiCategories(info);
 
         } else {
-            Graticule grat = info.getGraticule();
-            assert(grat != null);
-            String lat = grat.getLatitudeString(true);
-            String lon = grat.getLongitudeString(true);
+            String lat = g.getLatitudeString(true);
+            String lon = g.getLongitudeString(true);
 
             return "{{subst:Expedition|lat=" + lat + "|lon=" + lon + "|date=" + date + "}}";
         }
@@ -644,19 +659,19 @@ public class WikiUtils {
      * @param info Info from which categories will be generated
      * @return said categories
      */
-    public static String getWikiCategories(Info info) {
+    public static String getWikiCategories(@NonNull Info info) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
         String toReturn = "[[Category:Meetup on "
                 + date + "]]\n";
 
-        if(info.isGlobalHash()) {
+        Graticule g = info.getGraticule();
+
+        if(g == null) {
             return toReturn + "[[Category:Globalhash]]";
         } else {
-            Graticule grat = info.getGraticule();
-            assert(grat != null);
-            String lat = grat.getLatitudeString(true);
-            String lon = grat.getLongitudeString(true);
+            String lat = g.getLatitudeString(true);
+            String lon = g.getLongitudeString(true);
 
             return toReturn + "[[Category:Meetup in " + lat + " "
                     + lon + "]]";
@@ -671,7 +686,7 @@ public class WikiUtils {
      * @param loc the Location
      * @return an OpenStreetMap wiki tag
      */
-    public static String makeLocationTag(Location loc) {
+    public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
             return " [http://www.openstreetmap.org/?lat="
                     + mLatLonLinkFormat.format(loc.getLatitude())

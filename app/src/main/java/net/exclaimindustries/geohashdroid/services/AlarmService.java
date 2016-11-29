@@ -14,12 +14,15 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.util.Log;
 
@@ -53,9 +56,7 @@ import java.util.TimeZone;
  * </p>
  * 
  * <p>
- * In the current implementation, it ONLY starts up when the app is run.  That
- * is, it won't come on at boot time.  That seems rude for a simple Geohashing
- * app, really.
+ * This WILL try to start itself at boot time (assuming we get the boot intent).
  * </p>
  *
  * @author Nicholas Killewald
@@ -186,6 +187,29 @@ public class AlarmService extends WakefulIntentService {
     }
 
     /**
+     * When bootup happens, this makes sure AlarmService is ready to go if the
+     * user's got that set up.
+     */
+    public static class BootReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // It's boot time!  We might need to flip on the party alarm!
+            Log.i(DEBUG_TAG, "Gooooooood morning, 30W!  It's boot time in Geohashland!");
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
+                // Set the alarm!
+                Log.i(DEBUG_TAG, "The stock alarm is now being started...");
+                Intent i = new Intent(context, AlarmService.class);
+                i.setAction(AlarmService.STOCK_ALARM_ON);
+                WakefulIntentService.sendWakefulWork(context, i);
+            } else {
+                Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
+            }
+        }
+    }
+
+    /**
      * This makes a 9:30am ET Calendar for today's date.  Note that even if a
      * Calendar is supplied, what will be returned will be in America/New_York,
      * using the date it is in New York right now.
@@ -194,7 +218,7 @@ public class AlarmService extends WakefulIntentService {
      *               new Calendar from scratch
      * @return a new Calendar for 9:30am ET for today's (or the supplied) date
      */
-    private Calendar makeNineThirty(Calendar source) {
+    private Calendar makeNineThirty(@Nullable Calendar source) {
         Calendar base;
 
         if(source == null) {
@@ -231,7 +255,8 @@ public class AlarmService extends WakefulIntentService {
      * @return a new Calendar whose date is the most recent date a stock is
      *         likely to exist.
      */
-    private Calendar getMostRecentStockDate(Calendar source) {
+    @NonNull
+    private Calendar getMostRecentStockDate(@Nullable Calendar source) {
         Calendar base;
 
         if(source == null) {
@@ -257,7 +282,7 @@ public class AlarmService extends WakefulIntentService {
         super("AlarmService");
     }
     
-    private void showNotification(Calendar date) {
+    private void showNotification(@NonNull Calendar date) {
         // The notification in this case just says when there's an active
         // network transaction going.  We don't need to bug the user that we're
         // waiting for a network connection, as chances are, the user's also
@@ -287,7 +312,7 @@ public class AlarmService extends WakefulIntentService {
                 PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
     }
     
-    private void sendRequest(Graticule g) {
+    private void sendRequest(@NonNull Graticule g) {
         // The Graticule will be one of the dummies, as all we really care about
         // is if it's 30W or not.  And we don't really care about it THAT much,
         // just enough to put the right string in the notification.  Otherwise,
@@ -564,7 +589,7 @@ public class AlarmService extends WakefulIntentService {
         mNotificationManager.notify(notificationId, builder.build());
     }
 
-    private Notification.Builder getFreshNotificationBuilder(List<KnownLocationMatchData> data, @StringRes int titleId) {
+    private Notification.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data, @StringRes int titleId) {
         KnownLocationMatchData match = data.get(0);
         String contentText = getString(R.string.known_locations_alarm_distance,
                 UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),

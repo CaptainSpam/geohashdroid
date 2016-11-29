@@ -128,6 +128,10 @@ public class KnownLocation implements Parcelable {
             toReturn.mName = obj.getString("name");
             toReturn.mLocation = new LatLng(obj.getDouble("lat"), obj.getDouble("lon"));
             toReturn.mRange = obj.getDouble("range");
+            // Well, whoops.  Turns out I completely forgot to serialize this in
+            // previous versions.  We don't want this throwing an exception if
+            // it's not there, so we'll assume false if it doesn't exist.
+            toReturn.mRestrictGraticule = obj.optBoolean("restrictGraticule", false);
             return toReturn;
         } catch(JSONException je) {
             Log.e(DEBUG_TAG, "Couldn't deserialize a KnownLocation for some reason!", je);
@@ -187,6 +191,7 @@ public class KnownLocation implements Parcelable {
             toReturn.put("lat", mLocation.latitude);
             toReturn.put("lon", mLocation.longitude);
             toReturn.put("range", mRange);
+            toReturn.put("restrictGraticule", mRestrictGraticule);
         } catch(JSONException je) {
             // This really, REALLY shouldn't happen.  Really.
             Log.e("KnownLocation", "JSONException trying to add data into the to-return object?  The hell?", je);
@@ -255,14 +260,6 @@ public class KnownLocation implements Parcelable {
      * Returns whether or not this KnownLocation is graticule-restricted.  That
      * is, if it should ONLY compare the location's native Graticule when
      * looking for the closest Info.
-     * </p>
-     *
-     * <p>
-     * I'll be honest, I'm not sure how often this'll be used, but given I
-     * seriously misjudged how much everyone missed "always start in a specific
-     * Graticule" mode (as opposed to "always start with the closest hashpoint"
-     * mode, which was the default as per 0.9.0), I feel I ought to include this
-     * option.
      * </p>
      *
      * @return true if this is graticule-restricted, false if not

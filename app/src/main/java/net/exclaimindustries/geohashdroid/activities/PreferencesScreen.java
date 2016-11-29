@@ -23,6 +23,8 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
+import com.commonsware.cwac.wakeful.WakefulIntentService;
+
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.WikiService;
@@ -303,7 +305,7 @@ public class PreferencesScreen extends PreferenceActivity {
                             i.setAction(AlarmService.STOCK_ALARM_OFF);
                         }
 
-                        getActivity().startService(i);
+                        WakefulIntentService.sendWakefulWork(getActivity(), i);
                     }
 
                     return true;

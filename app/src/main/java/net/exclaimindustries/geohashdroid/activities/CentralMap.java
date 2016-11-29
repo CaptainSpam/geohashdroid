@@ -26,6 +26,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -127,8 +128,11 @@ public class CentralMap
     private boolean mGlobalhash;
 
     private ErrorBanner mBanner;
+    private View mProgress;
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
+
+    private float mProgressHeight = 0.0f;
 
     private List<Marker> mKnownLocationMarkers;
 
@@ -510,6 +514,9 @@ public class CentralMap
         public void onReceive(Context context, Intent intent) {
             Log.d(DEBUG_TAG, "Stock has come in!");
 
+            // Progress goes away!
+            mProgress.animate().translationY(-mProgressHeight).alpha(0.0f);
+
             Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
             bun.setClassLoader(getClassLoader());
 
@@ -642,6 +649,13 @@ public class CentralMap
                 .build();
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
+        mProgress = findViewById(R.id.progress_container);
+
+        // The progress-o-matic needs to be off-screen.  And, we need to know
+        // how much it should shift down to become back on-screen.
+        mProgressHeight = getResources().getDimension(R.dimen.progress_spinner_size) + (2 * getResources().getDimension(R.dimen.double_padding));
+        mProgress.setTranslationY(-mProgressHeight);
+        mProgress.setAlpha(0.0f);
 
         // Get a map ready.  We'll know when we've got it.  Oh, we'll know.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
@@ -687,7 +701,7 @@ public class CentralMap
             } else {
                 // The other cases, we need to know the last-known graticule and
                 // globalhashiness.
-                String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALD");
+                String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALID");
                 String lastLon = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, "INVALID");
                 boolean globalHash = prefs.getBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, false);
 
@@ -968,7 +982,7 @@ public class CentralMap
             i.setAction(AlarmService.STOCK_ALARM_OFF);
         }
 
-        startService(i);
+        WakefulIntentService.sendWakefulWork(this, i);
 
         // Now for preference cleanup.  Unfortunately, this section will only
         // get bigger with time, as I can't guarantee what version the user
@@ -1057,6 +1071,9 @@ public class CentralMap
      * @param flags the {@link StockService} flags
      */
     private void requestStock(@Nullable Graticule g, @NonNull Calendar cal, int flags) {
+        // Progress shows up!
+        mProgress.animate().translationY(0.0f).alpha(1.0f);
+
         // As a request ID, we'll use the current date, because why not?
         long date = cal.getTimeInMillis();
 

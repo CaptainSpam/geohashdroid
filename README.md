@@ -9,7 +9,7 @@ If you want to check out the code behind the really old, pre-tablet version that
 
 ## If you want to build this yourself
 
-The overhauled Geohash Droid should be kinda-sorta functional now, in a very testing sense.  However, since it uses the Google Maps API v2, you're going to need to get your own API key to use it.  [Google provides instructions](https://developers.google.com/maps/documentation/android/start?hl=en) to get a key; all you have to do past that is make your own string resource called "api_map_key_v2" with the key string, and GHD should compile.
+The overhauled Geohash Droid should be completely functional now.  However, since it uses the Google Maps API v2, you're going to need to get your own API key to use it.  [Google provides instructions](https://developers.google.com/maps/documentation/android/start?hl=en) to get a key; all you have to do past that is make your own string resource called "api_map_key_v2" with the key string, and GHD should compile.
 
 If you're building the legacy branch, on the other hand, you'll need a string resource called "api_map_key" that points to an API v1 key.  I don't think Google is giving those out anymore, so really, you might just want to avoid the legacy branch unless you're planning on porting it to use API v2 keys and functionality.
 

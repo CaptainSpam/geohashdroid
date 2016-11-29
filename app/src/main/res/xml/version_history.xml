@@ -1,5 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.1.5" version="918" date="2016-11-26">
+        <title>The Spiraling Shape Will Make You Go Insane</title>
+        <header>A couple neat new things this time around!  And a minor fix.</header>
+        <bullets>
+            <bullet>All stock fetching operations will time out after ten seconds (per server).  This should hopefully mitigate things if one of the stock providers has issues like what happened a few months back.</bullet>
+            <bullet>There's a spinny busy indicator thingy while a stock fetch is in progress!  Look at it spin!  Everybody loves spinny things, right?</bullet>
+            <bullet>Long-tapping on either your current location or the final destination on the Detailed Info screen will now copy the corresponding coordinates to the system clipboard.  Said coordinates will be in whatever format is shown on the screen as per your preferences (degrees/minutes/seconds).</bullet>
+        </bullets>
+        <footer>I'm also aware there's some issue with the Known Locations notifier (or, more specifically, the stock pre-fetcher which should be triggering said notifications).  I think I've got an idea what's going on there, but that's one of those annoying things that's tricky to test.  Regardless, I'll see what I can do.</footer>
+    </version>
+    <version name="0.9.1.4" version="917" date="2016-10-18">
+        <title>A Tale Of Persistence And Serialization</title>
+        <header>Well, here's a setting that slipped under the radar:</header>
+        <bullets>
+            <bullet>Fixed a bug where "Only match with hashpoints in this graticule" for Known Locations wasn't being honored, or, in fact, persisted at all.  If you used this, you'll need to manually turn this back on for each point you have set as a Known Location, as it defaults to false.</bullet>
+        </bullets>
+        <footer>Sorry about that.</footer>
+    </version>
+    <version name="0.9.1.3" version="916" date="2016-07-31">
+        <title>Crox, Can You Hear Me?</title>
+        <header>Yeep.  Well, something went wrong with a stock provider recently.  Plus, new feature anyway!</header>
+        <bullets>
+            <bullet>Changed the stock price provider to give priority to Peeron over Crox.  Crox went kerflooey over the weekend, apparently, and did so in a way my code wasn't expecting.  Sorry about that.</bullet>
+            <bullet>The stock pre-fetcher will now start at boot time (if you have it turned on to begin with)!  No more starting up Geohash Droid once after a reboot just to make sure it notifies you if a point is nearby!</bullet>
+        </bullets>
+        <footer>The stock provider fix is a temporary thing.  I'm going to have to come up with a more robust way to handle fallbacks in that case.</footer>
+    </version>
+    <version name="0.9.1.2" version="915" date="2016-05-10">
+        <title>Boldly Looking Forward</title>
+        <header>Here's a small bug I missed:</header>
+        <bullets>
+            <bullet>Fixed an issue where if you use Last Used Graticule as the startup mode and there wasn't a stock price posted yet when you checked, changing the date wouldn't trigger a new stock lookup unless you also changed the graticule.  Now it'll remember the graticule it started with and do things right.</bullet>
+        </bullets>
+        <footer>More to come!</footer>
+    </version>
     <version name="0.9.1.1" version="914" date="2016-05-03">
         <title>The Old Backup Plan</title>
         <header>Have some updates and minor feature cleanups!</header>

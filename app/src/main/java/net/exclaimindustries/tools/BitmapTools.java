@@ -13,7 +13,6 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.util.Log;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -179,6 +178,8 @@ public class BitmapTools {
             // Alright, ContentResolver.  You'd better do your job.
             InputStream input = context.getContentResolver().openInputStream(uri);
 
+            if(input == null) return null;
+
             // Otherwise, it's the same as before.  Grab the bounds only.
             BitmapFactory.Options opts = new BitmapFactory.Options();
             opts.inJustDecodeBounds = true;
@@ -220,6 +221,7 @@ public class BitmapTools {
 
             // Re-open the stream, as we closed it already.
             input = context.getContentResolver().openInputStream(uri);
+            if(input == null) return null;
 
             // Read it into a Bitmap with the new options in hand.
             Bitmap bitmap = BitmapFactory.decodeStream(input, null, opts);
