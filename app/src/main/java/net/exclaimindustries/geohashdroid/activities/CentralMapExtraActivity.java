@@ -140,7 +140,7 @@ public abstract class CentralMapExtraActivity extends Activity
             menu.removeItem(R.id.action_send_to_maps);
 
         // Or the Radar intent.
-        if(!AndroidUtil.isIntentAvailable(this, GHDConstants.SHOW_RADAR_ACTION))
+        if(!AndroidUtil.isIntentAvailable(this, GHDConstants.ACTION_SHOW_RADAR))
             menu.removeItem(R.id.action_send_to_radar);
 
         return true;
@@ -197,7 +197,7 @@ public abstract class CentralMapExtraActivity extends Activity
             }
             case R.id.action_send_to_radar: {
                 if(mInfo != null) {
-                    Intent i = new Intent(GHDConstants.SHOW_RADAR_ACTION);
+                    Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
                     i.putExtra("latitude", (float) mInfo.getLatitude());
                     i.putExtra("longitude", (float) mInfo.getLongitude());
                     startActivity(i);
