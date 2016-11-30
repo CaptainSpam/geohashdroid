@@ -194,7 +194,7 @@ public class AlarmService extends WakefulIntentService {
         @Override
         public void onReceive(Context context, Intent intent) {
             // It's boot time!  We might need to flip on the party alarm!
-            Log.i(DEBUG_TAG, "Gooooooood morning, 30W!  It's boot time in Geohashland!");
+            Log.i(DEBUG_TAG, "Gooooooood morning, Geohashland!  It's boot time in " + TimeZone.getDefault().getDisplayName() + "!");
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
             if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
