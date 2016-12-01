@@ -1273,20 +1273,6 @@ public class CentralMap
         bm.dataChanged();
     }
 
-    private boolean isUsingShortcut(@Nullable Intent intent) {
-        // If we have one of the shortcut actions, this is using a shortcut,
-        // which OVERRIDES the startup preference and (I think) can be triggered
-        // from onNewIntent.
-        if(intent == null) return false;
-
-        String action = intent.getAction();
-
-        return action != null &&
-                (action.equals(ACTION_START_CLOSEST_HASHPOINT)
-                || action.equals(ACTION_START_GRATICULE_PICKER)
-                || action.equals(ACTION_START_LAST_USED));
-    }
-
     private boolean startFromShortcut(@Nullable Intent intent) {
         // I somehow feel this could be made more efficient...
         if(intent == null) return false;
