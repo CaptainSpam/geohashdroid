@@ -3,7 +3,7 @@
     <shortcut
         android:shortcutId="closest"
         android:enabled="true"
-        android:icon="@drawable/icon_small"
+        android:icon="@mipmap/shortcut_closest"
         android:shortcutShortLabel="@string/shortcut_closest_short"
         android:shortcutLongLabel="@string/shortcut_closest_long">
         <intent
@@ -15,7 +15,7 @@
     <shortcut
         android:shortcutId="lastused"
         android:enabled="true"
-        android:icon="@drawable/icon_small"
+        android:icon="@mipmap/shortcut_last_used"
         android:shortcutShortLabel="@string/shortcut_last_used_short"
         android:shortcutLongLabel="@string/shortcut_last_used_long">
         <intent
@@ -27,7 +27,7 @@
     <shortcut
         android:shortcutId="picker"
         android:enabled="true"
-        android:icon="@drawable/icon_small"
+        android:icon="@mipmap/shortcut_picker"
         android:shortcutShortLabel="@string/shortcut_picker_short"
         android:shortcutLongLabel="@string/shortcut_picker_long">
         <intent
