@@ -78,8 +78,11 @@
     <dimen name="margin_zoom_button">@dimen/standard_padding</dimen>
     <dimen name="wiki_fragment_padding">16dp</dimen>
 
-    <dimen name="elevation_graticule_picker">4dp</dimen>
-    <dimen name="elevation_error_banner">4dp</dimen>
+    <dimen name="elevation_standard">4dp</dimen>
+    <dimen name="elevation_graticule_picker">@dimen/elevation_standard</dimen>
+    <dimen name="elevation_error_banner">@dimen/elevation_standard</dimen>
+    <dimen name="elevation_progress">@dimen/elevation_standard</dimen>
+    <dimen name="elevation_extra_fragment">@dimen/elevation_standard</dimen>
     <dimen name="elevation_infobox">2dp</dimen>
     <dimen name="elevation_zoom_button">16dp</dimen>
 
