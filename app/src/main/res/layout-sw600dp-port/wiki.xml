@@ -70,6 +70,7 @@
             android:id="@+id/wiki_message"
             android:layout_weight="1"
             android:hint="@string/hint_message"
+            android:minLines="4"
             />
 
         <Button
