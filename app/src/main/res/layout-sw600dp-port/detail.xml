@@ -10,7 +10,8 @@
     android:layout_gravity="center"
     android:keepScreenOn="true"
     android:orientation="vertical"
-    android:gravity="center">
+    android:gravity="center"
+    android:padding="@dimen/standard_padding">
 
     <TextView
         android:id="@+id/detail_date"

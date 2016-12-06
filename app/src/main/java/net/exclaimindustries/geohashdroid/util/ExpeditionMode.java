@@ -200,13 +200,22 @@ public class ExpeditionMode
 
         mInfoBox.setOnClickListener(mInfoBoxClicker);
 
-        // Plus, if the detailed info fragment's already there, make its
-        // container go visible, too.
-        FragmentManager manager = mCentralMap.getFragmentManager();
-        mExtraFragment = (CentralMapExtraFragment)manager.findFragmentById(R.id.extra_fragment_container);
-        if(mExtraFragment != null) {
-            mCentralMap.findViewById(R.id.extra_fragment_container).setVisibility(View.VISIBLE);
-            mExtraFragment.setCloseListener(this);
+        // Check for the extra fragment container first.  If the screen's too
+        // small for it to fit, Android will remove it, mostly by shifting to
+        // the smaller-form layout, which is really super convenient for us in
+        // the case of multi-window stuff.  What's more, that also changes all
+        // the actions related to picking the fragments to go to the activities
+        // anyway.  Lucky us!
+        View fragmentContainer = mCentralMap.findViewById(R.id.extra_fragment_container);
+        if(fragmentContainer != null) {
+            // Plus, if the detailed info fragment's already there, make its
+            // container go visible, too.
+            FragmentManager manager = mCentralMap.getFragmentManager();
+            mExtraFragment = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
+            if(mExtraFragment != null) {
+                fragmentContainer.setVisibility(View.VISIBLE);
+                mExtraFragment.setCloseListener(this);
+            }
         }
 
         // The zoom buttons also need to go in.
