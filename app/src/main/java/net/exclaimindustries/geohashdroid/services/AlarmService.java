@@ -306,10 +306,76 @@ public class AlarmService extends WakefulIntentService {
         
         Intent alarmIntent = new Intent(this, StockAlarmReceiver.class);
         alarmIntent.setAction(STOCK_ALARM_RETRY);
-        
-        mAlarmManager.set(AlarmManager.RTC_WAKEUP,
-                cal.getTimeInMillis(),
-                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+
+        // Even if the user's added us to the whitelist, we won't be able to use
+        // the plain set call in Marshmallow or higher.  Not with Doze to worry
+        // about.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            mAlarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
+                    cal.getTimeInMillis(),
+                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+        } else {
+            mAlarmManager.set(AlarmManager.RTC_WAKEUP,
+                    cal.getTimeInMillis(),
+                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+        }
+    }
+
+    /**
+     * <p>
+     * Sets up the next stock alarm (9:30am ET).  We need to do this rather than
+     * use setRepeating because Doze ruined that for us.
+     * </p>
+     *
+     * <p>
+     * This is a convenience method to always pass false to {@link #setNextAlarm(boolean)}.
+     * That is, this may set an alarm for later today if it isn't 9:30am ET yet.
+     * </p>
+     *
+     * @see #setNextAlarm(boolean)
+     */
+    private void setNextAlarm() {
+        setNextAlarm(false);
+    }
+
+    /**
+     * Sets up the next stock alarm (9:30am ET).  We need to do this rather than
+     * use setRepeating because Doze ruined that for us.
+     *
+     * @param definitelyTomorrow true to always set the alarm for tomorrow, even if it's before 9:30am ET
+     */
+    private void setNextAlarm(boolean definitelyTomorrow) {
+        // We're aiming at 9:30am ET (with any applicable DST adjustments).  The
+        // NYSE opens at 9:00am ET, but in the interests of possible clock
+        // discrepancies and such (not to mention any delays in the stock
+        // reporting sites being updated), we'll wait the extra half hour.  The
+        // alarm should be the NEXT available 9:30am ET.  If the user wants to
+        // take a chance and get a stock value closer to 9:00am ET than that,
+        // well, they can do it themselves.
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+        Calendar alarmTime = makeNineThirty(cal);
+
+        if(definitelyTomorrow || alarmTime.before(cal)) {
+            alarmTime.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        Intent alarmIntent = new Intent(STOCK_ALARM);
+        alarmIntent.setClass(this, StockAlarmReceiver.class);
+
+        Log.d(DEBUG_TAG, "Setting a wakeup alarm for " + alarmTime.getTime().toString());
+
+        // Because there's no Doze-friendly version of setRepeating (grr), we
+        // have to re-set an allow-idle alarm every time.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            mAlarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
+                    alarmTime.getTimeInMillis(),
+                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+        } else {
+            mAlarmManager.set(AlarmManager.RTC_WAKEUP,
+                    alarmTime.getTimeInMillis(),
+                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+        }
+
     }
     
     private void sendRequest(@NonNull Graticule g) {
@@ -357,16 +423,8 @@ public class AlarmService extends WakefulIntentService {
     
     @Override
     protected void doWakefulWork(Intent intent) {
-        // If we've been told the network just came back, we can shut off the
-        // network receiver.  If we're still in trouble network-wise, it'll go
-        // right back on when we check in a second.
-        if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
-            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
-        }
-        
         if(intent.getAction().equals(STOCK_ALARM_OFF)) {
-            // We've been told to stop all alarms!  While we're at it, abort any
-            // in-progress connections, too!
+            // We've been told to stop all alarms!
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
@@ -374,30 +432,8 @@ public class AlarmService extends WakefulIntentService {
             clearNotification();
         } else if(intent.getAction().equals(STOCK_ALARM_ON)) {
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
-            // At init time, set the alarm.  We're aiming at 9:30am ET (with any
-            // applicable DST adjustments).  The NYSE opens at 9:00am ET, but in
-            // the interests of possible clock discrepancies and such (not to
-            // mention any delays in the stock reporting sites being updated),
-            // we'll wait the extra half hour.  The first alarm should be the
-            // NEXT 9:30am ET.  If the user wants to take a chance and get a
-            // stock value closer to 9:00am ET than that, well, they can do it
-            // themselves.
-            Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
-            Calendar alarmTime = makeNineThirty(cal);
-
-            if(alarmTime.before(cal)) {
-                alarmTime.add(Calendar.DAY_OF_MONTH, 1);
-            }
-            
-            Intent alarmIntent = new Intent(STOCK_ALARM);
-            alarmIntent.setClass(this, StockAlarmReceiver.class);
-            
-            Log.d(DEBUG_TAG, "Setting a daily wakeup alarm starting at " + alarmTime.getTime().toString());
-            
-            mAlarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
-                    alarmTime.getTimeInMillis(),
-                    AlarmManager.INTERVAL_DAY,
-                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+            // At init time, set the alarm.
+            setNextAlarm();
                         
             // AlarmManager sends out broadcasts, and the receiver we've got
             // will wake the service back up, so we can stop everything right
@@ -408,6 +444,20 @@ public class AlarmService extends WakefulIntentService {
                 || intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
             // Aha!  NOW we've got something!
             Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
+
+            // If we've been told the network just came back, we can shut off
+            // the network receiver.  If we're still in trouble network-wise,
+            // it'll go right back on when we check in a second.
+            if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
+                Log.d(DEBUG_TAG, "The network came back!  Yay!  Disabling the network status receiver...");
+                AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
+            }
+
+            // If we just got the stock alarm, we need to reschedule right away.
+            if(intent.getAction().equals(STOCK_ALARM)) {
+                Log.d(DEBUG_TAG, "Rescheduling next STOCK_ALARM...");
+                setNextAlarm(true);
+            }
 
             // If we got the REAL stock alarm while still waiting on the RETRY
             // alarm (i.e. the server kept reporting the stock wasn't posted all
@@ -449,10 +499,12 @@ public class AlarmService extends WakefulIntentService {
                 }
                 
                 if(result == StockService.RESPONSE_NETWORK_ERROR) {
-                    // A network error that ISN'T "no connection" is really bad.
-                    // So bad, in fact, that we're not even going to bother
-                    // figuring it out.  Give up now.
-                    Log.w(DEBUG_TAG, "Network reported an error, NOT rescheduling!");
+                    // A network error that ISN'T "no connection" is usually
+                    // really bad.  But, with Doze in effect, that might mean
+                    // something weird with how it denies us network access, so
+                    // let's just snooze for now.
+                    Log.w(DEBUG_TAG, "Network reported an error, snoozing for a half hour...");
+                    snooze();
                     clearNotification();
                     return;
                 }
