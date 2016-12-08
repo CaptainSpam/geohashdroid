@@ -104,6 +104,10 @@ public class CentralMap
 
     private static final int LOCATION_PERMISSION_REQUEST = 1;
 
+    public static final String ACTION_START_CLOSEST_HASHPOINT = "net.exclaimindustries.geohashdroid.START_CLOSEST_HASHPOINT";
+    public static final String ACTION_START_LAST_USED = "net.exclaimindustries.geohashdroid.START_LAST_USED";
+    public static final String ACTION_START_GRATICULE_PICKER = "net.exclaimindustries.geohashdroid.START_GRATICULE_PICKER";
+
     // If we're in Select-A-Graticule mode (as opposed to expedition mode).
     private boolean mSelectAGraticule = false;
     // If we already did the initial zoom for this expedition.
@@ -686,64 +690,12 @@ public class CentralMap
         // Perform startup and cleanup work before the modes arrive.
         doStartupStuff();
 
-        // If at this point we don't have any mode bundle, we're going to the
-        // prefs to figure out where we start.
-        if(mLastModeBundle == null) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-            String startup = prefs.getString(GHDConstants.PREF_STARTUP_BEHAVIOR, GHDConstants.PREFVAL_STARTUP_CLOSEST);
-            mLastModeBundle = new Bundle();
-
-            if(startup.equals(GHDConstants.PREFVAL_STARTUP_CLOSEST)) {
-                // Closest point.  The default.
-                mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
-                mSelectAGraticule = false;
-            } else {
-                // The other cases, we need to know the last-known graticule and
-                // globalhashiness.
-                String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALID");
-                String lastLon = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, "INVALID");
-                boolean globalHash = prefs.getBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, false);
-
-                Graticule g;
-
-                try {
-                    g = new Graticule(lastLat, lastLon);
-                } catch(Exception e) {
-                    // If a problem popped up, we just assume there was no
-                    // actual graticule data.
-                    g = null;
-                }
-
-                if(startup.equals(GHDConstants.PREFVAL_STARTUP_LAST_USED)) {
-                    mSelectAGraticule = false;
-
-                    // Last-used point.  Now, if we don't HAVE any such data, we
-                    // fall back to closest point behavior.
-                    if(g == null && !globalHash) {
-                        // Well, poop.
-                        mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
-                    } else {
-                        // If we've got something, yay!  Add in data as appropriate.
-                        // Start with today.
-                        mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
-
-                        if(globalHash)
-                            mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, true);
-                        if(g != null)
-                            mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
-                    }
-                } else if(startup.equals(GHDConstants.PREFVAL_STARTUP_PICKER)) {
-                    // The graticule picker.  In theory, we MAY have a graticule to
-                    // start with.  With which to start.
-                    mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, globalHash);
-                    if(g != null)
-                        mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
-                    mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
-                    mSelectAGraticule = true;
-                }
-            }
-
+        // Figure out where the user needs to be when this starts.  Either of
+        // these will alter mLastModeBundle if need be.  If it's a shortcut,
+        // mLastModeBundle is overwritten.  If not, mLastModeBundle is only
+        // overwritten if it's null.
+        if(!startFromShortcut(intent)) {
+            startInCorrectMode();
         }
 
         // Now, we get our initial mode set up based on mSelectAGraticule.  We
@@ -1325,5 +1277,124 @@ public class CentralMap
 
         BackupManager bm = new BackupManager(this);
         bm.dataChanged();
+    }
+
+    private boolean startFromShortcut(@Nullable Intent intent) {
+        // I somehow feel this could be made more efficient...
+        if(intent == null) return false;
+
+        String action = intent.getAction();
+        if(action == null) return false;
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALID");
+        String lastLon = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, "INVALID");
+        boolean globalHash = prefs.getBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, false);
+
+        Graticule g;
+
+        try {
+            g = new Graticule(lastLat, lastLon);
+        } catch(Exception e) {
+            // If a problem popped up, we just assume there was no
+            // actual graticule data.
+            g = null;
+        }
+
+        // In all cases, if this IS a shortcut, we're overwriting
+        // mLastModeBundle, no matter what it was.  Obviously, if it isn't a
+        // shortcut, leave mLastModeBundle alone.
+        switch(action) {
+            case ACTION_START_CLOSEST_HASHPOINT:
+                mLastModeBundle = new Bundle();
+                doStartupClosest();
+                break;
+            case ACTION_START_GRATICULE_PICKER:
+                mLastModeBundle = new Bundle();
+                doStartupPicker(g, globalHash);
+                break;
+            case ACTION_START_LAST_USED:
+                mLastModeBundle = new Bundle();
+                doStartupLastUsed(g, globalHash);
+                break;
+            default:
+                return false;
+        }
+
+        return true;
+    }
+
+    private void startInCorrectMode() {
+        // If at this point we don't have any mode bundle, we're going to the
+        // prefs to figure out where we start.
+        if(mLastModeBundle == null) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+            String startup = prefs.getString(GHDConstants.PREF_STARTUP_BEHAVIOR, GHDConstants.PREFVAL_STARTUP_CLOSEST);
+            mLastModeBundle = new Bundle();
+
+            if(startup.equals(GHDConstants.PREFVAL_STARTUP_CLOSEST)) {
+                // Closest point.  The default.
+                doStartupClosest();
+            } else {
+                // The other cases, we need to know the last-known graticule and
+                // globalhashiness.
+                String lastLat = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LATITUDE, "INVALID");
+                String lastLon = prefs.getString(GHDConstants.PREF_DEFAULT_GRATICULE_LONGITUDE, "INVALID");
+                boolean globalHash = prefs.getBoolean(GHDConstants.PREF_DEFAULT_GRATICULE_GLOBALHASH, false);
+
+                Graticule g;
+
+                try {
+                    g = new Graticule(lastLat, lastLon);
+                } catch(Exception e) {
+                    // If a problem popped up, we just assume there was no
+                    // actual graticule data.
+                    g = null;
+                }
+
+                if(startup.equals(GHDConstants.PREFVAL_STARTUP_LAST_USED)) {
+                    doStartupLastUsed(g, globalHash);
+                } else if(startup.equals(GHDConstants.PREFVAL_STARTUP_PICKER)) {
+                    // The graticule picker.  In theory, we MAY have a graticule to
+                    // start with.  With which to start.
+                    doStartupPicker(g, globalHash);
+                }
+            }
+
+        }
+    }
+
+    private void doStartupClosest() {
+        mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+        mSelectAGraticule = false;
+    }
+
+    private void doStartupLastUsed(@Nullable Graticule g, boolean globalHash) {
+        mSelectAGraticule = false;
+
+        // Last-used point.  Now, if we don't HAVE any such data, we
+        // fall back to closest point behavior.
+        if(g == null && !globalHash) {
+            // Well, poop.
+            mLastModeBundle.putBoolean(ExpeditionMode.DO_INITIAL_START, true);
+        } else {
+            // If we've got something, yay!  Add in data as appropriate.
+            // Start with today.
+            mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
+
+            if(globalHash)
+                mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, true);
+            if(g != null)
+                mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
+        }
+    }
+
+    private void doStartupPicker(@Nullable Graticule g, boolean globalHash) {
+        mLastModeBundle.putBoolean(CentralMapMode.GLOBALHASH, globalHash);
+        if(g != null)
+            mLastModeBundle.putParcelable(CentralMapMode.GRATICULE, g);
+        mLastModeBundle.putSerializable(CentralMapMode.CALENDAR, Calendar.getInstance());
+        mSelectAGraticule = true;
     }
 }

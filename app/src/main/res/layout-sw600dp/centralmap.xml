@@ -28,7 +28,6 @@
         android:visibility="gone"
         android:elevation="@dimen/elevation_error_banner"/>
 
-
     <FrameLayout
         android:id="@+id/progress_container"
         android:layout_width="@dimen/progress_spinner_size"
@@ -44,4 +43,15 @@
             android:layout_height="match_parent"
             android:indeterminate="true"/>
     </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:id="@+id/extra_fragment_container"
+        android:background="@color/extra_fragment_background"
+        android:visibility="gone"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:elevation="@dimen/elevation_extra_fragment"/>
 </RelativeLayout>

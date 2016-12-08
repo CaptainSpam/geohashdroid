@@ -20,8 +20,8 @@ public final class GHDConstants {
      * The Intent action used to start the radar.  That's... a thing people
      * still use, right?
      */
-    public static final String SHOW_RADAR_ACTION = "com.google.android.radar.SHOW_RADAR";
-    
+    public static final String ACTION_SHOW_RADAR = "com.google.android.radar.SHOW_RADAR";
+
     /** Dummy Graticule that uses the 30W rule (51N, 0W). */
     public static final Graticule DUMMY_YESTERDAY = new Graticule(51, false, 0, true);
     /** Dummy Graticule that doesn't use the 30W rule (38N, 84W). */

@@ -20,6 +20,7 @@
         android:ems="10"
         android:id="@+id/wiki_message"
         android:layout_weight="1"
+        android:minLines="4"
         android:hint="@string/hint_message"
         />
 
