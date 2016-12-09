@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.tools;
 
+import android.support.annotation.NonNull;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
@@ -29,7 +31,7 @@ public class DateTools {
      * @param c Calendar from which to get the string
      * @return a YYYYMMDD string
      */
-    public static String getDateString(Calendar c) {
+    public static String getDateString(@NonNull Calendar c) {
         return DATE_FORMAT.format(c.getTime());
     }
     
@@ -39,7 +41,7 @@ public class DateTools {
      * @param c Calendar from which to get the string
      * @return a YYYY-MM-DD string
      */
-    public static String getHyphenatedDateString(Calendar c) {
+    public static String getHyphenatedDateString(@NonNull Calendar c) {
         // Turns out the SimpleDateFormat class does all the tricky work for me.
         // Huh.
         return HYPHENATED_DATE_FORMAT.format(c.getTime());
@@ -57,7 +59,48 @@ public class DateTools {
      * @param c a Calendar from which to get the string
      * @return a wiki-signature-like date string
      */
-    public static String getWikiDateString(Calendar c) {
+    public static String getWikiDateString(@NonNull Calendar c) {
         return WIKI_DATE_FORMAT.format(c.getTime());
+    }
+
+    /**
+     * Returns whether or not these two Calendars represent the same date,
+     * ignoring all other data (time of day, etc).
+     *
+     * @param base a Calendar
+     * @param comparator another Calendar
+     * @return true if the same date, false if not
+     */
+    public static boolean isSameDate(@NonNull Calendar base, @NonNull Calendar comparator) {
+        return base.get(Calendar.YEAR) == comparator.get(Calendar.YEAR)
+                && base.get(Calendar.DAY_OF_YEAR) == comparator.get(Calendar.DAY_OF_YEAR);
+    }
+
+    /**
+     * Returns whether or not the FIRST Calendar is tomorrow compared to the
+     * SECOND Calendar.
+     *
+     * @param isThisTomorrow Calendar you are wondering if it's tomorrow or not
+     * @param comparedToThis Base Calendar to which you are comparing the first one
+     * @return true if the first Calendar is tomorrow compared to the second, false if not
+     */
+    public static boolean isTomorrow(@NonNull Calendar isThisTomorrow, @NonNull Calendar comparedToThis) {
+        Calendar comparator = (Calendar)comparedToThis.clone();
+        comparator.add(Calendar.DAY_OF_MONTH, 1);
+        return isSameDate(isThisTomorrow, comparator);
+    }
+
+    /**
+     * Returns whether or not the FIRST Calendar is the day after tomorrow
+     * compared to the SECOND Calendar.
+     *
+     * @param isThisTomorrow Calendar you are wondering if it's the day after tomorrow or not
+     * @param comparedToThis Base Calendar to which you are comparing the first one
+     * @return true if the first Calendar is the day after tomorrow compared to the second, false if not
+     */
+    public static boolean isDayAfterTomorrow(@NonNull Calendar isThisTomorrow, @NonNull Calendar comparedToThis) {
+        Calendar comparator = (Calendar)comparedToThis.clone();
+        comparator.add(Calendar.DAY_OF_MONTH, 2);
+        return isSameDate(isThisTomorrow, comparator);
     }
 }

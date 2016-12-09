@@ -59,6 +59,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -355,7 +356,10 @@ public class CentralMap
             // depends on globalhashiness and retroness.
             String title;
 
-            if(!info.isRetroHash()) {
+            Calendar cal = Calendar.getInstance();
+            Calendar infoCal = info.getCalendar();
+
+            if(DateTools.isSameDate(infoCal, cal)) {
                 // Non-retro hashes don't have today's date on them.  They just
                 // have "today's [something]".
                 if(info.isGlobalHash()) {
@@ -363,8 +367,22 @@ public class CentralMap
                 } else {
                     title = mCentralMap.getString(R.string.marker_title_today_hashpoint);
                 }
+            } else if(DateTools.isTomorrow(infoCal, cal)) {
+                // Same with tomorrow.
+                if(info.isGlobalHash()) {
+                    title = mCentralMap.getString(R.string.marker_title_tomorrow_globalpoint);
+                } else {
+                    title = mCentralMap.getString(R.string.marker_title_tomorrow_hashpoint);
+                }
+            } else if(DateTools.isDayAfterTomorrow(infoCal, cal)) {
+                // And the day after tomorrow.
+                if(info.isGlobalHash()) {
+                    title = mCentralMap.getString(R.string.marker_title_doubletomorrow_globalpoint);
+                } else {
+                    title = mCentralMap.getString(R.string.marker_title_doubletomorrow_hashpoint);
+                }
             } else {
-                // Retro hashes, however, need a date string.
+                // Anything else, however, needs a date string.
                 String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
 
                 if(info.isGlobalHash()) {

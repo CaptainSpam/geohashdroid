@@ -97,6 +97,16 @@
     <string name="marker_title_nearby_today_hashpoint">Today\'s Geohash point at %1$s</string>
     <string name="marker_title_nearby_retro_hashpoint">Geohash point for %1$s at %2$s</string>
 
+    <string name="marker_title_tomorrow_hashpoint">Tomorrow\'s Geohash point</string>
+    <string name="marker_title_tomorrow_globalpoint">Tomorrow\'s Globalhash point</string>
+    <string name="marker_title_nearby_tomorrow_hashpoint">Tomorrow\'s Geohash point at %1$s</string>
+    <string name="marker_title_nearby_tomorrow_globalpoint">Tomorrow\'s Globalhash point at %1$s</string>
+
+    <string name="marker_title_doubletomorrow_hashpoint">The day after tomorrow\'s Geohash point</string>
+    <string name="marker_title_doubletomorrow_globalpoint">The day after tomorrow\'s Globalhash point</string>
+    <string name="marker_title_nearby_doubletomorrow_hashpoint">The day after tomorrow\'s Geohash point at %1$s</string>
+    <string name="marker_title_nearby_doubletomorrow_globalpoint">The day after tomorrow\'s Globalhash point at %1$s</string>
+
     <string name="toast_close_enough">You\'re there!  This is as close to the point as GPS accuracy gets.  Yay!</string>
 
     <string name="content_desc_zoom">Zoom/Recenter</string>

@@ -55,6 +55,7 @@ import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 import net.exclaimindustries.geohashdroid.widgets.ZoomButtons;
 import net.exclaimindustries.tools.AndroidUtil;
+import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
@@ -489,12 +490,26 @@ public class ExpeditionMode
             // Globalhash, though.
             String title;
             String gratString = g.getLatitudeString(false) + " " + g.getLongitudeString(false);
-            if(info.isRetroHash()) {
-                title = mCentralMap.getString(R.string.marker_title_nearby_retro_hashpoint,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate()),
+
+            // We have strings for today, tomorrow, and the day after tomorrow.
+            // If it's none of those (i.e. either a retro hash or we have stock
+            // data more than two days out, like for holidays), go with the
+            // date.
+            Calendar cal = Calendar.getInstance();
+            Calendar infoCal = info.getCalendar();
+
+            if(DateTools.isSameDate(infoCal, cal)) {
+                title = mCentralMap.getString(R.string.marker_title_nearby_today_hashpoint,
+                        gratString);
+            } else if(DateTools.isTomorrow(infoCal, cal)) {
+                title = mCentralMap.getString(R.string.marker_title_nearby_tomorrow_hashpoint,
+                        gratString);
+            } else if(DateTools.isDayAfterTomorrow(infoCal, cal)) {
+                title = mCentralMap.getString(R.string.marker_title_nearby_doubletomorrow_hashpoint,
                         gratString);
             } else {
-                title = mCentralMap.getString(R.string.marker_title_nearby_today_hashpoint,
+                title = mCentralMap.getString(R.string.marker_title_nearby_retro_hashpoint,
+                        DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate()),
                         gratString);
             }
 
