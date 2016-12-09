@@ -27,6 +27,8 @@ import net.exclaimindustries.geohashdroid.R;
 public class MapTypeDialogFragment extends DialogFragment {
     private static final String DEBUG_TAG = "MapTypeDialogFragment";
 
+    public final static int MAP_STYLE_NIGHT = 0x104;
+
     /**
      * INTERFACE!  INTERFACE INTERFACE INTERFACE INTERFACE!
      */
@@ -85,6 +87,8 @@ public class MapTypeDialogFragment extends DialogFragment {
                             case 2:
                                 mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_TERRAIN);
                                 break;
+                            case 3:
+                                mCallback.mapTypeSelected(MAP_STYLE_NIGHT);
                         }
                     }
                 })
