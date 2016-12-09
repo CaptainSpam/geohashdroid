@@ -38,6 +38,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -694,7 +695,7 @@ public class CentralMap
 
                 // Go to preferences to figure out what map type we're using.
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
-                mMap.setMapType(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
+                mapTypeSelected(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
@@ -1198,7 +1199,24 @@ public class CentralMap
     public void mapTypeSelected(int type) {
         // Map type!
         if(mMap != null) {
-            mMap.setMapType(type);
+            switch(type) {
+                case GoogleMap.MAP_TYPE_NORMAL:
+                case GoogleMap.MAP_TYPE_HYBRID:
+                case GoogleMap.MAP_TYPE_TERRAIN:
+                    mMap.setMapType(type);
+
+                    mMap.setMapStyle(null);
+                    break;
+                case MapTypeDialogFragment.MAP_STYLE_NIGHT:
+                    // Whoops, this one isn't a type.  It's a style.  First, the
+                    // type has to be normal for this to work.
+                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+                    // Then, load up the night style.
+                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_night)))
+                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+                    break;
+            }
         }
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);

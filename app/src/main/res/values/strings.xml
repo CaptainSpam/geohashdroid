@@ -136,6 +136,7 @@
     <string name="menu_item_map_type_street">Street</string>
     <string name="menu_item_map_type_sat">Satellite</string>
     <string name="menu_item_map_type_terrain">Terrain</string>
+    <string name="menu_item_map_type_night">Night</string>
 
     <string name="infobox_dist">Dist:</string>
     <string name="infobox_final">To:</string>
