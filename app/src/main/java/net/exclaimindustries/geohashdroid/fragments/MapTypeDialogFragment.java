@@ -77,6 +77,8 @@ public class MapTypeDialogFragment extends DialogFragment {
                             return;
                         }
 
+                        dialog.dismiss();
+
                         switch(which) {
                             case 0:
                                 mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_NORMAL);

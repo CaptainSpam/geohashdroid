@@ -40,7 +40,8 @@ public class GHDBackupAgent extends BackupAgentHelper {
                 GHDConstants.PREF_STOCK_CACHE_SIZE,
                 GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING,
                 GHDConstants.PREF_WIKI_PASS,
-                GHDConstants.PREF_WIKI_USER
+                GHDConstants.PREF_WIKI_USER,
+                GHDConstants.PREF_NIGHT_MODE
         );
         addHelper(PREFS_BACKUP_KEY, helper);
     }

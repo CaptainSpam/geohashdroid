@@ -1197,15 +1197,19 @@ public class CentralMap
 
     @Override
     public void mapTypeSelected(int type) {
+        // 1 is night, -1 is day.
+        short becomesNight = 0;
+
         // Map type!
         if(mMap != null) {
             switch(type) {
                 case GoogleMap.MAP_TYPE_NORMAL:
+                    mMap.setMapStyle(null);
+                    becomesNight = -1;
+                    // Let's abuse a fallthrough!
                 case GoogleMap.MAP_TYPE_HYBRID:
                 case GoogleMap.MAP_TYPE_TERRAIN:
                     mMap.setMapType(type);
-
-                    mMap.setMapStyle(null);
                     break;
                 case MapTypeDialogFragment.MAP_STYLE_NIGHT:
                     // Whoops, this one isn't a type.  It's a style.  First, the
@@ -1215,6 +1219,8 @@ public class CentralMap
                     // Then, load up the night style.
                     if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_night)))
                         Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+
+                    becomesNight = 1;
                     break;
             }
         }
@@ -1226,6 +1232,10 @@ public class CentralMap
 
         BackupManager bm = new BackupManager(this);
         bm.dataChanged();
+
+        // Set the night only if it's changed at all.
+        if(becomesNight == 1) setNightMode(true);
+        else if(becomesNight == -1) setNightMode(false);
     }
 
     private void startListening() {

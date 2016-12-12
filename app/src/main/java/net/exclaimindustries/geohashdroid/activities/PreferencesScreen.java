@@ -35,12 +35,45 @@ import net.exclaimindustries.tools.QueueService;
 import java.util.List;
 
 /**
+ * <p>
  * So, the actual Android class is already called "{@link PreferenceActivity}",
  * it turns out.  So let's call this one <code>PreferencesScreen</code>, because
  * it got really confusing to call it <code>PreferencesActivity</code> like it
  * used to be.
+ * </p>
+ *
+ * <p>
+ * Note that this doesn't inherit from BaseGHDThemeActivity.  It has to
+ * implement all of that itself.
+ * </p>
  */
 public class PreferencesScreen extends PreferenceActivity {
+    private boolean mStartedInNight = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mStartedInNight = prefs.getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
+
+        // We have to do this BEFORE any layouts are set up.
+        if(mStartedInNight)
+            setTheme(R.style.Theme_GeohashDroidDark);
+        else
+            setTheme(R.style.Theme_GeohashDroid);
+
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // If the nightiness has changed since we paused, do a recreate.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        if(prefs.getBoolean(GHDConstants.PREF_NIGHT_MODE, false) != mStartedInNight)
+            recreate();
+    }
+
     /**
      * This largely comes from Android Studio's default Setting Activity wizard
      * thingamajig.  It conveniently updates preferences with summaries.

@@ -13,4 +13,8 @@
         <item name="android:windowBackground">@drawable/geohashing_logo_background</item>
     </style>
 
+    <style name="Theme.GeohashDroidDark" parent="android:Theme.Holo">
+        <item name="android:windowBackground">@drawable/geohashing_logo_background_dark</item>
+    </style>
+
 </resources>
