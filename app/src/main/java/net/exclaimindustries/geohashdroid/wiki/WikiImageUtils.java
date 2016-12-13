@@ -69,11 +69,6 @@ public class WikiImageUtils {
         /** The image's URI.  Should not be null. */
         public Uri uri;
         /**
-         * The image's local filename.  May be null if it's not stored on the
-         * local filesystem.
-         */
-        public String filename;
-        /**
          * The location of either the image or the user, depending on if the
          * geodata from the image could be read.  May be null.
          */
