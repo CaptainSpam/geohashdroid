@@ -13,6 +13,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -349,9 +350,9 @@ public class SelectAGraticuleMode
 
         // And with that Graticule, we can get a Polygon.
         PolygonOptions opts = g.getPolygon()
-                .strokeColor(mCentralMap.getResources().getColor(R.color.graticule_stroke))
+                .strokeColor(ContextCompat.getColor(mCentralMap, R.color.graticule_stroke))
                 .strokeWidth(2)
-                .fillColor(mCentralMap.getResources().getColor(R.color.graticule_fill));
+                .fillColor(ContextCompat.getColor(mCentralMap, R.color.graticule_fill));
 
         if(mMap != null) {
             mPolygon = mMap.addPolygon(opts);

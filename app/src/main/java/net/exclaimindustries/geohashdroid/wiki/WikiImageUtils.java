@@ -19,6 +19,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -214,12 +215,12 @@ public class WikiImageUtils {
         if(mBackgroundPaint == null) {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setStyle(Paint.Style.FILL);
-            mBackgroundPaint.setColor(context.getResources().getColor(R.color.infobox_background));
+            mBackgroundPaint.setColor(ContextCompat.getColor(context, R.color.infobox_background));
         }
 
         if(mTextPaint == null) {
             mTextPaint = new Paint();
-            mTextPaint.setColor(context.getResources().getColor(R.color.infobox_text));
+            mTextPaint.setColor(ContextCompat.getColor(context, R.color.infobox_text));
             mTextPaint.setTextSize(context.getResources().getDimension(R.dimen.infobox_picture_fontsize));
             mTextPaint.setAntiAlias(true);
         }

@@ -16,6 +16,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -194,7 +195,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
                     // Distance!
                     if(mLastLocation == null || mInfo == null) {
                         mDistance.setText(R.string.standby_title);
-                        mDistance.setTextColor(getResources().getColor(R.color.details_text));
+                        mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_text));
                     } else {
                         float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
                         mDistance.setText(UnitConverter.makeDistanceString(getActivity(), GHDConstants.DIST_FORMAT, distance));
@@ -204,9 +205,9 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
                         // callbacks and all, but, I mean, we're already HERE,
                         // aren't we?
                         if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
-                            mDistance.setTextColor(getResources().getColor(R.color.details_in_range));
+                            mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_in_range));
                         else
-                            mDistance.setTextColor(getResources().getColor(R.color.details_text));
+                            mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_text));
 
                     }
                 }

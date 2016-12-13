@@ -15,6 +15,7 @@ import android.location.Location;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -71,7 +72,7 @@ public class InfoBox extends LinearLayout implements LocationListener {
         super(c, attrs);
 
         // How about some setup?
-        setBackgroundColor(getResources().getColor(R.color.infobox_background));
+        setBackgroundColor(ContextCompat.getColor(c, R.color.infobox_background));
         int padding = getResources().getDimensionPixelSize(R.dimen.infobox_padding);
         setPadding(padding, padding, padding, padding);
         setOrientation(LinearLayout.VERTICAL);
@@ -178,7 +179,7 @@ public class InfoBox extends LinearLayout implements LocationListener {
 
                 if(mLastLocation == null || mInfo == null) {
                     mDistance.setText(R.string.unknown_title);
-                    mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
+                    mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_text));
                 } else {
                     float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
                     mDistance.setText(UnitConverter.makeDistanceString(getContext(), DIST_FORMAT, distance));
@@ -188,9 +189,9 @@ public class InfoBox extends LinearLayout implements LocationListener {
                     // callbacks and all, but, I mean, we're already HERE,
                     // aren't we?
                     if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
-                        mDistance.setTextColor(getResources().getColor(R.color.infobox_in_range));
+                        mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_in_range));
                     else
-                        mDistance.setTextColor(getResources().getColor(R.color.infobox_text));
+                        mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_text));
 
                 }
             }
