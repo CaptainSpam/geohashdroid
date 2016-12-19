@@ -11,13 +11,19 @@ package net.exclaimindustries.geohashdroid.widgets;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.preference.PreferenceManager;
+import android.support.annotation.ColorRes;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 
 /**
  * <p>
@@ -33,16 +39,17 @@ import net.exclaimindustries.geohashdroid.R;
  */
 public class ErrorBanner extends LinearLayout {
     private TextView mMessage;
-    private View mClose;
+    private ImageButton mClose;
 
     private boolean mAlreadyLaidOut = false;
+    private boolean mIsNightMode;
 
     /**
      * Use these in {@link #setErrorStatus(Status)} to set a premade
      * background for these sorts of errors.
      */
     public enum Status {
-        /** A normal error banner (white). */
+        /** A normal error banner (white or black). */
         NORMAL,
         /** An error banner screaming a warning (yellow). */
         WARNING,
@@ -64,7 +71,7 @@ public class ErrorBanner extends LinearLayout {
         mMessage = (TextView)findViewById(R.id.error_text);
 
         // The button is always close.
-        mClose = findViewById(R.id.close);
+        mClose = (ImageButton)findViewById(R.id.close);
         mClose.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -72,6 +79,13 @@ public class ErrorBanner extends LinearLayout {
                 animateBanner(false);
             }
         });
+
+        // Night?  Maybe?
+        mIsNightMode = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
+
+        // Set the close button as need be.
+        if(mIsNightMode)
+            mClose.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.cancel_button_dark));
 
         // On startup, we want to make sure the view is off-screen until we're
         // told different.
@@ -146,20 +160,24 @@ public class ErrorBanner extends LinearLayout {
      *
      * @param b type of background to set
      */
-    public void setErrorStatus(Status b) {
+    public void setErrorStatus(@NonNull Status b) {
+        @ColorRes int color = 0;
+
         switch(b) {
             case NORMAL:
-                setBackgroundErrorColor(Color.WHITE);
+                color = (mIsNightMode ? R.color.error_banner_normal_dark : R.color.error_banner_normal);
                 break;
             case WARNING:
-                setBackgroundErrorColor(Color.YELLOW);
+                color = (mIsNightMode ? R.color.error_banner_warning_dark : R.color.error_banner_warning);
                 break;
             case ERROR:
-                setBackgroundErrorColor(Color.RED);
+                color = (mIsNightMode ? R.color.error_banner_error_dark : R.color.error_banner_error);
                 break;
             case VICTORY:
-                setBackgroundErrorColor(Color.GREEN);
+                color = (mIsNightMode ? R.color.error_banner_victory_dark : R.color.error_banner_victory);
         }
+
+        setBackgroundErrorColor(color);
     }
 
     /**
@@ -169,12 +187,12 @@ public class ErrorBanner extends LinearLayout {
      *
      * @param color the new color to set
      */
-    public void setBackgroundErrorColor(final int color) {
+    public void setBackgroundErrorColor(@ColorRes final int color) {
         ((Activity)getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 setCloseVisible(true);
-                setBackgroundColor(color);
+                setBackgroundColor(ContextCompat.getColor(getContext(), color));
             }
         });
     }
