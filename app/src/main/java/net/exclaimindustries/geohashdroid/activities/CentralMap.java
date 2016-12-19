@@ -17,11 +17,13 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -673,6 +675,17 @@ public class CentralMap
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
         mProgress = findViewById(R.id.progress_container);
 
+        // Apply nighttime mode to the progress background!  Only do that if
+        // this is less than Lollipop, though.  We can apply the color of the
+        // active theme directly in the resource files in Lollipop or later, but
+        // anything beforehand, we need to fake it.
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            if(isNightMode())
+                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background_dark));
+            else
+                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
+        }
+
         // The progress-o-matic needs to be off-screen.  And, we need to know
         // how much it should shift down to become back on-screen.
         mProgressHeight = getResources().getDimension(R.dimen.progress_spinner_size) + (2 * getResources().getDimension(R.dimen.double_padding));
@@ -1197,15 +1210,19 @@ public class CentralMap
 
     @Override
     public void mapTypeSelected(int type) {
+        // 1 is night, -1 is day.
+        short becomesNight = 0;
+
         // Map type!
         if(mMap != null) {
             switch(type) {
                 case GoogleMap.MAP_TYPE_NORMAL:
+                    mMap.setMapStyle(null);
+                    becomesNight = -1;
+                    // Let's abuse a fallthrough!
                 case GoogleMap.MAP_TYPE_HYBRID:
                 case GoogleMap.MAP_TYPE_TERRAIN:
                     mMap.setMapType(type);
-
-                    mMap.setMapStyle(null);
                     break;
                 case MapTypeDialogFragment.MAP_STYLE_NIGHT:
                     // Whoops, this one isn't a type.  It's a style.  First, the
@@ -1215,6 +1232,8 @@ public class CentralMap
                     // Then, load up the night style.
                     if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_night)))
                         Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+
+                    becomesNight = 1;
                     break;
             }
         }
@@ -1226,6 +1245,10 @@ public class CentralMap
 
         BackupManager bm = new BackupManager(this);
         bm.dataChanged();
+
+        // Set the night only if it's changed at all.
+        if(becomesNight == 1) setNightMode(true);
+        else if(becomesNight == -1) setNightMode(false);
     }
 
     private void startListening() {

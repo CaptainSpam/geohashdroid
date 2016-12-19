@@ -9,8 +9,11 @@
 package net.exclaimindustries.geohashdroid.widgets;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -25,6 +28,7 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 
 /**
@@ -85,7 +89,13 @@ public class GraticulePicker extends RelativeLayout {
         super(c, attrs);
 
         // Deal out a little bit of setup justice...
-        setBackgroundColor(getResources().getColor(android.R.color.white));
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        boolean night = prefs.getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
+        if(night)
+            setBackgroundColor(ContextCompat.getColor(c, android.R.color.black));
+        else
+            setBackgroundColor(ContextCompat.getColor(c, android.R.color.white));
+
         int padding = getResources().getDimensionPixelSize(R.dimen.standard_padding);
         setPadding(padding, padding, padding, padding);
         setGravity(Gravity.CENTER_HORIZONTAL);
@@ -169,6 +179,10 @@ public class GraticulePicker extends RelativeLayout {
                     mListener.graticulePickerClosing();
             }
         });
+
+        // Plus, the close button needs updating if it's night.  That grey is
+        // just a weeeeee bit too dark for the black background.
+        if(night) close.setImageDrawable(ContextCompat.getDrawable(c, R.drawable.cancel_button_dark));
 
         // And then there's this again.  Huh.  You'd think I should make a
         // parent class to handle this.
