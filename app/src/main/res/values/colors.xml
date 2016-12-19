@@ -6,11 +6,8 @@
     <color name="graticule_fill">#10FF3333</color>
     <color name="graticule_stroke">#FFFF3333</color>
     <color name="graticule_outline">#DD222222</color>
-    <color name="details_text">#000000</color>
-    <!-- Since the details screen is on white text, this needs to be a slightly
-         darker shade of green. -->
-    <color name="details_in_range">#00DD00</color>
     <color name="link_color">#00f</color>
+    <color name="details_in_range">#00CC00</color>
     <color name="version_history_leader">#aaaaaa</color>
     <color name="version_history_content">#dedede</color>
     <color name="version_history_bullet">#000000</color>

@@ -46,6 +46,8 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
     private View mYouBlock;
     private View mDistanceBlock;
 
+    private int mDefaultTextColor;
+
     private Location mLastLocation;
 
     private ClipboardManager mClipManager;
@@ -114,6 +116,9 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         mYouLon.setOnLongClickListener(mYouListener);
         mDestLat.setOnLongClickListener(mDestListener);
         mDestLon.setOnLongClickListener(mDestListener);
+
+        // A color!
+        mDefaultTextColor = ContextCompat.getColor(getActivity(), (isNightMode() ? android.R.color.secondary_text_dark : android.R.color.secondary_text_light));
 
         // Button!
         Button closeButton = (Button) layout.findViewById(R.id.close);
@@ -195,7 +200,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
                     // Distance!
                     if(mLastLocation == null || mInfo == null) {
                         mDistance.setText(R.string.standby_title);
-                        mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_text));
+                        mDistance.setTextColor(mDefaultTextColor);
                     } else {
                         float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
                         mDistance.setText(UnitConverter.makeDistanceString(getActivity(), GHDConstants.DIST_FORMAT, distance));
@@ -207,7 +212,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
                         if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
                             mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_in_range));
                         else
-                            mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_text));
+                            mDistance.setTextColor(mDefaultTextColor);
 
                     }
                 }

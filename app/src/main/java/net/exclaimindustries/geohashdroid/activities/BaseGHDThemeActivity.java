@@ -21,7 +21,6 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
  * A <code>BaseGHDThemeActivity</code> sets up the theme (day or night) during
  * onCreate, as well as offer methods to switch between the themes.
  */
-
 public abstract class BaseGHDThemeActivity
         extends Activity {
 
