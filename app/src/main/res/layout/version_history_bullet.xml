@@ -9,7 +9,7 @@
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/imageView"
+        android:id="@+id/bulletIcon"
         android:layout_gravity="top"
         android:src="@drawable/version_history_bullet_image"
         android:layout_marginTop="@dimen/version_history_bullet_image_margin_top"
