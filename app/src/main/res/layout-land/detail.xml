@@ -18,7 +18,7 @@
             android:focusable="false"
             android:focusableInTouchMode="false"
             android:gravity="center_horizontal"
-            android:textSize="@dimen/details_title_fontsize_land"></TextView>
+            android:textSize="@dimen/details_title_fontsize_land"/>
 
         <LinearLayout
             android:id="@+id/Horiz"
@@ -45,7 +45,7 @@
                     android:drawableLeft="@drawable/final_destination"
                     android:gravity="center"
                     android:text="@string/details_finish"
-                    android:textSize="@dimen/details_subtitle_fontsize"></TextView>
+                    android:textSize="@dimen/details_subtitle_fontsize"/>
 
                 <TextView
                     android:id="@+id/dest_lat"
@@ -53,7 +53,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:text="@string/standby_title"
-                    android:textSize="@dimen/details_coords_fontsize_land"></TextView>
+                    android:textSize="@dimen/details_coords_fontsize_land"/>
 
                 <TextView
                     android:id="@+id/dest_lon"
@@ -61,7 +61,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:text="@string/standby_title"
-                    android:textSize="@dimen/details_coords_fontsize_land"></TextView>
+                    android:textSize="@dimen/details_coords_fontsize_land"/>
             </LinearLayout>
 
             <LinearLayout
@@ -81,7 +81,7 @@
                     android:drawableLeft="@drawable/current_location"
                     android:gravity="center"
                     android:text="@string/details_you"
-                    android:textSize="@dimen/details_subtitle_fontsize"></TextView>
+                    android:textSize="@dimen/details_subtitle_fontsize"/>
 
                 <TextView
                     android:id="@+id/you_lat"
@@ -89,7 +89,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:text="@string/standby_title"
-                    android:textSize="@dimen/details_coords_fontsize_land"></TextView>
+                    android:textSize="@dimen/details_coords_fontsize_land"/>
 
                 <TextView
                     android:id="@+id/you_lon"
@@ -97,7 +97,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:text="@string/standby_title"
-                    android:textSize="@dimen/details_coords_fontsize_land"></TextView>
+                    android:textSize="@dimen/details_coords_fontsize_land"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -113,17 +113,18 @@
                 android:id="@+id/DistanceLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
+                android:layout_gravity="center_vertical"
                 android:paddingRight="@dimen/details_distance_padding"
                 android:text="@string/details_dist"
-                android:textSize="@dimen/details_distance_fontsize"></TextView>
+                android:textSize="@dimen/details_distance_fontsize"/>
 
             <TextView
                 android:id="@+id/distance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
                 android:text="@string/standby_title"
-                android:textSize="@dimen/details_distance_fontsize"></TextView>
+                android:textSize="@dimen/details_distance_fontsize"/>
 
             <TextView
                 android:id="@+id/accuracy"
@@ -131,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:layout_marginLeft="@dimen/details_padding_horiz"
-                android:textSize="@dimen/details_accuracy_fontsize"></TextView>
+                android:textSize="@dimen/details_accuracy_fontsize"/>
         </LinearLayout>
 
         <Button
@@ -139,7 +140,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:text="@string/backtomap_label"></Button>
+            android:text="@string/backtomap_label"/>
 
     </LinearLayout>
 </ScrollView>

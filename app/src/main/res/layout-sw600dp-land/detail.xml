@@ -22,7 +22,7 @@
         android:focusableInTouchMode="false"
         android:gravity="center_horizontal"
         android:padding="@dimen/details_text_padding"
-        android:textSize="@dimen/details_title_fontsize"></TextView>
+        android:textSize="@dimen/details_title_fontsize"/>
 
     <LinearLayout
         android:id="@+id/FinishBox"
@@ -41,7 +41,7 @@
             android:gravity="center"
             android:padding="@dimen/details_text_padding"
             android:text="@string/details_finish"
-            android:textSize="@dimen/details_subtitle_fontsize"></TextView>
+            android:textSize="@dimen/details_subtitle_fontsize"/>
 
         <TextView
             android:id="@+id/dest_lat"
@@ -49,7 +49,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:text="@string/standby_title"
-            android:textSize="@dimen/details_coords_fontsize"></TextView>
+            android:textSize="@dimen/details_coords_fontsize"/>
 
         <TextView
             android:id="@+id/dest_lon"
@@ -57,7 +57,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:text="@string/standby_title"
-            android:textSize="@dimen/details_coords_fontsize"></TextView>
+            android:textSize="@dimen/details_coords_fontsize"/>
     </LinearLayout>
 
     <LinearLayout
@@ -77,7 +77,7 @@
             android:gravity="center"
             android:padding="@dimen/details_text_padding"
             android:text="@string/details_you"
-            android:textSize="@dimen/details_subtitle_fontsize"></TextView>
+            android:textSize="@dimen/details_subtitle_fontsize"/>
 
         <TextView
             android:id="@+id/you_lat"
@@ -85,7 +85,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:text="@string/standby_title"
-            android:textSize="@dimen/details_coords_fontsize"></TextView>
+            android:textSize="@dimen/details_coords_fontsize"/>
 
         <TextView
             android:id="@+id/you_lon"
@@ -93,7 +93,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:text="@string/standby_title"
-            android:textSize="@dimen/details_coords_fontsize"></TextView>
+            android:textSize="@dimen/details_coords_fontsize"/>
     </LinearLayout>
 
 
@@ -108,21 +108,23 @@
             android:id="@+id/DistanceLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
+            android:layout_gravity="center_vertical"
             android:paddingBottom="@dimen/details_text_padding"
             android:paddingRight="@dimen/details_distance_padding"
             android:paddingTop="@dimen/details_text_padding"
             android:text="@string/details_dist"
-            android:textSize="@dimen/details_distance_fontsize"></TextView>
+            android:textSize="@dimen/details_distance_fontsize"/>
 
         <TextView
             android:id="@+id/distance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:paddingBottom="@dimen/details_text_padding"
             android:paddingTop="@dimen/details_text_padding"
             android:text="@string/standby_title"
-            android:textSize="@dimen/details_distance_fontsize"></TextView>
+            android:textSize="@dimen/details_distance_fontsize"/>
+
     </LinearLayout>
 
     <TextView
@@ -130,14 +132,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:textSize="@dimen/details_accuracy_fontsize_small"></TextView>
+        android:textSize="@dimen/details_accuracy_fontsize_small"/>
 
     <Button
         android:id="@+id/close"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:text="@string/close_label"></Button>
+        android:text="@string/close_label"/>
 
 
 </LinearLayout>
