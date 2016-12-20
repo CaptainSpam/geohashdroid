@@ -40,7 +40,6 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -86,8 +85,7 @@ public class CentralMap
         extends BaseMapActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
-                   GHDDatePickerDialogFragment.GHDDatePickerCallback,
-                   MapTypeDialogFragment.MapTypeCallback {
+                   GHDDatePickerDialogFragment.GHDDatePickerCallback {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -119,7 +117,6 @@ public class CentralMap
     private boolean mMapIsReady = false;
 
     private Info mCurrentInfo;
-    private GoogleMap mMap;
     private GoogleApiClient mGoogleClient;
     private Location mLastKnownLocation;
 
@@ -1206,49 +1203,6 @@ public class CentralMap
         // Calendar!
         mLastCalendar = picked;
         mCurrentMode.changeCalendar(mLastCalendar);
-    }
-
-    @Override
-    public void mapTypeSelected(int type) {
-        // 1 is night, -1 is day.
-        short becomesNight = 0;
-
-        // Map type!
-        if(mMap != null) {
-            switch(type) {
-                case GoogleMap.MAP_TYPE_NORMAL:
-                    mMap.setMapStyle(null);
-                    becomesNight = -1;
-                    // Let's abuse a fallthrough!
-                case GoogleMap.MAP_TYPE_HYBRID:
-                case GoogleMap.MAP_TYPE_TERRAIN:
-                    mMap.setMapType(type);
-                    break;
-                case MapTypeDialogFragment.MAP_STYLE_NIGHT:
-                    // Whoops, this one isn't a type.  It's a style.  First, the
-                    // type has to be normal for this to work.
-                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
-                    // Then, load up the night style.
-                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_night)))
-                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
-
-                    becomesNight = 1;
-                    break;
-            }
-        }
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor edit = prefs.edit();
-        edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
-        edit.apply();
-
-        BackupManager bm = new BackupManager(this);
-        bm.dataChanged();
-
-        // Set the night only if it's changed at all.
-        if(becomesNight == 1) setNightMode(true);
-        else if(becomesNight == -1) setNightMode(false);
     }
 
     private void startListening() {

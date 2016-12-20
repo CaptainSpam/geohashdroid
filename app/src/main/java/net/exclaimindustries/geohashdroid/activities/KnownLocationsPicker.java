@@ -392,7 +392,6 @@ public class KnownLocationsPicker
         }
     }
 
-    private GoogleMap mMap;
     private Geocoder mGeocoder;
     private LocationSearchTask mSearchTask;
 
