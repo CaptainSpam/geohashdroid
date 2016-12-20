@@ -25,7 +25,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_margin="@dimen/double_padding"
-        android:background="@android:color/white"
+        android:background="?android:attr/colorBackground"
         android:elevation="@dimen/elevation_error_banner"
         android:padding="@dimen/standard_padding">
 
