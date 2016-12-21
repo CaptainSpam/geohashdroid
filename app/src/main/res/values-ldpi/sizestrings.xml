@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-<string name="wiki_picture_not_logged_in">Please enter a username in Preferences first.</string>
-<string name="wiki_editor_using_your_location">Your location:</string>
-<string name="wiki_editor_using_photo_location">Picture location:</string>
-</resources>

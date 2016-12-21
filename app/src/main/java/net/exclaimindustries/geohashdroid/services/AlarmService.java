@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -131,14 +132,16 @@ public class AlarmService extends WakefulIntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(DEBUG_TAG, "Network status update!");
-            if(AndroidUtil.isConnected(context)) {
-                Log.d(DEBUG_TAG, "The network is back up!");
-                
-                // NETWORK'D!!!
-                Intent i = new Intent(context, AlarmService.class);
-                i.setAction(STOCK_ALARM_NETWORK_BACK);
-                WakefulIntentService.sendWakefulWork(context, i);
+            if(intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                Log.d(DEBUG_TAG, "Network status update!");
+                if(AndroidUtil.isConnected(context)) {
+                    Log.d(DEBUG_TAG, "The network is back up!");
+
+                    // NETWORK'D!!!
+                    Intent i = new Intent(context, AlarmService.class);
+                    i.setAction(STOCK_ALARM_NETWORK_BACK);
+                    WakefulIntentService.sendWakefulWork(context, i);
+                }
             }
         }
     }
@@ -193,18 +196,20 @@ public class AlarmService extends WakefulIntentService {
     public static class BootReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            // It's boot time!  We might need to flip on the party alarm!
-            Log.i(DEBUG_TAG, "Gooooooood morning, Geohashland!  It's boot time in " + TimeZone.getDefault().getDisplayName() + "!");
+            if(intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
+                // It's boot time!  We might need to flip on the party alarm!
+                Log.i(DEBUG_TAG, "Gooooooood morning, Geohashland!  It's boot time in " + TimeZone.getDefault().getDisplayName() + "!");
 
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-            if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
-                // Set the alarm!
-                Log.i(DEBUG_TAG, "The stock alarm is now being started...");
-                Intent i = new Intent(context, AlarmService.class);
-                i.setAction(AlarmService.STOCK_ALARM_ON);
-                WakefulIntentService.sendWakefulWork(context, i);
-            } else {
-                Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+                if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
+                    // Set the alarm!
+                    Log.i(DEBUG_TAG, "The stock alarm is now being started...");
+                    Intent i = new Intent(context, AlarmService.class);
+                    i.setAction(AlarmService.STOCK_ALARM_ON);
+                    WakefulIntentService.sendWakefulWork(context, i);
+                } else {
+                    Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
+                }
             }
         }
     }

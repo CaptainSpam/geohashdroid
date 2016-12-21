@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
@@ -89,14 +90,15 @@ public class WikiService extends QueueService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            // Ding!  Are we back yet?
-            if(AndroidUtil.isConnected(context)) {
-                // Aha!  We're up!  Send off a command to resume the queue!
-                Intent i = new Intent(context, WikiService.class);
-                i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
-                context.startService(i);
+            if(intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                // Ding!  Are we back yet?
+                if(AndroidUtil.isConnected(context)) {
+                    // Aha!  We're up!  Send off a command to resume the queue!
+                    Intent i = new Intent(context, WikiService.class);
+                    i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
+                    context.startService(i);
+                }
             }
-
         }
     }
 

@@ -53,5 +53,6 @@
         android:visibility="gone"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
-        android:elevation="@dimen/elevation_extra_fragment"/>
+        android:elevation="@dimen/elevation_extra_fragment"
+        tools:ignore="InconsistentLayout"/>
 </RelativeLayout>

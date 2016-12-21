@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="net.exclaimindustries.geohashdroid"
+<manifest xmlns:tools="http://schemas.android.com/tools"
+          package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
           android:versionCode="919"
@@ -36,7 +37,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:theme="@style/Theme.GeohashDroid"
-        android:backupAgent=".util.GHDBackupAgent">
+        android:backupAgent=".util.GHDBackupAgent"
+        tools:ignore="AllowBackup,GoogleAppIndexingWarning">
         <uses-library android:name="com.google.android.maps"/>
 
         <activity

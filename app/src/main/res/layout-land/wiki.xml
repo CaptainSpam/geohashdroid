@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
     <LinearLayout android:orientation="horizontal"
@@ -36,7 +37,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_margin="@dimen/gallery_button_padding"
                 android:scaleType="centerInside"
-                android:src="@android:drawable/ic_menu_gallery" />
+                android:src="@android:drawable/ic_menu_gallery"
+                android:contentDescription="@string/accessibility_wiki_thumbnail"/>
 
             <TextView
                 android:id="@+id/wiki_anon_warning"
@@ -85,13 +87,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/standby_title"
-                    android:id="@+id/wiki_current_location"/>
+                    android:id="@+id/wiki_current_location"
+                    tools:ignore="InconsistentLayout"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/standby_title"
-                    android:id="@+id/wiki_distance"/>
+                    android:id="@+id/wiki_distance"
+                    tools:ignore="InconsistentLayout"/>
             </LinearLayout>
 
             <Button

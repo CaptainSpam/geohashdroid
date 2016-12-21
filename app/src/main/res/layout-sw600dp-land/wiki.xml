@@ -27,7 +27,8 @@
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/wikipost_options_size">
+        android:layout_height="@dimen/wikipost_options_size"
+        android:baselineAligned="false">
 
         <LinearLayout
             android:orientation="vertical"
@@ -65,7 +66,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_margin="@dimen/gallery_button_padding"
                 android:scaleType="centerInside"
-                android:src="@android:drawable/ic_menu_gallery" />
+                android:src="@android:drawable/ic_menu_gallery"
+                android:contentDescription="@string/accessibility_wiki_thumbnail"/>
 
             <TextView
                 android:id="@+id/wiki_anon_warning"

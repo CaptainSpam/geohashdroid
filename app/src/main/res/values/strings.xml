@@ -26,19 +26,14 @@
 
     <string name="search_label">Waiting for your location&#8230;</string>
 
-    <string name="search_title">Searching&#8230;</string>
-    <string name="go_label">Go!</string>
-    <string name="go_disabled_label">Enter a graticule</string>
     <string name="ok_label">Okay</string>
     <string name="cool_label">Cool</string>
     <string name="gotcha_label">Gotcha</string>
     <string name="stop_reminding_me_label">Stop reminding me</string>
     <string name="go_to_preference">Take me there</string>
-    <string name="gratmap_go_label">Use this one</string>
     <string name="backtomap_label">Back to the map</string>
     <string name="closest_label">Find Closest</string>
     <string name="globalhash_label">Globalhash!</string>
-    <string name="gratmap_label">Pick From Map</string>
     <string name="today_label">Today</string>
 
     <string name="cancel_label">Cancel</string>
@@ -53,14 +48,10 @@
     <string name="dialog_switch_graticule_text">The point for that graticule is %1$s from your current location.  Do you want to switch to it?</string>
     <string name="dialog_switch_graticule_unknown">Do you want to switch to this graticule?</string>
 
-    <string name="error_title">Error</string>
     <string name="standby_title">Stand by&#8230;</string>
-    <string name="unavailable_title">Unavailable</string>
     <string name="unknown_title">Unknown</string>
     <string name="location_unknown">Location unknown</string>
     <string name="stock_label">Fetching stock data&#8230;</string>
-    <string name="location_label">Attempting to determine your location&#8230;</string>
-    <string name="error_search_failed">Couldn\'t figure out your graticule.  Make sure GPS and/or wireless network location sensing are enabled in Settings and you are in range of either.</string>
     <string name="error_not_yet_posted">There hasn\'t been a stock price posted for that date.</string>
     <string name="error_not_yet_posted_today">There hasn\'t been a stock price posted yet today.</string>
     <string name="error_server_failure">There was a problem talking to the stock price server.  Please try again later.</string>
@@ -72,21 +63,8 @@
     <string name="error_no_message">You need to put in a message to send it to the wiki.</string>
     <string name="error_no_picture">You didn\'t pick a picture for a picture post.</string>
 
-    <string name="map_activity_title">The Map</string>
-    <string name="gratmap_activity_title">Tap your graticule</string>
     <string name="detail_activity_title">Details</string>
     <string name="wiki_activity_title">Post to wiki</string>
-    <string name="destination_label">Today\'s Point</string>
-
-    <string name="find_location">Trying to determine your location&#8230;</string>
-    <string name="find_location_again">Readjusting view&#8230;</string>
-    <string name="autozoom_turned_off">Automatic zooming turned off</string>
-    <string name="autozoom_turned_on">Automatic zooming turned on</string>
-
-    <string name="dialog_send_to_maps_title">Send to Maps?</string>
-    <string name="dialog_send_to_maps_text">Do you want to view this point on the Maps app?  Note that it may plot it at the closest point of interest, so you may need to come back here if you want to get more exact.</string>
-    <string name="dialog_send_to_maps_yes">Yes, go to Maps</string>
-    <string name="dialog_send_to_maps_no">No, stay here</string>
 
     <string name="send_to_maps_point_name">Geohash for %1$s</string>
 
@@ -100,12 +78,10 @@
     <string name="marker_title_tomorrow_hashpoint">Tomorrow\'s Geohash point</string>
     <string name="marker_title_tomorrow_globalpoint">Tomorrow\'s Globalhash point</string>
     <string name="marker_title_nearby_tomorrow_hashpoint">Tomorrow\'s Geohash point at %1$s</string>
-    <string name="marker_title_nearby_tomorrow_globalpoint">Tomorrow\'s Globalhash point at %1$s</string>
 
     <string name="marker_title_doubletomorrow_hashpoint">The day after tomorrow\'s Geohash point</string>
     <string name="marker_title_doubletomorrow_globalpoint">The day after tomorrow\'s Globalhash point</string>
     <string name="marker_title_nearby_doubletomorrow_hashpoint">The day after tomorrow\'s Geohash point at %1$s</string>
-    <string name="marker_title_nearby_doubletomorrow_globalpoint">The day after tomorrow\'s Globalhash point at %1$s</string>
 
     <string name="toast_close_enough">You\'re there!  This is as close to the point as GPS accuracy gets.  Yay!</string>
 
@@ -115,21 +91,9 @@
     <string name="content_desc_zoom_final_destination">Center on final destination</string>
     <string name="content_desc_zoom_your_location">Center on your location</string>
 
-    <string name="menu_item_recenter_normalview">Fit both on screen</string>
-    <string name="menu_item_settings">Settings</string>
-    <string name="menu_item_recenter">Recenter</string>
-    <string name="menu_item_recenter_destination">The final destination</string>
-    <string name="menu_item_recenter_mylocation">Your current location</string>
-    <string name="menu_item_details">Details</string>
     <string name="menu_item_map_type">Map type</string>
     <string name="menu_item_about">About</string>
-    <string name="menu_item_post">Wiki</string>
-    <string name="menu_item_post_message">Post message</string>
-    <string name="menu_item_post_picture">Upload picture</string>
-    <string name="menu_item_post_wiki">View graticule page</string>
     <string name="menu_item_send_to_maps">Send to Maps</string>
-    <string name="menu_item_globalhash">Globalhash</string>
-    <string name="menu_item_geohash">Geohash</string>
     <string name="menu_item_radar">Radar</string>
     <string name="menu_item_tomorrow">Try Tomorrow</string>
 
@@ -138,10 +102,6 @@
     <string name="menu_item_map_type_terrain">Terrain</string>
     <string name="menu_item_map_type_night">Street (night)</string>
 
-    <string name="infobox_dist">Dist:</string>
-    <string name="infobox_final">To:</string>
-    <string name="infobox_you">You:</string>
-    <string name="infobox_30w">(uses 30W rule)</string>
     <string name="infobox_accuracy_low">(Accuracy low)</string>
     <string name="infobox_accuracy_really_low">(Accuracy really low)</string>
 
@@ -164,5 +124,4 @@
     <string name="notification_title">Fetching stocks&#8230;</string>
     <string name="notification_detail">(now checking %1$s)</string>
 
-    <string name="notification_wait_for_network">Waiting for the network&#8230;</string>
 </resources>

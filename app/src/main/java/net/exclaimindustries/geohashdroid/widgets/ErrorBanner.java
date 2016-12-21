@@ -10,7 +10,6 @@ package net.exclaimindustries.geohashdroid.widgets;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Color;
 import android.preference.PreferenceManager;
 import android.support.annotation.ColorRes;
 import android.support.annotation.NonNull;

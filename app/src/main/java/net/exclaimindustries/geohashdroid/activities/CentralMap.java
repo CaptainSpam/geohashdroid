@@ -23,6 +23,7 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
@@ -431,7 +432,7 @@ public class CentralMap
          *
          * @param resid the new title's resource ID
          */
-        protected final void setTitle(int resid) {
+        protected final void setTitle(@StringRes int resid) {
             mCentralMap.setTitle(resid);
         }
 

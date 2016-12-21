@@ -40,7 +40,7 @@ public class CharToByte {
      * @return a String of hex digits
      */
     public static String bytesToString(byte[] bytes) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String s;
         int i;
         for (i = 0; i < bytes.length; i++) {
