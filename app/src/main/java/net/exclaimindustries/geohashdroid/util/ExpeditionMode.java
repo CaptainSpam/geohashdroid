@@ -1178,4 +1178,10 @@ public class ExpeditionMode
         // aren't denied.
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
     }
+
+    @Nullable
+    @Override
+    protected Info getActiveInfo() {
+        return mCurrentInfo;
+    }
 }

@@ -84,6 +84,7 @@
     <string name="marker_title_nearby_doubletomorrow_hashpoint">The day after tomorrow\'s Geohash point at %1$s</string>
 
     <string name="toast_close_enough">You\'re there!  This is as close to the point as GPS accuracy gets.  Yay!</string>
+    <string name="toast_not_today_reminder">You aren\'t looking at today\'s hashpoint at the moment.  If you want today, you\'ll need to change the date.</string>
 
     <string name="content_desc_zoom">Zoom/Recenter</string>
     <string name="content_desc_zoom_cancel">Cancel</string>

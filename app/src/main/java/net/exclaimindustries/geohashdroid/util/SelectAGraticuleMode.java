@@ -418,4 +418,10 @@ public class SelectAGraticuleMode
         if(denied)
             mCentralMap.getErrorBanner().animateBanner(false);
     }
+
+    @Nullable
+    @Override
+    protected Info getActiveInfo() {
+        return null;
+    }
 }

@@ -30,6 +30,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -477,6 +478,15 @@ public class CentralMap
         }
 
         /**
+         * Gets the active Info the current mode is using, if any and if
+         * applicable.
+         *
+         * @return an Info, or null
+         */
+        @Nullable
+        protected abstract Info getActiveInfo();
+
+        /**
          * <p>
          * Gets whether or not the user explicitly denied permissions during
          * this session.  Updates on this state will be sent via {@link #permissionsDenied(boolean)},
@@ -756,6 +766,21 @@ public class CentralMap
 
         // The mode will resume itself once the client comes back in from
         // onStart.
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        // If there's an active expedition AND it's not today, remind the user
+        // of this.  It's not always obvious, especially given how Android won't
+        // reset its concept of the app being "active" in a lot of cases.
+        Info activeInfo = null;
+        if(mCurrentMode != null) activeInfo = mCurrentMode.getActiveInfo();
+
+        if(activeInfo != null && !DateTools.isSameDate(activeInfo.getCalendar(), Calendar.getInstance())) {
+            Toast.makeText(this, R.string.toast_not_today_reminder, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
