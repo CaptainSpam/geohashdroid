@@ -101,7 +101,6 @@ public class CentralMap
     private static final String STATE_WERE_PERMISSIONS_DENIED = "permissionsDenied";
     private static final String STATE_LAST_GRATICULE = "lastGraticule";
     private static final String STATE_LAST_CALENDAR = "lastCalendar";
-    private static final String STATE_INFO = "info";
     private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
 
     private static final int LOCATION_PERMISSION_REQUEST = 1;
@@ -117,7 +116,6 @@ public class CentralMap
     // If the map's ready.
     private boolean mMapIsReady = false;
 
-    private Info mCurrentInfo;
     private GoogleApiClient mGoogleClient;
     private Location mLastKnownLocation;
 
@@ -640,7 +638,6 @@ public class CentralMap
 
         // Load up!
         if(savedInstanceState != null) {
-            mCurrentInfo = savedInstanceState.getParcelable(STATE_INFO);
             mAlreadyDidInitialZoom = savedInstanceState.getBoolean(STATE_WAS_ALREADY_ZOOMED, false);
             mSelectAGraticule = savedInstanceState.getBoolean(STATE_WAS_SELECT_A_GRATICULE, false);
             mGlobalhash = savedInstanceState.getBoolean(STATE_WAS_GLOBALHASH, false);
@@ -841,10 +838,7 @@ public class CentralMap
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        // Also, keep the latest Info around.
-        outState.putParcelable(STATE_INFO, mCurrentInfo);
-
-        // Keep the various flags, too.
+        // Keep the various flags.
         outState.putBoolean(STATE_WAS_ALREADY_ZOOMED, mAlreadyDidInitialZoom);
         outState.putBoolean(STATE_WAS_SELECT_A_GRATICULE, mSelectAGraticule);
         outState.putBoolean(STATE_WAS_GLOBALHASH, mGlobalhash);
