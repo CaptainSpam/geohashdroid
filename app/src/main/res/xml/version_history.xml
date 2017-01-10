@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.2.1" version="920" date="2017-01-10">
+        <title>Your Late-Night Geohash Fix</title>
+        <header>Good news for anyone who might want a night mode...</header>
+        <bullets>
+            <bullet>There's a night mode!  It's not based on time, however.  Under the Map Type menu, you'll see a new "Street (night)" mode.  That'll make the map dark AND darken the app's theme in general ("Street (day)" changes it back).  Note that I can't get night versions of the satellite or terrain maps, so those will still always be bright.</bullet>
+            <bullet>Added in a toast popup if you enter the map screen when a previous day's hashpoint is still active.  I've been confused myself when that happens.</bullet>
+        </bullets>
+        <footer>Now that Known Locations works like it should, I've had a suggestion or two as to how the notifications could be improved, specifically in cases where there's locations marked that might be a long way away, or lots of locations to report, or whatnot.  I'll see what I can do about that.</footer>
+    </version>
     <version name="0.9.2" version="919" date="2016-12-09">
         <title>I Was Still Sort Of Pulling For Neapolitan, Myself</title>
         <header>Nougat!  It's the Nougat update!  Check this out:</header>
