@@ -15,7 +15,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
@@ -27,7 +26,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser.VersionEntry;
 
@@ -46,12 +44,8 @@ public class VersionHistoryDialogFragment extends DialogFragment {
     // This is just a simple dialog with a simple list.  But, said list needs a
     // less-simple adapter, which we bring up here.
     private class EntryAdapter extends ArrayAdapter<VersionEntry> {
-        private boolean mIsNightMode;
-
         public EntryAdapter(Context c, List<VersionEntry> entries) {
             super(c, 0, entries);
-
-            mIsNightMode = PreferenceManager.getDefaultSharedPreferences(c).getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
         }
 
         @NonNull
@@ -88,10 +82,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
                 if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                     ImageView bulletIcon = (ImageView)bullet.findViewById(R.id.bulletIcon);
 
-                    if(mIsNightMode)
-                        bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image_dark));
-                    else
-                        bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image));
+                    bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image));
                 }
 
                 TextView bulletText = (TextView)bullet.findViewById(R.id.bulletText);

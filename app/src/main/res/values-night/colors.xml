@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="error_banner_normal">#000</color>
+    <color name="error_banner_warning">#6a6a00</color>
+    <color name="error_banner_error">#6a0000</color>
+    <color name="error_banner_victory">#006a00</color>
+
+    <color name="version_history_bullet">#f3f3f3</color>
+    <color name="progress_background_color">#000</color>
+</resources>

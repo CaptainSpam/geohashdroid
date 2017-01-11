@@ -17,14 +17,12 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -679,17 +677,6 @@ public class CentralMap
 
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
         mProgress = findViewById(R.id.progress_container);
-
-        // Apply nighttime mode to the progress background!  Only do that if
-        // this is less than Lollipop, though.  We can apply the color of the
-        // active theme directly in the resource files in Lollipop or later, but
-        // anything beforehand, we need to fake it.
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            if(isNightMode())
-                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background_dark));
-            else
-                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
-        }
 
         // The progress-o-matic needs to be off-screen.  And, we need to know
         // how much it should shift down to become back on-screen.
