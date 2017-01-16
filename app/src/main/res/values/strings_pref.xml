@@ -78,4 +78,9 @@
     <string name="pref_startup_useclosest">Find the closest hashpoint</string>
     <string name="pref_startup_lastused">Start with the last-used graticule</string>
     <string name="pref_startup_graticulepicker">Start with the graticule picker</string>
+
+    <string name="pref_night_title">Night mode</string>
+    <string name="pref_night_auto">Auto</string>
+    <string name="pref_night_day">Always day</string>
+    <string name="pref_night_night">Always night</string>
 </resources>

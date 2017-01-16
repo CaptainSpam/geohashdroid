@@ -11,7 +11,9 @@ package net.exclaimindustries.geohashdroid.activities;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.UiModeManager;
 import android.app.backup.BackupManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -318,6 +320,34 @@ public class PreferencesScreen extends PreferenceActivity {
                     return true;
                 }
 
+            });
+
+            // Night Mode updates UiModeManager.
+            findPreference(GHDConstants.PREF_NIGHT_MODE).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    if(newValue instanceof String) {
+                        // UiModeManager's gonna hear about THIS...
+                        int newMode = UiModeManager.MODE_NIGHT_AUTO;
+
+                        String set = (String) newValue;
+
+                        switch(set) {
+                            case "Auto":
+                                newMode = UiModeManager.MODE_NIGHT_AUTO;
+                                break;
+                            case "Day":
+                                newMode = UiModeManager.MODE_NIGHT_NO;
+                                break;
+                            case "Night":
+                                newMode = UiModeManager.MODE_NIGHT_YES;
+                                break;
+                        }
+
+                        ((UiModeManager)getActivity().getSystemService(Context.UI_MODE_SERVICE)).setNightMode(newMode);
+                    }
+                    return true;
+                }
             });
 
             // Cache wiping is more a button than a preference, per se.

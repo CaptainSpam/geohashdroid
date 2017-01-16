@@ -46,6 +46,16 @@
         <item>LastUsed</item>
         <item>GraticulePicker</item>
     </string-array>
+    <string-array name="pref_night_entries">
+        <item>@string/pref_night_auto</item>
+        <item>@string/pref_night_day</item>
+        <item>@string/pref_night_night</item>
+    </string-array>
+    <string-array name="pref_night_values">
+        <item>Auto</item>
+        <item>Day</item>
+        <item>Night</item>
+    </string-array>
 
     <string-array name="menu_item_map_types">
         <item>@string/menu_item_map_type_street</item>

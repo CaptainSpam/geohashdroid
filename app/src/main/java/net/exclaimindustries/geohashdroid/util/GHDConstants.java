@@ -49,6 +49,8 @@ public final class GHDConstants {
     public static final String PREF_WIKI_PASS = "WikiPassword";
     /** Prefs key specifying how the app starts up. */
     public static final String PREF_STARTUP_BEHAVIOR = "StartupBehavior";
+    /** Prefs key for whether or not the app is in night mode. */
+    public static final String PREF_NIGHT_MODE = "NightModePref";
     /**
      * Prefs key indicating the most recent version the user's seen in the
      * VersionHistoryDialog activity.  If this is lower than the current one
@@ -90,9 +92,6 @@ public final class GHDConstants {
      * the "stock prefetch is off" warning in KnownLocationsPicker.
      */
     public static final String PREF_STOP_BUGGING_ME_PREFETCH_WARNING = "StopBuggingPrefetch";
-
-    /** Prefs key for whether or not the app is in night mode. */
-    public static final String PREF_NIGHT_MODE = "NightMode";
 
     /** Prefs value for metric distances. */
     public static final String PREFVAL_DIST_METRIC = "Metric";

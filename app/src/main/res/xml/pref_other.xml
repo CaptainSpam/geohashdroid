@@ -17,6 +17,15 @@
         android:title="@string/pref_stockcachesize_title" >
     </ListPreference>
 
+    <ListPreference
+        android:defaultValue="Auto"
+        android:entries="@array/pref_night_entries"
+        android:entryValues="@array/pref_night_values"
+        android:key="NightModePref"
+        android:persistent="true"
+        android:title="@string/pref_night_title" >
+    </ListPreference>
+
     <Preference
         android:key="_stockWipe"
         android:title="@string/pref_stockwipe_title" />
