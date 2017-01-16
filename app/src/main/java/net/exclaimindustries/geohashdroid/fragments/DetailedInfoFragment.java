@@ -117,8 +117,9 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         mDestLat.setOnLongClickListener(mDestListener);
         mDestLon.setOnLongClickListener(mDestListener);
 
-        // A color!
-        mDefaultTextColor = ContextCompat.getColor(getActivity(), (isNightMode() ? android.R.color.secondary_text_dark : android.R.color.secondary_text_light));
+        // A color!  Apparently we can't just reference colorPrimary here.  So,
+        // detailed_info_default_color points there instead.
+        mDefaultTextColor = ContextCompat.getColor(getActivity(), R.color.detailed_info_default_color);
 
         // Button!
         Button closeButton = (Button) layout.findViewById(R.id.close);

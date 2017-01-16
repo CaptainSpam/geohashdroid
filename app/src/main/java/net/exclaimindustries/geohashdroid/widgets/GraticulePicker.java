@@ -180,10 +180,6 @@ public class GraticulePicker extends RelativeLayout {
             }
         });
 
-        // Plus, the close button needs updating if it's night.  That grey is
-        // just a weeeeee bit too dark for the black background.
-        if(night) close.setImageDrawable(ContextCompat.getDrawable(c, R.drawable.cancel_button_dark));
-
         // And then there's this again.  Huh.  You'd think I should make a
         // parent class to handle this.
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {

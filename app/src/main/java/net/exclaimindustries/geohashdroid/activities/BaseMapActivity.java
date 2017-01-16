@@ -9,6 +9,7 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.backup.BackupManager;
@@ -39,7 +40,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
  * pasting code!
  */
 public abstract class BaseMapActivity
-        extends BaseGHDThemeActivity
+        extends Activity
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
                    MapTypeDialogFragment.MapTypeCallback {

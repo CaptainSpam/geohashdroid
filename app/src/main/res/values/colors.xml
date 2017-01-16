@@ -16,4 +16,6 @@
     <color name="error_banner_warning">#ff0</color>
     <color name="error_banner_error">#f00</color>
     <color name="error_banner_victory">#0f0</color>
+
+    <color name="detailed_info_default_color">@android:color/secondary_text_light</color>
 </resources>

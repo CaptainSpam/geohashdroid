@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
+import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -28,7 +29,7 @@ import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
  * {@link net.exclaimindustries.geohashdroid.util.ExpeditionMode}.
  */
 public abstract class CentralMapExtraFragment
-        extends BaseGHDThemeFragment
+        extends Fragment
         implements LocationListener, PermissionsDeniedListener {
     /**
      * The various types of CentralMapExtraFragment that can exist.  It's either

@@ -494,12 +494,10 @@ public class KnownLocationsPicker
                     mMapClickMarker.showInfoWindow();
                 }
 
-                // Should this be the night map?   Maybe I'll add in the full
-                // map type picker later, but for now, it's just the day or
-                // night street map.
-                if(isNightMode())
-                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(KnownLocationsPicker.this, R.raw.map_night)))
-                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+                // Give it a style.  If it's night, this'll pick the night
+                // resource.
+                if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(KnownLocationsPicker.this, R.raw.map_style)))
+                    Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
 
                 // Activate My Location if permissions are right.
                 if(checkLocationPermissions(0))

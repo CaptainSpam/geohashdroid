@@ -7,4 +7,6 @@
 
     <color name="version_history_bullet">#f3f3f3</color>
     <color name="progress_background_color">#000</color>
+
+    <color name="detailed_info_default_color">@android:color/secondary_text_dark</color>
 </resources>
