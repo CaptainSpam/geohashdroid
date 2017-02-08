@@ -82,10 +82,10 @@ public class MapTypeDialogFragment extends DialogFragment {
                                 mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_NORMAL);
                                 break;
                             case 1:
-                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_TERRAIN);
+                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_HYBRID);
                                 break;
                             case 2:
-                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_HYBRID);
+                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_TERRAIN);
                         }
                     }
                 })
