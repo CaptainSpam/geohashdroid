@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.2.2" version="921" date="2017-02-08">
+        <title>Statically Trained Satellite Terrain</title>
+        <header>Oh.  Whoops.</header>
+        <bullets>
+            <bullet>Fixed issue where the terrain and satellite map types were switched.</bullet>
+        </bullets>
+        <footer>I've also got a branch I'm working on that uses Android's internal night mode mechanics to handle the darker night interface.  But, since that depends on your device being Marshmallow or newer (anything lower and night mode only affects docked devices), that'll probably only go up on the GitHub site as a separate version.  More on that when it's ready to test.</footer>
+    </version>
     <version name="0.9.2.1" version="920" date="2017-01-10">
         <title>Your Late-Night Geohash Fix</title>
         <header>Good news for anyone who might want a night mode...</header>
