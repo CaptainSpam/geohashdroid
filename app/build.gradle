@@ -19,10 +19,10 @@ repositories {
 
 dependencies {
     compile 'com.commonsware.cwac:wakeful:1.0.3'
-    compile 'com.android.support:support-v4:25.0.1'
-    compile 'com.android.support:support-v13:25.0.1'
-    compile 'com.google.android.gms:play-services-maps:10.0.1'
-    compile 'com.google.android.gms:play-services-location:10.0.1'
+    compile 'com.android.support:support-v4:25.2.0'
+    compile 'com.android.support:support-v13:25.2.0'
+    compile 'com.google.android.gms:play-services-maps:10.2.0'
+    compile 'com.google.android.gms:play-services-location:10.2.0'
     compile 'com.google.guava:guava:19.0'
     compile 'cz.msebera.android:httpclient:4.4.1.1'
     compile 'org.opensextant:geodesy:2.0.1'
