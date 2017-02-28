@@ -554,9 +554,9 @@ public class AlarmService extends WakefulIntentService {
      * Convenient container for all the data we need for matches.
      */
     private static class KnownLocationMatchData implements Comparable<KnownLocationMatchData> {
-        public KnownLocation knownLocation;
-        public Info bestInfo;
-        public double distance;
+        public final KnownLocation knownLocation;
+        public final Info bestInfo;
+        public final double distance;
 
         public KnownLocationMatchData(@NonNull KnownLocation kl, @NonNull Info info, double dist) {
             knownLocation = kl;

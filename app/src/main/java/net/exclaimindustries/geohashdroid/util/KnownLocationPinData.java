@@ -24,9 +24,9 @@ import java.util.Random;
  * hash to pick a pseudo-random color, pin angle, and pin length.
  */
 public class KnownLocationPinData {
-    private double mAngle;
-    private float mLength;
-    private int mHue;
+    private final double mAngle;
+    private final float mLength;
+    private final int mHue;
 
     /**
      * Creates the object and initializes the data portions.
