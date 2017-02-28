@@ -34,7 +34,7 @@ public class KnownLocationPinData {
      * @param c a Context from which Resources will be derived
      * @param loc a LatLng to hash up
      */
-    public KnownLocationPinData(Context c, LatLng loc) {
+    public KnownLocationPinData(@NonNull Context c, @NonNull LatLng loc) {
         Random rand = makeRandom(loc);
 
         // The angle, length, and hue are thus the first three of their
@@ -45,14 +45,14 @@ public class KnownLocationPinData {
     }
 
     @NonNull
-    private Random makeRandom(LatLng loc) {
+    private Random makeRandom(@NonNull LatLng loc) {
         // What we're looking for here is a stable randomizer with the seed
         // initialized to something (reasonably) unique to the location given.
-        // java.util.Random, as the docs assure me, will ALWAYS be a certain
-        // algorithm for portability's sake, and thus always give the same
-        // results (they also assure me this is specifically NOT suitable for
-        // anything having to do with security, which sounds like what I'm
-        // looking for).
+        // So, more of a hashing function, really.  java.util.Random, as the
+        // docs assure me, will ALWAYS be a certain algorithm for portability's
+        // sake, and thus always give the same results (they also assure me this
+        // is specifically NOT suitable for anything having to do with security,
+        // which sounds like what I'm looking for).
 
         // So, to generate our seed, we're going to convert the latitude and
         // longitude into 32-bit ints.  Sort of.  More like we're going to
