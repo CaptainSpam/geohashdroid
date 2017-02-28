@@ -145,6 +145,7 @@ public class PreferencesScreen extends PreferenceActivity {
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_DIST_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_COORD_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_STARTUP_BEHAVIOR));
+            bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_KNOWN_NOTIFICATION));
 
             // The known locations manager is just another Activity.
             findPreference("_knownLocations").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {

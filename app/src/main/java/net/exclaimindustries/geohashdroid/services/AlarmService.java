@@ -581,6 +581,11 @@ public class AlarmService extends WakefulIntentService {
         mNotificationManager.cancel(R.id.alarm_known_location);
         mNotificationManager.cancel(R.id.alarm_known_location_global);
 
+        String notifyPref = PreferenceManager.getDefaultSharedPreferences(this).getString(GHDConstants.PREF_KNOWN_NOTIFICATION, GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE);
+
+        // If the user doesn't want notifications, we can skip the rest of this.
+        if(notifyPref.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_NEVER)) return;
+
         List<KnownLocation> locations = KnownLocation.getAllKnownLocations(this);
 
         // If there are no KnownLocations, give up now.
@@ -613,10 +618,32 @@ public class AlarmService extends WakefulIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
-            launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title);
+            // So now we have a list of what matched.  From there, let's sort
+            // out what notifications need to go up, if any.  There's a
+            // preference for this sort of thing, and we already checked it
+            // earlier.
+            switch(notifyPref) {
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE:
+                    // Only once.  That is, classic style.
+                    launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title);
+                    break;
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE:
+                    // Once per graticule.  Well, now we need to sort these out by
+                    // graticule.
+
+                    // TODO: Do that!
+                    break;
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION:
+                    // Once per matched location?  Well, sure, but that might throw
+                    // up a lot of notifications...
+
+                    // TODO: Do that!
+                    break;
+            }
         }
 
-        // Now, the Globalhash notification.
+        // Now, the Globalhash notification gets tossed up regardless of the
+        // user's preferences (apart from "Never").
         if(!matchedGlobal.isEmpty()) {
             launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
         }
@@ -646,7 +673,8 @@ public class AlarmService extends WakefulIntentService {
         mNotificationManager.notify(notificationId, builder.build());
     }
 
-    private Notification.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data, @StringRes int titleId) {
+    private Notification.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data,
+                                                             @StringRes int titleId) {
         KnownLocationMatchData match = data.get(0);
         String contentText = getString(R.string.known_locations_alarm_distance,
                 UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),
