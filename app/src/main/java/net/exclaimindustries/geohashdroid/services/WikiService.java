@@ -774,7 +774,7 @@ public class WikiService extends QueueService {
     private PendingIntent getBasicCommandIntent(int command) {
         // This will just call back to the service with the given command.
         return PendingIntent.getService(this,
-                0,
+                command,
                 new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, command),
                 0);
     }
