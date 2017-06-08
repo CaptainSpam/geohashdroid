@@ -675,7 +675,8 @@ public class WikiService extends QueueService {
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
                 .setContentText(getString(R.string.wiki_notification_waiting_for_connection_content))
-                .setSmallIcon(R.drawable.ic_stat_navigation_more_horiz);
+                .setSmallIcon(R.drawable.ic_stat_navigation_more_horiz)
+                .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
 
