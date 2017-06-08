@@ -9,7 +9,6 @@
 
 package net.exclaimindustries.geohashdroid.wiki;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -317,8 +316,11 @@ public class WikiUtils {
         toReturn.document = getHttpDocument(httpclient, httpreq);
 
         toReturn.rootElem = toReturn.document.getDocumentElement();
-        if(doesResponseHaveError(toReturn.rootElem))
-            throw new WikiException(getErrorTextId(findErrorCode(toReturn.rootElem)));
+        if(doesResponseHaveError(toReturn.rootElem)) {
+            toReturn.hasError = true;
+            toReturn.errorTextId = getErrorTextId(findErrorCode(toReturn.rootElem));
+            throw new WikiException(toReturn.errorTextId);
+        }
 
         return toReturn;
     }
