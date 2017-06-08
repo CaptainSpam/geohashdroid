@@ -13,7 +13,12 @@ import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.job.JobInfo;
+import android.app.job.JobParameters;
+import android.app.job.JobScheduler;
+import android.app.job.JobService;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,6 +30,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -82,9 +88,45 @@ public class WikiService extends QueueService {
     }
 
     /**
+     * This kicks in on connectivity changes in the event that JobScheduler is
+     * available (Android 21 or higher).  All what it does is kick the queue
+     * back into action.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public static class WikiServiceJobService extends JobService {
+        @Override
+        public boolean onStartJob(JobParameters params) {
+            // Just launch into the service.  The scheduler ONLY should've woken
+            // us up if we've got an internet connection, but if not, the queue
+            // will just pause anyway.
+            Intent i = new Intent(this, WikiService.class);
+            i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
+            startService(i);
+
+            // Since we're done now, return false so we don't have a thread
+            // spinning away.
+            return false;
+        }
+
+        @Override
+        public boolean onStopJob(JobParameters params) {
+            // I'm pretty sure there's not much of a way that sending out an
+            // Intent can take long enough to stop the job.
+            return false;
+        }
+    }
+
+    /**
+     * <p>
      * This listens for the connectivity broadcasts so we know if it's safe to
      * kick the queue back in action after a disconnect.  Well... I guess not so
      * much "safe" as "possible".
+     * </p>
+     *
+     * <p>
+     * This is only used in Android SDKs that don't have JobScheduler.  This
+     * whole thing was deprecated in Android N.
+     * </p>
      */
     public static class WikiServiceConnectivityListener extends BroadcastReceiver {
 
@@ -107,6 +149,8 @@ public class WikiService extends QueueService {
     private NotificationManager mNotificationManager;
     private AlarmManager mAlarmManager;
     private WakeLock mWakeLock;
+
+    private static final int WIKI_CONNECTIVITY_JOB = 0;
 
     /** Matches the gallery section. */
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
@@ -635,13 +679,28 @@ public class WikiService extends QueueService {
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
 
-        // Make sure the connectivity listener's waiting for a connection.
-        AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, true);
+        // If we have JobScheduler (SDK 21 or higher), use that.  Otherwise, go
+        // with the old ConnectivityListener style.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            JobInfo job = new JobInfo.Builder(
+                    WIKI_CONNECTIVITY_JOB,
+                    new ComponentName(this, WikiServiceJobService.class))
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                    .build();
+            js.schedule(job);
+        } else {
+            // Make sure the connectivity listener's waiting for a connection.
+            AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, true);
+        }
     }
 
     private void hideWaitingForConnectionNotification() {
         mNotificationManager.cancel(R.id.wiki_waiting_notification);
-        AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
+
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
+        }
     }
 
     private void showPausingErrorNotification(String reason, NotificationAction[] actions) {
@@ -746,6 +805,7 @@ public class WikiService extends QueueService {
             case R.string.wiki_error_bad_password:
             case R.string.wiki_error_bad_username:
             case R.string.wiki_error_username_nonexistant:
+            case R.string.wiki_error_bad_login:
                 toReturn[0] = new NotificationAction(
                         0,
                         PendingIntent.getActivity(this,
