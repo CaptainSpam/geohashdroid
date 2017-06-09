@@ -699,7 +699,12 @@ public class WikiService extends QueueService {
     private void hideWaitingForConnectionNotification() {
         mNotificationManager.cancel(R.id.wiki_waiting_notification);
 
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Cancel the job, if need be.
+            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            js.cancel(WIKI_CONNECTIVITY_JOB);
+        } else {
+            // Shut off the listener, if need be.
             AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
         }
     }
