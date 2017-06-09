@@ -11,7 +11,12 @@ import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.job.JobInfo;
+import android.app.job.JobParameters;
+import android.app.job.JobScheduler;
+import android.app.job.JobService;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -24,6 +29,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
 import android.util.Log;
 
@@ -123,10 +129,19 @@ public class AlarmService extends WakefulIntentService {
      */
     public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
 
+    private static final int ALARM_CONNECTIVITY_JOB = 1;
+
     /**
+     * <p>
      * This receiver listens for network connectivity changes in case we ran
      * into a problem with network connectivity and wanted to know if that
      * changed.
+     * </p>
+     *
+     * <p>
+     * This is only used in Android SDKs that don't have JobScheduler.  This
+     * whole thing was deprecated in Android N.
+     * </p>
      */
     public static class NetworkReceiver extends BroadcastReceiver {
 
@@ -143,6 +158,33 @@ public class AlarmService extends WakefulIntentService {
                     WakefulIntentService.sendWakefulWork(context, i);
                 }
             }
+        }
+    }
+
+    /**
+     * This kicks in on connectivity changes in the event that JobScheduler is
+     * available (Android 21 or higher).  All what it does is wake up the
+     * fetcher.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public static class AlarmServiceJobService extends JobService {
+        @Override
+        public boolean onStartJob(JobParameters params) {
+            // Since we should only get this when we have a network connection,
+            // send out the Intent that says we're back.
+            Intent i = new Intent(this, AlarmService.class);
+            i.setAction(STOCK_ALARM_NETWORK_BACK);
+            WakefulIntentService.sendWakefulWork(this, i);
+
+            // And we're done now!  No thread to spin up or anything.
+            return false;
+        }
+
+        @Override
+        public boolean onStopJob(JobParameters params) {
+            // Man, I really hope sending out one Intent doesn't require so much
+            // time that onStopJob gets triggered.
+            return false;
         }
     }
     
@@ -433,7 +475,7 @@ public class AlarmService extends WakefulIntentService {
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
             mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
-            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
+            stopWaitingForNetwork();
             clearNotification();
         } else if(intent.getAction().equals(STOCK_ALARM_ON)) {
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
@@ -454,8 +496,8 @@ public class AlarmService extends WakefulIntentService {
             // the network receiver.  If we're still in trouble network-wise,
             // it'll go right back on when we check in a second.
             if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
-                Log.d(DEBUG_TAG, "The network came back!  Yay!  Disabling the network status receiver...");
-                AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
+                Log.d(DEBUG_TAG, "The network came back!  Yay!");
+                stopWaitingForNetwork();
             }
 
             // If we just got the stock alarm, we need to reschedule right away.
@@ -489,7 +531,9 @@ public class AlarmService extends WakefulIntentService {
                     // No connection means we just set up the receiver and wait.
                     // And wait.  And wait.
                     Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
-                    AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, true);
+
+                    waitForNetwork();
+
                     clearNotification();
                     return;
                 }
@@ -676,5 +720,31 @@ public class AlarmService extends WakefulIntentService {
             builder.setVisibility(Notification.VISIBILITY_PRIVATE);
 
         return builder;
+    }
+
+    private void waitForNetwork() {
+        // SDK check!  We'll go with JobScheduler if we can.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // JobScheduler time!  It's fancier!
+            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            JobInfo job = new JobInfo.Builder(
+                    ALARM_CONNECTIVITY_JOB,
+                    new ComponentName(this, AlarmServiceJobService.class))
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                    .build();
+            js.schedule(job);
+        } else {
+            // Otherwise, just use the ol' package component.
+            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, true);
+        }
+    }
+
+    private void stopWaitingForNetwork() {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            js.cancel(ALARM_CONNECTIVITY_JOB);
+        } else {
+            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
+        }
     }
 }

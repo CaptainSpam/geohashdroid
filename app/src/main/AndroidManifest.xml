@@ -110,6 +110,11 @@
             android:label="@string/title_wikijobservice"
             android:permission="android.permission.BIND_JOB_SERVICE">
         </service>
+        <service
+            android:name=".services.AlarmService$AlarmServiceJobService"
+            android:label="@string/title_alarmjobservice"
+            android:permission="android.permission.BIND_JOB_SERVICE">
+        </service>
 
         <receiver
             android:name=".services.AlarmService$StockReceiver"
