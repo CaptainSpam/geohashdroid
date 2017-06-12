@@ -9,6 +9,8 @@
     <string name="title_stockservice">GHD Stock Checking Service</string>
     <string name="title_alarmservice">GHD Stock Alarm Service</string>
     <string name="title_wikiservice">GHD Wiki Service</string>
+    <string name="title_wikijobservice">GHD Wiki Service Job Service</string>
+    <string name="title_alarmjobservice">GHD Stock Alarm Service Job Service</string>
     <string name="title_logindialog">Update Wiki Login</string>
     <string name="title_preferences">Preferences</string>
     <string name="title_about">About Geohash Droid</string>

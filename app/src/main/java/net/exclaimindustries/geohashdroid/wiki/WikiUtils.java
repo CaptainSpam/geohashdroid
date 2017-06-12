@@ -36,6 +36,8 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -75,6 +77,158 @@ public class WikiUtils {
     private static final String WIKI_BASE_VIEW_URL = WIKI_BASE_URL + "geohashing/";
 
     private static final String DEBUG_TAG = "WikiUtils";
+
+    /**
+     * This is a bundle of version data, neatly pre-parsed for easy analysis.
+     * This presumes the version will always come in the form of, for instance,
+     * "MediaWiki 1.26.2-extrainfo".
+     */
+    @SuppressWarnings("unused")
+    public static class WikiVersionData {
+        private String mRawResult = "";
+        private String mGeneratorName = "";
+        private String mRawVersion = "";
+        private int mMajor;
+        private int mMinor;
+        private int mRevision;
+        private String mAdditional = "";
+        private boolean mValid = true;
+
+        private static final Pattern RE_VERSION = Pattern.compile("(.*)\\s+((\\d+)\\.(\\d+)\\.(\\d+)(.*)?)");
+
+        public WikiVersionData(@NonNull String input) {
+            // Let's get parsing!
+            mRawResult = input;
+
+            Matcher match = RE_VERSION.matcher(input);
+
+            // If it didn't match, it's invalid.
+            if(!match.matches()) {
+                mValid = false;
+                return;
+            }
+
+            // Now, assuming these regexes worked...
+            mGeneratorName = match.group(1);
+            mRawVersion = match.group(2);
+
+            try {
+                mMajor = Integer.parseInt(match.group(3));
+                mMinor = Integer.parseInt(match.group(4));
+                mRevision = Integer.parseInt(match.group(5));
+            } catch (NumberFormatException nfe) {
+                // Those BETTER be ints.
+                mValid = false;
+                return;
+            }
+
+            mAdditional = match.group(6);
+            // The additional part doesn't need to exist.
+            if(mAdditional == null)
+                mAdditional = "";
+
+            // For convenience, if there's a dash at the start, chop it off.
+            if(mAdditional.startsWith("-"))
+                mAdditional = mAdditional.substring(1);
+        }
+
+        /**
+         * Returns whether or not this object is valid.  It will be invalid if
+         * the string given as input doesn't match the standard version format
+         * (i.e. "MediaWiki 1.26.2-extrainfo").
+         *
+         * @return true if valid, false if not
+         */
+        public boolean isValid() {
+            return mValid;
+        }
+
+        /**
+         * Gets the raw output from the "generator" part of SiteInfo.  That is,
+         * this is the unparsed result, i.e. "MediaWiki 1.26.2-extrainfo".
+         *
+         * @return the raw version output
+         */
+        @NonNull
+        public String getRawResult() {
+            return mRawResult;
+        }
+
+        /**
+         * Gets the generator name (the name of the software itself).  In most
+         * cases, this will be "MediaWiki".
+         *
+         * @return the generator name
+         */
+        @NonNull
+        public String getGeneratorName() {
+            return mGeneratorName;
+        }
+
+        /**
+         * Gets the raw version string.  That is, anything past the generator
+         * name, i.e. "1.26.2-extrainfo".
+         *
+         * @return the raw version string
+         */
+        @NonNull
+        public String getRawVersion() {
+            return mRawVersion;
+        }
+
+        /**
+         * Gets the major version number.  This will probably be 1, unless the
+         * MediaWiki team surprises us with MediaWiki 2 all of a sudden.  If
+         * they do THAT, chances are this will break anyway.
+         *
+         * @return the major version number
+         */
+        public int getMajorVersion() {
+            return mMajor;
+        }
+
+        /**
+         * Gets the minor version number.  For example, if the version string is
+         * "1.26.2-extrainfo", this will return 26.
+         *
+         * @return the minor version number
+         */
+        public int getMinorVersion() {
+            return mMinor;
+        }
+
+        /**
+         * Gets the revision version number.  For example, if the version string
+         * is "1.26.2-extrainfo", this will return 2.
+         *
+         * @return the revision version number
+         */
+        public int getRevision() {
+            return mRevision;
+        }
+
+        /**
+         * Gets anything after the revision version number.  For example, if the
+         * version string is "1.26.2-extrainfo", this will return "extrainfo".
+         * Note that this WILL chop off the leading hyphen, if one exists.
+         *
+         * @return whatever extra junk is after the revision number (could be blank)
+         */
+        @NonNull
+        public String getAdditional() {
+            return mAdditional;
+        }
+    }
+
+    /**
+     * A bucketload of the usual stuff we grab from a wiki request.
+     */
+    private static class WikiResponse {
+        public Document document;
+        public Element rootElem;
+        public boolean hasError = false;
+        public int errorTextId;
+    }
 
     // The most recent request issued by WikiUtils.  This allows the abort()
     // method to work.
@@ -147,6 +301,31 @@ public class WikiUtils {
     }
 
     /**
+     * Gets a standard {@link WikiResponse} object for a wiki request.  Because
+     * I was getting sick of all that boilerplate.
+     *
+     * @param httpclient an active HTTP session
+     * @param httpreq    an HTTP request (GET or POST)
+     * @return a WikiResponse containing WikiResponsey stuff
+     */
+    @NonNull
+    private static WikiResponse getWikiResponse(@NonNull CloseableHttpClient httpclient,
+                                                @NonNull HttpUriRequest httpreq) throws Exception {
+        WikiResponse toReturn = new WikiResponse();
+
+        toReturn.document = getHttpDocument(httpclient, httpreq);
+
+        toReturn.rootElem = toReturn.document.getDocumentElement();
+        if(doesResponseHaveError(toReturn.rootElem)) {
+            toReturn.hasError = true;
+            toReturn.errorTextId = getErrorTextId(findErrorCode(toReturn.rootElem));
+            throw new WikiException(toReturn.errorTextId);
+        }
+
+        return toReturn;
+    }
+
+    /**
      * Returns whether or not a given wiki page or file exists.
      *
      * @param httpclient an active HTTP session
@@ -163,19 +342,11 @@ public class WikiUtils {
         HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&titles="
                 + URLEncoder.encode(pagename, "UTF-8"));
 
-        Document response = getHttpDocument(httpclient, httpget);
-
-        // Now for some of the usual checking that should look familiar...
-        Element root = response.getDocumentElement();
-
-        // Error check!
-        if(doesResponseHaveError(root)) {
-            throw new WikiException(getErrorTextId(findErrorCode(root)));
-        }
+        WikiResponse response = getWikiResponse(httpclient, httpget);
 
         Element pageElem;
         try {
-            pageElem = DOMUtil.getFirstElement(root, "page");
+            pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
         } catch(Exception e) {
             throw new WikiException(R.string.wiki_error_xml);
         }
@@ -183,6 +354,41 @@ public class WikiUtils {
         // "invalid" or "missing" both resolve to the same answer: No.  Anything
         // else means yes.
         return !(pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing"));
+    }
+
+    /**
+     * Gets the version of the wiki.  This may be needed if there is an
+     * impending upgrade that breaks certain API calls and we want to make sure
+     * we're calling the right one depending on if the Geohashing wiki has
+     * upgraded yet.  In times of stable APIs, this probably won't be used.
+     *
+     * @param httpclient an active HTTP session
+     * @return a {@link WikiVersionData} containing all the version data you'll need
+     * @throws WikiException problem with the wiki, translate the ID
+     * @throws Exception     anything else happened, use getMessage
+     */
+    @NonNull
+    @SuppressWarnings("unused")
+    public static WikiVersionData getWikiVersion(@NonNull CloseableHttpClient httpclient) throws Exception {
+        // SiteInfo call!
+        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=siteinfo&siprop=general");
+
+        WikiResponse response = getWikiResponse(httpclient, httpget);
+
+        Element generalElem;
+        try {
+            generalElem = DOMUtil.getFirstElement(response.rootElem, "general");
+        } catch(Exception e) {
+            throw new WikiException(R.string.wiki_error_xml);
+        }
+
+        // If the generator attribute isn't there, there's a problem.
+        if(!generalElem.hasAttribute("generator")) {
+            throw new WikiException(R.string.wiki_error_xml);
+        }
+
+        // Finally, we've got us a WikiVersionData!
+        return new WikiVersionData(generalElem.getAttribute("generator"));
     }
 
     /**
@@ -207,20 +413,12 @@ public class WikiUtils {
                 + URLEncoder.encode(pagename, "UTF-8"));
 
         String page;
-        Document response = getHttpDocument(httpclient, httpget);
-
-        // Good, good.  First, figure out if the page even exists.
-        Element root = response.getDocumentElement();
-
-        // Error check!
-        if(doesResponseHaveError(root)) {
-            throw new WikiException(getErrorTextId(findErrorCode(root)));
-        }
+        WikiResponse response = getWikiResponse(httpclient, httpget);
 
         Element pageElem;
         Element text;
         try {
-            pageElem = DOMUtil.getFirstElement(root, "page");
+            pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
         } catch(Exception e) {
             throw new WikiException(R.string.wiki_error_xml);
         }
@@ -288,14 +486,7 @@ public class WikiUtils {
 
         httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
 
-        Document response = getHttpDocument(httpclient, httppost);
-
-        Element root = response.getDocumentElement();
-
-        // First, check for errors.
-        if(doesResponseHaveError(root)) {
-            throw new WikiException(getErrorTextId(findErrorCode(root)));
-        }
+        getWikiResponse(httpclient, httppost);
 
         // And really, that's it.  We're done!
     }
@@ -329,15 +520,14 @@ public class WikiUtils {
         tnvps.add(new BasicNameValuePair("format", "xml"));
 
         httppost.setEntity(new UrlEncodedFormEntity(tnvps, "utf-8"));
-        Document response = getHttpDocument(httpclient, httppost);
 
-        Element root = response.getDocumentElement();
+        WikiResponse response = getWikiResponse(httpclient, httppost);
 
         // Hopefully, a token exists.  If not, a problem exists.
         String token;
         Element page;
         try {
-            page = DOMUtil.getFirstElement(root, "page");
+            page = DOMUtil.getFirstElement(response.rootElem, "page");
             token = DOMUtil.getSimpleAttributeText(page, "edittoken");
         } catch(Exception e) {
             throw new WikiException(R.string.wiki_error_xml);
@@ -361,14 +551,7 @@ public class WikiUtils {
 
         httppost.setEntity(builder.build());
 
-        response = getHttpDocument(httpclient, httppost);
-
-        root = response.getDocumentElement();
-
-        // First, check for errors.
-        if(doesResponseHaveError(root)) {
-            throw new WikiException(getErrorTextId(findErrorCode(root)));
-        }
+        getWikiResponse(httpclient, httppost);
     }
 
     /**
@@ -387,73 +570,158 @@ public class WikiUtils {
                              @NonNull String wpPassword) throws Exception {
         HttpPost httppost = new HttpPost(WIKI_API_URL);
 
-        ArrayList<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("action", "login"));
-        nvps.add(new BasicNameValuePair("lgname", wpName));
-        nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
-        nvps.add(new BasicNameValuePair("format", "xml"));
+        // Login changes depending on version.  Once we know that the GHD wiki
+        // has upgraded, this will probably go away.
+        WikiVersionData version = getWikiVersion(httpclient);
 
-        httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-        Log.d(DEBUG_TAG, "Trying login...");
-        Document response = getHttpDocument(httpclient, httppost);
-
-        // The result comes in as an XML chunk.  Since we're expecting the
-        // cookies to be set properly, all we care about is the "result"
-        // attribute of the "login" element.
-        Element root = response.getDocumentElement();
-        Element login;
-        String result;
-        try {
-            login = DOMUtil.getFirstElement(root, "login");
-            result = DOMUtil.getSimpleAttributeText(login, "result");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
+        if(!version.isValid()) {
+            throw new WikiException(R.string.wiki_error_unknown);
         }
 
-        // Now, get the result.  If it was a success, cookies got added.  If it
-        // was NeedToken, this is a 1.16 wiki (as it should be now) and we need
-        // another request to get the final token.
-        if(result != null && result.equals("NeedToken")) {
-            Log.d(DEBUG_TAG, "Token needed, trying again...");
-            // Okay, do the same thing again, this time with the token we got
-            // the first time around.  Cookies will be set this time around, I
-            // think.
-            String token = DOMUtil.getSimpleAttributeText(login, "token");
+        if(version.getMinorVersion() >= 27) {
+            // The new style.  This one requires the clientLogin action.  I'm
+            // really hoping I won't have to implement a CAPTCHA or 2FA
+            // interface for this, else we're going to have some serious issues.
+            // For now, though, grab a token.
+            Log.d(DEBUG_TAG, "The wiki is running 1.27 or higher, going with the new login method...");
+            HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=tokens&type=login");
 
-            httppost = new HttpPost(WIKI_API_URL);
+            WikiResponse response = getWikiResponse(httpclient, httpget);
 
-            nvps = new ArrayList<>();
-            nvps.add(new BasicNameValuePair("action", "login"));
-            nvps.add(new BasicNameValuePair("lgname", wpName));
-            nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
-            nvps.add(new BasicNameValuePair("lgtoken", token));
+            Element tokenElem;
+            String token;
+            try {
+                tokenElem = DOMUtil.getFirstElement(response.rootElem, "tokens");
+                token = DOMUtil.getSimpleAttributeText(tokenElem, "logintoken");
+            } catch(Exception e) {
+                Log.d(DEBUG_TAG, "Couldn't get a token!");
+                throw new WikiException(R.string.wiki_error_xml);
+            }
+
+            // Okay, now let's try a login.  I hope this works.
+            ArrayList<NameValuePair> nvps = new ArrayList<>();
+            nvps.add(new BasicNameValuePair("action", "clientlogin"));
+            nvps.add(new BasicNameValuePair("username", wpName));
+            nvps.add(new BasicNameValuePair("password", wpPassword));
+            nvps.add(new BasicNameValuePair("loginreturnurl", WIKI_API_URL));
+            nvps.add(new BasicNameValuePair("logintoken", token));
             nvps.add(new BasicNameValuePair("format", "xml"));
 
             httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
 
-            Log.d(DEBUG_TAG, "Sending it out...");
-            response = getHttpDocument(httpclient, httppost);
+            Log.d(DEBUG_TAG, "Token obtained, trying login...");
+            response = getWikiResponse(httpclient, httppost);
 
-            Log.d(DEBUG_TAG, "Response has returned!");
-            // Again!
-            root = response.getDocumentElement();
-
+            Element login;
+            String status;
             try {
-                login = DOMUtil.getFirstElement(root, "login");
+                login = DOMUtil.getFirstElement(response.rootElem, "clientlogin");
+                status = DOMUtil.getSimpleAttributeText(login, "status");
+
+                // If we got a clientlogin response but no status in it, I
+                // just... what?
+                if(status == null) throw new WikiException(R.string.wiki_error_unknown);
+            } catch(WikiException we) {
+                throw we;
+            } catch (Exception e) {
+                throw new WikiException(R.string.wiki_error_xml);
+            }
+
+            // Our result will hopefully either be PASS or FAIL.  If it's UI or
+            // REDIRECT, we don't cover those cases just yet.  I really hope we
+            // don't have to cover those on the Geohashing wiki.
+            if(status.equals("UI") || status.equals("REDIRECT")) {
+                Log.w(DEBUG_TAG, "The wiki gave us a " + status + " result on login!  The bug reports will be rolling in soon...");
+                throw new WikiException(R.string.wiki_error_fancy_schmansy_login);
+            }
+
+            // Fail means, well, failure.
+            if(status.equals("FAIL")) {
+                Log.d(DEBUG_TAG, "Login failure, telling the user this...");
+                throw new WikiException(R.string.wiki_error_bad_login);
+            }
+
+            // If this ISN'T just PASS at this point, that's very very bad.
+            if(!status.equals("PASS")) {
+                Log.e(DEBUG_TAG, "The wiki gave us a " + status + " result on login, and I have no clue what that means.");
+                throw new WikiException(R.string.wiki_error_unknown);
+            }
+
+            // Otherwise, we're good!
+            Log.d(DEBUG_TAG, "Success!");
+
+        } else {
+            Log.d(DEBUG_TAG, "The wiki is still on 1.26 or lower, using the old login method...");
+
+            // The old style.  Login is all we need.
+            ArrayList<NameValuePair> nvps = new ArrayList<>();
+            nvps.add(new BasicNameValuePair("action", "login"));
+            nvps.add(new BasicNameValuePair("lgname", wpName));
+            nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
+            nvps.add(new BasicNameValuePair("format", "xml"));
+
+            httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+
+            Log.d(DEBUG_TAG, "Trying login...");
+            WikiResponse response = getWikiResponse(httpclient, httppost);
+
+            // The result comes in as an XML chunk.  Since we're expecting the
+            // cookies to be set properly, all we care about is the "result"
+            // attribute of the "login" element.
+            Element login;
+            String result;
+            try {
+                login = DOMUtil.getFirstElement(response.rootElem, "login");
                 result = DOMUtil.getSimpleAttributeText(login, "result");
             } catch(Exception e) {
                 throw new WikiException(R.string.wiki_error_xml);
             }
-        }
 
-        // Check it.  If NeedToken was returned again, then the wiki is just
-        // telling us nonsense and we've got a right to throw an exception.
-        if(result != null && result.equals("Success")) {
-            Log.d(DEBUG_TAG, "Success!");
-        } else {
-            Log.d(DEBUG_TAG, "FAILURE!");
-            throw new WikiException(getErrorTextId(result));
+            Log.d(DEBUG_TAG, "After login, result is " + result);
+
+            // Now, get the result.  If it was a success, cookies got added.  If it
+            // was NeedToken, this is a 1.16 wiki (as it should be now) and we need
+            // another request to get the final token.
+            if(result != null && result.equals("NeedToken")) {
+                Log.d(DEBUG_TAG, "Token needed, trying again...");
+                // Okay, do the same thing again, this time with the token we got
+                // the first time around.  Cookies will be set this time around, I
+                // think.
+                String token = DOMUtil.getSimpleAttributeText(login, "token");
+
+                httppost = new HttpPost(WIKI_API_URL);
+
+                nvps = new ArrayList<>();
+                nvps.add(new BasicNameValuePair("action", "login"));
+                nvps.add(new BasicNameValuePair("lgname", wpName));
+                nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
+                nvps.add(new BasicNameValuePair("lgtoken", token));
+                nvps.add(new BasicNameValuePair("format", "xml"));
+
+                httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+
+                Log.d(DEBUG_TAG, "Sending it out...");
+                response = getWikiResponse(httpclient, httppost);
+
+                Log.d(DEBUG_TAG, "Response has returned!");
+
+                // Again!
+                try {
+                    login = DOMUtil.getFirstElement(response.rootElem, "login");
+                    result = DOMUtil.getSimpleAttributeText(login, "result");
+                } catch(Exception e) {
+                    throw new WikiException(R.string.wiki_error_xml);
+                }
+            }
+
+            // Check it.  If NeedToken was returned again, then the wiki is just
+            // telling us nonsense and we've got a right to throw an exception.
+            if(result != null && result.equals("Success")) {
+                Log.d(DEBUG_TAG, "Success!");
+            } else {
+                Log.d(DEBUG_TAG, "FAILURE!  Result was " + result);
+                throw new WikiException(getErrorTextId(result));
+            }
         }
     }
 

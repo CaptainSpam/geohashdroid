@@ -24,6 +24,7 @@
 	<string name="wiki_error_bad_username">That username is invalid.</string>
     <string name="wiki_error_username_nonexistant">That username doesn\'t exist.</string>
 	<string name="wiki_error_bad_password">Your password is incorrect.</string>
+	<string name="wiki_error_bad_login">Login failed.  Please check your username or password.</string>
 	<string name="wiki_error_throttled">You\'ve tried to log in too many times.  Please wait around five minutes and try again.</string>
 	<string name="wiki_error_invalid_page">The wiki couldn\'t find that page because the page\'s name is invalid.</string>
 	<string name="wiki_error_no_create">You\'re not allowed to create pages.</string>
@@ -32,6 +33,7 @@
 	<string name="wiki_error_filtered">A filter on the wiki denied your edit.</string>
 	<string name="wiki_error_too_big">What you sent was too big for the wiki.</string>
 	<string name="wiki_error_conflict">An edit conflict happened.  Someone might be right nearby, trying to edit that same page.</string>
+	<string name="wiki_error_fancy_schmansy_login">A username/password combination wasn\'t enough to log you in, and this app can\'t handle whatever else the wiki wants.  You should probably file a bug report.</string>
 	
 	<string name="wiki_dialog_append_time">Append local timestamp</string>
 	<string name="wiki_dialog_add_picture">Post a picture</string>
