@@ -21,17 +21,21 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
+import com.google.android.gms.maps.model.LatLng;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
 import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.tools.QueueService;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -129,7 +133,8 @@ public class PreferencesScreen extends PreferenceActivity {
     protected boolean isValidFragment(String fragmentName) {
         return(fragmentName.equals(MapPreferenceFragment.class.getName())
             || fragmentName.equals(WikiPreferenceFragment.class.getName())
-            || fragmentName.equals(OtherPreferenceFragment.class.getName()));
+            || fragmentName.equals(OtherPreferenceFragment.class.getName())
+            || fragmentName.equals(DebugFragment.class.getName()));
     }
 
     /**
@@ -373,6 +378,133 @@ public class PreferencesScreen extends PreferenceActivity {
             bm.dataChanged();
 
             super.onStop();
+        }
+    }
+
+    /**
+     * These preferences aren't real, and should only exist on the logcat
+     * branch.
+     */
+    public static class DebugFragment extends PreferenceFragment {
+        private static final String DEBUG_TAG = "DebugFragment";
+
+        private Preference.OnPreferenceClickListener _fillClicker = new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                // Our plan is to just flood the graticule-sized area with an
+                // 11x11 grid of 10km Known Locations, separated by .1 degrees
+                // (that roughly kinda works).  So, first let's get the base
+                // coordinates.
+                double baseLat, baseLon;
+                switch(preference.getKey()) {
+                    case "_debug_non30w":
+                        // Non-30W... how about the Lexington, KY graticule?
+                        // If you don't like this, then get me a better job
+                        // somewhere else and maybe I'll change it.  Start at
+                        // -85 and work your way RIGHT to make the 38N 85E
+                        // graticule.
+                        baseLat = 38;
+                        baseLon = -85;
+                        break;
+                    case "_debug_30w":
+                        // A 30W graticule... let's go with Bathurst, Australia,
+                        // as that's the graticule in question for the bug I was
+                        // chasing down when I made this.  Start at -34 and work
+                        // your way UP to make the 33S 149W graticule.
+                        baseLat = -34;
+                        baseLon = 149;
+                        break;
+                    case "_debug_meridian":
+                        // The Prime Meridian isn't really a graticule, per se.
+                        // In order to wrap around it for testing purposes, we
+                        // need to put it in half-graticule portions.  But let's
+                        // make it around London anyway.
+                        baseLat = 51;
+                        baseLon = -0.5;
+                        break;
+                    default:
+                        Log.e(DEBUG_TAG, preference.getKey() + " isn't a valid debug location filler!");
+                        return true;
+                }
+
+                // This is debug-land, so to determine if we've already filled a
+                // graticule, we'll just see if the top-corner has a location.
+                List<KnownLocation> locations = KnownLocation.getAllKnownLocations(getActivity());
+
+                // Unfortunately, the locations aren't organized at all.  Oops.
+                for(KnownLocation kl : locations) {
+                    LatLng loc = kl.getLatLng();
+                    if(loc.latitude == baseLat && loc.longitude == baseLon)
+                    {
+                        Toast.makeText(
+                                getActivity(),
+                                R.string.pref_debug_locations_exist,
+                                Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+                }
+
+                // If not, it's time to build locations!  121 of them!
+                for(double lat = baseLat; lat <= baseLat + 1; lat += .1) {
+                    for(double lon = baseLon; lon <= baseLon + 1; lon += .1) {
+                        KnownLocation kl = new KnownLocation("Debug " + lat + ", " + lon + " location", new LatLng(lat, lon), 10000, false);
+                        locations.add(kl);
+                    }
+                }
+
+                // Built!  Toss 'em in!
+                KnownLocation.storeKnownLocations(getActivity(), locations);
+
+                Toast.makeText(
+                        getActivity(),
+                        R.string.pref_debug_locations_added,
+                        Toast.LENGTH_SHORT).show();
+
+                return true;
+            }
+        };
+
+        private Preference.OnPreferenceClickListener _wipeClicker = new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                // Look, if you wanted to keep your locations, maybe you should
+                // come up with a better name than "Debug" if you're using the
+                // logcat branch.
+                List<KnownLocation> locations = KnownLocation.getAllKnownLocations(getActivity());
+                List<KnownLocation> toDelete = new LinkedList<>();
+
+                for(KnownLocation kl : locations) {
+                    if(kl.getName().startsWith("Debug"))
+                        toDelete.add(kl);
+                }
+
+                for(KnownLocation kl : toDelete) {
+                    locations.remove(kl);
+                }
+
+                KnownLocation.storeKnownLocations(getActivity(), locations);
+
+                Toast.makeText(
+                        getActivity(),
+                        R.string.pref_debug_locations_wiped,
+                        Toast.LENGTH_SHORT).show();
+
+                return true;
+            }
+        };
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            addPreferencesFromResource(R.xml.pref_debug);
+
+            // Seriously, none of these preferences are real.  They're all more
+            // of things you poke to make things happen.
+            findPreference("_debug_non30w").setOnPreferenceClickListener(_fillClicker);
+            findPreference("_debug_30w").setOnPreferenceClickListener(_fillClicker);
+            findPreference("_debug_meridian").setOnPreferenceClickListener(_fillClicker);
+
+            findPreference("_debug_wipeLocations").setOnPreferenceClickListener(_wipeClicker);
         }
     }
 }

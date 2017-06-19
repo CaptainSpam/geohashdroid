@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference
+        android:key="_debug_non30w"
+        android:title="@string/pref_add_non_30w_locations" />
+    <Preference
+        android:key="_debug_30w"
+        android:title="@string/pref_add_30w_locations" />
+    <Preference
+        android:key="_debug_meridian"
+        android:title="@string/pref_add_prime_meridian_locations" />
+    <Preference
+        android:key="_debug_wipeLocations"
+        android:title="@string/pref_wipe_debug_locations" />
+</PreferenceScreen>

@@ -14,4 +14,8 @@
         android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$OtherPreferenceFragment"
         android:title="@string/pref_cat_other"/>
 
+    <header
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$DebugFragment"
+        android:title="@string/pref_cat_debug"/>
+
 </preference-headers>
