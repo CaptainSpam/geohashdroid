@@ -13,7 +13,7 @@ The overhauled Geohash Droid should be completely functional now.  However, sinc
 
 If you're building the legacy branch, on the other hand, you'll need a string resource called "api_map_key" that points to an API v1 key.  I don't think Google is giving those out anymore, so really, you might just want to avoid the legacy branch unless you're planning on porting it to use API v2 keys and functionality.
 
-Beyond that, it should be a straightforward build in Android Studio/Gradle.  You'll need (at least) the v23 Android SDK with the Google Play services for the maps stuff.  The legacy branch should build under the v4 API, though it may require v7 for some things.  Just stick with the master branch.
+Beyond that, it should be a straightforward build in Android Studio/Gradle.  You'll need (at least) the v25 Android SDK with the Google Play services for the maps stuff.  The legacy branch should build under the v4 API, though it may require v7 for some things.  Just stick with the master branch.
 
 ## Notes for future me to consider
 

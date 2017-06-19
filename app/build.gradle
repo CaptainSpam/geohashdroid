@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "21.1.2"
+    buildToolsVersion '25.0.2'
     defaultConfig {
         applicationId 'net.exclaimindustries.geohashdroid.debuggy'
         minSdkVersion 16
@@ -19,11 +19,11 @@ repositories {
 
 dependencies {
     compile 'com.commonsware.cwac:wakeful:1.0.3'
-    compile 'com.android.support:support-v4:25.0.1'
-    compile 'com.android.support:support-v13:25.0.1'
-    compile 'com.google.android.gms:play-services-maps:10.0.1'
-    compile 'com.google.android.gms:play-services-location:10.0.1'
-    compile 'com.google.guava:guava:19.0'
+    compile 'com.android.support:support-v4:25.2.0'
+    compile 'com.android.support:support-v13:25.2.0'
+    compile 'com.google.android.gms:play-services-maps:10.2.0'
+    compile 'com.google.android.gms:play-services-location:10.2.0'
+    compile 'com.google.guava:guava:20.0'
     compile 'cz.msebera.android:httpclient:4.4.1.1'
     compile 'org.opensextant:geodesy:2.0.1'
 }

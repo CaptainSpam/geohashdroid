@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-<string name="wiki_picture_not_logged_in">Posting images anonymously is not allowed, and you haven\'t specified a username in Preferences.  Please enter one first.</string>
-<string name="wiki_editor_using_your_location">Using your location:</string>
-<string name="wiki_editor_using_photo_location">Using picture location:</string>
-</resources>

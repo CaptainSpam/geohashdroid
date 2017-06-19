@@ -47,6 +47,7 @@ public class BitmapTools {
         // Make sure the width and height are properly reversed, if needed.
         if(reversible && shouldBeReversed(maxWidth, maxHeight, bitmap.getWidth(), bitmap.getHeight())) {
             int t = maxWidth;
+            //noinspection SuspiciousNameCombination
             maxWidth = maxHeight;
             maxHeight = t;
         }
@@ -121,6 +122,7 @@ public class BitmapTools {
         // Make sure the width and height are properly reversed, if needed.
         if(reversible && shouldBeReversed(maxWidth, maxHeight, opts.outWidth, opts.outHeight)) {
             int t = maxWidth;
+            //noinspection SuspiciousNameCombination
             maxWidth = maxHeight;
             maxHeight = t;
         }
@@ -199,6 +201,7 @@ public class BitmapTools {
             // Do the same calculations as in the filename version...
             if(reversible && shouldBeReversed(maxWidth, maxHeight, opts.outWidth, opts.outHeight)) {
                 int t = maxWidth;
+                //noinspection SuspiciousNameCombination
                 maxWidth = maxHeight;
                 maxHeight = t;
             }

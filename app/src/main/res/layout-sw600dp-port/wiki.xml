@@ -34,7 +34,8 @@
             android:layout_gravity="center_horizontal"
             android:layout_margin="@dimen/gallery_button_padding"
             android:scaleType="centerInside"
-            android:src="@android:drawable/ic_menu_gallery" />
+            android:src="@android:drawable/ic_menu_gallery"
+            android:contentDescription="@string/accessibility_wiki_thumbnail"/>
 
         <TextView
             android:id="@+id/wiki_anon_warning"

@@ -54,6 +54,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
@@ -391,7 +392,6 @@ public class KnownLocationsPicker
         }
     }
 
-    private GoogleMap mMap;
     private Geocoder mGeocoder;
     private LocationSearchTask mSearchTask;
 
@@ -493,6 +493,13 @@ public class KnownLocationsPicker
                     mActiveMarker = mMapClickMarker;
                     mMapClickMarker.showInfoWindow();
                 }
+
+                // Should this be the night map?   Maybe I'll add in the full
+                // map type picker later, but for now, it's just the day or
+                // night street map.
+                if(isNightMode())
+                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(KnownLocationsPicker.this, R.raw.map_night)))
+                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
 
                 // Activate My Location if permissions are right.
                 if(checkLocationPermissions(0))

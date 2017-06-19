@@ -17,16 +17,20 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -59,6 +63,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 import net.exclaimindustries.tools.LogcatDumper;
 
@@ -83,8 +88,7 @@ public class CentralMap
         extends BaseMapActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,
-                   GHDDatePickerDialogFragment.GHDDatePickerCallback,
-                   MapTypeDialogFragment.MapTypeCallback {
+                   GHDDatePickerDialogFragment.GHDDatePickerCallback {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -99,7 +103,6 @@ public class CentralMap
     private static final String STATE_WERE_PERMISSIONS_DENIED = "permissionsDenied";
     private static final String STATE_LAST_GRATICULE = "lastGraticule";
     private static final String STATE_LAST_CALENDAR = "lastCalendar";
-    private static final String STATE_INFO = "info";
     private static final String STATE_LAST_MODE_BUNDLE = "lastModeBundle";
 
     private static final int LOCATION_PERMISSION_REQUEST = 1;
@@ -115,8 +118,6 @@ public class CentralMap
     // If the map's ready.
     private boolean mMapIsReady = false;
 
-    private Info mCurrentInfo;
-    private GoogleMap mMap;
     private GoogleApiClient mGoogleClient;
     private Location mLastKnownLocation;
 
@@ -356,7 +357,10 @@ public class CentralMap
             // depends on globalhashiness and retroness.
             String title;
 
-            if(!info.isRetroHash()) {
+            Calendar cal = Calendar.getInstance();
+            Calendar infoCal = info.getCalendar();
+
+            if(DateTools.isSameDate(infoCal, cal)) {
                 // Non-retro hashes don't have today's date on them.  They just
                 // have "today's [something]".
                 if(info.isGlobalHash()) {
@@ -364,8 +368,22 @@ public class CentralMap
                 } else {
                     title = mCentralMap.getString(R.string.marker_title_today_hashpoint);
                 }
+            } else if(DateTools.isTomorrow(infoCal, cal)) {
+                // Same with tomorrow.
+                if(info.isGlobalHash()) {
+                    title = mCentralMap.getString(R.string.marker_title_tomorrow_globalpoint);
+                } else {
+                    title = mCentralMap.getString(R.string.marker_title_tomorrow_hashpoint);
+                }
+            } else if(DateTools.isDayAfterTomorrow(infoCal, cal)) {
+                // And the day after tomorrow.
+                if(info.isGlobalHash()) {
+                    title = mCentralMap.getString(R.string.marker_title_doubletomorrow_globalpoint);
+                } else {
+                    title = mCentralMap.getString(R.string.marker_title_doubletomorrow_hashpoint);
+                }
             } else {
-                // Retro hashes, however, need a date string.
+                // Anything else, however, needs a date string.
                 String date = DateFormat.getDateInstance(DateFormat.LONG).format(info.getDate());
 
                 if(info.isGlobalHash()) {
@@ -414,7 +432,7 @@ public class CentralMap
          *
          * @param resid the new title's resource ID
          */
-        protected final void setTitle(int resid) {
+        protected final void setTitle(@StringRes int resid) {
             mCentralMap.setTitle(resid);
         }
 
@@ -459,6 +477,15 @@ public class CentralMap
             else
                 return null;
         }
+
+        /**
+         * Gets the active Info the current mode is using, if any and if
+         * applicable.
+         *
+         * @return an Info, or null
+         */
+        @Nullable
+        protected abstract Info getActiveInfo();
 
         /**
          * <p>
@@ -622,7 +649,6 @@ public class CentralMap
 
         // Load up!
         if(savedInstanceState != null) {
-            mCurrentInfo = savedInstanceState.getParcelable(STATE_INFO);
             mAlreadyDidInitialZoom = savedInstanceState.getBoolean(STATE_WAS_ALREADY_ZOOMED, false);
             mSelectAGraticule = savedInstanceState.getBoolean(STATE_WAS_SELECT_A_GRATICULE, false);
             mGlobalhash = savedInstanceState.getBoolean(STATE_WAS_GLOBALHASH, false);
@@ -655,6 +681,17 @@ public class CentralMap
         mBanner = (ErrorBanner)findViewById(R.id.error_banner);
         mProgress = findViewById(R.id.progress_container);
 
+        // Apply nighttime mode to the progress background!  Only do that if
+        // this is less than Lollipop, though.  We can apply the color of the
+        // active theme directly in the resource files in Lollipop or later, but
+        // anything beforehand, we need to fake it.
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            if(isNightMode())
+                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background_dark));
+            else
+                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
+        }
+
         // The progress-o-matic needs to be off-screen.  And, we need to know
         // how much it should shift down to become back on-screen.
         mProgressHeight = getResources().getDimension(R.dimen.progress_spinner_size) + (2 * getResources().getDimension(R.dimen.double_padding));
@@ -677,7 +714,7 @@ public class CentralMap
 
                 // Go to preferences to figure out what map type we're using.
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
-                mMap.setMapType(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
+                mapTypeSelected(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
@@ -730,6 +767,21 @@ public class CentralMap
 
         // The mode will resume itself once the client comes back in from
         // onStart.
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        // If there's an active expedition AND it's not today, remind the user
+        // of this.  It's not always obvious, especially given how Android won't
+        // reset its concept of the app being "active" in a lot of cases.
+        Info activeInfo = null;
+        if(mCurrentMode != null) activeInfo = mCurrentMode.getActiveInfo();
+
+        if(activeInfo != null && !DateTools.isSameDate(activeInfo.getCalendar(), Calendar.getInstance())) {
+            Toast.makeText(this, R.string.toast_not_today_reminder, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -812,10 +864,7 @@ public class CentralMap
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        // Also, keep the latest Info around.
-        outState.putParcelable(STATE_INFO, mCurrentInfo);
-
-        // Keep the various flags, too.
+        // Keep the various flags.
         outState.putBoolean(STATE_WAS_ALREADY_ZOOMED, mAlreadyDidInitialZoom);
         outState.putBoolean(STATE_WAS_SELECT_A_GRATICULE, mSelectAGraticule);
         outState.putBoolean(STATE_WAS_GLOBALHASH, mGlobalhash);
@@ -1180,22 +1229,6 @@ public class CentralMap
         // Calendar!
         mLastCalendar = picked;
         mCurrentMode.changeCalendar(mLastCalendar);
-    }
-
-    @Override
-    public void mapTypeSelected(int type) {
-        // Map type!
-        if(mMap != null) {
-            mMap.setMapType(type);
-        }
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor edit = prefs.edit();
-        edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
-        edit.apply();
-
-        BackupManager bm = new BackupManager(this);
-        bm.dataChanged();
     }
 
     private void startListening() {

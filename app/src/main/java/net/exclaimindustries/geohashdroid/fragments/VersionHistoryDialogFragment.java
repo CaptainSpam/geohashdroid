@@ -13,16 +13,21 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser.VersionEntry;
 
@@ -41,14 +46,21 @@ public class VersionHistoryDialogFragment extends DialogFragment {
     // This is just a simple dialog with a simple list.  But, said list needs a
     // less-simple adapter, which we bring up here.
     private class EntryAdapter extends ArrayAdapter<VersionEntry> {
+        private boolean mIsNightMode;
+
         public EntryAdapter(Context c, List<VersionEntry> entries) {
             super(c, 0, entries);
+
+            mIsNightMode = PreferenceManager.getDefaultSharedPreferences(c).getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
         }
 
         @NonNull
         @Override
         public View getView(int position, View convertView, @NonNull ViewGroup parent) {
             final VersionEntry entry = getItem(position);
+
+            if(entry == null)
+                throw new IllegalStateException("getItem() in the EntryAdapter somehow got a null?");
 
             if(convertView == null) {
                 // Let's inflate us a view.  Yeah.  Let's do just that.
@@ -71,6 +83,16 @@ public class VersionHistoryDialogFragment extends DialogFragment {
 
             for(String s : entry.bullets) {
                 View bullet = LayoutInflater.from(getActivity()).inflate(R.layout.version_history_bullet, bullets, false);
+
+                // And, of course, night-mode this sucker.
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                    ImageView bulletIcon = (ImageView)bullet.findViewById(R.id.bulletIcon);
+
+                    if(mIsNightMode)
+                        bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image_dark));
+                    else
+                        bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image));
+                }
 
                 TextView bulletText = (TextView)bullet.findViewById(R.id.bulletText);
                 bulletText.setText(s);

@@ -49,9 +49,10 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:id="@+id/extra_fragment_container"
-        android:background="@color/extra_fragment_background"
+        android:background="?android:attr/colorBackground"
         android:visibility="gone"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
-        android:elevation="@dimen/elevation_extra_fragment"/>
+        android:elevation="@dimen/elevation_extra_fragment"
+        tools:ignore="InconsistentLayout"/>
 </RelativeLayout>

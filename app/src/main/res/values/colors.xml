@@ -5,15 +5,19 @@
     <color name="infobox_in_range">#00FF00</color>
     <color name="graticule_fill">#10FF3333</color>
     <color name="graticule_stroke">#FFFF3333</color>
-    <color name="graticule_outline">#DD222222</color>
-    <color name="details_text">#000000</color>
-    <!-- Since the details screen is on white text, this needs to be a slightly
-         darker shade of green. -->
-    <color name="details_in_range">#00DD00</color>
     <color name="link_color">#00f</color>
-    <color name="version_history_leader">#aaaaaa</color>
-    <color name="version_history_content">#dedede</color>
+    <color name="details_in_range">#00CC00</color>
+    <color name="version_history_leader">#888888</color>
     <color name="version_history_bullet">#000000</color>
+    <color name="version_history_bullet_dark">#f3f3f3</color>
     <color name="about_background">#676767</color>
-    <color name="extra_fragment_background">#fff</color>
+
+    <color name="error_banner_normal">#f3f3f3</color>
+    <color name="error_banner_normal_dark">#000</color>
+    <color name="error_banner_warning">#ff0</color>
+    <color name="error_banner_warning_dark">#6a6a00</color>
+    <color name="error_banner_error">#f00</color>
+    <color name="error_banner_error_dark">#6a0000</color>
+    <color name="error_banner_victory">#0f0</color>
+    <color name="error_banner_victory_dark">#006a00</color>
 </resources>

@@ -9,7 +9,6 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -43,7 +42,7 @@ import java.text.DateFormat;
  * phone layouts.  Turns out those Activities are really very simple and share
  * quite a lot in common.
  */
-public abstract class CentralMapExtraActivity extends Activity
+public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
         implements CentralMapExtraFragment.CloseListener,
                    GoogleApiClient.ConnectionCallbacks,
                    GoogleApiClient.OnConnectionFailedListener,

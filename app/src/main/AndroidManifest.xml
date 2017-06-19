@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="net.exclaimindustries.geohashdroid"
+<manifest xmlns:tools="http://schemas.android.com/tools"
+          package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="918"
-          android:versionName="0.9.1.5">
+          android:versionCode="922"
+          android:versionName="0.9.2.3">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -36,7 +37,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:theme="@style/Theme.GeohashDroid"
-        android:backupAgent=".util.GHDBackupAgent">
+        android:backupAgent=".util.GHDBackupAgent"
+        tools:ignore="AllowBackup,GoogleAppIndexingWarning">
         <uses-library android:name="com.google.android.maps"/>
 
         <activity
@@ -102,6 +104,16 @@
         <service
             android:name=".services.WikiService"
             android:label="@string/title_wikiservice">
+        </service>
+        <service
+            android:name=".services.WikiService$WikiServiceJobService"
+            android:label="@string/title_wikijobservice"
+            android:permission="android.permission.BIND_JOB_SERVICE">
+        </service>
+        <service
+            android:name=".services.AlarmService$AlarmServiceJobService"
+            android:label="@string/title_alarmjobservice"
+            android:permission="android.permission.BIND_JOB_SERVICE">
         </service>
 
         <receiver

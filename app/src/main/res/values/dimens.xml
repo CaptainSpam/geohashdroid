@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <dimen name="button_go_width">100dp</dimen>
-    <dimen name="button_go_height">40dp</dimen>
-    <dimen name="infobox_width">160dp</dimen>
-    <dimen name="infobox_height">100dp</dimen>
     <dimen name="infobox_padding">8dp</dimen>
     <dimen name="infobox_drawable_padding">4dp</dimen>
 
@@ -13,8 +9,6 @@
     <dimen name="input_graticule_margin">4dp</dimen>
     <dimen name="input_graticule_closest_icon_margin">8dp</dimen>
     <dimen name="infobox_fontsize">18sp</dimen>
-    <dimen name="infobox_jumbo_fontsize">22sp</dimen>
-    <dimen name="infobox_jumbo_fontsize_portrait">18sp</dimen>
     <dimen name="details_title_fontsize">34sp</dimen>
     <dimen name="details_title_fontsize_land">36sp</dimen>
     <dimen name="details_subtitle_fontsize">28sp</dimen>
@@ -22,18 +16,10 @@
     <dimen name="details_coords_fontsize_land">28sp</dimen>
     <dimen name="details_distance_fontsize">20sp</dimen>
     <dimen name="details_accuracy_fontsize">14sp</dimen>
-    <dimen name="details_padding">12dp</dimen>
     <dimen name="details_padding_horiz">10dp</dimen>
     <dimen name="details_distance_padding">10dp</dimen>
     <dimen name="details_text_padding">5dp</dimen>
 
-    <dimen name="details_text_padding_small">2dp</dimen>
-    <dimen name="details_title_fontsize_small">30sp</dimen>
-    <dimen name="details_title_fontsize_small_land">32sp</dimen>
-    <dimen name="details_coords_fontsize_small">24sp</dimen>
-    <dimen name="details_coords_fontsize_small_land">22sp</dimen>
-    <dimen name="details_subtitle_fontsize_small">28sp</dimen>
-    <dimen name="details_distance_fontsize_small">18sp</dimen>
     <dimen name="details_accuracy_fontsize_small">12sp</dimen>
 
     <dimen name="wikipost_options_size">200dp</dimen>
@@ -45,9 +31,7 @@
     <dimen name="version_history_leader_fontsize_version">24sp</dimen>
     <dimen name="version_history_leader_fontsize_date">20sp</dimen>
     <dimen name="version_history_leader_fontsize_title">12sp</dimen>
-    <dimen name="version_history_bullet_fontsize">12sp</dimen>
     <dimen name="version_history_header_footer_fontsize">14sp</dimen>
-    <dimen name="version_history_bullet_vertical_margin">8dp</dimen>
 
     <dimen name="version_history_bullet_image_size">10dp</dimen>
     <dimen name="version_history_bullet_image_margin_top">5dp</dimen>
@@ -55,9 +39,6 @@
     <dimen name="version_history_bullet_image_margin_right">8dp</dimen>
     <dimen name="version_history_bullet_image_margin_bottom">5dp</dimen>
 
-    <dimen name="main_padding">5dp</dimen>
-    <dimen name="button_date_padding">15dp</dimen>
-    <dimen name="dialog_font_size">18sp</dimen>
     <dimen name="dialog_padding">20dp</dimen>
     <dimen name="gallery_button_padding">10dp</dimen>
 

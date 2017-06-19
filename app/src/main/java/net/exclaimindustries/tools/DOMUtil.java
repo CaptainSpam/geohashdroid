@@ -65,7 +65,7 @@ public class DOMUtil {
      * @return the text in the element
      */
     public static String getSimpleElementText(Element node) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         NodeList children = node.getChildNodes();
         for(int i = 0; i < children.getLength(); i++) {
             Node child = children.item(i);
@@ -83,7 +83,7 @@ public class DOMUtil {
      * @return all the text
      */
     public static String getAllElementText(Element node, String name) {
-        StringBuffer temp = new StringBuffer();
+        StringBuilder temp = new StringBuilder();
         NodeList list = node.getElementsByTagName(name);
         for(int j = 0; j < list.getLength(); j++) {
             temp.append(DOMUtil.getSimpleElementText((Element)list.item(j)));

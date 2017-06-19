@@ -9,20 +9,29 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.backup.BackupManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.MapStyleOptions;
+
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 
 /**
  * This is just a base Activity that holds the permission-checking stuff shared
@@ -30,15 +39,20 @@ import com.google.android.gms.common.api.GoogleApiClient;
  * pasting code!
  */
 public abstract class BaseMapActivity
-        extends Activity
+        extends BaseGHDThemeActivity
         implements GoogleApiClient.ConnectionCallbacks,
-                   GoogleApiClient.OnConnectionFailedListener {
+                   GoogleApiClient.OnConnectionFailedListener,
+                   MapTypeDialogFragment.MapTypeCallback {
+    private static final String DEBUG_TAG = "BaseMapActivity";
+
     protected GoogleApiClient mGoogleClient;
 
     // Bool to track whether the app is already resolving an error.
     protected boolean mResolvingError = false;
     // Bool to track whether or not the user's refused permissions.
     protected boolean mPermissionsDenied = false;
+
+    protected GoogleMap mMap;
 
     /**
      * This is a fragment used to display an error dialog, used by both map
@@ -170,5 +184,49 @@ public abstract class BaseMapActivity
      */
     public synchronized boolean checkLocationPermissions(int requestCode) {
         return checkLocationPermissions(requestCode, false);
+    }
+
+
+    @Override
+    public void mapTypeSelected(int type) {
+        // 1 is night, -1 is day.
+        short becomesNight = 0;
+
+        // Map type!
+        if(mMap != null) {
+            switch(type) {
+                case GoogleMap.MAP_TYPE_NORMAL:
+                    mMap.setMapStyle(null);
+                    becomesNight = -1;
+                    // Let's abuse a fallthrough!
+                case GoogleMap.MAP_TYPE_HYBRID:
+                case GoogleMap.MAP_TYPE_TERRAIN:
+                    mMap.setMapType(type);
+                    break;
+                case MapTypeDialogFragment.MAP_STYLE_NIGHT:
+                    // Whoops, this one isn't a type.  It's a style.  First, the
+                    // type has to be normal for this to work.
+                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+                    // Then, load up the night style.
+                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_night)))
+                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+
+                    becomesNight = 1;
+                    break;
+            }
+        }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+        edit.putInt(GHDConstants.PREF_LAST_MAP_TYPE, type);
+        edit.apply();
+
+        BackupManager bm = new BackupManager(this);
+        bm.dataChanged();
+
+        // Set the night only if it's changed at all.
+        if(becomesNight == 1) setNightMode(true);
+        else if(becomesNight == -1) setNightMode(false);
     }
 }

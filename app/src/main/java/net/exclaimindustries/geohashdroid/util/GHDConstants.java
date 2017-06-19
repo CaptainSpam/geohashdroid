@@ -91,6 +91,9 @@ public final class GHDConstants {
      */
     public static final String PREF_STOP_BUGGING_ME_PREFETCH_WARNING = "StopBuggingPrefetch";
 
+    /** Prefs key for whether or not the app is in night mode. */
+    public static final String PREF_NIGHT_MODE = "NightMode";
+
     /** Prefs value for metric distances. */
     public static final String PREFVAL_DIST_METRIC = "Metric";
     /** Prefs value for not-metric distances. */
