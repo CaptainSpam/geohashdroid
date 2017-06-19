@@ -10,8 +10,10 @@
     <string name="pref_add_30w_locations">Fill a 30W graticule with Known Locations</string>
     <string name="pref_add_prime_meridian_locations">Wrap the Prime Meridian with Known Locations</string>
     <string name="pref_wipe_debug_locations">Wipe out all debug-related Known Locations</string>
+    <string name="pref_trigger_stock_alarm">Trigger a stock alarm</string>
 
     <string name="pref_debug_locations_added">Locations added.</string>
     <string name="pref_debug_locations_exist">Looks like those locations already exist on the map.</string>
     <string name="pref_debug_locations_wiped">All debug-related Known Locations, if any, have been wiped.</string>
+    <string name="pref_debug_stock_alarm">The party alarm has been sent.</string>
 </resources>

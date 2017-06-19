@@ -401,7 +401,7 @@ public class PreferencesScreen extends PreferenceActivity {
                         // Non-30W... how about the Lexington, KY graticule?
                         // If you don't like this, then get me a better job
                         // somewhere else and maybe I'll change it.  Start at
-                        // -85 and work your way RIGHT to make the 38N 85E
+                        // -85 and work your way RIGHT to make the 38N 84E
                         // graticule.
                         baseLat = 38;
                         baseLon = -85;
@@ -505,6 +505,23 @@ public class PreferencesScreen extends PreferenceActivity {
             findPreference("_debug_meridian").setOnPreferenceClickListener(_fillClicker);
 
             findPreference("_debug_wipeLocations").setOnPreferenceClickListener(_wipeClicker);
+
+            findPreference("_debug_stockAlarm").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    // PARTY ALARM!!!
+                    Intent i = new Intent("net.exclaimindustries.geohashdroid.STOCK_ALARM");
+                    i.setClass(getActivity(), AlarmService.class);
+                    WakefulIntentService.sendWakefulWork(getActivity(), i);
+
+                    Toast.makeText(
+                            getActivity(),
+                            R.string.pref_debug_stock_alarm,
+                            Toast.LENGTH_SHORT).show();
+
+                    return true;
+                }
+            });
         }
     }
 }

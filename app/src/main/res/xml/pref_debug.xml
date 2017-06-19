@@ -12,4 +12,7 @@
     <Preference
         android:key="_debug_wipeLocations"
         android:title="@string/pref_wipe_debug_locations" />
+    <Preference
+        android:key="_debug_stockAlarm"
+        android:title="@string/pref_trigger_stock_alarm" />
 </PreferenceScreen>
