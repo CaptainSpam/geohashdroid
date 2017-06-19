@@ -685,7 +685,7 @@ public class AlarmService extends WakefulIntentService {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(StockService.EXTRA_STUFF, bun);
 
-        builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+        builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT));
 
         mNotificationManager.notify(notificationId, builder.build());
     }
