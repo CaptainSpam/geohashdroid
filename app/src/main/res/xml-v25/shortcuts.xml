@@ -8,7 +8,7 @@
         android:shortcutLongLabel="@string/shortcut_closest_long">
         <intent
             android:action="net.exclaimindustries.geohashdroid.START_CLOSEST_HASHPOINT"
-            android:targetPackage="net.exclaimindustries.geohashdroid"
+            android:targetPackage="net.exclaimindustries.geohashdroid.debuggy"
             android:targetClass="net.exclaimindustries.geohashdroid.activities.CentralMap"/>
     </shortcut>
 
@@ -20,7 +20,7 @@
         android:shortcutLongLabel="@string/shortcut_last_used_long">
         <intent
             android:action="net.exclaimindustries.geohashdroid.START_LAST_USED"
-            android:targetPackage="net.exclaimindustries.geohashdroid"
+            android:targetPackage="net.exclaimindustries.geohashdroid.debuggy"
             android:targetClass="net.exclaimindustries.geohashdroid.activities.CentralMap"/>
     </shortcut>
 
@@ -32,7 +32,7 @@
         android:shortcutLongLabel="@string/shortcut_picker_long">
         <intent
             android:action="net.exclaimindustries.geohashdroid.START_GRATICULE_PICKER"
-            android:targetPackage="net.exclaimindustries.geohashdroid"
+            android:targetPackage="net.exclaimindustries.geohashdroid.debuggy"
             android:targetClass="net.exclaimindustries.geohashdroid.activities.CentralMap"/>
     </shortcut>
 </shortcuts>
