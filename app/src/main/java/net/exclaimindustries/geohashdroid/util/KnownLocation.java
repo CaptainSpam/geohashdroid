@@ -246,6 +246,16 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
+     * Convenience method that returns whether or not this KnownLocation lies
+     * in 30W Rule territory.
+     *
+     * @return true if 30W, false if not
+     */
+    public boolean is30w() {
+        return mLocation.longitude >= -30;
+    }
+
+    /**
      * Gets the range (in m) required before this KnownLocation will trigger a
      * notification.
      *
