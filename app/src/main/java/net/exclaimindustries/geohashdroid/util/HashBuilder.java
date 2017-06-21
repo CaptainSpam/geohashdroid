@@ -8,6 +8,7 @@
 package net.exclaimindustries.geohashdroid.util;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -106,11 +107,7 @@ public class HashBuilder {
          * The last request couldn't be met because of some server error.
          */
         public static final int ERROR_SERVER = 4;
-//        /**
-//         * The user aborted the request.
-//         */
-//        public static final int ABORTED = 5;
-    
+
         private Context mContext;
         private Calendar mCal;
         private Graticule mGrat;
@@ -126,7 +123,7 @@ public class HashBuilder {
         private final static String[] mServers = { "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d",
                 "http://geo.crox.net/djia/%Y/%m/%d" };
 
-        private StockRunner(Context con, Calendar c, Graticule g) {
+        private StockRunner(@NonNull Context con, @NonNull Calendar c, @Nullable Graticule g) {
             mContext = con;
             mCal = c;
             mGrat = g;
@@ -212,7 +209,7 @@ public class HashBuilder {
             sendMessage(toReturn);
         }
         
-        private void sendMessage(Info toReturn) {
+        private void sendMessage(@NonNull Info toReturn) {
             mLastObject = toReturn;
         }
         
@@ -224,11 +221,13 @@ public class HashBuilder {
          * 
          * @return the last Info created from this StockRunner (may be null)
          */
+        @Nullable
         public Info getLastResultObject() {
             return mLastObject;
         }
 
-        private String fetchStock(Calendar sCal) throws IOException {
+        @NonNull
+        private String fetchStock(@NonNull Calendar sCal) throws IOException {
             // Now, generate a string for the URL.
             String sMonthStr;
             String sDayStr;
@@ -348,7 +347,8 @@ public class HashBuilder {
          *            InputStream to read from
          * @return a String consisting of the data from the stream
          */
-        protected static String getStringFromStream(InputStream stream)
+        @NonNull
+        private static String getStringFromStream(@NonNull InputStream stream)
                 throws IOException {
             BufferedReader buff = new BufferedReader(new InputStreamReader(stream));
 
@@ -387,7 +387,8 @@ public class HashBuilder {
      * @param c Context with which StockStoreDatabase will be initialized.
      * @return a new StockStoreDatabase object
      */
-    private static synchronized StockStoreDatabase getStore(Context c) {
+    @NonNull
+    private static synchronized StockStoreDatabase getStore(@NonNull Context c) {
         if(mStore == null) {
             mStore = new StockStoreDatabase().init(c);
         }
@@ -404,7 +405,8 @@ public class HashBuilder {
      *          account for the 30W Rule, so don't put it in) 
      * @param g Graticule to use
      */
-    public static StockRunner requestStockRunner(Context con, Calendar c, Graticule g) {
+    @NonNull
+    public static StockRunner requestStockRunner(@NonNull Context con, @NonNull Calendar c, @Nullable Graticule g) {
         return new StockRunner(con, c, g);
     }
 
@@ -421,7 +423,7 @@ public class HashBuilder {
      *         without going to the internet.
      */
     @Nullable
-    public static Info getStoredInfo(Context con, Calendar c, Graticule g) {
+    public static Info getStoredInfo(@NonNull Context con, @NonNull Calendar c, @Nullable Graticule g) {
         // First, check the quick cache.  If it's in the quick cache, use it.
         Log.v(DEBUG_TAG, "Checking caches for " + DateTools.getDateString(c)
                 + ((g == null || g.uses30WRule()) ? " with 30W rule" : " without 30W rule"));
@@ -453,7 +455,8 @@ public class HashBuilder {
      * @param c already-adjusted date to check
      * @return the String representation of the stock, or null if it's not there
      */
-    public static String getStoredStock(Context con, Calendar c) {
+    @Nullable
+    public static String getStoredStock(@NonNull Context con, @NonNull Calendar c) {
         // We don't quickcache the stock values.
         Log.v(DEBUG_TAG, "Going to the database for a stock for " + DateTools.getDateString(c));
         
@@ -466,7 +469,7 @@ public class HashBuilder {
      * 
      * @param i Info to store
      */
-    private static void quickCache(Info i) {
+    private static void quickCache(@NonNull Info i) {
         // Slide over!
         mTwoInfosAgo = mLastInfo;
         mLastInfo = i;
@@ -479,7 +482,7 @@ public class HashBuilder {
      * @param con Context used to retrieve the database, if needed
      * @param i an Info bundle with everything we need
      */
-    private synchronized static void storeInfo(Context con, Info i) {
+    private synchronized static void storeInfo(@NonNull Context con, @NonNull Info i) {
         // First, replace the last-known results.
         quickCache(i);
         
@@ -490,7 +493,7 @@ public class HashBuilder {
         store.cleanup(con);
     }
     
-    private synchronized static void storeStock(Context con, Calendar cal, String stock) {
+    private synchronized static void storeStock(@NonNull Context con, @NonNull Calendar cal, @NonNull String stock) {
         StockStoreDatabase store = getStore(con);
         
         store.storeStock(cal, stock);
@@ -503,7 +506,7 @@ public class HashBuilder {
      * @param con Context used to retrieve the database
      * @return true on success, false on failure
      */
-    public synchronized static boolean deleteCache(Context con) {
+    public synchronized static boolean deleteCache(@NonNull Context con) {
         return getStore(con).deleteCache();
     }
     
@@ -517,7 +520,8 @@ public class HashBuilder {
      * @param g the graticule in question
      * @return a new Info object
      */
-    protected static Info createInfo(Calendar c, String stockPrice, Graticule g) {
+    @NonNull
+    private static Info createInfo(@NonNull Calendar c, @NonNull String stockPrice, @Nullable Graticule g) {
         // This creates the Info object that'll go right back to whatever was
         // calling it.  In general, this is the Handler in StockRunner.
         
@@ -539,7 +543,8 @@ public class HashBuilder {
      * @param g the graticule in question
      * @return an Info object marked invalid
      */
-    protected static Info createInvalidInfo(Calendar c, Graticule g) {
+    @NonNull
+    private static Info createInvalidInfo(@NonNull Calendar c, @Nullable Graticule g) {
         return new Info(g, c);
     }
     
@@ -563,7 +568,8 @@ public class HashBuilder {
      *                                   represents a globalhash.
      * @return a new, improved Info object
      */
-    protected static Info cloneInfo(Info i, Graticule g) {
+    @NonNull
+    private static Info cloneInfo(@NonNull Info i, @Nullable Graticule g) {
         if(i.isGlobalHash() || g == null)
             throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
 
@@ -592,7 +598,8 @@ public class HashBuilder {
      * @param stockPrice stock price to use
      * @return the hash you're looking for
      */
-    protected static String makeHash(Calendar c, String stockPrice) {
+    @NonNull
+    private static String makeHash(@NonNull Calendar c, @NonNull String stockPrice) {
         // Just reset the hash. This can be handy alone if the graticule has
         // changed.  Remember, c is the REAL date, not the STOCK date!
         String monthStr;
@@ -615,7 +622,8 @@ public class HashBuilder {
         return MD5Tools.MD5hash(fullLine);
     }
 
-    private static Info getQuickCache(Calendar sCal, Graticule g) {
+    @Nullable
+    private static Info getQuickCache(@NonNull Calendar sCal, @Nullable Graticule g) {
         // We don't use Calendar.equals here, as that checks all properties,
         // including potentially some we don't really care about.
         boolean is30W = (g == null || g.uses30WRule());
@@ -662,7 +670,7 @@ public class HashBuilder {
      * 
      * @return the fractional latitude value
      */
-    private static double getLatitudeHash(String hash) {
+    private static double getLatitudeHash(@NonNull String hash) {
         String chunk = hash.substring(0, 16);
         return HexFraction.calculate(chunk);
     }
@@ -673,12 +681,12 @@ public class HashBuilder {
      * 
      * @return the fractional longitude value
      */
-    private static double getLongitudeHash(String hash) {
+    private static double getLongitudeHash(@NonNull String hash) {
         String chunk = hash.substring(16, 32);
         return HexFraction.calculate(chunk);
     }
 
-    private static double getLatitude(Graticule g, String hash) {
+    private static double getLatitude(@Nullable Graticule g, @NonNull String hash) {
         // If the Graticule's not null, this is a normal hash.  If it is, it's a
         // globalhash, and has to be treated differently.
         if(g != null) {
@@ -694,7 +702,7 @@ public class HashBuilder {
 
     }
 
-    private static double getLongitude(Graticule g, String hash) {
+    private static double getLongitude(@Nullable Graticule g, @NonNull String hash) {
         // Same deal as with getLatitude.
         if(g != null) {
             int lon = g.getLongitude();
