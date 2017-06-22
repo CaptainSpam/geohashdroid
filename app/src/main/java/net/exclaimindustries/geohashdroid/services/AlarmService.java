@@ -130,6 +130,8 @@ public class AlarmService extends WakefulIntentService {
     public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
 
     private static final int ALARM_CONNECTIVITY_JOB = 1;
+    private static final int LOCAL_NOTIFICATION = 1;
+    private static final int GLOBAL_NOTIFICATION = 2;
 
     /**
      * <p>
@@ -430,7 +432,13 @@ public class AlarmService extends WakefulIntentService {
         // is if it's 30W or not.  And we don't really care about it THAT much,
         // just enough to put the right string in the notification.  Otherwise,
         // StockService works it out.
-        Calendar cal = getMostRecentStockDate(null);
+        Calendar cal = Calendar.getInstance();
+
+        // However, if it IS 30W, we want to generate a stock cache value for
+        // TOMORROW, as the 30W Rule allows us to know what tomorrow's hash is,
+        // and we WANT that owing to when it triggers.
+        if(g.uses30WRule()) cal.add(Calendar.DATE, 1);
+        cal = getMostRecentStockDate(cal);
         
         Intent request = new Intent(this, StockService.class);
         request.setAction(StockService.ACTION_STOCK_REQUEST)
@@ -638,14 +646,24 @@ public class AlarmService extends WakefulIntentService {
         List<KnownLocationMatchData> matched = new LinkedList<>();
         List<KnownLocationMatchData> matchedGlobal = new LinkedList<>();
 
-        Calendar today = Calendar.getInstance();
+        // There are some odd time zone implications here if "today" just comes
+        // from Calendar.getInstance(), in that it sometimes might wind up
+        // being "yesterday" if, for instance, you're in AEST (9:30am ET becomes
+        // 11:30pm AEST).  So we need to adjust what date we're reporting if
+        // we're looking at a 30W known location.  Anything 30W should be
+        // "tomorrow", as the reason the 30W Rule was invented in the first
+        // place was because at the open of the NYSE, it's already too late to
+        // do anything with it out there.
+        Calendar today = makeNineThirty(null);
+        Calendar tomorrow = (Calendar)today.clone();
+        tomorrow.add(Calendar.DATE, 1);
 
         Info global = HashBuilder.getStoredInfo(this, today, null);
 
         for(KnownLocation kl : locations) {
             // Every KnownLocation has a method to do this.  Maybe it's a wee
             // bit inefficient and inelegant, but it does the job.
-            Info best = kl.getClosestInfo(this, today);
+            Info best = kl.getClosestInfo(this, (kl.is30w() ? tomorrow : today));
 
             if(kl.isCloseEnough(best.getFinalDestinationLatLng())) {
                 KnownLocationMatchData data = new KnownLocationMatchData(kl, best, kl.getDistanceFrom(best));
@@ -669,7 +687,7 @@ public class AlarmService extends WakefulIntentService {
             switch(notifyPref) {
                 case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE:
                     // Only once.  That is, classic style.
-                    launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title);
+                    launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title,  LOCAL_NOTIFICATION);
                     break;
                 case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE:
                     // Once per graticule.  Well, now we need to sort these out by
@@ -689,14 +707,15 @@ public class AlarmService extends WakefulIntentService {
         // Now, the Globalhash notification gets tossed up regardless of the
         // user's preferences (apart from "Never").
         if(!matchedGlobal.isEmpty()) {
-            launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
+            launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global, GLOBAL_NOTIFICATION);
         }
     }
 
     private void launchNotification(@NonNull List<KnownLocationMatchData> matched,
                                     @NonNull String action,
                                     @IdRes int notificationId,
-                                    @StringRes int titleId) {
+                                    @StringRes int titleId,
+                                    int requestCode) {
         // So here's what we do: Note the BEST match in a notification, but also
         // mention the others.
         Collections.sort(matched);
@@ -712,7 +731,7 @@ public class AlarmService extends WakefulIntentService {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(StockService.EXTRA_STUFF, bun);
 
-        builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+        builder.setContentIntent(PendingIntent.getActivity(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT));
 
         mNotificationManager.notify(notificationId, builder.build());
     }
@@ -732,7 +751,7 @@ public class AlarmService extends WakefulIntentService {
                 .setOngoing(false)
                 .setLights(Color.WHITE, 500, 2000)
                 .setContentText(contentText)
-                .setContentTitle(getString(titleId));
+                .setContentTitle(getString(titleId, DateFormat.getDateInstance(DateFormat.MEDIUM).format(match.bestInfo.getDate())));
 
         // If there's more than one known location nearby, make the notification
         // expandable with a bit of extra text mentioning just how many more.
