@@ -7,12 +7,13 @@
  */
 package net.exclaimindustries.geohashdroid.services;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
-
-import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
@@ -27,10 +28,8 @@ import java.util.List;
 
 /**
  * <p>
- * StockService, whose wakefulness is made possible by the sleepless efforts of
- * Mark "CommonsGuy" Murphy, handles all stock retrieval duties.  You ask it for
- * a stock, it'll later broadcast an Intent either with that stock or some
- * error.
+ * StockService handles all stock retrieval duties.  You ask it for a stock,
+ * it'll later broadcast an Intent either with that stock or some error.
  * </p>
  * 
  * <p>
@@ -44,7 +43,7 @@ import java.util.List;
  * 
  * @author Nicholas Killewald
  */
-public class StockService extends WakefulIntentService {
+public class StockService extends JobIntentService {
 
     private static final String DEBUG_TAG = "StockService";
 
@@ -197,12 +196,17 @@ public class StockService extends WakefulIntentService {
     /** Error response if there was some network error involved. */
     public static final int RESPONSE_NETWORK_ERROR = -3;
 
-    public StockService() {
-        super("StockService");
+    private static final int SERVICE_JOB_ID = 1001;
+
+    /**
+     * Convenience method for enqueuing work in to this service.
+     */
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, StockService.class, SERVICE_JOB_ID, work);
     }
 
     @Override
-    protected void doWakefulWork(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         // Gee, thanks, WakefulIntentService, for covering all that confusing
         // WakeLock stuff!  You're even off the main thread, too, so I don't
         // have to spawn a new thread to not screw up the UI!  So let's get that

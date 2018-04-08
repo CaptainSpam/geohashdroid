@@ -31,9 +31,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
-
-import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
@@ -69,7 +68,7 @@ import java.util.TimeZone;
  * @author Nicholas Killewald
  *
  */
-public class AlarmService extends WakefulIntentService {
+public class AlarmService extends JobIntentService {
     
     private static final String DEBUG_TAG = "AlarmService";
 
@@ -133,6 +132,8 @@ public class AlarmService extends WakefulIntentService {
     private static final int LOCAL_NOTIFICATION = 1;
     private static final int GLOBAL_NOTIFICATION = 2;
 
+    private static final int SERVICE_JOB_ID = 1000;
+
     /**
      * <p>
      * This receiver listens for network connectivity changes in case we ran
@@ -157,7 +158,7 @@ public class AlarmService extends WakefulIntentService {
                     // NETWORK'D!!!
                     Intent i = new Intent(context, AlarmService.class);
                     i.setAction(STOCK_ALARM_NETWORK_BACK);
-                    WakefulIntentService.sendWakefulWork(context, i);
+                    enqueueWork(context, i);
                 }
             }
         }
@@ -176,7 +177,7 @@ public class AlarmService extends WakefulIntentService {
             // send out the Intent that says we're back.
             Intent i = new Intent(this, AlarmService.class);
             i.setAction(STOCK_ALARM_NETWORK_BACK);
-            WakefulIntentService.sendWakefulWork(this, i);
+            enqueueWork(this, i);
 
             // And we're done now!  No thread to spin up or anything.
             return false;
@@ -203,7 +204,7 @@ public class AlarmService extends WakefulIntentService {
             // of whatever we need handled.
             Intent i = new Intent(context, AlarmService.class);
             i.setAction(intent.getAction());
-            WakefulIntentService.sendWakefulWork(context, i);
+            enqueueWork(context, i);
         }
     }
     
@@ -228,7 +229,7 @@ public class AlarmService extends WakefulIntentService {
                 
                 // It's ours!  Send it to the wakeful part!
                 intent.setClass(context, AlarmService.class);
-                WakefulIntentService.sendWakefulWork(context, intent);
+                enqueueWork(context, intent);
             }
         }
     }
@@ -250,7 +251,7 @@ public class AlarmService extends WakefulIntentService {
                     Log.i(DEBUG_TAG, "The stock alarm is now being started...");
                     Intent i = new Intent(context, AlarmService.class);
                     i.setAction(AlarmService.STOCK_ALARM_ON);
-                    WakefulIntentService.sendWakefulWork(context, i);
+                    enqueueWork(context, i);
                 } else {
                     Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
                 }
@@ -326,11 +327,7 @@ public class AlarmService extends WakefulIntentService {
         // And that should be that!
         return base;
     }
-    
-    public AlarmService() {
-        super("AlarmService");
-    }
-    
+
     private void showNotification(@NonNull Calendar date) {
         // The notification in this case just says when there's an active
         // network transaction going.  We don't need to bug the user that we're
@@ -451,7 +448,14 @@ public class AlarmService extends WakefulIntentService {
         showNotification(Info.makeAdjustedCalendar(cal, g));
         
         // THEN we send the request.
-        WakefulIntentService.sendWakefulWork(this, request);
+        enqueueWork(this, request);
+    }
+
+    /**
+     * Convenience method for enqueuing work in to this service.
+     */
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, AlarmService.class, SERVICE_JOB_ID, work);
     }
 
     @Override
@@ -477,7 +481,7 @@ public class AlarmService extends WakefulIntentService {
     }
     
     @Override
-    protected void doWakefulWork(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         if(intent.getAction().equals(STOCK_ALARM_OFF)) {
             // We've been told to stop all alarms!
             Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
@@ -619,11 +623,8 @@ public class AlarmService extends WakefulIntentService {
         @Override
         public int compareTo(@NonNull KnownLocationMatchData another) {
             // We want to sort this by how close it is.  The LOWEST number
-            // should go first (that's the closest one).  I hope I got the
-            // order right.
-            if(distance < another.distance) return -1;
-            if(distance > another.distance) return 1;
-            return 0;
+            // should go first (that's the closest one).
+            return Double.compare(distance, another.distance);
         }
     }
 

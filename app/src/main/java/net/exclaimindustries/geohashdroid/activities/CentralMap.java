@@ -32,7 +32,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -977,7 +976,7 @@ public class CentralMap
             i.setAction(AlarmService.STOCK_ALARM_OFF);
         }
 
-        WakefulIntentService.sendWakefulWork(this, i);
+        AlarmService.enqueueWork(this, i);
 
         // Now for preference cleanup.  Unfortunately, this section will only
         // get bigger with time, as I can't guarantee what version the user
@@ -1080,7 +1079,7 @@ public class CentralMap
 
         mStockReceiver.addToWaitingList(date);
 
-        WakefulIntentService.sendWakefulWork(this, i);
+        StockService.enqueueWork(this, i);
     }
 
     @Override
