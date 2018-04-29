@@ -12,19 +12,17 @@ import android.Manifest;
 import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -42,10 +40,7 @@ import java.text.DateFormat;
  * quite a lot in common.
  */
 public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
-        implements CentralMapExtraFragment.CloseListener,
-                   GoogleApiClient.ConnectionCallbacks,
-                   GoogleApiClient.OnConnectionFailedListener,
-                   LocationListener {
+        implements CentralMapExtraFragment.CloseListener {
     /**
      * The key for the Intent extra containing the Info object.  This should
      * very seriously NOT be null.  If it is, you did something very wrong.
@@ -53,9 +48,18 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
     public static final String INFO = "info";
 
     private CentralMapExtraFragment mFrag;
-    private GoogleApiClient mGoogleClient;
+    private FusedLocationProviderClient mFusedProviderClient;
 
     protected Info mInfo;
+
+    private LocationCallback mLocationCallback = new LocationCallback() {
+        @Override
+        public void onLocationResult(LocationResult locationResult) {
+            // When we get a location, let the fragment know.  We're sort of
+            // acting like an ersatz ExpeditionMode at this point.
+            mFrag.onLocationChanged(locationResult.getLastLocation());
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,28 +83,18 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
         mFrag.setCloseListener(this);
         mFrag.setInfo(mInfo);
 
-        // Let's get the client fired up, since CentralMap won't be around to
-        // handle updating the location.
-        mGoogleClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
+        // We'll need a location provider.  CentralMap's won't be around.
+        mFusedProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // Fire up the client!
-        mGoogleClient.connect();
+        // Start listening now.  We used to have to wait for the client, but
+        // nowadays, nope.
+        startListening();
     }
 
     @Override
     protected void onStop() {
-        // Client goes down, and so does the listener!
+        // Listener goes down!
         stopListening();
-        mGoogleClient.disconnect();
 
         super.onStop();
     }
@@ -222,20 +216,6 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
         // Nothing happens here; we're already on our way out.
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
-        // We have a connection!  Yay!
-        mFrag.permissionsDenied(false);
-
-        // Start listening!  If we have permission, that is.  If not, well...
-        startListening();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        stopListening();
-    }
-
     private void startListening() {
         // While starting up, we also report to the fragment what happened with
         // the permissions checks.
@@ -245,29 +225,15 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
             lRequest.setInterval(1000);
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, this);
+            mFusedProviderClient.requestLocationUpdates(lRequest, mLocationCallback, null);
         } else {
             mFrag.permissionsDenied(true);
         }
     }
 
     private void stopListening() {
-        if(mGoogleClient != null && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            mFusedProviderClient.removeLocationUpdates(mLocationCallback);
         }
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        // If the connection failed, forget it.  That means the user's already
-        // denied permission somehow, so we're not asking again.
-        mFrag.permissionsDenied(true);
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        // When we get a location, let the fragment know.  We're sort of acting
-        // like an ersatz ExpeditionMode at this point.
-        mFrag.onLocationChanged(location);
     }
 }

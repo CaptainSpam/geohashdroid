@@ -1,4 +1,4 @@
-/**
+/*
  * CentralMap.java
  * Copyright (C)2015 Nicholas Killewald
  * 
@@ -30,11 +30,14 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -84,9 +87,7 @@ import java.util.Set;
  */
 public class CentralMap
         extends BaseMapActivity
-        implements GoogleApiClient.ConnectionCallbacks,
-                   GoogleApiClient.OnConnectionFailedListener,
-                   GHDDatePickerDialogFragment.GHDDatePickerCallback {
+        implements GHDDatePickerDialogFragment.GHDDatePickerCallback {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -115,8 +116,14 @@ public class CentralMap
     private boolean mAlreadyDidInitialZoom = false;
     // If the map's ready.
     private boolean mMapIsReady = false;
+    // If the map's layout is ready.
+    private boolean mLayoutComplete = false;
+    // If the ViewTreeObserver's already done.
+    private boolean mAlreadyLaidOut = false;
+    // If we're already listening for locations.
+    private boolean mAlreadyListening = false;
 
-    private GoogleApiClient mGoogleClient;
+    private FusedLocationProviderClient mFusedLocationClient;
     private Location mLastKnownLocation;
 
     // This is either the current expedition Graticule (same as in mCurrentInfo)
@@ -208,26 +215,6 @@ public class CentralMap
          */
         public void setCentralMap(@NonNull CentralMap centralMap) {
             mCentralMap = centralMap;
-        }
-
-        /**
-         * Gets the current GoogleApiClient held by CentralMap.  This will
-         * return null if the client isn't usable (not connected, null itself,
-         * etc).
-         *
-         * @return the current GoogleApiClient
-         */
-        @Nullable
-        protected final GoogleApiClient getGoogleClient() {
-            if(mCentralMap != null) {
-                GoogleApiClient gClient = mCentralMap.getGoogleClient();
-                if(gClient != null && gClient.isConnected())
-                    return gClient;
-                else
-                    return null;
-            } else {
-                return null;
-            }
         }
 
         /**
@@ -629,13 +616,13 @@ public class CentralMap
 
     private StockReceiver mStockReceiver = new StockReceiver();
 
-    private LocationListener mLocationListener = new LocationListener() {
+    private LocationCallback mLocationCallback = new LocationCallback() {
         @Override
-        public void onLocationChanged(Location location) {
+        public void onLocationResult(LocationResult locationResult) {
             // New location!
-            mLastKnownLocation = location;
+            mLastKnownLocation = locationResult.getLastLocation();
 
-            if(mCurrentMode != null) mCurrentMode.onLocationChanged(location);
+            if(mCurrentMode != null) mCurrentMode.onLocationChanged(mLastKnownLocation);
         }
     };
 
@@ -668,15 +655,12 @@ public class CentralMap
 
         setContentView(R.layout.centralmap);
 
-        // We deal with locations, so we deal with the GoogleApiClient.  It'll
-        // connect during onStart.
-        mGoogleClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
+        // Who wants a FusedLocationProviderClient?  We do!  Because we very
+        // specifically want location updates, and this is better than dealing
+        // with the GoogleApiClient interface of days of yore.
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        mBanner = (ErrorBanner)findViewById(R.id.error_banner);
+        mBanner = findViewById(R.id.error_banner);
         mProgress = findViewById(R.id.progress_container);
 
         // Apply nighttime mode to the progress background!  Only do that if
@@ -716,9 +700,25 @@ public class CentralMap
 
                 // Now, set the flag that tells everything else (especially the
                 // doReadyChecks method) we're ready.  Then, call doReadyChecks.
-                // We might still be waiting on the API.
                 mMapIsReady = true;
                 doReadyChecks();
+
+//                startListening();
+            }
+        });
+
+        // The map also needs to be laid out before we act on it.
+        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // Got a height!  Hopefully.
+                if(!mAlreadyLaidOut) {
+                    mAlreadyLaidOut = true;
+
+                    // Flag!
+                    mLayoutComplete = true;
+                    doReadyChecks();
+                }
             }
         });
 
@@ -748,6 +748,9 @@ public class CentralMap
         if(mCurrentMode != null)
             mCurrentMode.pause();
 
+        // Now stop.
+        stopListening();
+
         super.onPause();
     }
 
@@ -762,6 +765,9 @@ public class CentralMap
         // big deal out of it and claim it's a common use case if I don't catch
         // this circumstance.
         if(checkLocationPermissions(0, true)) mPermissionsDenied = false;
+
+        // Listen up!
+        startListening();
 
         // The mode will resume itself once the client comes back in from
         // onStart.
@@ -787,30 +793,19 @@ public class CentralMap
         super.onStart();
 
         // The receiver goes on during onStart, since the modes might need it
-        // before onResume has a chance to kick in, thanks to the possibility of
-        // the API connection happening really quickly.
+        // before onResume has a chance to kick in.  This might actually be
+        // obsolete with the change away from GoogleApiClient.
         IntentFilter filt = new IntentFilter();
         filt.addAction(StockService.ACTION_STOCK_RESULT);
         registerReceiver(mStockReceiver, filt);
-
-        // Service up!
-        mGoogleClient.connect();
     }
+
+
 
     @Override
     protected void onStop() {
         // The receiver goes right off as soon as we stop.
         unregisterReceiver(mStockReceiver);
-
-        // I probably want this in onPause, not onStop, but the Google API
-        // client disconnect hits here, not in onPause, so I'd have to keep
-        // track of more things to make sure I know if I need to start listening
-        // again on onResume or wait for the client to reconnect.  And I don't
-        // want the client disconnecting on onPause.
-        stopListening();
-
-        // Service down!
-        mGoogleClient.disconnect();
 
         super.onStop();
     }
@@ -1082,27 +1077,6 @@ public class CentralMap
         StockService.enqueueWork(this, i);
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
-        // We're connected!  Start listening for updates!  The modes will get
-        // their updates through us.
-        startListening();
-
-        if(!isFinishing()) {
-            doReadyChecks();
-        }
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        // Since the location API doesn't appear to connect back to the network,
-        // I'm not sure I need to do anything special here.  I'm not even
-        // entirely convinced the connection CAN become suspended after it's
-        // made unless things are completely hosed.  At the very least, though,
-        // I can stop listening.
-        stopListening();
-    }
-
     /**
      * Tells Select-A-Graticule to start.
      */
@@ -1154,14 +1128,14 @@ public class CentralMap
             super.onBackPressed();
     }
 
-    private boolean isReadyToGo() {
-        return !mCurrentMode.isCleanedUp() && mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected();
+    private boolean isReadyToGo()
+    {
+        return !mCurrentMode.isCleanedUp() && mMapIsReady && mLayoutComplete;
     }
 
     private void doReadyChecks() {
-        // This should be called any time the Google API client or MapFragment
-        // become ready.  It'll check to see if both are up, starting the
-        // current mode when so.
+        // This should be called any time the MapFragment becomes ready.  It'll
+        // check to see if it's up, starting the current mode when so.
         if(isReadyToGo()) {
             if(mCurrentMode.isInitComplete()) {
                 mCurrentMode.resume();
@@ -1194,6 +1168,9 @@ public class CentralMap
                     mKnownLocationMarkers.add(mark);
                 }
             }
+
+            // And finally, start listening.
+            startListening();
         }
     }
 
@@ -1207,16 +1184,6 @@ public class CentralMap
         return mBanner;
     }
 
-    /**
-     * Gets the {@link GoogleApiClient} we currently hold.  There's no guarantee
-     * it's connected at this point, so be careful.
-     *
-     * @return the current GoogleApiClient
-     */
-    public GoogleApiClient getGoogleClient() {
-        return mGoogleClient;
-    }
-
     @Override
     public void datePicked(Calendar picked) {
         // Calendar!
@@ -1225,7 +1192,11 @@ public class CentralMap
     }
 
     private void startListening() {
+        if(!isReadyToGo() || mAlreadyListening) return;
+
         if(checkLocationPermissions(LOCATION_PERMISSION_REQUEST)) {
+            // We want high accuracy (after all, that's the whole point of
+            // Geohashing), and 1-second location updates are good enough.
             LocationRequest lRequest = LocationRequest.create();
             lRequest.setInterval(1000);
             lRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -1233,13 +1204,15 @@ public class CentralMap
             // Stupid Android Studio annotator and how it can't tell I've
             // requested permissions already...
             try {
-                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleClient, lRequest, mLocationListener);
+                mFusedLocationClient.requestLocationUpdates(lRequest, mLocationCallback, null);
 
                 // As per the 8.3.0 services, setMyLocationEnabled is a permissions-
                 // locked method.  Which, to be honest, is a good thing, really, it
                 // didn't make much sense that you could turn that on without
                 // permissions before.
                 mMap.setMyLocationEnabled(true);
+
+                mAlreadyListening = true;
             } catch (SecurityException se) {
                 // We MUST have permissions at this point, given the call to
                 // checkLocationPermissions should have returned false if not.
@@ -1252,8 +1225,11 @@ public class CentralMap
     }
 
     private void stopListening() {
-        if(mGoogleClient != null && checkLocationPermissions(LOCATION_PERMISSION_REQUEST, true)) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mLocationListener);
+        if(!mAlreadyListening) return;
+
+        if(checkLocationPermissions(LOCATION_PERMISSION_REQUEST, true)) {
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+            mAlreadyListening = false;
         }
     }
 
