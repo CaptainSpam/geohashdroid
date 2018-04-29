@@ -101,13 +101,13 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         mClipManager = (ClipboardManager)getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
 
         // TextViews!
-        mDate = (TextView)layout.findViewById(R.id.detail_date);
-        mYouLat = (TextView)layout.findViewById(R.id.you_lat);
-        mYouLon = (TextView)layout.findViewById(R.id.you_lon);
-        mDestLat = (TextView)layout.findViewById(R.id.dest_lat);
-        mDestLon = (TextView)layout.findViewById(R.id.dest_lon);
-        mDistance = (TextView)layout.findViewById(R.id.distance);
-        mAccuracy = (TextView)layout.findViewById(R.id.accuracy);
+        mDate = layout.findViewById(R.id.detail_date);
+        mYouLat = layout.findViewById(R.id.you_lat);
+        mYouLon = layout.findViewById(R.id.you_lon);
+        mDestLat = layout.findViewById(R.id.dest_lat);
+        mDestLon = layout.findViewById(R.id.dest_lon);
+        mDistance = layout.findViewById(R.id.distance);
+        mAccuracy = layout.findViewById(R.id.accuracy);
         mYouBlock = layout.findViewById(R.id.you_block);
         mDistanceBlock = layout.findViewById(R.id.distance_block);
 
@@ -121,7 +121,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         mDefaultTextColor = ContextCompat.getColor(getActivity(), (isNightMode() ? android.R.color.secondary_text_dark : android.R.color.secondary_text_light));
 
         // Button!
-        Button closeButton = (Button) layout.findViewById(R.id.close);
+        Button closeButton = layout.findViewById(R.id.close);
 
         // Button does a thing!
         if(closeButton != null) registerCloseButton(closeButton);

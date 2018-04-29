@@ -89,14 +89,14 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // Views!
         mAnonWarning = layout.findViewById(R.id.wiki_anon_warning);
-        mPictureCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_include_picture);
-        mIncludeLocationCheckbox = (CheckBox)layout.findViewById(R.id.wiki_check_include_location);
-        mGalleryButton = (ImageButton)layout.findViewById(R.id.wiki_thumbnail);
-        mPostButton = (Button)layout.findViewById(R.id.wiki_post_button);
-        mMessage = (EditText)layout.findViewById(R.id.wiki_message);
-        mLocationView = (TextView)layout.findViewById(R.id.wiki_current_location);
-        mDistanceView = (TextView)layout.findViewById(R.id.wiki_distance);
-        mHeader = (TextView)layout.findViewById(R.id.wiki_header);
+        mPictureCheckbox = layout.findViewById(R.id.wiki_check_include_picture);
+        mIncludeLocationCheckbox = layout.findViewById(R.id.wiki_check_include_location);
+        mGalleryButton = layout.findViewById(R.id.wiki_thumbnail);
+        mPostButton = layout.findViewById(R.id.wiki_post_button);
+        mMessage = layout.findViewById(R.id.wiki_message);
+        mLocationView = layout.findViewById(R.id.wiki_current_location);
+        mDistanceView = layout.findViewById(R.id.wiki_distance);
+        mHeader = layout.findViewById(R.id.wiki_header);
 
         // The picture checkbox determines if the other boxes are visible or
         // not.
