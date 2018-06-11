@@ -2,7 +2,7 @@
 <versionHistory>
     <version name="0.9.2.4" version="923" date="2017-06-22">
         <title>The Concept Of An Australian Tomorrow</title>
-        <header>Here's a somewhat major change for geohashers in the 30W Rule.  You might like this one.</header>
+        <header>Here\'s a somewhat major change for geohashers in the 30W Rule.  You might like this one.</header>
         <bullets>
             <bullet>Notifications for Known Locations that are subject to the 30W Rule will now (generally) trigger for *tomorrow*, not necessarily the date of the NYSE stock value.  That is, instead of triggering for the date of the stock value, which isn\'t very useful in 30W graticules by the time the NYSE opens (especially in places like Australia, Japan, or New Zealand), the notification will be for the next day's hashpoints.  That, in a way, is why the 30W Rule was invented in the first place, so this makes more sense for graticules located there.</bullet>
             <bullet>The button that accepts the currently-selected graticule in Select-A-Graticule mode now says \"Use This\", rather than \"Return\".  That reads a lot better, I feel.</bullet>
