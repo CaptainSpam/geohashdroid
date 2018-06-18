@@ -149,7 +149,10 @@ public class AlarmService extends JobIntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+            String action = intent.getAction();
+            if(action == null) return;
+
+            if(action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
                 Log.d(DEBUG_TAG, "Network status update!");
                 if(AndroidUtil.isConnected(context)) {
                     Log.d(DEBUG_TAG, "The network is back up!");
@@ -240,7 +243,10 @@ public class AlarmService extends JobIntentService {
     public static class BootReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
+            String action = intent.getAction();
+            if(action == null) return;
+
+            if(action.equals(Intent.ACTION_BOOT_COMPLETED)) {
                 // It's boot time!  We might need to flip on the party alarm!
                 Log.i(DEBUG_TAG, "Gooooooood morning, Geohashland!  It's boot time in " + TimeZone.getDefault().getDisplayName() + "!");
 
@@ -478,127 +484,135 @@ public class AlarmService extends JobIntentService {
     
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
-        if(intent.getAction().equals(STOCK_ALARM_OFF)) {
-            // We've been told to stop all alarms!
-            Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
-            stopWaitingForNetwork();
-            clearNotification();
-        } else if(intent.getAction().equals(STOCK_ALARM_ON)) {
-            Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
-            // At init time, set the alarm.
-            setNextAlarm();
-                        
-            // AlarmManager sends out broadcasts, and the receiver we've got
-            // will wake the service back up, so we can stop everything right
-            // now.
-        } else  if(intent.getAction().equals(STOCK_ALARM)
-                || intent.getAction().equals(STOCK_ALARM_RETRY)
-                || intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)
-                || intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
-            // Aha!  NOW we've got something!
-            Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
+        String action = intent.getAction();
+        if(action == null) return;
 
-            // If we've been told the network just came back, we can shut off
-            // the network receiver.  If we're still in trouble network-wise,
-            // it'll go right back on when we check in a second.
-            if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
-                Log.d(DEBUG_TAG, "The network came back!  Yay!");
+        switch(intent.getAction()) {
+            case STOCK_ALARM_OFF:
+                // We've been told to stop all alarms!
+                Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
                 stopWaitingForNetwork();
-            }
+                clearNotification();
+                break;
+            case STOCK_ALARM_ON:
+                Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
+                // At init time, set the alarm.
+                setNextAlarm();
 
-            // If we just got the stock alarm, we need to reschedule right away.
-            if(intent.getAction().equals(STOCK_ALARM)) {
-                Log.d(DEBUG_TAG, "Rescheduling next STOCK_ALARM...");
-                setNextAlarm(true);
-            }
+                // AlarmManager sends out broadcasts, and the receiver we've got
+                // will wake the service back up, so we can stop everything right
+                // now.
+                break;
+            case STOCK_ALARM:
+            case STOCK_ALARM_RETRY:
+            case STOCK_ALARM_NETWORK_BACK:
+            case StockService.ACTION_STOCK_RESULT:
+                // Aha!  NOW we've got something!
+                Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
 
-            // If we got the REAL stock alarm while still waiting on the RETRY
-            // alarm (i.e. the server kept reporting the stock wasn't posted all
-            // day until the next 9:30), we should stop the retry alarm.  It'll
-            // get set back up if the stock is STILL unavailable, and by
-            // shutting it down here, we preferably avoid acting on two alarms
-            // at the same time.
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
-            
-            // StockService takes care of all the network connectivity checks
-            // and other things that the alarm-checking StockService used to
-            // take care of.  It'll also tell us if the stock hasn't been
-            // posted just yet.  So, we can count on that for error checking.
-            if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
-                Log.d(DEBUG_TAG, "Just got a stock result!");
-
-                Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
-                bun.setClassLoader(getClassLoader());
-
-                int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
-                Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
-                
-                if(result == StockService.RESPONSE_NO_CONNECTION) {
-                    // No connection means we just set up the receiver and wait.
-                    // And wait.  And wait.
-                    Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
-
-                    waitForNetwork();
-
-                    clearNotification();
-                    return;
+                // If we've been told the network just came back, we can shut off
+                // the network receiver.  If we're still in trouble network-wise,
+                // it'll go right back on when we check in a second.
+                if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
+                    Log.d(DEBUG_TAG, "The network came back!  Yay!");
+                    stopWaitingForNetwork();
                 }
-                
-                if(result == StockService.RESPONSE_NOT_POSTED_YET) {
-                    // Not posted yet means we hit the snooze and try again in a
-                    // half hour or so.  Good night!
-                    Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
-                    snooze();
-                    clearNotification();
-                    return;
+
+                // If we just got the stock alarm, we need to reschedule right away.
+                if(intent.getAction().equals(STOCK_ALARM)) {
+                    Log.d(DEBUG_TAG, "Rescheduling next STOCK_ALARM...");
+                    setNextAlarm(true);
                 }
-                
-                if(result == StockService.RESPONSE_NETWORK_ERROR) {
-                    // A network error that ISN'T "no connection" is usually
-                    // really bad.  But, with Doze in effect, that might mean
-                    // something weird with how it denies us network access, so
-                    // let's just snooze for now.
-                    Log.w(DEBUG_TAG, "Network reported an error, snoozing for a half hour...");
-                    snooze();
-                    clearNotification();
-                    return;
-                }
-                
-                if(result == StockService.RESPONSE_OKAY) {
-                    // An okay response means the Graticule IS good.  If not,
-                    // fix StockService.
-                    if(g == null) {
-                        Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
+
+                // If we got the REAL stock alarm while still waiting on the RETRY
+                // alarm (i.e. the server kept reporting the stock wasn't posted all
+                // day until the next 9:30), we should stop the retry alarm.  It'll
+                // get set back up if the stock is STILL unavailable, and by
+                // shutting it down here, we preferably avoid acting on two alarms
+                // at the same time.
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
+
+                // StockService takes care of all the network connectivity checks
+                // and other things that the alarm-checking StockService used to
+                // take care of.  It'll also tell us if the stock hasn't been
+                // posted just yet.  So, we can count on that for error checking.
+                if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
+                    Log.d(DEBUG_TAG, "Just got a stock result!");
+
+                    Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+                    bun.setClassLoader(getClassLoader());
+
+                    int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
+                    Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
+
+                    if(result == StockService.RESPONSE_NO_CONNECTION) {
+                        // No connection means we just set up the receiver and wait.
+                        // And wait.  And wait.
+                        Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
+
+                        waitForNetwork();
+
                         clearNotification();
-                    } else if(g.uses30WRule()) {
-                        // If the response we just checked for was a 30W one and
-                        // it came back okay, then we fire off a check for the
-                        // non-30W one.
-                        Log.d(DEBUG_TAG, "That was the 30W response, going up to non-30W...");
-                        sendRequest(GHDConstants.DUMMY_TODAY);
-                    } else {
-                        // If, however, we got the non-30W back, then our job is
-                        // done!  Yay!
-                        Log.d(DEBUG_TAG, "The 30W response!  We're done!");
-                        clearNotification();
-
-                        // And since it's done, we can go off to the part where
-                        // we deal with KnownLocations!
-                        doKnownLocations();
+                        return;
                     }
+
+                    if(result == StockService.RESPONSE_NOT_POSTED_YET) {
+                        // Not posted yet means we hit the snooze and try again in a
+                        // half hour or so.  Good night!
+                        Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
+                        snooze();
+                        clearNotification();
+                        return;
+                    }
+
+                    if(result == StockService.RESPONSE_NETWORK_ERROR) {
+                        // A network error that ISN'T "no connection" is usually
+                        // really bad.  But, with Doze in effect, that might mean
+                        // something weird with how it denies us network access, so
+                        // let's just snooze for now.
+                        Log.w(DEBUG_TAG, "Network reported an error, snoozing for a half hour...");
+                        snooze();
+                        clearNotification();
+                        return;
+                    }
+
+                    if(result == StockService.RESPONSE_OKAY) {
+                        // An okay response means the Graticule IS good.  If not,
+                        // fix StockService.
+                        if(g == null) {
+                            Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
+                            clearNotification();
+                        } else if(g.uses30WRule()) {
+                            // If the response we just checked for was a 30W one and
+                            // it came back okay, then we fire off a check for the
+                            // non-30W one.
+                            Log.d(DEBUG_TAG, "That was the 30W response, going up to non-30W...");
+                            sendRequest(GHDConstants.DUMMY_TODAY);
+                        } else {
+                            // If, however, we got the non-30W back, then our job is
+                            // done!  Yay!
+                            Log.d(DEBUG_TAG, "The 30W response!  We're done!");
+                            clearNotification();
+
+                            // And since it's done, we can go off to the part where
+                            // we deal with KnownLocations!
+                            doKnownLocations();
+                        }
+                    }
+                } else {
+                    // If it's NOT a result, that means we're starting a new check
+                    // at a 30W hash for some reason.  Doesn't matter what reason.
+                    // We just need to do it.
+                    Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
+                    sendRequest(GHDConstants.DUMMY_YESTERDAY);
                 }
-            } else {
-                // If it's NOT a result, that means we're starting a new check
-                // at a 30W hash for some reason.  Doesn't matter what reason.
-                // We just need to do it.
-                Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
-                sendRequest(GHDConstants.DUMMY_YESTERDAY);
-            }
-        } else {
-            // Stop doing this!
-            Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
+                break;
+            default:
+                // Stop doing this!
+                Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
+                break;
         }
     }
 
