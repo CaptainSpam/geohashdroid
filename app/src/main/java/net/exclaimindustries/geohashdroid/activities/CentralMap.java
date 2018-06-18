@@ -8,6 +8,8 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.backup.BackupManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -15,6 +17,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -23,7 +26,9 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
@@ -1048,6 +1053,45 @@ public class CentralMap
         // Then, tell the BackupManager to do its thing.
         BackupManager bm = new BackupManager(this);
         bm.dataChanged();
+
+        // If we're at API 26 or higher, get the notification channels up, too.
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            doStartupNotificationChannels();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void doStartupNotificationChannels()
+    {
+        // As it stands, we should have three channels: Wiki, Nearby Points, and
+        // Stock Pre-Fetch.  Let's make them.
+        NotificationManager manager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        if(manager == null) return;
+
+        // Wiki is of low importance.  It might include errors and also should
+        // tell the user when it's doing something (or waiting to do something).
+        NotificationChannel channel = new NotificationChannel(GHDConstants.CHANNEL_WIKI,
+                getString(R.string.channel_wiki_title),
+                NotificationManager.IMPORTANCE_LOW);
+        channel.setDescription(getString(R.string.channel_wiki_description));
+        manager.createNotificationChannel(channel);
+
+        // Nearby points, however, are of high importance.  They're sort of a
+        // big deal when they happen.
+        channel = new NotificationChannel(GHDConstants.CHANNEL_NEARBY_POINTS,
+                getString(R.string.channel_nearby_points_title),
+                NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription(getString(R.string.channel_nearby_points_description));
+        channel.enableLights(true);
+        channel.setLightColor(Color.WHITE);
+        manager.createNotificationChannel(channel);
+
+        // The stock prefetcher is of minimal importance.  It just sort of
+        // happens in the background and should go away quickly in most cases.
+        channel = new NotificationChannel(GHDConstants.CHANNEL_STOCK_PREFETCHER,
+                getString(R.string.channel_stock_prefetch_title),
+                NotificationManager.IMPORTANCE_MIN);
+        channel.setDescription(getString(R.string.channel_stock_prefetch_description));
+        manager.createNotificationChannel(channel);
     }
 
     /**

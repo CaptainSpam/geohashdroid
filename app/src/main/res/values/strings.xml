@@ -127,4 +127,10 @@
     <string name="notification_title">Fetching stocks&#8230;</string>
     <string name="notification_detail">(now checking %1$s)</string>
 
+    <string name="channel_wiki_title">Wiki-related</string>
+    <string name="channel_wiki_description">Notifications regarding active wiki actions, if wiki posts are queued, wiki posting errors, etc.</string>
+    <string name="channel_nearby_points_title">Nearby points</string>
+    <string name="channel_nearby_points_description">Notifications regarding hashpoints being close to user-defined locations.</string>
+    <string name="channel_stock_prefetch_title">Stock prefetcher</string>
+    <string name="channel_stock_prefetch_description">Notifications regarding the stock pre-fetcher kicking in at 9:30am ET.</string>
 </resources>

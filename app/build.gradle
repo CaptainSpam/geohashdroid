@@ -6,7 +6,7 @@ android {
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         minSdkVersion 16
-        targetSdkVersion 25
+        targetSdkVersion 27
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

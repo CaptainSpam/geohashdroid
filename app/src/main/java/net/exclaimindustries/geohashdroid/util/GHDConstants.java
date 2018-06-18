@@ -143,4 +143,11 @@ public final class GHDConstants {
     public static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");
     /** The decimal format for most accuracy readouts. */
     public static final DecimalFormat ACCURACY_FORMAT = new DecimalFormat("###.##");
+
+    /** Notification channel for wiki-related issues. */
+    public static final String CHANNEL_WIKI = "net.exclaimindustries.geohashdroid.CHANNEL_WIKI";
+    /** Notification channel for nearby location-related stuff */
+    public static final String CHANNEL_NEARBY_POINTS = "net.exclaimindustries.geohashdroid.CHANNEL_NEARBY_POINTS";
+    /** Notification channel for the stock prefetcher. */
+    public static final String CHANNEL_STOCK_PREFETCHER = "net.exclaimindustries.geohashdroid.CHANNEL_STOCK_PREFETCHER";
 }

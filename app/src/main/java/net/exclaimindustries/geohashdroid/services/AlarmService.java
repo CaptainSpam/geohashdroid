@@ -8,8 +8,6 @@
 package net.exclaimindustries.geohashdroid.services;
 
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
@@ -20,7 +18,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.os.Build;
@@ -32,6 +29,8 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
 import android.support.v4.app.JobIntentService;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -73,9 +72,9 @@ public class AlarmService extends JobIntentService {
     private static final String DEBUG_TAG = "AlarmService";
 
     private AlarmManager mAlarmManager;
-    private NotificationManager mNotificationManager;
+    private NotificationManagerCompat mNotificationManager;
     
-    private Notification.Builder mNotificationBuilder;
+    private NotificationCompat.Builder mNotificationBuilder;
     
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -465,19 +464,16 @@ public class AlarmService extends JobIntentService {
         // Init these now, at create time.  The service MIGHT not die between
         // calls, after all.  Maybe.
         mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager = NotificationManagerCompat.from(this);
         
         // Ready the notification!  The detail text will be set by date, of
-        // course.
-        mNotificationBuilder = new Notification.Builder(this)
-            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+        // course.  Also, we can go ahead and make this a public Notification.
+        // It's not really sensitive.
+        mNotificationBuilder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_STOCK_PREFETCHER)
             .setSmallIcon(R.drawable.ic_stat_file_file_download)
-            .setContentTitle(getString(R.string.notification_title));
-        
-        // Oh, and if we're in Lollipop, we can go ahead and make this a public
-        // Notification.  It's not really sensitive.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            mNotificationBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
+            .setContentTitle(getString(R.string.notification_title))
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
     }
     
     @Override
@@ -737,7 +733,7 @@ public class AlarmService extends JobIntentService {
         mNotificationManager.notify(notificationId, builder.build());
     }
 
-    private Notification.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data,
+    private NotificationCompat.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data,
                                                              @StringRes int titleId) {
         KnownLocationMatchData match = data.get(0);
         String contentText = getString(R.string.known_locations_alarm_distance,
@@ -745,27 +741,23 @@ public class AlarmService extends JobIntentService {
                 match.knownLocation.getName());
         String summaryText = getResources().getQuantityString(R.plurals.known_locations_alarm_more, data.size() - 1, data.size() - 1);
 
-        Notification.Builder builder = new Notification.Builder(this)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_NEARBY_POINTS)
                 .setSmallIcon(R.drawable.ic_stat_av_new_releases)
                 .setAutoCancel(true)
                 .setOngoing(false)
                 .setLights(Color.WHITE, 500, 2000)
                 .setContentText(contentText)
-                .setContentTitle(getString(titleId, DateFormat.getDateInstance(DateFormat.MEDIUM).format(match.bestInfo.getDate())));
+                .setContentTitle(getString(titleId, DateFormat.getDateInstance(DateFormat.MEDIUM).format(match.bestInfo.getDate())))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
 
         // If there's more than one known location nearby, make the notification
         // expandable with a bit of extra text mentioning just how many more.
         if(data.size() > 1) {
-            builder.setStyle(new Notification.BigTextStyle()
+            builder.setStyle(new NotificationCompat.BigTextStyle()
                     .bigText(contentText)
                     .setSummaryText(summaryText));
         }
-
-        // Since these notifications will be displaying location names, they
-        // may as well be private.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            builder.setVisibility(Notification.VISIBILITY_PRIVATE);
 
         return builder;
     }

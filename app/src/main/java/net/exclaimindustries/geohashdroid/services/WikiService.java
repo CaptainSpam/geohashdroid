@@ -10,8 +10,6 @@ package net.exclaimindustries.geohashdroid.services;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
@@ -22,7 +20,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -31,6 +28,8 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -69,10 +68,10 @@ import cz.msebera.android.httpclient.impl.client.HttpClients;
  */
 public class WikiService extends QueueService {
     /**
-     * This is only here because {@link Notification.Action} doesn't exist in
-     * API 16, which is what I'm targeting.  Darn!  It works astonishingly
+     * This is only here because {@link NotificationCompat.Action} doesn't exist
+     * in API 16, which is what I'm targeting.  Darn!  It works astonishingly
      * similar to it, if by that you accept simply calling the API 16 version of
-     * {@link Notification.Builder#addAction(int, CharSequence, PendingIntent)}
+     * {@link NotificationCompat.Builder#addAction(int, CharSequence, PendingIntent)}
      * with the appropriate data to be "astonishingly similar", which I do.
      */
     private class NotificationAction {
@@ -146,7 +145,7 @@ public class WikiService extends QueueService {
 
     private static final String DEBUG_TAG = "WikiService";
 
-    private NotificationManager mNotificationManager;
+    private NotificationManagerCompat mNotificationManager;
     private AlarmManager mAlarmManager;
     private WakeLock mWakeLock;
 
@@ -215,7 +214,7 @@ public class WikiService extends QueueService {
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WikiService");
         
         // Also, get the NotificationManager on standby.
-        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager = NotificationManagerCompat.from(this);
 
         // How alarming.  We need the AlarmManager.
         mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
@@ -640,7 +639,7 @@ public class WikiService extends QueueService {
     }
 
     private void showActiveNotification() {
-        Notification.Builder builder = getFreshNotificationBuilder()
+        NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_title))
                 .setContentText("")
@@ -660,7 +659,7 @@ public class WikiService extends QueueService {
         // not going to touch it past this.  Also, the string says "one or more
         // images", so that'll cover it if we somehow get LOTS of broken image
         // URIs.
-        Notification.Builder builder = getFreshNotificationBuilder()
+        NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setAutoCancel(true)
                 .setOngoing(false)
                 .setContentTitle(getString(R.string.wiki_notification_image_error_title))
@@ -671,7 +670,7 @@ public class WikiService extends QueueService {
     }
 
     private void showWaitingForConnectionNotification() {
-        Notification.Builder builder = getFreshNotificationBuilder()
+        NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
                 .setContentText(getString(R.string.wiki_notification_waiting_for_connection_content))
@@ -712,7 +711,7 @@ public class WikiService extends QueueService {
     private void showPausingErrorNotification(String reason, NotificationAction[] actions) {
         // This one (hopefully) gets its own PendingIntent (preferably something
         // that'll help solve the problem, like a username prompt).
-        Notification.Builder builder = getFreshNotificationBuilder()
+        NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setContentTitle(getString(R.string.wiki_notification_error_title))
                 .setContentText(reason)
                 .setSmallIcon(R.drawable.ic_stat_alert_error);
@@ -735,7 +734,7 @@ public class WikiService extends QueueService {
     private void showThrottleNotification() {
         // Throttling just means we wait a minute before we try again.  The user
         // is free to force the issue, however.
-        Notification.Builder builder = getFreshNotificationBuilder()
+        NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setAutoCancel(true)
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_throttle_title))
@@ -757,17 +756,12 @@ public class WikiService extends QueueService {
     }
 
     @SuppressLint("NewApi")
-    private Notification.Builder getFreshNotificationBuilder() {
-        // This just returns a fresh new Notification.Builder with the default
-        // images.  We're resetting everything on each notification anyway, so
-        // sharing the object is sort of a waste.
-        Notification.Builder builder = new Notification.Builder(this)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
-
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
-
-        return builder;
+    private NotificationCompat.Builder getFreshNotificationBuilder() {
+        // This just returns a fresh new NotificationCompat.Builder with the
+        // default images.  We're resetting everything on each notification
+        // anyway, so sharing the object is sort of a waste.
+        return new NotificationCompat.Builder(this, GHDConstants.CHANNEL_WIKI)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
     }
 
     private String addGalleryEntryToPage(String page, String galleryEntry) {
