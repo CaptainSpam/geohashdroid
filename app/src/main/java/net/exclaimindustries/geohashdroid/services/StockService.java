@@ -207,7 +207,7 @@ public class StockService extends JobIntentService {
 
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
-        // Gee, thanks, WakefulIntentService, for covering all that confusing
+        // Gee, thanks, JobIntentService, for covering all that confusing
         // WakeLock stuff!  You're even off the main thread, too, so I don't
         // have to spawn a new thread to not screw up the UI!  So let's get that
         // data right in hand, shall we?
