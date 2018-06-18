@@ -448,7 +448,7 @@ public class AlarmService extends JobIntentService {
         showNotification(Info.makeAdjustedCalendar(cal, g));
         
         // THEN we send the request.
-        enqueueWork(this, request);
+        StockService.enqueueWork(this, request);
     }
 
     /**
