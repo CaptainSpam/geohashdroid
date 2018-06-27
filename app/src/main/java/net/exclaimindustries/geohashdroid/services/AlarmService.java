@@ -732,7 +732,7 @@ public class AlarmService extends JobIntentService {
         Collections.sort(matched);
 
         // First one's the winner!
-        Notification.Builder builder = getFreshNotificationBuilder(matched, titleId);
+        NotificationCompat.Builder builder = getFreshNotificationBuilder(matched, titleId);
 
         Bundle bun = new Bundle();
         bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
