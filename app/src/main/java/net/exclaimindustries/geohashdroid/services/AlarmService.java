@@ -447,7 +447,8 @@ public class AlarmService extends JobIntentService {
             .putExtra(StockService.EXTRA_GRATICULE, g)
             .putExtra(StockService.EXTRA_DATE, cal)
             .putExtra(StockService.EXTRA_REQUEST_ID, cal.getTimeInMillis() / 1000)
-            .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM);
+            .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM)
+            .putExtra(StockService.EXTRA_RESPOND_TO, StockReceiver.class);
         
         // The notification goes up first.
         showNotification(Info.makeAdjustedCalendar(cal, g));
