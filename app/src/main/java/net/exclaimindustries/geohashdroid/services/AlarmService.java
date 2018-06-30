@@ -8,8 +8,6 @@
 package net.exclaimindustries.geohashdroid.services;
 
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
@@ -20,7 +18,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.os.Build;
@@ -31,9 +28,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
+import android.support.v4.app.JobIntentService;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
-
-import com.commonsware.cwac.wakeful.WakefulIntentService;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
@@ -69,14 +67,14 @@ import java.util.TimeZone;
  * @author Nicholas Killewald
  *
  */
-public class AlarmService extends WakefulIntentService {
+public class AlarmService extends JobIntentService {
     
     private static final String DEBUG_TAG = "AlarmService";
 
     private AlarmManager mAlarmManager;
-    private NotificationManager mNotificationManager;
+    private NotificationManagerCompat mNotificationManager;
     
-    private Notification.Builder mNotificationBuilder;
+    private NotificationCompat.Builder mNotificationBuilder;
     
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -130,6 +128,10 @@ public class AlarmService extends WakefulIntentService {
     public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
 
     private static final int ALARM_CONNECTIVITY_JOB = 1;
+    private static final int LOCAL_NOTIFICATION = 1;
+    private static final int GLOBAL_NOTIFICATION = 2;
+
+    private static final int SERVICE_JOB_ID = 1000;
 
     /**
      * <p>
@@ -147,7 +149,10 @@ public class AlarmService extends WakefulIntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+            String action = intent.getAction();
+            if(action == null) return;
+
+            if(action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
                 Log.d(DEBUG_TAG, "Network status update!");
                 if(AndroidUtil.isConnected(context)) {
                     Log.d(DEBUG_TAG, "The network is back up!");
@@ -155,7 +160,7 @@ public class AlarmService extends WakefulIntentService {
                     // NETWORK'D!!!
                     Intent i = new Intent(context, AlarmService.class);
                     i.setAction(STOCK_ALARM_NETWORK_BACK);
-                    WakefulIntentService.sendWakefulWork(context, i);
+                    enqueueWork(context, i);
                 }
             }
         }
@@ -174,7 +179,7 @@ public class AlarmService extends WakefulIntentService {
             // send out the Intent that says we're back.
             Intent i = new Intent(this, AlarmService.class);
             i.setAction(STOCK_ALARM_NETWORK_BACK);
-            WakefulIntentService.sendWakefulWork(this, i);
+            enqueueWork(this, i);
 
             // And we're done now!  No thread to spin up or anything.
             return false;
@@ -201,7 +206,7 @@ public class AlarmService extends WakefulIntentService {
             // of whatever we need handled.
             Intent i = new Intent(context, AlarmService.class);
             i.setAction(intent.getAction());
-            WakefulIntentService.sendWakefulWork(context, i);
+            enqueueWork(context, i);
         }
     }
     
@@ -226,7 +231,7 @@ public class AlarmService extends WakefulIntentService {
                 
                 // It's ours!  Send it to the wakeful part!
                 intent.setClass(context, AlarmService.class);
-                WakefulIntentService.sendWakefulWork(context, intent);
+                enqueueWork(context, intent);
             }
         }
     }
@@ -238,7 +243,10 @@ public class AlarmService extends WakefulIntentService {
     public static class BootReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
+            String action = intent.getAction();
+            if(action == null) return;
+
+            if(action.equals(Intent.ACTION_BOOT_COMPLETED)) {
                 // It's boot time!  We might need to flip on the party alarm!
                 Log.i(DEBUG_TAG, "Gooooooood morning, Geohashland!  It's boot time in " + TimeZone.getDefault().getDisplayName() + "!");
 
@@ -248,7 +256,7 @@ public class AlarmService extends WakefulIntentService {
                     Log.i(DEBUG_TAG, "The stock alarm is now being started...");
                     Intent i = new Intent(context, AlarmService.class);
                     i.setAction(AlarmService.STOCK_ALARM_ON);
-                    WakefulIntentService.sendWakefulWork(context, i);
+                    enqueueWork(context, i);
                 } else {
                     Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
                 }
@@ -324,11 +332,7 @@ public class AlarmService extends WakefulIntentService {
         // And that should be that!
         return base;
     }
-    
-    public AlarmService() {
-        super("AlarmService");
-    }
-    
+
     private void showNotification(@NonNull Calendar date) {
         // The notification in this case just says when there's an active
         // network transaction going.  We don't need to bug the user that we're
@@ -430,7 +434,13 @@ public class AlarmService extends WakefulIntentService {
         // is if it's 30W or not.  And we don't really care about it THAT much,
         // just enough to put the right string in the notification.  Otherwise,
         // StockService works it out.
-        Calendar cal = getMostRecentStockDate(null);
+        Calendar cal = Calendar.getInstance();
+
+        // However, if it IS 30W, we want to generate a stock cache value for
+        // TOMORROW, as the 30W Rule allows us to know what tomorrow's hash is,
+        // and we WANT that owing to when it triggers.
+        if(g.uses30WRule()) cal.add(Calendar.DATE, 1);
+        cal = getMostRecentStockDate(cal);
         
         Intent request = new Intent(this, StockService.class);
         request.setAction(StockService.ACTION_STOCK_REQUEST)
@@ -443,7 +453,14 @@ public class AlarmService extends WakefulIntentService {
         showNotification(Info.makeAdjustedCalendar(cal, g));
         
         // THEN we send the request.
-        WakefulIntentService.sendWakefulWork(this, request);
+        StockService.enqueueWork(this, request);
+    }
+
+    /**
+     * Convenience method for enqueuing work in to this service.
+     */
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, AlarmService.class, SERVICE_JOB_ID, work);
     }
 
     @Override
@@ -453,144 +470,149 @@ public class AlarmService extends WakefulIntentService {
         // Init these now, at create time.  The service MIGHT not die between
         // calls, after all.  Maybe.
         mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-        mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager = NotificationManagerCompat.from(this);
         
         // Ready the notification!  The detail text will be set by date, of
-        // course.
-        mNotificationBuilder = new Notification.Builder(this)
-            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+        // course.  Also, we can go ahead and make this a public Notification.
+        // It's not really sensitive.
+        mNotificationBuilder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_STOCK_PREFETCHER)
             .setSmallIcon(R.drawable.ic_stat_file_file_download)
-            .setContentTitle(getString(R.string.notification_title));
-        
-        // Oh, and if we're in Lollipop, we can go ahead and make this a public
-        // Notification.  It's not really sensitive.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            mNotificationBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
+            .setContentTitle(getString(R.string.notification_title))
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
     }
     
     @Override
-    protected void doWakefulWork(Intent intent) {
-        if(intent.getAction().equals(STOCK_ALARM_OFF)) {
-            // We've been told to stop all alarms!
-            Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
-            stopWaitingForNetwork();
-            clearNotification();
-        } else if(intent.getAction().equals(STOCK_ALARM_ON)) {
-            Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
-            // At init time, set the alarm.
-            setNextAlarm();
-                        
-            // AlarmManager sends out broadcasts, and the receiver we've got
-            // will wake the service back up, so we can stop everything right
-            // now.
-        } else  if(intent.getAction().equals(STOCK_ALARM)
-                || intent.getAction().equals(STOCK_ALARM_RETRY)
-                || intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)
-                || intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
-            // Aha!  NOW we've got something!
-            Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
+    protected void onHandleWork(@NonNull Intent intent) {
+        String action = intent.getAction();
+        if(action == null) return;
 
-            // If we've been told the network just came back, we can shut off
-            // the network receiver.  If we're still in trouble network-wise,
-            // it'll go right back on when we check in a second.
-            if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
-                Log.d(DEBUG_TAG, "The network came back!  Yay!");
+        switch(intent.getAction()) {
+            case STOCK_ALARM_OFF:
+                // We've been told to stop all alarms!
+                Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
                 stopWaitingForNetwork();
-            }
+                clearNotification();
+                break;
+            case STOCK_ALARM_ON:
+                Log.d(DEBUG_TAG, "Got STOCK_ALARM_ON!");
+                // At init time, set the alarm.
+                setNextAlarm();
 
-            // If we just got the stock alarm, we need to reschedule right away.
-            if(intent.getAction().equals(STOCK_ALARM)) {
-                Log.d(DEBUG_TAG, "Rescheduling next STOCK_ALARM...");
-                setNextAlarm(true);
-            }
+                // AlarmManager sends out broadcasts, and the receiver we've got
+                // will wake the service back up, so we can stop everything right
+                // now.
+                break;
+            case STOCK_ALARM:
+            case STOCK_ALARM_RETRY:
+            case STOCK_ALARM_NETWORK_BACK:
+            case StockService.ACTION_STOCK_RESULT:
+                // Aha!  NOW we've got something!
+                Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
 
-            // If we got the REAL stock alarm while still waiting on the RETRY
-            // alarm (i.e. the server kept reporting the stock wasn't posted all
-            // day until the next 9:30), we should stop the retry alarm.  It'll
-            // get set back up if the stock is STILL unavailable, and by
-            // shutting it down here, we preferably avoid acting on two alarms
-            // at the same time.
-            mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
-            
-            // StockService takes care of all the network connectivity checks
-            // and other things that the alarm-checking StockService used to
-            // take care of.  It'll also tell us if the stock hasn't been
-            // posted just yet.  So, we can count on that for error checking.
-            if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
-                Log.d(DEBUG_TAG, "Just got a stock result!");
-
-                Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
-                bun.setClassLoader(getClassLoader());
-
-                int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
-                Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
-                
-                if(result == StockService.RESPONSE_NO_CONNECTION) {
-                    // No connection means we just set up the receiver and wait.
-                    // And wait.  And wait.
-                    Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
-
-                    waitForNetwork();
-
-                    clearNotification();
-                    return;
+                // If we've been told the network just came back, we can shut off
+                // the network receiver.  If we're still in trouble network-wise,
+                // it'll go right back on when we check in a second.
+                if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
+                    Log.d(DEBUG_TAG, "The network came back!  Yay!");
+                    stopWaitingForNetwork();
                 }
-                
-                if(result == StockService.RESPONSE_NOT_POSTED_YET) {
-                    // Not posted yet means we hit the snooze and try again in a
-                    // half hour or so.  Good night!
-                    Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
-                    snooze();
-                    clearNotification();
-                    return;
+
+                // If we just got the stock alarm, we need to reschedule right away.
+                if(intent.getAction().equals(STOCK_ALARM)) {
+                    Log.d(DEBUG_TAG, "Rescheduling next STOCK_ALARM...");
+                    setNextAlarm(true);
                 }
-                
-                if(result == StockService.RESPONSE_NETWORK_ERROR) {
-                    // A network error that ISN'T "no connection" is usually
-                    // really bad.  But, with Doze in effect, that might mean
-                    // something weird with how it denies us network access, so
-                    // let's just snooze for now.
-                    Log.w(DEBUG_TAG, "Network reported an error, snoozing for a half hour...");
-                    snooze();
-                    clearNotification();
-                    return;
-                }
-                
-                if(result == StockService.RESPONSE_OKAY) {
-                    // An okay response means the Graticule IS good.  If not,
-                    // fix StockService.
-                    if(g == null) {
-                        Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
+
+                // If we got the REAL stock alarm while still waiting on the RETRY
+                // alarm (i.e. the server kept reporting the stock wasn't posted all
+                // day until the next 9:30), we should stop the retry alarm.  It'll
+                // get set back up if the stock is STILL unavailable, and by
+                // shutting it down here, we preferably avoid acting on two alarms
+                // at the same time.
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
+
+                // StockService takes care of all the network connectivity checks
+                // and other things that the alarm-checking StockService used to
+                // take care of.  It'll also tell us if the stock hasn't been
+                // posted just yet.  So, we can count on that for error checking.
+                if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
+                    Log.d(DEBUG_TAG, "Just got a stock result!");
+
+                    Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+                    bun.setClassLoader(getClassLoader());
+
+                    int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
+                    Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
+
+                    if(result == StockService.RESPONSE_NO_CONNECTION) {
+                        // No connection means we just set up the receiver and wait.
+                        // And wait.  And wait.
+                        Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
+
+                        waitForNetwork();
+
                         clearNotification();
-                    } else if(g.uses30WRule()) {
-                        // If the response we just checked for was a 30W one and
-                        // it came back okay, then we fire off a check for the
-                        // non-30W one.
-                        Log.d(DEBUG_TAG, "That was the 30W response, going up to non-30W...");
-                        sendRequest(GHDConstants.DUMMY_TODAY);
-                    } else {
-                        // If, however, we got the non-30W back, then our job is
-                        // done!  Yay!
-                        Log.d(DEBUG_TAG, "The 30W response!  We're done!");
-                        clearNotification();
-
-                        // And since it's done, we can go off to the part where
-                        // we deal with KnownLocations!
-                        doKnownLocations();
+                        return;
                     }
+
+                    if(result == StockService.RESPONSE_NOT_POSTED_YET) {
+                        // Not posted yet means we hit the snooze and try again in a
+                        // half hour or so.  Good night!
+                        Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
+                        snooze();
+                        clearNotification();
+                        return;
+                    }
+
+                    if(result == StockService.RESPONSE_NETWORK_ERROR) {
+                        // A network error that ISN'T "no connection" is usually
+                        // really bad.  But, with Doze in effect, that might mean
+                        // something weird with how it denies us network access, so
+                        // let's just snooze for now.
+                        Log.w(DEBUG_TAG, "Network reported an error, snoozing for a half hour...");
+                        snooze();
+                        clearNotification();
+                        return;
+                    }
+
+                    if(result == StockService.RESPONSE_OKAY) {
+                        // An okay response means the Graticule IS good.  If not,
+                        // fix StockService.
+                        if(g == null) {
+                            Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
+                            clearNotification();
+                        } else if(g.uses30WRule()) {
+                            // If the response we just checked for was a 30W one and
+                            // it came back okay, then we fire off a check for the
+                            // non-30W one.
+                            Log.d(DEBUG_TAG, "That was the 30W response, going up to non-30W...");
+                            sendRequest(GHDConstants.DUMMY_TODAY);
+                        } else {
+                            // If, however, we got the non-30W back, then our job is
+                            // done!  Yay!
+                            Log.d(DEBUG_TAG, "The 30W response!  We're done!");
+                            clearNotification();
+
+                            // And since it's done, we can go off to the part where
+                            // we deal with KnownLocations!
+                            doKnownLocations();
+                        }
+                    }
+                } else {
+                    // If it's NOT a result, that means we're starting a new check
+                    // at a 30W hash for some reason.  Doesn't matter what reason.
+                    // We just need to do it.
+                    Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
+                    sendRequest(GHDConstants.DUMMY_YESTERDAY);
                 }
-            } else {
-                // If it's NOT a result, that means we're starting a new check
-                // at a 30W hash for some reason.  Doesn't matter what reason.
-                // We just need to do it.
-                Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
-                sendRequest(GHDConstants.DUMMY_YESTERDAY);
-            }
-        } else {
-            // Stop doing this!
-            Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
+                break;
+            default:
+                // Stop doing this!
+                Log.w(DEBUG_TAG, "Told to start on unknown action " + intent.getAction() + ", ignoring...");
+                break;
         }
     }
 
@@ -611,11 +633,8 @@ public class AlarmService extends WakefulIntentService {
         @Override
         public int compareTo(@NonNull KnownLocationMatchData another) {
             // We want to sort this by how close it is.  The LOWEST number
-            // should go first (that's the closest one).  I hope I got the
-            // order right.
-            if(distance < another.distance) return -1;
-            if(distance > another.distance) return 1;
-            return 0;
+            // should go first (that's the closest one).
+            return Double.compare(distance, another.distance);
         }
     }
 
@@ -625,6 +644,11 @@ public class AlarmService extends WakefulIntentService {
         mNotificationManager.cancel(R.id.alarm_known_location);
         mNotificationManager.cancel(R.id.alarm_known_location_global);
 
+        String notifyPref = PreferenceManager.getDefaultSharedPreferences(this).getString(GHDConstants.PREF_KNOWN_NOTIFICATION, GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE);
+
+        // If the user doesn't want notifications, we can skip the rest of this.
+        if(notifyPref.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_NEVER)) return;
+
         List<KnownLocation> locations = KnownLocation.getAllKnownLocations(this);
 
         // If there are no KnownLocations, give up now.
@@ -633,14 +657,24 @@ public class AlarmService extends WakefulIntentService {
         List<KnownLocationMatchData> matched = new LinkedList<>();
         List<KnownLocationMatchData> matchedGlobal = new LinkedList<>();
 
-        Calendar today = Calendar.getInstance();
+        // There are some odd time zone implications here if "today" just comes
+        // from Calendar.getInstance(), in that it sometimes might wind up
+        // being "yesterday" if, for instance, you're in AEST (9:30am ET becomes
+        // 11:30pm AEST).  So we need to adjust what date we're reporting if
+        // we're looking at a 30W known location.  Anything 30W should be
+        // "tomorrow", as the reason the 30W Rule was invented in the first
+        // place was because at the open of the NYSE, it's already too late to
+        // do anything with it out there.
+        Calendar today = makeNineThirty(null);
+        Calendar tomorrow = (Calendar)today.clone();
+        tomorrow.add(Calendar.DATE, 1);
 
         Info global = HashBuilder.getStoredInfo(this, today, null);
 
         for(KnownLocation kl : locations) {
             // Every KnownLocation has a method to do this.  Maybe it's a wee
             // bit inefficient and inelegant, but it does the job.
-            Info best = kl.getClosestInfo(this, today);
+            Info best = kl.getClosestInfo(this, (kl.is30w() ? tomorrow : today));
 
             if(kl.isCloseEnough(best.getFinalDestinationLatLng())) {
                 KnownLocationMatchData data = new KnownLocationMatchData(kl, best, kl.getDistanceFrom(best));
@@ -657,25 +691,48 @@ public class AlarmService extends WakefulIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
-            launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title);
+            // So now we have a list of what matched.  From there, let's sort
+            // out what notifications need to go up, if any.  There's a
+            // preference for this sort of thing, and we already checked it
+            // earlier.
+            switch(notifyPref) {
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE:
+                    // Only once.  That is, classic style.
+                    launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title,  LOCAL_NOTIFICATION);
+                    break;
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE:
+                    // Once per graticule.  Well, now we need to sort these out by
+                    // graticule.
+
+                    // TODO: Do that!
+                    break;
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION:
+                    // Once per matched location?  Well, sure, but that might throw
+                    // up a lot of notifications...
+
+                    // TODO: Do that!
+                    break;
+            }
         }
 
-        // Now, the Globalhash notification.
+        // Now, the Globalhash notification gets tossed up regardless of the
+        // user's preferences (apart from "Never").
         if(!matchedGlobal.isEmpty()) {
-            launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global);
+            launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global, GLOBAL_NOTIFICATION);
         }
     }
 
     private void launchNotification(@NonNull List<KnownLocationMatchData> matched,
                                     @NonNull String action,
                                     @IdRes int notificationId,
-                                    @StringRes int titleId) {
+                                    @StringRes int titleId,
+                                    int requestCode) {
         // So here's what we do: Note the BEST match in a notification, but also
         // mention the others.
         Collections.sort(matched);
 
         // First one's the winner!
-        Notification.Builder builder = getFreshNotificationBuilder(matched, titleId);
+        NotificationCompat.Builder builder = getFreshNotificationBuilder(matched, titleId);
 
         Bundle bun = new Bundle();
         bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
@@ -685,39 +742,36 @@ public class AlarmService extends WakefulIntentService {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(StockService.EXTRA_STUFF, bun);
 
-        builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT));
+        builder.setContentIntent(PendingIntent.getActivity(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT));
 
         mNotificationManager.notify(notificationId, builder.build());
     }
 
-    private Notification.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data, @StringRes int titleId) {
+    private NotificationCompat.Builder getFreshNotificationBuilder(@NonNull List<KnownLocationMatchData> data,
+                                                             @StringRes int titleId) {
         KnownLocationMatchData match = data.get(0);
         String contentText = getString(R.string.known_locations_alarm_distance,
                 UnitConverter.makeDistanceString(this, UnitConverter.DISTANCE_FORMAT_SHORT, (float)match.distance),
                 match.knownLocation.getName());
         String summaryText = getResources().getQuantityString(R.plurals.known_locations_alarm_more, data.size() - 1, data.size() - 1);
 
-        Notification.Builder builder = new Notification.Builder(this)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_NEARBY_POINTS)
                 .setSmallIcon(R.drawable.ic_stat_av_new_releases)
                 .setAutoCancel(true)
                 .setOngoing(false)
                 .setLights(Color.WHITE, 500, 2000)
                 .setContentText(contentText)
-                .setContentTitle(getString(titleId));
+                .setContentTitle(getString(titleId, DateFormat.getDateInstance(DateFormat.MEDIUM).format(match.bestInfo.getDate())))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
 
         // If there's more than one known location nearby, make the notification
         // expandable with a bit of extra text mentioning just how many more.
         if(data.size() > 1) {
-            builder.setStyle(new Notification.BigTextStyle()
+            builder.setStyle(new NotificationCompat.BigTextStyle()
                     .bigText(contentText)
                     .setSummaryText(summaryText));
         }
-
-        // Since these notifications will be displaying location names, they
-        // may as well be private.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            builder.setVisibility(Notification.VISIBILITY_PRIVATE);
 
         return builder;
     }

@@ -26,6 +26,8 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -34,6 +36,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
@@ -42,8 +45,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -89,7 +90,8 @@ public class KnownLocationsPicker
         extends BaseMapActivity
         implements GoogleMap.OnMapLongClickListener,
                    GoogleMap.OnMarkerClickListener,
-                   GoogleMap.OnInfoWindowClickListener {
+                   GoogleMap.OnInfoWindowClickListener,
+                   Handler.Callback {
     private static final String DEBUG_TAG = "KnownLocationsPicker";
 
     // These get passed into the dialog.
@@ -109,17 +111,29 @@ public class KnownLocationsPicker
 
     /** Response codes from LocationSearchTask. */
     public enum LookupErrorCode {
-        /** All is well, results are to follow. */
+        /**
+         * All is well, results are to follow.
+         */
         OKAY,
-        /** All is well, but there were no results. */
+        /**
+         * All is well, but there were no results.
+         */
         NO_RESULTS,
-        /** An I/O error occurred (probably no network connection). */
+        /**
+         * An I/O error occurred (probably no network connection).
+         */
         IO_ERROR,
-        /** No geocoder is installed (and it's weird that we got this far). */
+        /**
+         * No geocoder is installed (and it's weird that we got this far).
+         */
         NO_GEOCODER,
-        /** Some manner of internal error occurred. */
+        /**
+         * Some manner of internal error occurred.
+         */
         INTERNAL_ERROR,
-        /** This search was actually canceled, so ignore it. */
+        /**
+         * This search was actually canceled, so ignore it.
+         */
         CANCELED
     }
 
@@ -190,7 +204,7 @@ public class KnownLocationsPicker
             }
 
             // The input takes on whatever name it needs to.
-            final EditText nameInput = (EditText)dialogView.findViewById(R.id.input_location_name);
+            final EditText nameInput = dialogView.findViewById(R.id.input_location_name);
             nameInput.setText(name);
 
             // The spinner needs an adapter.  Fortunately, a basic one will do,
@@ -206,11 +220,11 @@ public class KnownLocationsPicker
 
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-            final Spinner spinner = (Spinner)dialogView.findViewById(R.id.spinner_location_range);
+            final Spinner spinner = dialogView.findViewById(R.id.spinner_location_range);
             spinner.setAdapter(adapter);
             spinner.setSelection(range);
 
-            final CheckBox restrictBox = (CheckBox)dialogView.findViewById(R.id.restrict);
+            final CheckBox restrictBox = dialogView.findViewById(R.id.restrict);
             restrictBox.setChecked(restrict);
 
             // There!  Now, let's make it a dialog.
@@ -265,14 +279,23 @@ public class KnownLocationsPicker
         }
     }
 
-    private class LocationSearchTask extends AsyncTask<String, Void, LookupErrorCode> {
+    private static class LocationSearchTask extends AsyncTask<String, Void, LookupErrorCode> {
+        static final class ResultObject {
+            LookupErrorCode code;
+            List<Address> addresses;
+        }
+
         private List<Address> mAddresses;
         private VisibleRegion mVis;
         private float mBearing;
+        private Geocoder mGeocoder;
+        private Message mMessage;
 
-        public LocationSearchTask(VisibleRegion vis, float bearing) {
+        public LocationSearchTask(Message message, Geocoder geocoder, VisibleRegion vis, float bearing) {
             super();
 
+            mMessage = message;
+            mGeocoder = geocoder;
             mVis = vis;
             mBearing = bearing;
         }
@@ -386,9 +409,15 @@ public class KnownLocationsPicker
 
         @Override
         protected void onPostExecute(LookupErrorCode code) {
-            if(code != LookupErrorCode.CANCELED)
-                // Got a response!  Go go go!
-                searchResults(code, mAddresses);
+            if(code != LookupErrorCode.CANCELED) {
+                // Got a response!  Send it back!
+                ResultObject obj = new ResultObject();
+                obj.code = code;
+                obj.addresses = mAddresses;
+
+                mMessage.obj = obj;
+                mMessage.sendToTarget();
+            }
         }
     }
 
@@ -396,6 +425,8 @@ public class KnownLocationsPicker
     private LocationSearchTask mSearchTask;
 
     private boolean mMapIsReady = false;
+    private boolean mLayoutComplete = false;
+    private boolean mAlreadyLaidOut = false;
     private boolean mReloaded = false;
 
     private BiMap<Marker, KnownLocation> mMarkerMap;
@@ -409,6 +440,8 @@ public class KnownLocationsPicker
     private BiMap<Marker, Address> mActiveAddressMap;
 
     private Marker mActiveMarker;
+
+    private Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -426,20 +459,13 @@ public class KnownLocationsPicker
         mMarkerMap = HashBiMap.create();
         mCircleMap = HashBiMap.create();
 
-        // Prep a client (it'll get going during onStart)!
-        mGoogleClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-
         // We need a Geocoder!  Well, not really; if we can't get one, remove
         // the search option.
         if(Geocoder.isPresent()) {
             mGeocoder = new Geocoder(this);
 
             // A valid Geocoder also means we can attach the click listener.
-            final EditText input = (EditText)findViewById(R.id.search);
+            final EditText input = findViewById(R.id.search);
             final View go = findViewById(R.id.search_go);
             go.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -505,10 +531,25 @@ public class KnownLocationsPicker
                 if(checkLocationPermissions(0))
                     permissionsGranted();
 
-                // Same as CentralMap, we need to wait on both this AND the Maps
-                // API to be ready.
+                // Since there's only one ready check to wait on now, this
+                // should kick things in motion.
                 mMapIsReady = true;
                 doReadyChecks();
+            }
+        });
+
+        // The map also needs to be laid out before we act on it.
+        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // Got a height!  Hopefully.
+                if(!mAlreadyLaidOut) {
+                    mAlreadyLaidOut = true;
+
+                    // Flag!
+                    mLayoutComplete = true;
+                    doReadyChecks();
+                }
             }
         });
 
@@ -552,21 +593,14 @@ public class KnownLocationsPicker
                     })
                     .show();
         }
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // Service up!
-        mGoogleClient.connect();
+        // Now, in an effort to make this less leaky, let's make us a Handler to
+        // handle things on the UI thread.
+        mHandler = new Handler(this);
     }
 
     @Override
     protected void onStop() {
-        // Service down!
-        mGoogleClient.disconnect();
-
         if(mSearchTask != null)
             mSearchTask.cancel(true);
 
@@ -619,17 +653,6 @@ public class KnownLocationsPicker
     }
 
     @Override
-    public void onConnected(Bundle bundle) {
-        if(!isFinishing())
-            doReadyChecks();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
@@ -658,7 +681,7 @@ public class KnownLocationsPicker
     }
 
     private boolean doReadyChecks() {
-        if(mMapIsReady && mGoogleClient != null && mGoogleClient.isConnected()) {
+        if(mMapIsReady && mLayoutComplete) {
             // The map should be centered on the currently-known locations.
             // Otherwise, well, default to dead zero, I guess.
             Log.d(DEBUG_TAG, "There are " + mLocations.size() + " known location(s).");
@@ -944,7 +967,8 @@ public class KnownLocationsPicker
 
         // Fire up a task!  Remember, getProjection and getCameraPosition need
         // to be called on main, so we pass those in to the AsyncTask.
-        mSearchTask = new LocationSearchTask(mMap.getProjection().getVisibleRegion(), mMap.getCameraPosition().bearing);
+
+        mSearchTask = new LocationSearchTask(mHandler.obtainMessage(), mGeocoder, mMap.getProjection().getVisibleRegion(), mMap.getCameraPosition().bearing);
         mSearchTask.execute(input);
     }
 
@@ -1085,5 +1109,14 @@ public class KnownLocationsPicker
         canvas.drawRect((dim - width) / 2 + innerInset, inset + innerInset, (dim + width) / 2 - innerInset, inset + height - innerInset, paint);
 
         return bitmap;
+    }
+
+    @Override
+    public boolean handleMessage(Message msg) {
+        // Back to this thread (and Context), we can start processing.
+        LocationSearchTask.ResultObject obj = (LocationSearchTask.ResultObject)msg.obj;
+
+        searchResults(obj.code, obj.addresses);
+        return true;
     }
 }

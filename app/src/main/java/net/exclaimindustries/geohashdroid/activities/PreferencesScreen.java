@@ -24,7 +24,6 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.commonsware.cwac.wakeful.WakefulIntentService;
 import com.google.android.gms.maps.model.LatLng;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -150,6 +149,7 @@ public class PreferencesScreen extends PreferenceActivity {
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_DIST_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_COORD_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_STARTUP_BEHAVIOR));
+            bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_KNOWN_NOTIFICATION));
 
             // The known locations manager is just another Activity.
             findPreference("_knownLocations").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -343,7 +343,7 @@ public class PreferencesScreen extends PreferenceActivity {
                             i.setAction(AlarmService.STOCK_ALARM_OFF);
                         }
 
-                        WakefulIntentService.sendWakefulWork(getActivity(), i);
+                        AlarmService.enqueueWork(getActivity(), i);
                     }
 
                     return true;
@@ -512,7 +512,7 @@ public class PreferencesScreen extends PreferenceActivity {
                     // PARTY ALARM!!!
                     Intent i = new Intent("net.exclaimindustries.geohashdroid.STOCK_ALARM");
                     i.setClass(getActivity(), AlarmService.class);
-                    WakefulIntentService.sendWakefulWork(getActivity(), i);
+                    AlarmService.enqueueWork(getActivity(), i);
 
                     Toast.makeText(
                             getActivity(),

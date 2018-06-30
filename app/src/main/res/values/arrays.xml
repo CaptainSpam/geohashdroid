@@ -46,6 +46,18 @@
         <item>LastUsed</item>
         <item>GraticulePicker</item>
     </string-array>
+    <string-array name="pref_knownnotification_entries">
+        <item>@string/pref_knownnotification_onlyonce</item>
+        <item>@string/pref_knownnotification_oncepergraticule</item>
+        <item>@string/pref_knownnotification_onceperlocation</item>
+        <item>@string/pref_knownnotification_never</item>
+    </string-array>
+    <string-array name="pref_knownnotification_values">
+        <item>OnlyOnce</item>
+        <item>OncePerGraticule</item>
+        <item>OncePerLocation</item>
+        <item>Never</item>
+    </string-array>
 
     <string-array name="menu_item_map_types">
         <item>@string/menu_item_map_type_street</item>

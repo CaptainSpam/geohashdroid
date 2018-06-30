@@ -49,6 +49,8 @@ public final class GHDConstants {
     public static final String PREF_WIKI_PASS = "WikiPassword";
     /** Prefs key specifying how the app starts up. */
     public static final String PREF_STARTUP_BEHAVIOR = "StartupBehavior";
+    /** Prefs key specifying how known location notifications are handled. */
+    public static final String PREF_KNOWN_NOTIFICATION = "KnownNotification";
     /**
      * Prefs key indicating the most recent version the user's seen in the
      * VersionHistoryDialog activity.  If this is lower than the current one
@@ -115,6 +117,22 @@ public final class GHDConstants {
     public static final String PREFVAL_STARTUP_LAST_USED = "LastUsed";
     /** Prefs value to start with the graticule picker. */
     public static final String PREFVAL_STARTUP_PICKER = "GraticulePicker";
+
+    /**
+     * Prefs value to only make one notification per day for known locations.
+     */
+    public static final String PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE = "OnlyOnce";
+    /**
+     * Prefs value to make one notification per graticule that has a matching
+     * known location per day.
+     */
+    public static final String PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE = "OncePerGraticule";
+    /**
+     * Prefs value to make one notification per matching known location per day.
+     */
+    public static final String PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION = "OncePerLocation";
+    /** Prefs value to never show any notifications for known locations. */
+    public static final String PREFVAL_KNOWN_NOTIFICATION_NEVER = "Never";
     
     /** Threshold for the "Accuracy Low" warning (currently 64m). **/
     public static final int LOW_ACCURACY_THRESHOLD = 64;
@@ -125,4 +143,11 @@ public final class GHDConstants {
     public static final DecimalFormat DIST_FORMAT = new DecimalFormat("###.######");
     /** The decimal format for most accuracy readouts. */
     public static final DecimalFormat ACCURACY_FORMAT = new DecimalFormat("###.##");
+
+    /** Notification channel for wiki-related issues. */
+    public static final String CHANNEL_WIKI = "net.exclaimindustries.geohashdroid.CHANNEL_WIKI";
+    /** Notification channel for nearby location-related stuff */
+    public static final String CHANNEL_NEARBY_POINTS = "net.exclaimindustries.geohashdroid.CHANNEL_NEARBY_POINTS";
+    /** Notification channel for the stock prefetcher. */
+    public static final String CHANNEL_STOCK_PREFETCHER = "net.exclaimindustries.geohashdroid.CHANNEL_STOCK_PREFETCHER";
 }

@@ -21,7 +21,7 @@
     <string name="title_part_globalhash">Globalhash</string>
 
     <string name="graticule_label">Graticule</string>
-    <string name="exit_graticule_label">Return</string>
+    <string name="exit_graticule_label">Use This</string>
     <string name="date_label">Date</string>
     <string name="wiki_label">Wiki</string>
     <string name="what_label">What\'s Geohashing?</string>
@@ -127,4 +127,10 @@
     <string name="notification_title">Fetching stocks&#8230;</string>
     <string name="notification_detail">(now checking %1$s)</string>
 
+    <string name="channel_wiki_title">Wiki-related</string>
+    <string name="channel_wiki_description">Notifications regarding active wiki actions, if wiki posts are queued, wiki posting errors, etc.</string>
+    <string name="channel_nearby_points_title">Nearby points</string>
+    <string name="channel_nearby_points_description">Notifications regarding hashpoints being close to user-defined locations.</string>
+    <string name="channel_stock_prefetch_title">Stock prefetcher</string>
+    <string name="channel_stock_prefetch_description">Notifications regarding the stock pre-fetcher kicking in at 9:30am ET.</string>
 </resources>

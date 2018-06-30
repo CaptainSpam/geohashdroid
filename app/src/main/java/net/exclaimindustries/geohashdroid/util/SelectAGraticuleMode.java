@@ -21,7 +21,6 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -296,13 +295,6 @@ public class SelectAGraticuleMode
             Log.w(DEBUG_TAG, "Tried to call findClosest when CentralMap thinks the user has explicitly denied location permissions!");
             return;
         }
-
-        GoogleApiClient gClient = getGoogleClient();
-
-        // TODO: I should really have a way to go on standby if this happens and
-        // redo the request once the connection comes in.
-        if(gClient == null)
-            Log.w(DEBUG_TAG, "Tried to call findClosest when the Google API Client was either null or not connected!");
 
         // Same as with the initial zoom, only we're setting a Graticule.
         Location lastKnown = getLastKnownLocation();

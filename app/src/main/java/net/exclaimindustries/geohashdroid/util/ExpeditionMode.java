@@ -33,13 +33,11 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -70,7 +68,7 @@ import java.util.Map;
 public class ExpeditionMode
         extends CentralMap.CentralMapMode
         implements GoogleMap.OnInfoWindowClickListener,
-                   GoogleMap.OnCameraChangeListener,
+                   GoogleMap.OnCameraMoveListener,
                    NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
                    CentralMapExtraFragment.CloseListener,
                    ZoomButtons.ZoomButtonListener {
@@ -152,7 +150,7 @@ public class ExpeditionMode
     public void init(@Nullable Bundle bundle) {
         // We listen to the map.  A lot.  For many, many reasons.
         mMap.setOnInfoWindowClickListener(this);
-        mMap.setOnCameraChangeListener(this);
+        mMap.setOnCameraMoveListener(this);
 
         // Set a title to begin with.  We'll get a new one soon, hopefully.
         setTitle(R.string.app_name);
@@ -242,7 +240,7 @@ public class ExpeditionMode
         // First, get rid of the listens.
         if(mMap != null) {
             mMap.setOnInfoWindowClickListener(null);
-            mMap.setOnCameraChangeListener(null);
+            mMap.setOnCameraMoveListener(null);
         }
 
         // Remove the nearby points, too.  The superclass took care of the final
@@ -770,13 +768,6 @@ public class ExpeditionMode
             return;
         }
 
-        GoogleApiClient gClient = getGoogleClient();
-
-        if(gClient == null) {
-            Log.w(DEBUG_TAG, "Tried calling doInitialZoom() when the Google API client was null or not connected!");
-            return;
-        }
-
         // We want the last known location to be at least SANELY recent.
         Location loc = getLastKnownLocation();
         if(LocationUtil.isLocationNewEnough(loc)) {
@@ -846,7 +837,7 @@ public class ExpeditionMode
     }
 
     @Override
-    public void onCameraChange(CameraPosition cameraPosition) {
+    public void onCameraMove() {
         // We're going to check visibility on each marker individually.  This
         // might make some of them vanish while others remain on, owing to our
         // good friend the Pythagorean Theorem and neat Mercator projection
@@ -1041,13 +1032,6 @@ public class ExpeditionMode
                 }
                 break;
             case ZoomButtons.ZOOM_USER:
-                GoogleApiClient gClient = getGoogleClient();
-
-                if(gClient == null) {
-                    Log.e(DEBUG_TAG, "Tried to zoom to current location when Google API Client was null or not connected!");
-                    return;
-                }
-
                 // Hopefully the user's already got a valid location.  Else...
                 Location loc = getLastKnownLocation();
                 if(LocationUtil.isLocationNewEnough(loc)) {
