@@ -260,7 +260,7 @@ public class StockService extends JobIntentService {
 
         // Remember, the Graticule MIGHT be null if it's a globalhash.
         if(p != null && !(p instanceof Graticule)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: p is not null and isn't a Graticule!");
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_GRATICULE is not null and isn't a Graticule!");
             return;
         }
         Graticule graticule = (Graticule)p;
@@ -270,7 +270,7 @@ public class StockService extends JobIntentService {
         Serializable s = intent.getSerializableExtra(EXTRA_DATE);
         
         if(s == null || !(s instanceof Calendar)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: s is null or not a Calendar!");
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_DATE is null or not a Calendar!");
             return;
         }
         Calendar cal = (Calendar)s;
@@ -279,7 +279,7 @@ public class StockService extends JobIntentService {
         s = intent.getSerializableExtra(EXTRA_RESPOND_TO);
 
         if(s != null && !(s instanceof Class)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: s is not null or a Class!");
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_RESPOND_TO is not null and isn't a Class!");
             return;
         }
         Class respondTo = (Class)s;
