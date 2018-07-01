@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
@@ -141,7 +142,36 @@ public class StockService extends JobIntentService {
      * 30W-related cases.
      */
     public static final String EXTRA_NEARBY_POINTS = "net.exclaimindustries.geohashdroid.EXTRA_NEARBY_POINTS";
-    
+    /**
+     * <p>
+     * Key for the class to which this request should respond.  As per Oreo,
+     * we can't define BroadcastReceivers in the manifest anymore (or, to be
+     * exact, we can't define BroadcastReceivers with <i>implicit</i> Intents
+     * and expect them to go through), which causes problems when talking back
+     * to, say, AlarmService's StockReceiver.  The presence of this Extra (and
+     * it being not null) will tell StockService to explicitly send the intent
+     * to that class.  As such, it must be a class object (like, say,
+     * AlarmService.StockReceiver.class), and should preferably be something
+     * that can receive an Intent.  There's no telling what might happen if it
+     * can't.
+     * </p>
+     *
+     * <p>
+     * Of course, because this API change only affects BroadcastReceivers
+     * defined in the manifest, this doesn't affect when you're explicitly
+     * registering the receiver on an as-needed basis, like what CentralMap
+     * does.  In other words, this is likely only to be used in the Services,
+     * and because of that, is probably only going to matter to AlarmService.
+     * </p>
+     *
+     * <p>
+     *     <i>
+     *         TODO: Look into whether or not JobScheduler can fix this mess.
+     *     </i>
+     * </p>
+     */
+    public static final String EXTRA_RESPOND_TO = "net.exclaimindustries.geohashdroid.EXTRA_RESPOND_TO";
+
     /**
      * Flag meaning this request came from the stock alarm around 9:30am EST.
      * This is for pre-cache stuff.
@@ -230,7 +260,7 @@ public class StockService extends JobIntentService {
 
         // Remember, the Graticule MIGHT be null if it's a globalhash.
         if(p != null && !(p instanceof Graticule)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: p is not null and isn't a Graticule!");
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_GRATICULE is not null and isn't a Graticule!");
             return;
         }
         Graticule graticule = (Graticule)p;
@@ -240,10 +270,19 @@ public class StockService extends JobIntentService {
         Serializable s = intent.getSerializableExtra(EXTRA_DATE);
         
         if(s == null || !(s instanceof Calendar)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: s is null or not a Calendar!");
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_DATE is null or not a Calendar!");
             return;
         }
         Calendar cal = (Calendar)s;
+
+        // Do we have an explicit respond-to point?  It CAN be null!
+        s = intent.getSerializableExtra(EXTRA_RESPOND_TO);
+
+        if(s != null && !(s instanceof Class)) {
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_RESPOND_TO is not null and isn't a Class!");
+            return;
+        }
+        Class respondTo = (Class)s;
         
         // First, ask the stock cache if we've got an Info we can throw back.
         Info info = HashBuilder.getStoredInfo(this, cal, graticule);
@@ -254,13 +293,13 @@ public class StockService extends JobIntentService {
             Info[] nearby = null;
             if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
                 nearby = getNearbyPoints(cal, graticule);
-            dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info, nearby);
+            dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info, nearby, respondTo);
         } else {
             // Otherwise, we need to go to the web.
             if(!AndroidUtil.isConnected(this)) {
                 // ...if we CAN go to the web, that is.
                 Log.i(DEBUG_TAG, "We're not connected, stopping now.");
-                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null);
+                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
             } else {
                 StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule);
                 runner.runStock();
@@ -275,12 +314,12 @@ public class StockService extends JobIntentService {
                         Info[] nearby = null;
                         if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
                             nearby = getNearbyPoints(cal, graticule);
-                        dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject(), nearby);
+                        dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject(), nearby, respondTo);
                         break;
                     case HashBuilder.StockRunner.ERROR_NOT_POSTED:
                         // Aw.  It's not posted yet.
                         Log.d(DEBUG_TAG, "Stock isn't posted yet.");
-                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null, null);
+                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
                         break;
                     default:
                         // In all other cases, just assume it's a network error.
@@ -289,15 +328,20 @@ public class StockService extends JobIntentService {
                         // sense in this context, which means something went
                         // horribly, horribly wrong.
                         Log.e(DEBUG_TAG, "Network error!");
-                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null, null);
+                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
                 }
             }
         }
     }
     
-    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby) {
+    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby, @Nullable Class respondTo) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
+
+        // Make sure the Intent goes to the right place if a return address was
+        // explicitly defined.
+        if(respondTo != null)
+            intent.setClass(this, respondTo);
 
         // Stuff all the extras into a Bundle.  There's ClassLoader issues on
         // some devices that require us to do it this way (see comments on

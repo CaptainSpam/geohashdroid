@@ -46,8 +46,10 @@ import net.exclaimindustries.tools.AndroidUtil;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -126,6 +128,12 @@ public class AlarmService extends JobIntentService {
      * one with the other.
      */
     public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
+
+    /**
+     * Notification group for all non-globalhash notifications, if the user has
+     * the options set such that a bunch of them can show up.
+     */
+    public static final String NOTIFICATION_GROUP_LOCAL = "net.exclaimindustries.geohashdroid.NOTIFICATION_GROUP_LOCAL";
 
     private static final int ALARM_CONNECTIVITY_JOB = 1;
     private static final int LOCAL_NOTIFICATION = 1;
@@ -447,7 +455,8 @@ public class AlarmService extends JobIntentService {
             .putExtra(StockService.EXTRA_GRATICULE, g)
             .putExtra(StockService.EXTRA_DATE, cal)
             .putExtra(StockService.EXTRA_REQUEST_ID, cal.getTimeInMillis() / 1000)
-            .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM);
+            .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM)
+            .putExtra(StockService.EXTRA_RESPOND_TO, StockReceiver.class);
         
         // The notification goes up first.
         showNotification(Info.makeAdjustedCalendar(cal, g));
@@ -643,6 +652,10 @@ public class AlarmService extends JobIntentService {
         // still around, they're from previous days, so they're no longer valid.
         mNotificationManager.cancel(R.id.alarm_known_location);
         mNotificationManager.cancel(R.id.alarm_known_location_global);
+        int[] notifyIds = getResources().getIntArray(R.array.known_locations_multi_notifications);
+        for(int id : notifyIds) {
+            mNotificationManager.cancel(id);
+        }
 
         String notifyPref = PreferenceManager.getDefaultSharedPreferences(this).getString(GHDConstants.PREF_KNOWN_NOTIFICATION, GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE);
 
@@ -691,33 +704,119 @@ public class AlarmService extends JobIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
+            // In any case, the matched selections need to be sorted out for
+            // some reason.
+            Collections.sort(matched);
+
             // So now we have a list of what matched.  From there, let's sort
             // out what notifications need to go up, if any.  There's a
             // preference for this sort of thing, and we already checked it
             // earlier.
             switch(notifyPref) {
-                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE:
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE: {
                     // Only once.  That is, classic style.
-                    launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title,  LOCAL_NOTIFICATION);
+                    launchNotification(matched, START_INFO, R.id.alarm_known_location, R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
                     break;
-                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE:
-                    // Once per graticule.  Well, now we need to sort these out by
-                    // graticule.
+                }
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE: {
+                    // Once per Graticule.  Well, now we need to sift through
+                    // the matches and separate them out by Graticule.  However,
+                    // since we still want to limit the number of notifications,
+                    // we still want only the Graticules whose matching Known
+                    // Locations are the closest to their respective points.
+                    // That'll make more sense when you read the code.  I hope.
 
-                    // TODO: Do that!
-                    break;
-                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION:
-                    // Once per matched location?  Well, sure, but that might throw
-                    // up a lot of notifications...
+                    // Our list of matches is already sorted, so the order in
+                    // which we add Graticules matches which Graticules have the
+                    // closest matches.  LinkedHashMap is what we want.
+                    Map<Graticule, List<KnownLocationMatchData>> byGraticule = new LinkedHashMap<>();
 
-                    // TODO: Do that!
+                    for(KnownLocationMatchData single : matched) {
+                        Graticule matchGrat = single.bestInfo.getGraticule();
+                        if(!byGraticule.containsKey(matchGrat)) {
+                            // We haven't added this Graticule yet.  Let's add
+                            // it to the map.
+                            byGraticule.put(matchGrat, new LinkedList<>());
+                        }
+
+                        // Add it in!
+                        byGraticule.get(matchGrat).add(single);
+                    }
+
+                    // Okay, now we have an in-order map associating Graticules
+                    // to a list of corresponding KnownLocations, sorted by
+                    // their respective distances from the best Infos they have.
+                    // For convenience, let's make a list of lists.  By
+                    // "convenience", I mean the Map interface doesn't make it
+                    // clear how to iterate it in such a way that I can remove
+                    // specific indexed entries on the fly, which I guess makes
+                    // sense because that's not what a Map is there to do.
+                    List<List<KnownLocationMatchData>> byGraticuleList = new LinkedList<>();
+
+                    for(Map.Entry<Graticule, List<KnownLocationMatchData>> entry : byGraticule.entrySet()) {
+                        byGraticuleList.add(entry.getValue());
+                    }
+
+                    // From here on out, the logic is mostly the same as in the
+                    // per-location part.  Sort of.  I hope it's not too obvious
+                    // I wrote and commented that part first.
+                    int i;
+                    for(i = 0; i < notifyIds.length - 1; i++) {
+                        if(byGraticuleList.isEmpty()) break;
+
+                        List<KnownLocationMatchData> match = byGraticuleList.remove(0);
+                        launchNotification(match, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+
+                    }
+
+                    // If anything's left in that list-of-lists, flatten it out
+                    // before sending it on its way.  Note that we don't have
+                    // stream() at our disposal due to API level.
+                    if(!byGraticuleList.isEmpty()) {
+                        List<KnownLocationMatchData> remaining = new LinkedList<>();
+                        for(List<KnownLocationMatchData> match : byGraticuleList) {
+                            remaining.addAll(match);
+                        }
+                        launchNotification(remaining, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                    }
+
                     break;
+                }
+                case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION: {
+                    // Once per matched location?  Well, sure, but that might
+                    // throw up a lot of notifications.  So, let's limit that
+                    // number to however many IDs we have in reserve.  We're not
+                    // monsters, after all.  Note that we're working off of one
+                    // LESS than the length of notifyIds.  You'll see why in a
+                    // sec.  Trust me.
+                    int i;
+                    for(i = 0; i < notifyIds.length - 1; i++) {
+                        if(matched.isEmpty()) break;
+
+                        List<KnownLocationMatchData> single = new LinkedList<>();
+                        single.add(matched.remove(0));
+                        // Weird how this isn't causing the @IdRes annotation to
+                        // throw a fit...
+                        launchNotification(single, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                    }
+
+                    // If matched didn't wind up empty, add the remainder of it
+                    // to the notifications.  If it was one entry, it'll be a
+                    // plain ol' notification like the others.  If it was more,
+                    // it'll be a spillover, just like in only-once mode.
+                    if(!matched.isEmpty())
+                        launchNotification(matched, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+
+                    break;
+                }
             }
         }
 
         // Now, the Globalhash notification gets tossed up regardless of the
-        // user's preferences (apart from "Never").
+        // user's preferences (apart from "Never").  And for now, always a
+        // single notification.
         if(!matchedGlobal.isEmpty()) {
+            Collections.sort(matchedGlobal);
             launchNotification(matchedGlobal, START_INFO_GLOBAL, R.id.alarm_known_location_global, R.string.known_locations_alarm_title_global, GLOBAL_NOTIFICATION);
         }
     }
@@ -727,12 +826,13 @@ public class AlarmService extends JobIntentService {
                                     @IdRes int notificationId,
                                     @StringRes int titleId,
                                     int requestCode) {
-        // So here's what we do: Note the BEST match in a notification, but also
-        // mention the others.
-        Collections.sort(matched);
-
-        // First one's the winner!
+        // First one's the winner!  We know this because this is a private
+        // method so we all know matched WAS sorted ahead of time, right?
+        // RIGHT?  Seriously, do so.
         NotificationCompat.Builder builder = getFreshNotificationBuilder(matched, titleId);
+
+        if(requestCode == LOCAL_NOTIFICATION)
+            builder.setGroup(NOTIFICATION_GROUP_LOCAL);
 
         Bundle bun = new Bundle();
         bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
