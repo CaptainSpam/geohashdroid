@@ -10,6 +10,9 @@
         android:key="_debug_meridian"
         android:title="@string/pref_add_prime_meridian_locations" />
     <Preference
+        android:key="_debug_many"
+        android:title="@string/pref_add_many_locations" />
+    <Preference
         android:key="_debug_wipeLocations"
         android:title="@string/pref_wipe_debug_locations" />
     <Preference

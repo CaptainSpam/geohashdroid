@@ -434,7 +434,7 @@ public class PreferencesScreen extends PreferenceActivity {
                 // Unfortunately, the locations aren't organized at all.  Oops.
                 for(KnownLocation kl : locations) {
                     LatLng loc = kl.getLatLng();
-                    if(loc.latitude == baseLat && loc.longitude == baseLon)
+                    if(loc.latitude == baseLat && loc.longitude == baseLon && kl.getName().startsWith("Debug"))
                     {
                         Toast.makeText(
                                 getActivity(),
@@ -447,12 +447,81 @@ public class PreferencesScreen extends PreferenceActivity {
                 // If not, it's time to build locations!  121 of them!
                 for(double lat = baseLat; lat <= baseLat + 1; lat += .1) {
                     for(double lon = baseLon; lon <= baseLon + 1; lon += .1) {
-                        KnownLocation kl = new KnownLocation("Debug " + lat + ", " + lon + " location", new LatLng(lat, lon), 10000, false);
+                        KnownLocation kl = new KnownLocation("Debug " + (Math.round(lat * 10.0) / 10.0) + ", " + (Math.round(lon * 10.0) / 10.0) + " location", new LatLng(lat, lon), 10000, false);
                         locations.add(kl);
                     }
                 }
 
                 // Built!  Toss 'em in!
+                KnownLocation.storeKnownLocations(getActivity(), locations);
+
+                Toast.makeText(
+                        getActivity(),
+                        R.string.pref_debug_locations_added,
+                        Toast.LENGTH_SHORT).show();
+
+                return true;
+            }
+        };
+
+        private Preference.OnPreferenceClickListener _fillClickerBigger = new Preference.OnPreferenceClickListener() {
+
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                // The bigger-area filler is meant for testing the multiple
+                // notifications feature, so we have to make a few adjustments
+                // to the other filler.  For starters, we need... oh, let's say
+                // 25 graticules filled with 121 Known Locations each.  And
+                // we'll put them in the American southwest, centered on the
+                // graticule for Las Vegas (36N 115W).
+                int baseLat = 36;
+                int baseLon = -115;
+
+                List<KnownLocation> locations = KnownLocation.getAllKnownLocations(getActivity());
+
+                // Again, make sure the locations don't already exist, and
+                // again, do a cheap check.  Unfortunately, we can't check these
+                // by actual latitude or longitude due to the random sway...
+                for(KnownLocation kl : locations) {
+                    LatLng loc = kl.getLatLng();
+                    if(Math.round(loc.latitude) == baseLat && Math.round(loc.longitude) == baseLon && kl.getName().startsWith("Debug"))
+                    {
+                        Toast.makeText(
+                                getActivity(),
+                                R.string.pref_debug_locations_exist,
+                                Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+                }
+
+                for(int i = -2; i <= 2; i++) {
+                    // Latitude loop.
+                    for(int j = -2; j <= 2; j++) {
+                        // Longitude loop.
+                        for(double lat = baseLat + i; lat <= baseLat + i + 1; lat += .1) {
+                            // Known Location latitude loop.
+                            for(double lon = baseLon + j; lon <= baseLon + j + 1; lon += .1) {
+                                // Known Location longitude loop.  This one
+                                // actually does something.
+
+                                // This is where we differ from the other filler
+                                // slightly.  We can't have a uniform grid of
+                                // Known Locations, as that'll make it hard to
+                                // sort them by what's closest per graticule.
+                                // So in this case, we'll add a slight bit of
+                                // randomization to the coordinates.  Like, say,
+                                // +/- 0.01 degrees.
+                                double randLat = lat + (Math.random() * 0.01) - 0.005;
+                                double randLon = lon + (Math.random() * 0.01) - 0.005;
+
+                                KnownLocation kl = new KnownLocation("Debug " + (Math.round(lat * 10.0) / 10.0) + ", " + (Math.round(lon * 10.0) / 10.0) + " location (with random sway)", new LatLng(randLat, randLon), 10000, false);
+                                locations.add(kl);
+                            }
+                        }
+                    }
+                }
+
+                // That's it!  Go!
                 KnownLocation.storeKnownLocations(getActivity(), locations);
 
                 Toast.makeText(
@@ -503,6 +572,7 @@ public class PreferencesScreen extends PreferenceActivity {
             findPreference("_debug_non30w").setOnPreferenceClickListener(_fillClicker);
             findPreference("_debug_30w").setOnPreferenceClickListener(_fillClicker);
             findPreference("_debug_meridian").setOnPreferenceClickListener(_fillClicker);
+            findPreference("_debug_many").setOnPreferenceClickListener(_fillClickerBigger);
 
             findPreference("_debug_wipeLocations").setOnPreferenceClickListener(_wipeClicker);
 

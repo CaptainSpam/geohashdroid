@@ -9,6 +9,7 @@
     <string name="pref_add_non_30w_locations">Fill a non-30W graticule with Known Locations</string>
     <string name="pref_add_30w_locations">Fill a 30W graticule with Known Locations</string>
     <string name="pref_add_prime_meridian_locations">Wrap the Prime Meridian with Known Locations</string>
+    <string name="pref_add_many_locations">Fill 25 graticules near Las Vegas with Known Locations</string>
     <string name="pref_wipe_debug_locations">Wipe out all debug-related Known Locations</string>
     <string name="pref_trigger_stock_alarm">Trigger a stock alarm</string>
 
