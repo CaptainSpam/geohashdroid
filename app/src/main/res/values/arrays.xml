@@ -88,17 +88,19 @@
         <item>20000</item>
     </integer-array>
 
-    <!-- I'm pretty sure I'm abusing the concept of IDs and arrays here. -->
+    <!-- Turns out you can't reliably put @ids in either an integer-array or a
+         TypedArray, so for the time being, let's just use a bunch of raw
+         integers until I've got a better idea. -->
     <integer-array name="known_locations_multi_notifications">
-        <item>@id/alarm_known_location_multi_0</item>
-        <item>@id/alarm_known_location_multi_1</item>
-        <item>@id/alarm_known_location_multi_2</item>
-        <item>@id/alarm_known_location_multi_3</item>
-        <item>@id/alarm_known_location_multi_4</item>
-        <item>@id/alarm_known_location_multi_5</item>
-        <item>@id/alarm_known_location_multi_6</item>
-        <item>@id/alarm_known_location_multi_7</item>
-        <item>@id/alarm_known_location_multi_8</item>
-        <item>@id/alarm_known_location_multi_9</item>
+        <item>30001</item>
+        <item>30002</item>
+        <item>30003</item>
+        <item>30004</item>
+        <item>30005</item>
+        <item>30006</item>
+        <item>30007</item>
+        <item>30008</item>
+        <item>30009</item>
+        <item>30010</item>
     </integer-array>
 </resources>

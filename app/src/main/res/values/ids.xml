@@ -22,16 +22,4 @@
     <item name="wiki_error_notification" type="id" />
     <!-- Notification ID for the wiki throttling our edits. -->
     <item name="wiki_throttle_notification" type="id" />
-
-    <!-- A bunch of notification IDs for the multi-notify bit. -->
-    <item name="alarm_known_location_multi_0" type="id" />
-    <item name="alarm_known_location_multi_1" type="id" />
-    <item name="alarm_known_location_multi_2" type="id" />
-    <item name="alarm_known_location_multi_3" type="id" />
-    <item name="alarm_known_location_multi_4" type="id" />
-    <item name="alarm_known_location_multi_5" type="id" />
-    <item name="alarm_known_location_multi_6" type="id" />
-    <item name="alarm_known_location_multi_7" type="id" />
-    <item name="alarm_known_location_multi_8" type="id" />
-    <item name="alarm_known_location_multi_9" type="id" />
 </resources>
