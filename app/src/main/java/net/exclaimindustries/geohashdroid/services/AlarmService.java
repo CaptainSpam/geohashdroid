@@ -652,7 +652,9 @@ public class AlarmService extends JobIntentService {
         // still around, they're from previous days, so they're no longer valid.
         mNotificationManager.cancel(R.id.alarm_known_location);
         mNotificationManager.cancel(R.id.alarm_known_location_global);
-        int[] notifyIds = getResources().getIntArray(R.array.known_locations_multi_notifications);
+
+        int[] notifyIds = getNotifyIds();
+
         for(int id : notifyIds) {
             mNotificationManager.cancel(id);
         }
@@ -900,5 +902,31 @@ public class AlarmService extends JobIntentService {
         } else {
             AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
         }
+    }
+
+    private int[] getNotifyIds() {
+        // We can't put IDs in an XML-defined integer-array, so we have to grab
+        // them like this.  Because I like using auto-generated IDs for things
+        // like this, that's why, and I might change the number of notification
+        // IDs at some point down the line.
+        List<Integer> idList = new LinkedList<>();
+        int lastId;
+        int curIndex = 0;
+        do {
+            lastId = getResources().getIdentifier("alarm_known_location_multi_" + curIndex, "id", this.getPackageName());
+            if(lastId != 0) {
+                idList.add(lastId);
+                curIndex++;
+            }
+        } while(lastId != 0);
+
+        int[] notifyIds = new int[idList.size()];
+        curIndex = 0;
+        for(Integer in : idList) {
+            notifyIds[curIndex] = in;
+            curIndex++;
+        }
+
+        return notifyIds;
     }
 }
