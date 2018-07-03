@@ -652,6 +652,7 @@ public class AlarmService extends JobIntentService {
         // still around, they're from previous days, so they're no longer valid.
         mNotificationManager.cancel(R.id.alarm_known_location);
         mNotificationManager.cancel(R.id.alarm_known_location_global);
+        mNotificationManager.cancel(R.id.alarm_known_location_group);
 
         int[] notifyIds = getNotifyIds();
 
@@ -706,6 +707,20 @@ public class AlarmService extends JobIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
+            // A match!  First, we need the group summary notification...
+            NotificationCompat.Builder groupBuilder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_NEARBY_POINTS)
+                    .setGroupSummary(true)
+                    .setGroup(NOTIFICATION_GROUP_LOCAL)
+                    .setSmallIcon(R.drawable.ic_stat_av_new_releases)
+                    .setAutoCancel(true)
+                    .setOngoing(false)
+                    .setLights(Color.WHITE, 500, 2000)
+                    .setContentText(getResources().getQuantityString(R.plurals.known_locations_alarm_group_text, matched.size(), matched.size()))
+                    .setContentTitle(getResources().getQuantityString(R.plurals.known_locations_alarm_group_title, matched.size(), matched.size()))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+            mNotificationManager.notify(R.id.alarm_known_location_group, groupBuilder.build());
+
             // In any case, the matched selections need to be sorted out for
             // some reason.
             Collections.sort(matched);

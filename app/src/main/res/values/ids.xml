@@ -24,6 +24,7 @@
     <item name="wiki_throttle_notification" type="id" />
 
     <!-- A bunch of notification IDs for the multi-notify bit. -->
+    <item name="alarm_known_location_group" type="id" />
     <item name="alarm_known_location_multi_0" type="id" />
     <item name="alarm_known_location_multi_1" type="id" />
     <item name="alarm_known_location_multi_2" type="id" />
