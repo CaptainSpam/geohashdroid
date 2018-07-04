@@ -77,6 +77,8 @@ public class AlarmService extends JobIntentService {
     private NotificationManagerCompat mNotificationManager;
     
     private NotificationCompat.Builder mNotificationBuilder;
+
+    private int[] mNotifyIds;
     
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -489,6 +491,8 @@ public class AlarmService extends JobIntentService {
             .setContentTitle(getString(R.string.notification_title))
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+        mNotifyIds = getNotifyIds();
     }
     
     @Override
@@ -654,9 +658,7 @@ public class AlarmService extends JobIntentService {
         mNotificationManager.cancel(R.id.alarm_known_location_global);
         mNotificationManager.cancel(R.id.alarm_known_location_group);
 
-        int[] notifyIds = getNotifyIds();
-
-        for(int id : notifyIds) {
+        for(int id : mNotifyIds) {
             mNotificationManager.cancel(id);
         }
 
@@ -778,11 +780,11 @@ public class AlarmService extends JobIntentService {
                     // per-location part.  Sort of.  I hope it's not too obvious
                     // I wrote and commented that part first.
                     int i;
-                    for(i = 0; i < notifyIds.length - 1; i++) {
+                    for(i = 0; i < mNotifyIds.length - 1; i++) {
                         if(byGraticuleList.isEmpty()) break;
 
                         List<KnownLocationMatchData> match = byGraticuleList.remove(0);
-                        launchNotification(match, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(match, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
 
                     }
 
@@ -794,7 +796,7 @@ public class AlarmService extends JobIntentService {
                         for(List<KnownLocationMatchData> match : byGraticuleList) {
                             remaining.addAll(match);
                         }
-                        launchNotification(remaining, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(remaining, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
                     }
 
                     break;
@@ -807,14 +809,14 @@ public class AlarmService extends JobIntentService {
                     // LESS than the length of notifyIds.  You'll see why in a
                     // sec.  Trust me.
                     int i;
-                    for(i = 0; i < notifyIds.length - 1; i++) {
+                    for(i = 0; i < mNotifyIds.length - 1; i++) {
                         if(matched.isEmpty()) break;
 
                         List<KnownLocationMatchData> single = new LinkedList<>();
                         single.add(matched.remove(0));
                         // Weird how this isn't causing the @IdRes annotation to
                         // throw a fit...
-                        launchNotification(single, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(single, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
                     }
 
                     // If matched didn't wind up empty, add the remainder of it
@@ -822,7 +824,7 @@ public class AlarmService extends JobIntentService {
                     // plain ol' notification like the others.  If it was more,
                     // it'll be a spillover, just like in only-once mode.
                     if(!matched.isEmpty())
-                        launchNotification(matched, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(matched, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
 
                     break;
                 }
