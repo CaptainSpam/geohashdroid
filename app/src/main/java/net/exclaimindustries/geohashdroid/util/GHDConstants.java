@@ -92,6 +92,11 @@ public final class GHDConstants {
      * the "stock prefetch is off" warning in KnownLocationsPicker.
      */
     public static final String PREF_STOP_BUGGING_ME_PREFETCH_WARNING = "StopBuggingPrefetch";
+    /**
+     * Prefs key specifying whether or not the user asked us to stop popping up
+     * the "ten notifications at max" reminder in PrefrencesScreen.
+     */
+    public static final String PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT = "StopBuggingKnownNotificationLimit";
 
     /** Prefs key for whether or not the app is in night mode. */
     public static final String PREF_NIGHT_MODE = "NightMode";

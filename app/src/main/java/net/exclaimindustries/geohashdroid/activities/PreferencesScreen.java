@@ -21,6 +21,7 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.support.annotation.StringRes;
 import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -80,27 +81,31 @@ public class PreferencesScreen extends PreferenceActivity {
 
         @Override
         public boolean onPreferenceChange(Preference preference, Object newValue) {
-            // The basic stringy version of the value.
-            String stringValue = newValue.toString();
-
-            if(preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
-                ListPreference listPreference = (ListPreference) preference;
-                int index = listPreference.findIndexOfValue(stringValue);
-
-                // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
-            } else {
-                // Eh, just use the string value.  That's simple enough.
-                preference.setSummary(stringValue);
-            }
+            updateSummary(preference, newValue);
             return true;
         }
     };
+
+    private static void updateSummary(Preference preference, Object newValue) {
+        // The basic stringy version of the value.
+        String stringValue = newValue.toString();
+
+        if(preference instanceof ListPreference) {
+            // For list preferences, look up the correct display value in
+            // the preference's 'entries' list.
+            ListPreference listPreference = (ListPreference) preference;
+            int index = listPreference.findIndexOfValue(stringValue);
+
+            // Set the summary to reflect the new value.
+            preference.setSummary(
+                    index >= 0
+                            ? listPreference.getEntries()[index]
+                            : null);
+        } else {
+            // Eh, just use the string value.  That's simple enough.
+            preference.setSummary(stringValue);
+        }
+    }
 
     /**
      * Also from Android Studio, this attaches a preference to the summary
@@ -135,15 +140,76 @@ public class PreferencesScreen extends PreferenceActivity {
      * the map somewhere.
      */
     public static class MapPreferenceFragment extends PreferenceFragment {
+        private static final String KNOWN_NOTIFICATION_REMINDER_DIALOG = "KnownNotificationReminderDialog";
+
+        /**
+         * This {@link DialogFragment} reminds the user that we're not monsters
+         * and therefore won't spam them with hundreds of notifications if they
+         * really have that many known locations.
+         */
+        public static class KnownNotificationLimitDialogFragment extends DialogFragment {
+            @Override
+            public Dialog onCreateDialog(Bundle savedInstanceState) {
+                String setting = getArguments().getString(GHDConstants.PREF_KNOWN_NOTIFICATION, "");
+
+                @StringRes int dialogText;
+
+                switch(setting) {
+                    case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE:
+                        dialogText = R.string.pref_knownnotification_pergraticule_reminder;
+                        break;
+                    case GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION:
+                        dialogText = R.string.pref_knownnotification_perlocation_reminder;
+                        break;
+                    default:
+                        // Really, this shouldn't happen, but if the dialog is
+                        // being summoned anyway, may as well...
+                        dialogText = R.string.pref_knownnotification_fallback_reminder;
+                        break;
+                }
+
+                return new AlertDialog.Builder(getActivity()).setMessage(dialogText)
+                        .setTitle(R.string.pref_knownnotification_reminder_title)
+                        .setNegativeButton(R.string.stop_reminding_me_label, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dismiss();
+
+                                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, true);
+                                editor.apply();
+
+                                BackupManager bm = new BackupManager(getActivity());
+                                bm.dataChanged();
+                            }
+                        })
+                        .setPositiveButton(R.string.gotcha_label, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dismiss();
+                            }
+                        })
+                        .create();
+            }
+        }
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref_map);
 
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_DIST_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_COORD_UNITS));
             bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_STARTUP_BEHAVIOR));
-            bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_KNOWN_NOTIFICATION));
+
+            // This one needs special handling due to its onPreferenceChange
+            // being overridden elsewhere.
+            Preference knownNotification = findPreference(GHDConstants.PREF_KNOWN_NOTIFICATION);
+            updateSummary(knownNotification, prefs.getString(knownNotification.getKey(), GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE));
 
             // The known locations manager is just another Activity.
             findPreference("_knownLocations").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -151,6 +217,38 @@ public class PreferencesScreen extends PreferenceActivity {
                 public boolean onPreferenceClick(Preference preference) {
                     Intent i = new Intent(getActivity(), KnownLocationsPicker.class);
                     startActivity(i);
+                    return true;
+                }
+            });
+
+            // The known locations notification preference needs a quick
+            // reminder popup.
+            knownNotification.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    // First off, ignore this entirely if the user told us to
+                    // stop bugging them or if the new setting doesn't need a
+                    // warning.
+                    boolean stopBugging = prefs.getBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, false);
+
+                    // Maybe I should invest in shorter variable names.
+                    if(!stopBugging
+                            && (newValue.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE)
+                                || newValue.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION))) {
+                        // Notify!
+                        DialogFragment frag = new KnownNotificationLimitDialogFragment();
+                        Bundle args = new Bundle();
+                        args.putString(GHDConstants.PREF_KNOWN_NOTIFICATION, newValue.toString());
+                        frag.setArguments(args);
+                        frag.show(getFragmentManager(), KNOWN_NOTIFICATION_REMINDER_DIALOG);
+                    }
+
+                    // We're also doing the summary update ourselves, as this
+                    // takes over the onPreferenceChange part that
+                    // bindPreferenceSummaryToValue needs to function.
+                    updateSummary(preference, newValue);
+
                     return true;
                 }
             });
@@ -292,6 +390,7 @@ public class PreferencesScreen extends PreferenceActivity {
                                 // in new prompts until I get sick of it and
                                 // come up with a more efficient way to do this.
                                 editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, false);
+                                editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, false);
                                 editor.apply();
 
                                 Toast.makeText(
