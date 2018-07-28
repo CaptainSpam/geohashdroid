@@ -1,6 +1,6 @@
 /**
  * QueueService.java
- * Copyright (C)2015 Nicholas Killewald
+ * Copyright (C)2018 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
@@ -22,6 +22,8 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 /**
@@ -517,4 +519,54 @@ public abstract class QueueService extends Service {
      *         returned, it will be ignored)
      */
     protected abstract Intent deserializeFromDisk(InputStream is);
+
+    /**
+     * Returns the name of the SQLite database that'll be used for this queue.
+     * Make sure it's unique within your package's context.
+     *
+     * @return a database name
+     */
+    @NonNull
+    protected abstract String getDatabaseName();
+
+    /**
+     * <p>
+     * Serializes the given Intent to a String.  Note that at this point, an
+     * Intent is solely used as a means of storing data.  This can be called any
+     * time an Intent comes in; assume it will be, though there may be cases in
+     * which it won't.  You can return whatever String you want here, but
+     * whatever you return, it'll be your responsibility to deserialize it
+     * later in {@link #deserializeIntent(String)}.
+     * </p>
+     *
+     * <p>
+     * If this returns null, it will be treated as an empty string.
+     * </p>
+     *
+     * @param i Intent to serialize
+     * @return a String representation of the vital info in the Intent
+     * @see #deserializeIntent(String)
+     */
+    @Nullable
+    protected abstract String serializeIntent(@NonNull Intent i);
+
+    /**
+     * <p>
+     * Deserializes the given String back into an Intent.  This will be called
+     * any time work on an Intent finishes and more exist in the queue.  All you
+     * have to do is pull back whatever you wrote in {@link #serializeIntent(Intent)}
+     * and get an Intent out of it that {@link #handleIntent(Intent)} will deal
+     * with.
+     * </p>
+     *
+     * <p>
+     * If this returns null, this entry in the queue will be ignored and
+     * removed.
+     * </p>
+     * @param s a String to deserialize
+     * @return an Intent formed by deserializing the input String
+     * @see #serializeIntent(Intent) 
+     */
+    @Nullable
+    protected abstract Intent deserializeIntent(@NonNull String s);
 }
