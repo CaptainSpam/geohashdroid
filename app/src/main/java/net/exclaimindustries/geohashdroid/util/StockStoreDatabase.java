@@ -7,8 +7,6 @@
  */
 package net.exclaimindustries.geohashdroid.util;
 
-import java.util.Calendar;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -19,7 +17,10 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
+
 import net.exclaimindustries.tools.DateTools;
+
+import java.util.Calendar;
 
 /**
  * <p>
@@ -55,26 +56,8 @@ public class StockStoreDatabase {
     /** The name of the longitude hashpart column. */
     public static final String KEY_HASHES_LONHASH = "lonhash";
     
-    private static final String DATABASE_NAME = "stockstore";
-    
     private static final String TABLE_STOCKS = "stocks";
     private static final String TABLE_HASHES = "hashes";
-    
-    private static final int DATABASE_VERSION = 3;
-    
-    private static final String CREATE_STOCKS_TABLE = 
-        "CREATE TABLE " + TABLE_STOCKS
-            + " (" + KEY_STOCKS_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + KEY_STOCKS_DATE + " INTEGER NOT NULL, "
-            + KEY_STOCKS_STOCK + " TEXT NOT NULL);";
-    
-    private static final String CREATE_HASHES_TABLE = 
-        "CREATE TABLE " + TABLE_HASHES
-            + " (" + KEY_HASHES_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + KEY_HASHES_DATE + " INTEGER NOT NULL, "
-            + KEY_HASHES_30W + " INTEGER NOT NULL, "
-            + KEY_HASHES_LATHASH + " REAL NOT NULL, "
-            + KEY_HASHES_LONHASH + " REAL NOT NULL);";
     
     /**
      * Implements SQLiteOpenHelper.  Much like Hamburger Helper, this can take
@@ -83,6 +66,22 @@ public class StockStoreDatabase {
      * @author Nicholas Killewald
      */
     private static class DatabaseHelper extends SQLiteOpenHelper {
+        private static final String DATABASE_NAME = "stockstore";
+        private static final int DATABASE_VERSION = 3;
+
+        private static final String CREATE_STOCKS_TABLE =
+                "CREATE TABLE " + TABLE_STOCKS
+                        + " (" + KEY_STOCKS_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                        + KEY_STOCKS_DATE + " INTEGER NOT NULL, "
+                        + KEY_STOCKS_STOCK + " TEXT NOT NULL);";
+
+        private static final String CREATE_HASHES_TABLE =
+                "CREATE TABLE " + TABLE_HASHES
+                        + " (" + KEY_HASHES_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                        + KEY_HASHES_DATE + " INTEGER NOT NULL, "
+                        + KEY_HASHES_30W + " INTEGER NOT NULL, "
+                        + KEY_HASHES_LATHASH + " REAL NOT NULL, "
+                        + KEY_HASHES_LONHASH + " REAL NOT NULL);";
 
         DatabaseHelper(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
