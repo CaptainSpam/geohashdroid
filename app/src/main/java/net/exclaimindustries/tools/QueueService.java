@@ -61,8 +61,6 @@ public abstract class QueueService extends Service {
     private DatabaseHelper mHelper;
     private SQLiteDatabase mDatabase;
 
-    private final Object mSynchronizationThingy = new Object();
-
     private final class ServiceHandler extends Handler {
         public ServiceHandler(Looper looper) {
             // WE'RE IN A THREAD NOW!
@@ -474,8 +472,8 @@ public abstract class QueueService extends Service {
         return mDatabase;
     }
 
-    private long writeIntentToDatabase(@NonNull Intent i) throws SQLException {
-        synchronized(mSynchronizationThingy) {
+    private long writeIntentToQueue(@NonNull Intent i) throws SQLException {
+        synchronized(this) {
             SQLiteDatabase database = initDatabase();
 
             // Serialize the Intent, using whatever method the concrete
@@ -495,9 +493,39 @@ public abstract class QueueService extends Service {
         }
     }
 
+    private void removeNextIntentFromQueue() throws SQLException {
+        synchronized(this) {
+            SQLiteDatabase database = initDatabase();
+
+            // Grab us exactly one entry, if that.
+            Cursor cursor = database.query(TABLE_QUEUE, new String[]{KEY_QUEUE_ROWID},
+                    null, null, null, null,
+                    KEY_QUEUE_TIMESTAMP + " ASC", "1");
+
+            if(cursor == null) {
+                // I really hope this never comes up, else a LOT of methods will
+                // dump this to logcat.
+                Log.w(DEBUG_TAG, "When removing the next Intent, the Cursor was null!");
+                return;
+            }
+
+            if(cursor.getCount() == 0) {
+                Log.i(DEBUG_TAG, "Tried to remove next Intent but there's nothing in the database!");
+                return;
+            }
+
+            // Otherwise, we have us our row ID.
+            cursor.moveToFirst();
+            long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
+            cursor.close();
+
+            database.delete(TABLE_QUEUE, KEY_QUEUE_ROWID + "=" + rowId, null);
+        }
+    }
+
     @Nullable
-    private Intent getNextIntentFromDatabase() throws SQLException {
-        synchronized(mSynchronizationThingy) {
+    private Intent getNextIntentFromQueue() throws SQLException {
+        synchronized(this) {
             SQLiteDatabase database = initDatabase();
 
             // We'll delete these when we're done with the Cursor.
@@ -530,12 +558,13 @@ public abstract class QueueService extends Service {
                 long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
                 String data = cursor.getString(cursor.getColumnIndex(KEY_QUEUE_DATA));
 
-                // Remember this so we can delete it later.
-                toDelete.add(rowId);
-
                 // Now, try to deserialize.  This'll be null if it should be
                 // ignored.
                 toReturn = deserializeIntent(data);
+
+                // And if it IS null, delete it afterward.
+                if(toReturn == null)
+                    toDelete.add(rowId);
 
                 // The while loop will stop if we found something.  Move on!
                 cursor.moveToNext();
@@ -544,7 +573,7 @@ public abstract class QueueService extends Service {
             // So!  Let's wrap things up.  Get rid of the cursor.
             cursor.close();
 
-            // Now, delete everything we checked.
+            // Now, delete everything that was null.
             for(Long l : toDelete) {
                 database.delete(TABLE_QUEUE, KEY_QUEUE_ROWID + "=" + l, null);
             }
@@ -555,8 +584,28 @@ public abstract class QueueService extends Service {
         }
     }
 
-    private void clearDatabase() throws SQLException{
-        synchronized(mSynchronizationThingy) {
+    private int getQueueCount() throws SQLException {
+        synchronized(this) {
+            SQLiteDatabase database = initDatabase();
+
+            // This oughta be easy.
+            Cursor cursor = database.query(TABLE_QUEUE, new String[]{KEY_QUEUE_ROWID},
+                    null, null, null, null,
+                    null);
+
+            if(cursor == null) {
+                Log.w(DEBUG_TAG, "When getting the queue count, the Cursor was null!");
+                return 0;
+            }
+
+            int toReturn = cursor.getCount();
+            cursor.close();
+            return toReturn;
+        }
+    }
+
+    private void clearQueue() throws SQLException {
+        synchronized(this) {
             // Everybody out of the pool!
             SQLiteDatabase database = initDatabase();
 
