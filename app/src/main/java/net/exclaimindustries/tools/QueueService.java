@@ -7,16 +7,14 @@
  */
 package net.exclaimindustries.tools;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import android.app.Service;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -25,6 +23,17 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * <p>
@@ -48,6 +57,11 @@ public abstract class QueueService extends Service {
 
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
+
+    private DatabaseHelper mHelper;
+    private SQLiteDatabase mDatabase;
+
+    private final Object mSynchronizationThingy = new Object();
 
     private final class ServiceHandler extends Handler {
         public ServiceHandler(Looper looper) {
@@ -80,7 +94,45 @@ public abstract class QueueService extends Service {
          */
         STOP
     }
-    
+
+    /** The name of the table storing everything. */
+    private static final String TABLE_QUEUE = "queue";
+
+    /** Everybody needs a rowid, right? */
+    private static final String KEY_QUEUE_ROWID = "_id";
+    /** The timestamp of the data.  We sort by this. */
+    private static final String KEY_QUEUE_TIMESTAMP = "timestamp";
+    /** The serialized data itself.  Treat as an opaque string. */
+    private static final String KEY_QUEUE_DATA = "data";
+
+    /**
+     * The database gets by with a little help from this.
+     */
+    private class DatabaseHelper extends SQLiteOpenHelper {
+
+        private static final int DATABASE_VERSION = 1;
+
+        private static final String CREATE_QUEUE_TABLE =
+                "CREATE TABLE " + TABLE_QUEUE
+                    + " (" + KEY_QUEUE_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + KEY_QUEUE_TIMESTAMP + " INTEGER NOT NULL, "
+                    + KEY_QUEUE_DATA + " TEXT NOT NULL);";
+
+        DatabaseHelper(Context context) {
+            super(context, getQueueDatabaseName(), null, DATABASE_VERSION);
+        }
+
+        @Override
+        public void onCreate(SQLiteDatabase db) {
+            db.execSQL(CREATE_QUEUE_TABLE);
+        }
+
+        @Override
+        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            // This is version 1, there's no upgrading right now.
+        }
+    }
+
     /**
      * Internal prefix of serialized intent data.  Don't change this unless you
      * know you'll be running multiple QueueServices, which is the sole reason
@@ -410,7 +462,108 @@ public abstract class QueueService extends Service {
     public boolean isPaused() {
         return mIsPaused;
     }
-    
+
+    private synchronized SQLiteDatabase initDatabase() throws SQLException {
+        // If we already have an open database, use that.  Otherwise, make a new
+        // one.
+        if(mDatabase != null && mDatabase.isOpen())
+            return mDatabase;
+
+        mHelper = new DatabaseHelper(this);
+        mDatabase = mHelper.getWritableDatabase();
+        return mDatabase;
+    }
+
+    private long writeIntentToDatabase(@NonNull Intent i) throws SQLException {
+        synchronized(mSynchronizationThingy) {
+            SQLiteDatabase database = initDatabase();
+
+            // Serialize the Intent, using whatever method the concrete
+            // implementation says it should.
+            String data = serializeIntent(i);
+            if(data == null) data = "";
+
+            // Grab a timestamp!
+            long time = Calendar.getInstance().getTimeInMillis();
+
+            // Now, shove it into the database!
+            ContentValues toGo = new ContentValues();
+            toGo.put(KEY_QUEUE_TIMESTAMP, time);
+            toGo.put(KEY_QUEUE_DATA, data);
+
+            return database.insert(TABLE_QUEUE, null, toGo);
+        }
+    }
+
+    @Nullable
+    private Intent getNextIntentFromDatabase() throws SQLException {
+        synchronized(mSynchronizationThingy) {
+            SQLiteDatabase database = initDatabase();
+
+            // We'll delete these when we're done with the Cursor.
+            List<Long> toDelete = new LinkedList<>();
+
+            // Grab everything!  Sorted!
+            Cursor cursor = database.query(TABLE_QUEUE, new String[]{KEY_QUEUE_ROWID, KEY_QUEUE_DATA},
+                    null, null, null, null,
+                    KEY_QUEUE_TIMESTAMP + " ASC");
+
+            if(cursor == null) {
+                // Problem!
+                Log.w(DEBUG_TAG, "When getting the next Intent, the Cursor was null!");
+                return null;
+            }
+
+            if(cursor.getCount() == 0) {
+                // Not really a problem, but the queue's just empty.
+                return null;
+            }
+
+            cursor.moveToFirst();
+
+            // Now, loop through until we find something we can use (or until
+            // we bottom out).
+            Intent toReturn = null;
+
+            while(toReturn == null && !cursor.isAfterLast()) {
+                // Data!  Now!
+                long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
+                String data = cursor.getString(cursor.getColumnIndex(KEY_QUEUE_DATA));
+
+                // Remember this so we can delete it later.
+                toDelete.add(rowId);
+
+                // Now, try to deserialize.  This'll be null if it should be
+                // ignored.
+                toReturn = deserializeIntent(data);
+
+                // The while loop will stop if we found something.  Move on!
+                cursor.moveToNext();
+            }
+
+            // So!  Let's wrap things up.  Get rid of the cursor.
+            cursor.close();
+
+            // Now, delete everything we checked.
+            for(Long l : toDelete) {
+                database.delete(TABLE_QUEUE, KEY_QUEUE_ROWID + "=" + l, null);
+            }
+
+            // And return whatever our result was.  That result may very well be
+            // null.
+            return toReturn;
+        }
+    }
+
+    private void clearDatabase() throws SQLException{
+        synchronized(mSynchronizationThingy) {
+            // Everybody out of the pool!
+            SQLiteDatabase database = initDatabase();
+
+            database.delete(TABLE_QUEUE, null, null);
+        }
+    }
+
     /**
      * Called whenever a new data Intent comes in and the queue is paused to
      * determine if the queue should resume immediately.  If this returns false,
@@ -527,20 +680,23 @@ public abstract class QueueService extends Service {
      * @return a database name
      */
     @NonNull
-    protected abstract String getDatabaseName();
+    protected abstract String getQueueDatabaseName();
 
     /**
      * <p>
      * Serializes the given Intent to a String.  Note that at this point, an
      * Intent is solely used as a means of storing data.  This can be called any
      * time an Intent comes in; assume it will be, though there may be cases in
-     * which it won't.  You can return whatever String you want here, but
-     * whatever you return, it'll be your responsibility to deserialize it
-     * later in {@link #deserializeIntent(String)}.
+     * which it won't.  If this isn't called for a given Intent, there won't be
+     * a corresponding deserialize call.  You can return whatever String you
+     * want here, but whatever you return, it'll be your responsibility to
+     * deserialize it later in {@link #deserializeIntent(String)}.
      * </p>
      *
      * <p>
-     * If this returns null, it will be treated as an empty string.
+     * If this returns null, it will be treated as an empty string and stored in
+     * the database as such.  If you choose not to do anything with it, you may
+     * return null from {@link #deserializeIntent(String)} later.
      * </p>
      *
      * @param i Intent to serialize
@@ -561,11 +717,12 @@ public abstract class QueueService extends Service {
      *
      * <p>
      * If this returns null, this entry in the queue will be ignored and
-     * removed.
+     * removed.  {@link #handleIntent(Intent)} will NOT be called on it.
      * </p>
+     *
      * @param s a String to deserialize
      * @return an Intent formed by deserializing the input String
-     * @see #serializeIntent(Intent) 
+     * @see #serializeIntent(Intent)
      */
     @Nullable
     protected abstract Intent deserializeIntent(@NonNull String s);
