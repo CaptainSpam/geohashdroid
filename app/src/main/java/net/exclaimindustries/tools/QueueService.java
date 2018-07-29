@@ -24,16 +24,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Calendar;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * <p>
@@ -130,13 +123,6 @@ public abstract class QueueService extends Service {
             // This is version 1, there's no upgrading right now.
         }
     }
-
-    /**
-     * Internal prefix of serialized intent data.  Don't change this unless you
-     * know you'll be running multiple QueueServices, which is the sole reason
-     * it's not static or final.
-     */
-    protected String mInternalQueueFilePrefix = "Queue";
     
     /**
      * Send an Intent with this extra data in it, set to one of the command
@@ -160,7 +146,6 @@ public abstract class QueueService extends Service {
      */
     public static final int COMMAND_ABORT = 2;
     
-    private Queue<Intent> mQueue;
     private Thread mThread;
     
     // Whether or not the queue is currently paused.
@@ -169,71 +154,22 @@ public abstract class QueueService extends Service {
     public QueueService() {
         super();
         
-        // Give us a queue!
-        mQueue = new ConcurrentLinkedQueue<>();
-        
-        // And we're not paused by default.
+        // We're not paused by default.
         mIsPaused = false;
     }
     
     @Override
     public void onCreate() {
         super.onCreate();
-        
-        // To recreate, we want to go through everything we have in storage in
-        // the same order we wrote it out.
-        String files[] = fileList();
-        
-        // But the only files we're interested in are Queue# files.
-        int count = 0;
-        
-        for(String s : files) {
-            if(s.startsWith(mInternalQueueFilePrefix))
-                count++;
-        }
-        
-        if(count >= 1) {
-            // Now, open each one in order and have the deserializer deserialize
-            // them.  And because we're being paranoid today, make sure we
-            // account for gaps in the numbering.
-            int processed = 0;
-            
-            int i = 0;
-            
-            while(processed < count) {
-                try {
-                    // All the queue files are named Queue#.  We know there are
-                    // as many as the count variable.  We don't know if all
-                    // those digits exist, though, so track how many files we
-                    // deserialized and stop when we run out.  I really hope we
-                    // don't wind up in an infinite loop here.
-                    InputStream is = openFileInput(mInternalQueueFilePrefix + i);
-                    
-                    Intent intent = deserializeFromDisk(is);
-                    if(intent != null) mQueue.add(intent);
-                    
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        // Ignore this.
-                    }
-                    
-                    deleteFile(mInternalQueueFilePrefix + i);
-                    processed++;
-                } catch (FileNotFoundException e) {
-                    // If we get here, we're apparently out of order.
-                    Log.w(DEBUG_TAG, "Couldn't find " + mInternalQueueFilePrefix + i + ", apparently we missed a number when writing...");
-                }
-                
-                i++;
-            }
-            
-            // Always assume that a non-empty queue involved a pause somewhere.
+
+        // The database should have all the data we need already, and we'll be
+        // reading directly from it as we go.  What we DO need right off the bat
+        // is whether or not anything's in there, because if there is, we're
+        // going to assume we were paused in a previous life.
+        if(getQueueCount() > 0)
             mIsPaused = true;
-        }
         
-        // Finally, restart the HandlerThread.  We'll wait for further
-        // instructions.
+        // (Re)start the HandlerThread.  We'll wait for further instructions.
         HandlerThread thread = new HandlerThread("QueueService Handler");
         thread.start();
 
@@ -243,44 +179,11 @@ public abstract class QueueService extends Service {
 
     @Override
     public void onDestroy() {
-        // Before destruction, serialize!  Make it snappy!
-        int i = 0;
-        
-        if(mQueue != null) {
-            for(Intent in : mQueue) {
-                try {
-                    serializeToDisk(in, openFileOutput(mInternalQueueFilePrefix + i, MODE_PRIVATE));
-                } catch (FileNotFoundException e) {
-                    // If we get an exception, complain about it and just move
-                    // on.
-                    Log.e(DEBUG_TAG, "Couldn't write queue entry to persistant storage!  Stack trace follows...");
-                    e.printStackTrace();
-                }
-                i++;
-            }
-        }
-        
+        // Shut down the helper and the looper.
+        mHelper.close();
         mServiceLooper.quit();
         
         super.onDestroy();
-    }
-
-    /**
-     * Gets an iterator to the current queue.
-     * 
-     * @return an iterator to the current queue
-     */
-    public Iterator<Intent> getIterator() {
-        return mQueue.iterator();
-    }
-    
-    /**
-     * Gets how many items are currently in the queue.
-     * 
-     * @return the number of items in the queue
-     */
-    public int getSize() {
-        return mQueue.size();
     }
 
     @Override
@@ -348,24 +251,20 @@ public abstract class QueueService extends Service {
                 doNewThread();
             } else if(command == COMMAND_RESUME_SKIP_FIRST) {
                 Log.d(DEBUG_TAG, "Restarting the thread now, skipping the first Intent...");
-                if(mQueue.isEmpty()) {
-                    Log.w(DEBUG_TAG, "The queue is empty!  There's nothing to skip!");
-                } else {
-                    mQueue.remove();
-                }
+                removeNextIntentFromQueue();
                 doNewThread();
             } else {
                 // This is a COMMAND_ABORT.  Simply empty the queue (but call
                 // the callback first).
-                Log.d(DEBUG_TAG, "Emptying out the queue (removing " + mQueue.size() + " Intents)...");
+                Log.d(DEBUG_TAG, "Emptying out the queue (removing " + getQueueCount() + " Intents)...");
                 onQueueEmpty(false);
-                mQueue.clear();
+                clearQueue();
                 stopSelf();
             }
         } else {
             // If this isn't a control message, add the intent to the queue.
             Log.d(DEBUG_TAG, "Enqueueing an Intent!");
-            mQueue.add(intent);
+            writeIntentToQueue(intent);
             
             // Next, if the thread isn't already running (AND we're not paused),
             // make it run.  If it IS running, we'll just process the next one
@@ -409,11 +308,11 @@ public abstract class QueueService extends Service {
             // Now!  Loop through the queue!
             Intent i;
             
-            if(!mQueue.isEmpty())
+            if(getQueueCount() == 0)
                 onQueueStart();
             
-            while(!mQueue.isEmpty()) {
-                i = mQueue.peek();
+            while(getQueueCount() > 0) {
+                i = getNextIntentFromQueue();
 
                 Log.d(DEBUG_TAG, "Processing intent...");
                 
@@ -425,16 +324,16 @@ public abstract class QueueService extends Service {
                 if(r == ReturnCode.STOP) {
                     // If the return code we got instructed us to stop entirely,
                     // wipe the queue and bail out.
-                    Log.d(DEBUG_TAG, "Return said to stop, stopping now and abandoning " + mQueue.size() + " Intent(s).");
+                    Log.d(DEBUG_TAG, "Return said to stop, stopping now and abandoning " + getQueueCount() + " Intent(s).");
                     onQueueEmpty(false);
-                    mQueue.clear();
+                    clearQueue();
                     stopSelf();
                     return;
                 } else if(r == ReturnCode.CONTINUE) {
                     // CONTINUE means processing was a success, so we can yoink
                     // the Intent from the front of the queue and scrap it.
                     Log.d(DEBUG_TAG, "Return said to continue.");
-                    mQueue.remove();
+                    removeNextIntentFromQueue();
                 } else if(r == ReturnCode.PAUSE) {
                     // If we were told to pause, well, pause.  We'll be told to
                     // try again later.
@@ -687,40 +586,6 @@ public abstract class QueueService extends Service {
      *                     aborted before all Intents were processed
      */
     protected abstract void onQueueEmpty(boolean allProcessed);
-    
-    /**
-     * <p>
-     * Serializes the given Intent to disk for later re-reading.  Note that at
-     * this point, an Intent is solely used as a means of storing data.  Which,
-     * really, it can be, though I doubt that's why it was made.  This gets
-     * called at onDestroy time for each Intent left in the queue (if any are
-     * left at all) so that they can be recreated at onCreate time to persist
-     * the Service's state (there doesn't appear to be an onSaveInstanceState
-     * like you'd get with Activities).
-     * </p>
-     * 
-     * <p>
-     * Note that no checking is done to ensure you actually wrote anything to
-     * the stream.  If the result is a zero-byte file, that's your
-     * responsibility to handle it at deserialize time.
-     * </p>
-     * 
-     * @param i the Intent to serialize
-     * @param os what you'll be writing to
-     */
-    protected abstract void serializeToDisk(Intent i, OutputStream os);
-    
-    /**
-     * Deserializes an Intent previously written to disk by serializeToDisk.
-     * This will be called once for each Intent found on disk, and will be
-     * called in the order of the queue.  All you have to do is pull back
-     * whatever you wrote in serializeToDisk and get an Intent out of it.
-     * 
-     * @param is what you'll be reading from
-     * @return a new Intent to be processed at the right time (if null is
-     *         returned, it will be ignored)
-     */
-    protected abstract Intent deserializeFromDisk(InputStream is);
 
     /**
      * Returns the name of the SQLite database that'll be used for this queue.
