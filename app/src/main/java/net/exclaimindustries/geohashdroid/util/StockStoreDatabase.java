@@ -147,8 +147,8 @@ public class StockStoreDatabase {
      * @param i the aforementioned bundle of Info to be stored into the database
      * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public synchronized long storeInfo(Info i) {
-        synchronized(mDatabase) {
+    public long storeInfo(Info i) {
+        synchronized(this) {
             // Fortunately, there's a handy ContentValues object for this sort
             // of thing.  I mean, we COULD do manual SQLite calls, but why
             // bother?
@@ -185,8 +185,8 @@ public class StockStoreDatabase {
      * @param stock the stock itself, as a string
      * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public synchronized long storeStock(Calendar cal, String stock) {
-        synchronized(mDatabase) {
+    public long storeStock(Calendar cal, String stock) {
+        synchronized(this) {
             // First, check over the database to make sure it doesn't already
             // exist.
             if(getStock(cal) != null) {
@@ -218,7 +218,7 @@ public class StockStoreDatabase {
      *         have the data you want
      */
     public Info getInfo(Calendar c, Graticule g) {
-        synchronized(mDatabase) {
+        synchronized(this) {
             Log.v(DEBUG_TAG, "Querying the hashes database...");
             // First, adjust the calendar if we need to.
             Info toReturn = null;
@@ -269,7 +269,7 @@ public class StockStoreDatabase {
      * @return the String representation of the stock, or null if none is stored 
      */
     public String getStock(Calendar cal) {
-        synchronized(mDatabase) {
+        synchronized(this) {
             Log.v(DEBUG_TAG, "Querying the stock database...");
             
             String toReturn = null;
@@ -307,8 +307,8 @@ public class StockStoreDatabase {
      *
      * @param c Context to use to get preferences and such
      */
-    public synchronized void cleanup(@NonNull Context c) {
-        synchronized(mDatabase) {
+    public void cleanup(@NonNull Context c) {
+        synchronized(this) {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
             
             Log.v(DEBUG_TAG, "Pruning database...");
@@ -361,8 +361,8 @@ public class StockStoreDatabase {
      * Erases everything from the stock cache database.  This is really only to
      * be used if something's gone horribly wrong.
      */
-    public synchronized boolean deleteCache() {
-        synchronized(mDatabase) {
+    public boolean deleteCache() {
+        synchronized(this) {
             try {
                 Log.v(DEBUG_TAG, "Emptying the stock cache...");
                 // KABOOM!
