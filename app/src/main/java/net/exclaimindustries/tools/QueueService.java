@@ -51,9 +51,6 @@ public abstract class QueueService extends Service {
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
 
-    private DatabaseHelper mHelper;
-    private SQLiteDatabase mDatabase;
-
     private final class ServiceHandler extends Handler {
         public ServiceHandler(Looper looper) {
             // WE'RE IN A THREAD NOW!
@@ -86,44 +83,6 @@ public abstract class QueueService extends Service {
         STOP
     }
 
-    /** The name of the table storing everything. */
-    private static final String TABLE_QUEUE = "queue";
-
-    /** Everybody needs a rowid, right? */
-    private static final String KEY_QUEUE_ROWID = "_id";
-    /** The timestamp of the data.  We sort by this. */
-    private static final String KEY_QUEUE_TIMESTAMP = "timestamp";
-    /** The serialized data itself.  Treat as an opaque string. */
-    private static final String KEY_QUEUE_DATA = "data";
-
-    /**
-     * The database gets by with a little help from this.
-     */
-    private class DatabaseHelper extends SQLiteOpenHelper {
-
-        private static final int DATABASE_VERSION = 1;
-
-        private static final String CREATE_QUEUE_TABLE =
-                "CREATE TABLE " + TABLE_QUEUE
-                    + " (" + KEY_QUEUE_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    + KEY_QUEUE_TIMESTAMP + " INTEGER NOT NULL, "
-                    + KEY_QUEUE_DATA + " TEXT NOT NULL);";
-
-        DatabaseHelper(Context context) {
-            super(context, getQueueDatabaseName(), null, DATABASE_VERSION);
-        }
-
-        @Override
-        public void onCreate(SQLiteDatabase db) {
-            db.execSQL(CREATE_QUEUE_TABLE);
-        }
-
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            // This is version 1, there's no upgrading right now.
-        }
-    }
-    
     /**
      * Send an Intent with this extra data in it, set to one of the command
      * statics, to send a command.
@@ -179,8 +138,7 @@ public abstract class QueueService extends Service {
 
     @Override
     public void onDestroy() {
-        // Shut down the helper and the looper.
-        mHelper.close();
+        // Shut down the looper.
         mServiceLooper.quit();
         
         super.onDestroy();
@@ -308,8 +266,11 @@ public abstract class QueueService extends Service {
             // Now!  Loop through the queue!
             Intent i;
             
-            if(getQueueCount() == 0)
+            if(getQueueCount() > 0) {
+                // Load 'er up!
+                onQueueLoad();
                 onQueueStart();
+            }
             
             while(getQueueCount() > 0) {
                 i = getNextIntentFromQueue();
@@ -358,17 +319,6 @@ public abstract class QueueService extends Service {
      */
     public boolean isPaused() {
         return mIsPaused;
-    }
-
-    private synchronized SQLiteDatabase initDatabase() throws SQLException {
-        // If we already have an open database, use that.  Otherwise, make a new
-        // one.
-        if(mDatabase != null && mDatabase.isOpen())
-            return mDatabase;
-
-        mHelper = new DatabaseHelper(this);
-        mDatabase = mHelper.getWritableDatabase();
-        return mDatabase;
     }
 
     private long writeIntentToQueue(@NonNull Intent i) throws SQLException {
@@ -483,34 +433,19 @@ public abstract class QueueService extends Service {
         }
     }
 
-    private int getQueueCount() throws SQLException {
-        synchronized(this) {
-            SQLiteDatabase database = initDatabase();
+    /**
+     * Returns the number of Intents left in the queue.  You may want to
+     * synchronize this against the instance of the service.
+     *
+     * @return the number of Intents left in the queue
+     */
+    protected abstract int getQueueCount();
 
-            // This oughta be easy.
-            Cursor cursor = database.query(TABLE_QUEUE, new String[]{KEY_QUEUE_ROWID},
-                    null, null, null, null,
-                    null);
-
-            if(cursor == null) {
-                Log.w(DEBUG_TAG, "When getting the queue count, the Cursor was null!");
-                return 0;
-            }
-
-            int toReturn = cursor.getCount();
-            cursor.close();
-            return toReturn;
-        }
-    }
-
-    private void clearQueue() throws SQLException {
-        synchronized(this) {
-            // Everybody out of the pool!
-            SQLiteDatabase database = initDatabase();
-
-            database.delete(TABLE_QUEUE, null, null);
-        }
-    }
+    /**
+     * Clears everything out of the queue.  The queue must be empty after this,
+     * and any storage used should be cleared out, too.
+     */
+    protected abstract void clearQueue();
 
     /**
      * Called whenever a new data Intent comes in and the queue is paused to
@@ -534,7 +469,17 @@ public abstract class QueueService extends Service {
      * @return a ReturnCode indicating what the queue should do next
      */
     protected abstract ReturnCode handleIntent(Intent i);
-    
+
+    /**
+     * This gets called immediately before {@link #onQueueStart()}.  Here, you
+     * want to load the queue into memory, if need be.  It's perfectly
+     * acceptable to just make this an empty method if your particular
+     * implementation keeps everything on storage and not in memory.  It's also
+     * perfectly acceptable to make this final, and chances are it will be by
+     * the time an actual concrete implementation comes by.
+     */
+    protected abstract void onQueueLoad();
+
     /**
      * This gets called immediately before the first Intent is processed in a
      * given run of QueueService.  That is to say, after the service is started
@@ -588,29 +533,41 @@ public abstract class QueueService extends Service {
     protected abstract void onQueueEmpty(boolean allProcessed);
 
     /**
-     * Returns the name of the SQLite database that'll be used for this queue.
-     * Make sure it's unique within your package's context.
+     * This is called at the end of processing, whether it be via pausing or
+     * stopping.  You would want to unload the queue back to storage at this
+     * point, if applicable.  That is, this should be the opposite of
+     * {@link #onQueueLoad()}.
+     */
+    protected abstract void onQueueUnload();
+
+    /**
+     * Returns a name to be used by whatever this queue is using for storage.
+     * This could wind up being a filename prefix, an SQLite database name, etc.
+     * Make sure it's unique within your package's context.  By default, it will
+     * just return the class's canonical name.
      *
      * @return a database name
      */
     @NonNull
-    protected abstract String getQueueDatabaseName();
+    protected String getQueueName() {
+        return getClass().getCanonicalName();
+    }
 
     /**
      * <p>
      * Serializes the given Intent to a String.  Note that at this point, an
-     * Intent is solely used as a means of storing data.  This can be called any
-     * time an Intent comes in; assume it will be, though there may be cases in
-     * which it won't.  If this isn't called for a given Intent, there won't be
-     * a corresponding deserialize call.  You can return whatever String you
-     * want here, but whatever you return, it'll be your responsibility to
-     * deserialize it later in {@link #deserializeIntent(String)}.
+     * Intent is solely used as a means of storing data.  This can be called at
+     * any time; maybe it's writing into storage when the Intent comes in, maybe
+     * it's only when writing it back to storage in the event of a pause.  You
+     * can return whatever String you want here in any format you want, but
+     * whatever you return, it'll be your responsibility to deserialize it later
+     * in {@link #deserializeIntent(String)}.
      * </p>
      *
      * <p>
-     * If this returns null, it will be treated as an empty string and stored in
-     * the database as such.  If you choose not to do anything with it, you may
-     * return null from {@link #deserializeIntent(String)} later.
+     * If this returns null, it will be treated as an empty string.  If you
+     * choose not to do anything with it, you may return null from
+     * {@link #deserializeIntent(String)} later.
      * </p>
      *
      * @param i Intent to serialize
@@ -622,9 +579,8 @@ public abstract class QueueService extends Service {
 
     /**
      * <p>
-     * Deserializes the given String back into an Intent.  This will be called
-     * any time work on an Intent finishes and more exist in the queue.  All you
-     * have to do is pull back whatever you wrote in {@link #serializeIntent(Intent)}
+     * Deserializes the given String back into an Intent.  Your responsibility
+     * is to pull back whatever you wrote in {@link #serializeIntent(Intent)}
      * and get an Intent out of it that {@link #handleIntent(Intent)} will deal
      * with.
      * </p>
