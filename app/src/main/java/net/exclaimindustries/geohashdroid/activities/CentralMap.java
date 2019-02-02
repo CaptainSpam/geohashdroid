@@ -28,7 +28,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
@@ -687,43 +686,37 @@ public class CentralMap
 
         // Get a map ready.  We'll know when we've got it.  Oh, we'll know.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
-        mapFrag.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(GoogleMap googleMap) {
-                mMap = googleMap;
+        mapFrag.getMapAsync(googleMap -> {
+            mMap = googleMap;
 
-                // I could swear you could do this in XML...
-                UiSettings set = mMap.getUiSettings();
+            // I could swear you could do this in XML...
+            UiSettings set = mMap.getUiSettings();
 
-                // The My Location button has to go off, as we're going to have the
-                // infobox right around there.
-                set.setMyLocationButtonEnabled(false);
+            // The My Location button has to go off, as we're going to have the
+            // infobox right around there.
+            set.setMyLocationButtonEnabled(false);
 
-                // Go to preferences to figure out what map type we're using.
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
-                mapTypeSelected(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
+            // Go to preferences to figure out what map type we're using.
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+            mapTypeSelected(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
 
-                // Now, set the flag that tells everything else (especially the
-                // doReadyChecks method) we're ready.  Then, call doReadyChecks.
-                mMapIsReady = true;
-                doReadyChecks();
+            // Now, set the flag that tells everything else (especially the
+            // doReadyChecks method) we're ready.  Then, call doReadyChecks.
+            mMapIsReady = true;
+            doReadyChecks();
 
 //                startListening();
-            }
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // Got a height!  Hopefully.
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
+        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Got a height!  Hopefully.
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
 
-                    // Flag!
-                    mLayoutComplete = true;
-                    doReadyChecks();
-                }
+                // Flag!
+                mLayoutComplete = true;
+                doReadyChecks();
             }
         });
 
@@ -1189,7 +1182,7 @@ public class CentralMap
                 mCurrentMode.init(mLastModeBundle);
             }
 
-            if(mLastKnownLocation != null && LocationUtil.isLocationNewEnough(mLastKnownLocation))
+            if(LocationUtil.isLocationNewEnough(mLastKnownLocation))
                 mCurrentMode.onLocationChanged(mLastKnownLocation);
             invalidateOptionsMenu();
 

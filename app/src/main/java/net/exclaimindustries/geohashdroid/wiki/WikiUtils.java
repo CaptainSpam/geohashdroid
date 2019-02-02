@@ -1,4 +1,4 @@
-/**
+/*
  * WikiUtils.java
  * Copyright (C)2009 Thomas Hirsch
  * Geohashdroid Copyright (C)2009 Nicholas Killewald
@@ -85,7 +85,7 @@ public class WikiUtils {
      */
     @SuppressWarnings("unused")
     public static class WikiVersionData {
-        private String mRawResult = "";
+        private String mRawResult;
         private String mGeneratorName = "";
         private String mRawVersion = "";
         private int mMajor;
@@ -224,10 +224,10 @@ public class WikiUtils {
      * A bucketload of the usual stuff we grab from a wiki request.
      */
     private static class WikiResponse {
-        public Document document;
-        public Element rootElem;
-        public boolean hasError = false;
-        public int errorTextId;
+        Document document;
+        Element rootElem;
+        boolean hasError = false;
+        int errorTextId;
     }
 
     // The most recent request issued by WikiUtils.  This allows the abort()
@@ -237,14 +237,14 @@ public class WikiUtils {
     /**
      * This format is used for all latitude/longitude texts in the wiki.
      */
-    public static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
+    private static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
 
     /**
      * This format is used for all latitude/longitude <i>links</i> in the wiki.
      * This differs from mLatLonFormat in that it doesn't clip values to four
      * decimal points.
      */
-    protected static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
+    private static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
 
     /**
      * Aborts the current wiki request.  Well, technically, it's the most recent
@@ -825,6 +825,8 @@ public class WikiUtils {
     }
 
     private static boolean doesResponseHaveError(@Nullable Element elem) {
+        if(elem == null) return false;
+
         try {
             DOMUtil.getFirstElement(elem, "error");
         } catch(Exception ex) {
@@ -835,6 +837,8 @@ public class WikiUtils {
     }
 
     private static String findErrorCode(@Nullable Element elem) {
+        if(elem == null) return "UnknownError";
+
         try {
             Element error = DOMUtil.getFirstElement(elem, "error");
             return DOMUtil.getSimpleAttributeText(error, "code");

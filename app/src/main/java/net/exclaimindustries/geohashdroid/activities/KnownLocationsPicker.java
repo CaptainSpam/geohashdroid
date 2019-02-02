@@ -14,7 +14,6 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.backup.BackupManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -33,23 +32,19 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
@@ -194,12 +189,9 @@ public class KnownLocationsPicker
             if(mExisting == null) {
                 deleteButton.setVisibility(View.GONE);
             } else {
-                deleteButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        pickerActivity.deleteActiveKnownLocation(mExisting);
-                        dismiss();
-                    }
+                deleteButton.setOnClickListener(v -> {
+                    pickerActivity.deleteActiveKnownLocation(mExisting);
+                    dismiss();
                 });
             }
 
@@ -231,33 +223,27 @@ public class KnownLocationsPicker
             return new AlertDialog.Builder(pickerActivity)
                     .setView(dialogView)
                     .setTitle(mExisting != null ? R.string.known_locations_title_edit : R.string.known_locations_title_add)
-                    .setPositiveButton(R.string.ok_label, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // There HAS to be a better way to do this...
-                            if(mAddress != null)
-                                pickerActivity.confirmKnownLocationFromDialog(
-                                        nameInput.getText().toString(),
-                                        mLocation,
-                                        convertPositionToRange(spinner.getSelectedItemPosition()),
-                                        restrictBox.isChecked(),
-                                        mAddress);
-                            else
-                                pickerActivity.confirmKnownLocationFromDialog(
-                                        nameInput.getText().toString(),
-                                        mLocation,
-                                        convertPositionToRange(spinner.getSelectedItemPosition()),
-                                        restrictBox.isChecked(),
-                                        mExisting);
-                            dismiss();
-                        }
+                    .setPositiveButton(R.string.ok_label, (dialog, which) -> {
+                        // There HAS to be a better way to do this...
+                        if(mAddress != null)
+                            pickerActivity.confirmKnownLocationFromDialog(
+                                    nameInput.getText().toString(),
+                                    mLocation,
+                                    convertPositionToRange(spinner.getSelectedItemPosition()),
+                                    restrictBox.isChecked(),
+                                    mAddress);
+                        else
+                            pickerActivity.confirmKnownLocationFromDialog(
+                                    nameInput.getText().toString(),
+                                    mLocation,
+                                    convertPositionToRange(spinner.getSelectedItemPosition()),
+                                    restrictBox.isChecked(),
+                                    mExisting);
+                        dismiss();
                     })
-                    .setNegativeButton(R.string.cancel_label, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            pickerActivity.removeActiveKnownLocation();
-                            dismiss();
-                        }
+                    .setNegativeButton(R.string.cancel_label, (dialog, which) -> {
+                        pickerActivity.removeActiveKnownLocation();
+                        dismiss();
                     })
                     .create();
         }
@@ -467,23 +453,15 @@ public class KnownLocationsPicker
             // A valid Geocoder also means we can attach the click listener.
             final EditText input = findViewById(R.id.search);
             final View go = findViewById(R.id.search_go);
-            go.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    searchForLocation(input.getText().toString());
-                }
-            });
+            go.setOnClickListener(v -> searchForLocation(input.getText().toString()));
 
-            input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if(actionId == EditorInfo.IME_ACTION_GO) {
-                        searchForLocation(v.getText().toString());
-                        return true;
-                    }
-
-                    return false;
+            input.setOnEditorActionListener((v, actionId, event) -> {
+                if(actionId == EditorInfo.IME_ACTION_GO) {
+                    searchForLocation(v.getText().toString());
+                    return true;
                 }
+
+                return false;
             });
 
         } else {
@@ -492,64 +470,58 @@ public class KnownLocationsPicker
 
         // Our friend the map needs to get ready, too.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
-        mapFrag.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(GoogleMap googleMap) {
-                mMap = googleMap;
+        mapFrag.getMapAsync(googleMap -> {
+            mMap = googleMap;
 
-                // I could swear you could do this in XML...
-                UiSettings set = mMap.getUiSettings();
+            // I could swear you could do this in XML...
+            UiSettings set = mMap.getUiSettings();
 
-                // The My Location button has to go off, as the search bar sort
-                // of takes up that space.
-                set.setMyLocationButtonEnabled(false);
+            // The My Location button has to go off, as the search bar sort
+            // of takes up that space.
+            set.setMyLocationButtonEnabled(false);
 
-                // Also, get rid of the map toolbar.  That just doesn't make any
-                // sense here if we've already got a search widget handy.
-                set.setMapToolbarEnabled(false);
+            // Also, get rid of the map toolbar.  That just doesn't make any
+            // sense here if we've already got a search widget handy.
+            set.setMapToolbarEnabled(false);
 
-                // Get ready to listen for clicks!
-                mMap.setOnMapLongClickListener(KnownLocationsPicker.this);
-                mMap.setOnInfoWindowClickListener(KnownLocationsPicker.this);
+            // Get ready to listen for clicks!
+            mMap.setOnMapLongClickListener(KnownLocationsPicker.this);
+            mMap.setOnInfoWindowClickListener(KnownLocationsPicker.this);
 
-                // Were we waiting on a long-tapped marker?
-                if(mMapClickMarkerOptions != null) {
-                    // Well, then put the marker back on the map!
-                    mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
-                    mActiveMarker = mMapClickMarker;
-                    mMapClickMarker.showInfoWindow();
-                }
-
-                // Should this be the night map?   Maybe I'll add in the full
-                // map type picker later, but for now, it's just the day or
-                // night street map.
-                if(isNightMode())
-                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(KnownLocationsPicker.this, R.raw.map_night)))
-                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
-
-                // Activate My Location if permissions are right.
-                if(checkLocationPermissions(0))
-                    permissionsGranted();
-
-                // Since there's only one ready check to wait on now, this
-                // should kick things in motion.
-                mMapIsReady = true;
-                doReadyChecks();
+            // Were we waiting on a long-tapped marker?
+            if(mMapClickMarkerOptions != null) {
+                // Well, then put the marker back on the map!
+                mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
+                mActiveMarker = mMapClickMarker;
+                mMapClickMarker.showInfoWindow();
             }
+
+            // Should this be the night map?   Maybe I'll add in the full
+            // map type picker later, but for now, it's just the day or
+            // night street map.
+            if(isNightMode())
+                if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(KnownLocationsPicker.this, R.raw.map_night)))
+                    Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+
+            // Activate My Location if permissions are right.
+            if(checkLocationPermissions(0))
+                permissionsGranted();
+
+            // Since there's only one ready check to wait on now, this
+            // should kick things in motion.
+            mMapIsReady = true;
+            doReadyChecks();
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // Got a height!  Hopefully.
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
+        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Got a height!  Hopefully.
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
 
-                    // Flag!
-                    mLayoutComplete = true;
-                    doReadyChecks();
-                }
+                // Flag!
+                mLayoutComplete = true;
+                doReadyChecks();
             }
         });
 
@@ -561,36 +533,25 @@ public class KnownLocationsPicker
             // Dialog!
             new AlertDialog.Builder(this)
                     .setMessage(R.string.known_locations_prefetch_is_off)
-                    .setNegativeButton(R.string.stop_reminding_me_label, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
+                    .setNegativeButton(R.string.stop_reminding_me_label, (dialog, which) -> {
+                        dialog.dismiss();
 
-                            SharedPreferences.Editor editor = prefs.edit();
-                            editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
-                            editor.apply();
+                        SharedPreferences.Editor editor = prefs.edit();
+                        editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
+                        editor.apply();
 
-                            BackupManager bm = new BackupManager(KnownLocationsPicker.this);
-                            bm.dataChanged();
-                        }
+                        BackupManager bm = new BackupManager(KnownLocationsPicker.this);
+                        bm.dataChanged();
                     })
-                    .setNeutralButton(R.string.go_to_preference, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
+                    .setNeutralButton(R.string.go_to_preference, (dialog, which) -> {
+                        dialog.dismiss();
 
-                            Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class);
-                            intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, PreferencesScreen.OtherPreferenceFragment.class.getName());
-                            intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
-                            startActivity(intent);
-                        }
+                        Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class);
+                        intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, PreferencesScreen.OtherPreferenceFragment.class.getName());
+                        intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                        startActivity(intent);
                     })
-                    .setPositiveButton(R.string.gotcha_label, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
+                    .setPositiveButton(R.string.gotcha_label, (dialog, which) -> dialog.dismiss())
                     .show();
         }
 
@@ -680,7 +641,7 @@ public class KnownLocationsPicker
         }
     }
 
-    private boolean doReadyChecks() {
+    private void doReadyChecks() {
         if(mMapIsReady && mLayoutComplete) {
             // The map should be centered on the currently-known locations.
             // Otherwise, well, default to dead zero, I guess.
@@ -737,9 +698,7 @@ public class KnownLocationsPicker
                 }
             }
 
-            return true;
         } else {
-            return false;
         }
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * WikiService.java
  * Copyright (C)2015 Nicholas Killewald
  * 
@@ -161,6 +161,9 @@ public class WikiService extends QueueService {
     /** How long we wait (in millis) before retrying a throttled edit. */
     private static final long THROTTLE_DELAY = 60000;
 
+    /** The wakelock timeout (10 minutes). */
+    private static final long WAKELOCK_TIMEOUT = 10 * 60 * 1000;
+
     /**
      * The {@link Info} object for the current expedition.
      */
@@ -211,7 +214,7 @@ public class WikiService extends QueueService {
         
         // WakeLock awaaaaaay!
         PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
-        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WikiService");
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "geohashdroid:WikiService");
         
         // Also, get the NotificationManager on standby.
         mNotificationManager = NotificationManagerCompat.from(this);
@@ -251,34 +254,33 @@ public class WikiService extends QueueService {
         }
 
         // Prep an HttpClient for later...
-        CloseableHttpClient client = HttpClients.createDefault();
 
         // To Preferences!
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 
         // If you're missing something vital, bail out.
-        if(info == null || message == null || timestamp == null) {
-            Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
-            return ReturnCode.CONTINUE;
-        }
 
         // Also, if there's an image specified, make sure there's also a
         // username.  The wiki does not allow anonymous image uploads.  This
         // one, unlike the previous one, produces an interruption so the user
         // can enter in a username and password.
-        if(imageLocation != null && username.isEmpty()) {
-            showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
-                    resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
-            return ReturnCode.PAUSE;
-        }
 
         // Location becomes null if we're not including it.  Nothing should need
         // to care.
-        if(!includeLocation) loc = null;
 
-        try {
+        try(CloseableHttpClient client = HttpClients.createDefault()) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+            String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
+            if(info == null || message == null || timestamp == null) {
+                Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
+                return ReturnCode.CONTINUE;
+            }
+            if(imageLocation != null && username.isEmpty()) {
+                showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
+                        resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
+                return ReturnCode.PAUSE;
+            }
+            if(!includeLocation) loc = null;
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
             if(!username.isEmpty() && !password.isEmpty()) {
@@ -310,7 +312,7 @@ public class WikiService extends QueueService {
             // enough in common between them, and wound up with methods with
             // ten or so arguments.  If anyone else has a better idea, feel free
             // to suggest.
-            if (imageLocation != null) {
+            if(imageLocation != null) {
                 // Let's say there's an image specified.  So, we try to look it
                 // up via readImageInfo.
                 WikiImageUtils.ImageInfo imageInfo;
@@ -327,8 +329,7 @@ public class WikiService extends QueueService {
                     // Get us a byte array!  We'll be uploading this soon.
                     byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, includeLocation);
 
-                    if(image == null)
-                    {
+                    if(image == null) {
                         // No image is a problem at this point...
                         showImageErrorNotification();
                         return ReturnCode.CONTINUE;
@@ -381,15 +382,14 @@ public class WikiService extends QueueService {
                 String before;
                 String after;
 
-                if(page == null)
-                {
+                if(page == null) {
                     // This shouldn't happen.  If it did, there's something very
                     // wrong with the wiki.
                     throw new WikiException(R.string.wiki_error_unknown);
                 }
 
                 Matcher expeditionq = RE_EXPEDITION.matcher(page);
-                if (expeditionq.matches()) {
+                if(expeditionq.matches()) {
                     before = expeditionq.group(1) + expeditionq.group(2);
                     after = expeditionq.group(3);
                 } else {
@@ -412,7 +412,7 @@ public class WikiService extends QueueService {
             }
 
             return ReturnCode.CONTINUE;
-        } catch (WikiException we) {
+        } catch(WikiException we) {
             // There's two possible exceptions we want to keep an eye on, both
             // of them related to throttling.  Since we're potentially posting
             // numerous edits one right after another (i.e. if the user's been
@@ -427,7 +427,7 @@ public class WikiService extends QueueService {
             }
 
             return ReturnCode.PAUSE;
-        } catch (Exception e) {
+        } catch(Exception e) {
             // Okay, first off, are we still connected?  An Exception will get
             // thrown if the connection just goes poof while we're trying to do
             // something.
@@ -442,19 +442,14 @@ public class WikiService extends QueueService {
             }
 
             return ReturnCode.PAUSE;
-        } finally {
-            try {
-                client.close();
-            } catch(Exception ex) {
-                // Eh, forget it.
-            }
         }
+        // Eh, forget it.
     }
 
     @Override
     protected void onQueueStart() {
         // WAKELOCK!  Front and center!
-        mWakeLock.acquire();
+        mWakeLock.acquire(WAKELOCK_TIMEOUT);
 
         // If we're starting, that means we're not waiting anymore.  Makes
         // sense.

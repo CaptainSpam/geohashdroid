@@ -1,7 +1,7 @@
-/**
+/*
  * AlarmService.java
  * Copyright (C)2015 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
  */

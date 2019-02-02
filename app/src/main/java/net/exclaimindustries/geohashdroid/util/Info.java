@@ -1,4 +1,4 @@
-/**
+/*
  * Info.java
  * Copyright (C)2009 Nicholas Killewald
  * 
@@ -503,6 +503,7 @@ public class Info implements Parcelable {
         if(!isGlobalHash() && !(mGraticule.equals(other.mGraticule))) return false;
 
         // ...and also check the date, latitude, and longitude.
+        //noinspection RedundantIfStatement
         if(!mDate.equals(other.mDate)
                 || (getLatitude() != other.getLatitude())
                 || (getLongitude() != other.getLongitude()))

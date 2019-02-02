@@ -160,12 +160,7 @@ public class SelectAGraticuleMode
         // And bye, picker!
         if(mPicker != null) {
             mPicker.setListener(null);
-            mPicker.animateGraticulePickerOutWithEndAction(new Runnable() {
-                @Override
-                public void run() {
-                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mPicker);
-                }
-            });
+            mPicker.animateGraticulePickerOutWithEndAction(() -> ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mPicker));
         }
 
         // Find Closest listener, you too!

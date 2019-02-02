@@ -1,4 +1,4 @@
-/**
+/*
  * StockService.java
  * Copyright (C)2014 Nicholas Killewald
  * 
@@ -269,7 +269,7 @@ public class StockService extends JobIntentService {
         // which is almost as good!
         Serializable s = intent.getSerializableExtra(EXTRA_DATE);
         
-        if(s == null || !(s instanceof Calendar)) {
+        if(!(s instanceof Calendar)) {
             Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_DATE is null or not a Calendar!");
             return;
         }

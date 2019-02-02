@@ -1,4 +1,4 @@
-/**
+/*
  * StockStoreDatabase.java
  * Copyright (C)2009 Nicholas Killewald
  * 
@@ -39,22 +39,22 @@ public class StockStoreDatabase {
     private static final String DEBUG_TAG = "StockStoreDatabase";
     
     /** The name of the column for the row's ID. */
-    public static final String KEY_STOCKS_ROWID = "_id";
+    private static final String KEY_STOCKS_ROWID = "_id";
     /** The name of the date column. */
-    public static final String KEY_STOCKS_DATE = "date";
+    private static final String KEY_STOCKS_DATE = "date";
     /** The name of the stock value column. */
-    public static final String KEY_STOCKS_STOCK = "stock";
+    private static final String KEY_STOCKS_STOCK = "stock";
     
     /** The name of the column for the row's IDs for hashes. */
-    public static final String KEY_HASHES_ROWID = "_id";
+    private static final String KEY_HASHES_ROWID = "_id";
     /** The name of the date column for hashes. */
-    public static final String KEY_HASHES_DATE = "date";
+    private static final String KEY_HASHES_DATE = "date";
     /** The name of the column flagging if the 30W rule was in effect here. */
-    public static final String KEY_HASHES_30W = "uses30w";
+    private static final String KEY_HASHES_30W = "uses30w";
     /** The name of the latitude hashpart column. */
-    public static final String KEY_HASHES_LATHASH = "lathash";
+    private static final String KEY_HASHES_LATHASH = "lathash";
     /** The name of the longitude hashpart column. */
-    public static final String KEY_HASHES_LONHASH = "lonhash";
+    private static final String KEY_HASHES_LONHASH = "lonhash";
     
     private static final String TABLE_STOCKS = "stocks";
     private static final String TABLE_HASHES = "hashes";
@@ -105,16 +105,6 @@ public class StockStoreDatabase {
     }
 
     /**
-     * Checks to see if the database in this object is open.  If not, recreate
-     * a new one.
-     * 
-     * @return true if open, false if not
-     */
-    public boolean isDatabaseOpen() {
-        return mDatabase != null && mDatabase.isOpen();
-    }
-    
-    /**
      * Initializes the store.  That is to say, opens the database for action.
      * Or creates it and THEN opens it.  Or just gives up and throws an
      * exception.
@@ -144,9 +134,8 @@ public class StockStoreDatabase {
      * parts of the coordinates (that is, the hash part).
      * 
      * @param i the aforementioned bundle of Info to be stored into the database
-     * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public long storeInfo(Info i) {
+    public void storeInfo(Info i) {
         synchronized(this) {
             // Fortunately, there's a handy ContentValues object for this sort
             // of thing.  I mean, we COULD do manual SQLite calls, but why
@@ -157,7 +146,7 @@ public class StockStoreDatabase {
             // TODO: No, wrong.  I need a better mechanism for that.
             if(getInfo(i.getCalendar(), i.getGraticule()) != null) {
                 Log.v(DEBUG_TAG, "Info already exists for that data, ignoring...");
-                return -1;
+                return;
             }
             
             ContentValues toGo = new ContentValues();
@@ -170,8 +159,8 @@ public class StockStoreDatabase {
             Log.v(DEBUG_TAG, "NOW STORING TO HASHES " + DateTools.getDateString(cal)
                     + (i.uses30WRule() ? " (30W)" : "") + " : "
                     + i.getLatitudeHash() + "," + i.getLongitudeHash());
-            
-            return mDatabase.insert(TABLE_HASHES, null, toGo);
+
+            mDatabase.insert(TABLE_HASHES, null, toGo);
         }
     }
     
@@ -182,15 +171,14 @@ public class StockStoreDatabase {
      * 
      * @param cal the date of the stock
      * @param stock the stock itself, as a string
-     * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public long storeStock(Calendar cal, String stock) {
+    public void storeStock(Calendar cal, String stock) {
         synchronized(this) {
             // First, check over the database to make sure it doesn't already
             // exist.
             if(getStock(cal) != null) {
                 Log.v(DEBUG_TAG, "Stock price already exists in database for " + DateTools.getDateString(cal) + ", ignoring...");
-                return -1;
+                return;
             }
             
             // Otherwise, store away!
@@ -200,8 +188,8 @@ public class StockStoreDatabase {
             
             Log.v(DEBUG_TAG, "NOW STORING TO STOCKS " + DateTools.getDateString(cal)
                     + " : " + stock);
-            
-            return mDatabase.insert(TABLE_STOCKS, null, toGo);
+
+            mDatabase.insert(TABLE_STOCKS, null, toGo);
         }
     }
     

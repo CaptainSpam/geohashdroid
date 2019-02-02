@@ -136,12 +136,9 @@ public abstract class CentralMapExtraFragment
      * @param v the View that will act as the close button
      */
     protected void registerCloseButton(@NonNull View v) {
-        v.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mCloseListener != null)
-                    mCloseListener.extraFragmentClosing(CentralMapExtraFragment.this);
-            }
+        v.setOnClickListener(v1 -> {
+            if(mCloseListener != null)
+                mCloseListener.extraFragmentClosing(CentralMapExtraFragment.this);
         });
     }
 
