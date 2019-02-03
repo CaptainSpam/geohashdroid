@@ -13,6 +13,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.util.Queue;
@@ -23,12 +24,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * This type of {@link AbstractSQLiteQueueService} writes Intent data to an
  * SQLite database any time the queue pauses for any reason.  This uses a plain
  * ol' {@link java.util.Queue} during normal operation.  While the queue is
- * running, the SQLite database will be empty.
+ * running, the SQLite database will be empty (that is, it is emptied out during
+ * {@link #onQueueLoad()} and restocked during {@link #onQueueUnload()}).
  * </p>
  *
  * <p>
  * If this service is terminated without going through pause first, the queue
- * will be lost.  Keep this in mind.
+ * may be lost.  Keep this in mind.
  * </p>
  */
 public abstract class PlainSQLiteQueueService
@@ -46,6 +48,12 @@ public abstract class PlainSQLiteQueueService
 
     @Override
     public void onDestroy() {
+        // We really shouldn't get here with anything left in the queue, but
+        // just in case...
+        if(!mQueue.isEmpty()) {
+            onQueueUnload();
+        }
+
         // Close down the helper.
         mHelper.close();
 
@@ -132,5 +140,45 @@ public abstract class PlainSQLiteQueueService
 
         // Otherwise, go to the database.
         return getQueueCountFromDatabase();
+    }
+
+    @Override
+    protected void removeNextIntentFromQueue() {
+        if(!isPaused()) {
+            if(!mQueue.isEmpty()) mQueue.remove();
+        }
+        else {
+            try {
+                removeNextIntentFromDatabase();
+            } catch(SQLException sqle) {
+                Log.e(DEBUG_TAG, "Error removing the next Intent from the queue!", sqle);
+            }
+        }
+    }
+
+    @Override
+    protected Intent getNextIntentFromQueue() {
+        if(!isPaused()) return mQueue.peek();
+
+        try {
+            return getNextIntentFromDatabase();
+        } catch(SQLException sqle) {
+            Log.e(DEBUG_TAG, "Error getting the next Intent from the queue! (returning null)", sqle);
+            return null;
+        }
+    }
+
+    @Override
+    protected void addIntentToQueue(@NonNull Intent i) {
+        if(!isPaused()) {
+            mQueue.add(i);
+        }
+        else {
+            try {
+                writeIntentToDatabase(i);
+            } catch(SQLException sqle) {
+                Log.e(DEBUG_TAG, "Error adding Intent to the queue!", sqle);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * QueueService.java
  * Copyright (C)2018 Nicholas Killewald
  * 
@@ -8,13 +8,7 @@
 package net.exclaimindustries.tools;
 
 import android.app.Service;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -23,10 +17,6 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-
-import java.util.Calendar;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * <p>
@@ -77,8 +67,8 @@ public abstract class QueueService extends Service {
          */
         PAUSE,
         /**
-         * Queue should stop entirely and not be resumed.  This implies the
-         * queue will be emptied.
+         * Queue should stop entirely with no plans to resume it later.  The
+         * queue WILL be emptied afterward.
          */
         STOP
     }
@@ -222,7 +212,7 @@ public abstract class QueueService extends Service {
         } else {
             // If this isn't a control message, add the intent to the queue.
             Log.d(DEBUG_TAG, "Enqueueing an Intent!");
-            writeIntentToQueue(intent);
+            addIntentToQueue(intent);
             
             // Next, if the thread isn't already running (AND we're not paused),
             // make it run.  If it IS running, we'll just process the next one
@@ -321,117 +311,30 @@ public abstract class QueueService extends Service {
         return mIsPaused;
     }
 
-    private long writeIntentToQueue(@NonNull Intent i) throws SQLException {
-        synchronized(this) {
-            SQLiteDatabase database = initDatabase();
+    /**
+     * Adds an Intent to whatever queue is in use.
+     *
+     * @param i the Intent to be added
+     */
+    protected abstract void addIntentToQueue(@NonNull Intent i);
 
-            // Serialize the Intent, using whatever method the concrete
-            // implementation says it should.
-            String data = serializeIntent(i);
-            if(data == null) data = "";
+    /**
+     * Removes the next Intent from the queue.  This is a removal operation, not
+     * a peek.
+     *
+     * @see #getNextIntentFromQueue()
+     */
+    protected abstract void removeNextIntentFromQueue();
 
-            // Grab a timestamp!
-            long time = Calendar.getInstance().getTimeInMillis();
-
-            // Now, shove it into the database!
-            ContentValues toGo = new ContentValues();
-            toGo.put(KEY_QUEUE_TIMESTAMP, time);
-            toGo.put(KEY_QUEUE_DATA, data);
-
-            return database.insert(TABLE_QUEUE, null, toGo);
-        }
-    }
-
-    private void removeNextIntentFromQueue() throws SQLException {
-        synchronized(this) {
-            SQLiteDatabase database = initDatabase();
-
-            // Grab us exactly one entry, if that.
-            Cursor cursor = database.query(TABLE_QUEUE, new String[]{KEY_QUEUE_ROWID},
-                    null, null, null, null,
-                    KEY_QUEUE_TIMESTAMP + " ASC", "1");
-
-            if(cursor == null) {
-                // I really hope this never comes up, else a LOT of methods will
-                // dump this to logcat.
-                Log.w(DEBUG_TAG, "When removing the next Intent, the Cursor was null!");
-                return;
-            }
-
-            if(cursor.getCount() == 0) {
-                Log.i(DEBUG_TAG, "Tried to remove next Intent but there's nothing in the database!");
-                return;
-            }
-
-            // Otherwise, we have us our row ID.
-            cursor.moveToFirst();
-            long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
-            cursor.close();
-
-            database.delete(TABLE_QUEUE, KEY_QUEUE_ROWID + "=" + rowId, null);
-        }
-    }
-
+    /**
+     * Gets the next Intent from the queue.  This is a peek operation, not a
+     * removal.
+     *
+     * @return the next Intent in the queue (may be null)
+     * @see #removeNextIntentFromQueue()
+     */
     @Nullable
-    private Intent getNextIntentFromQueue() throws SQLException {
-        synchronized(this) {
-            SQLiteDatabase database = initDatabase();
-
-            // We'll delete these when we're done with the Cursor.
-            List<Long> toDelete = new LinkedList<>();
-
-            // Grab everything!  Sorted!
-            Cursor cursor = database.query(TABLE_QUEUE, new String[]{KEY_QUEUE_ROWID, KEY_QUEUE_DATA},
-                    null, null, null, null,
-                    KEY_QUEUE_TIMESTAMP + " ASC");
-
-            if(cursor == null) {
-                // Problem!
-                Log.w(DEBUG_TAG, "When getting the next Intent, the Cursor was null!");
-                return null;
-            }
-
-            if(cursor.getCount() == 0) {
-                // Not really a problem, but the queue's just empty.
-                return null;
-            }
-
-            cursor.moveToFirst();
-
-            // Now, loop through until we find something we can use (or until
-            // we bottom out).
-            Intent toReturn = null;
-
-            while(toReturn == null && !cursor.isAfterLast()) {
-                // Data!  Now!
-                long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
-                String data = cursor.getString(cursor.getColumnIndex(KEY_QUEUE_DATA));
-
-                // Now, try to deserialize.  This'll be null if it should be
-                // ignored.
-                toReturn = deserializeIntent(data);
-
-                // And if it IS null, delete it afterward.
-                if(toReturn == null)
-                    toDelete.add(rowId);
-
-                // The while loop will stop if we found something.  Move on!
-                cursor.moveToNext();
-            }
-
-            // So!  Let's wrap things up.  Get rid of the cursor.
-            cursor.close();
-
-            // Now, delete everything that was null.
-            for(Long l : toDelete) {
-                database.delete(TABLE_QUEUE, KEY_QUEUE_ROWID + "=" + l, null);
-            }
-
-            // And return whatever our result was.  That result may very well be
-            // null.
-            return toReturn;
-        }
-    }
+    protected abstract Intent getNextIntentFromQueue();
 
     /**
      * Returns the number of Intents left in the queue.  You may want to
@@ -443,7 +346,7 @@ public abstract class QueueService extends Service {
 
     /**
      * Clears everything out of the queue.  The queue must be empty after this,
-     * and any storage used should be cleared out, too.
+     * and any storage used must be cleared out, too.
      */
     protected abstract void clearQueue();
 
@@ -451,8 +354,8 @@ public abstract class QueueService extends Service {
      * Called whenever a new data Intent comes in and the queue is paused to
      * determine if the queue should resume immediately.  If this returns false,
      * the queue will remain paused until an explicit {@link #COMMAND_RESUME}
-     * command Intent is sent.  Note that the queue will always start if the
-     * queue is empty.
+     * command Intent is sent.  Note that the queue will always start if a new
+     * Intent arrives and the queue is empty.
      *
      * @return true to resume on a new Intent, false to remain paused
      */
