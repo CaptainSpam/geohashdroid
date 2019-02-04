@@ -447,13 +447,19 @@ public abstract class QueueService extends Service {
      * Returns a name to be used by whatever this queue is using for storage.
      * This could wind up being a filename prefix, an SQLite database name, etc.
      * Make sure it's unique within your package's context.  By default, it will
-     * just return the class's canonical name.
+     * just return the class's canonical name (or its normal name, if
+     * getCanonicalName() returns null for some reason).
      *
      * @return a database name
      */
     @NonNull
     protected String getQueueName() {
-        return getClass().getCanonicalName();
+        String name = getClass().getCanonicalName();
+        if(name == null) {
+           name = getClass().getName();
+        }
+
+        return name;
     }
 
     /**

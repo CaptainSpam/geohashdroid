@@ -492,7 +492,7 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     @Override
-    protected String serializeIntent(Intent i) {
+    protected String serializeIntent(@NonNull Intent i) {
         try {
             // We'll encode one line per object, mashing the message into one
             // URI-encoded line.
