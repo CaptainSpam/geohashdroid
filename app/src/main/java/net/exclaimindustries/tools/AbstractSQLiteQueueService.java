@@ -279,4 +279,14 @@ public abstract class AbstractSQLiteQueueService extends QueueService {
             return toReturn;
         }
     }
+
+    @Override
+    protected void onQueueEmpty(boolean allProcessed) {
+        // By default, nothing should happen.  This can be overridden.
+    }
+
+    @Override
+    protected void onQueueStart() {
+        // onQueueLoad should've taken care of this by now.
+    }
 }

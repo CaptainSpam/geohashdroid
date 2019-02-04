@@ -1,4 +1,4 @@
-/**
+/*
  * WikiService.java
  * Copyright (C)2015 Nicholas Killewald
  * 
@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -42,6 +43,7 @@ import net.exclaimindustries.geohashdroid.wiki.WikiImageUtils;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.DateTools;
+import net.exclaimindustries.tools.PlainSQLiteQueueService;
 import net.exclaimindustries.tools.QueueService;
 
 import java.io.BufferedReader;
@@ -50,6 +52,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -66,7 +69,7 @@ import cz.msebera.android.httpclient.impl.client.HttpClients;
  *
  * @author Nicholas Killewald
  */
-public class WikiService extends QueueService {
+public class WikiService extends PlainSQLiteQueueService {
     /**
      * This is only here because {@link NotificationCompat.Action} doesn't exist
      * in API 16, which is what I'm targeting.  Darn!  It works astonishingly
@@ -211,7 +214,7 @@ public class WikiService extends QueueService {
         
         // WakeLock awaaaaaay!
         PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
-        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WikiService");
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "geohashdroid:WikiService");
         
         // Also, get the NotificationManager on standby.
         mNotificationManager = NotificationManagerCompat.from(this);
@@ -489,11 +492,10 @@ public class WikiService extends QueueService {
     }
 
     @Override
-    protected void serializeToDisk(Intent i, OutputStream os) {
+    protected String serializeIntent(Intent i) {
         try {
             // We'll encode one line per object, mashing the message into one
             // URI-encoded line.
-            OutputStreamWriter osw = new OutputStreamWriter(os);
             StringBuilder builder = new StringBuilder();
 
             // Always write out the \n, even if it's null.  An empty line will
@@ -554,18 +556,19 @@ public class WikiService extends QueueService {
                 builder.append(Uri.encode(message));
 
             // Right... let's write it out.
-            osw.write(builder.toString());
+            return builder.toString();
         } catch (Exception e) {
             // If we got an exception, we're in deep trouble.
             Log.e(DEBUG_TAG, "Exception when serializing an Intent!", e);
+            return "";
         }
     }
 
     @Override
-    protected Intent deserializeFromDisk(InputStream is) {
+    protected Intent deserializeIntent(@NonNull String input) {
         // Now we go the other way around.
-        InputStreamReader isr = new InputStreamReader(is);
-        BufferedReader br = new BufferedReader(isr);
+        StringReader sr = new StringReader(input);
+        BufferedReader br = new BufferedReader(sr);
         Intent toReturn = new Intent();
 
         try {
