@@ -87,18 +87,4 @@
         <item>10000</item>
         <item>20000</item>
     </integer-array>
-
-    <!-- I'm pretty sure I'm abusing the concept of IDs and arrays here. -->
-    <integer-array name="known_locations_multi_notifications">
-        <item>@id/alarm_known_location_multi_0</item>
-        <item>@id/alarm_known_location_multi_1</item>
-        <item>@id/alarm_known_location_multi_2</item>
-        <item>@id/alarm_known_location_multi_3</item>
-        <item>@id/alarm_known_location_multi_4</item>
-        <item>@id/alarm_known_location_multi_5</item>
-        <item>@id/alarm_known_location_multi_6</item>
-        <item>@id/alarm_known_location_multi_7</item>
-        <item>@id/alarm_known_location_multi_8</item>
-        <item>@id/alarm_known_location_multi_9</item>
-    </integer-array>
 </resources>

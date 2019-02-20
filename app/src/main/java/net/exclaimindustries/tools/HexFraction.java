@@ -1,4 +1,4 @@
-/**
+/*
  * HexFraction.java
  * Copyright (C)2008 Nicholas Killewald
  * 

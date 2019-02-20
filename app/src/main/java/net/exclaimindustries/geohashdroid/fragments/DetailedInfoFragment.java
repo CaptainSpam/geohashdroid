@@ -150,71 +150,68 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         Activity activity = getActivity();
 
         if(activity != null) {
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    float accuracy = 0.0f;
-                    if(mLastLocation != null) accuracy = mLastLocation.getAccuracy();
+            activity.runOnUiThread(() -> {
+                float accuracy = 0.0f;
+                if(mLastLocation != null) accuracy = mLastLocation.getAccuracy();
 
-                    // If we can't get to the user's current location due to
-                    // pesky permissions perils, just hide the relevant blocks.
-                    // I mean, it'll be a somewhat sparse fragment, but it'll at
-                    // least not have ugly Stand By lines all over.
-                    if(mPermissionsDenied) {
-                        mYouBlock.setVisibility(View.GONE);
-                        mDistanceBlock.setVisibility(View.GONE);
-                    } else {
-                        mYouBlock.setVisibility(View.VISIBLE);
-                        mDistanceBlock.setVisibility(View.VISIBLE);
-                    }
+                // If we can't get to the user's current location due to
+                // pesky permissions perils, just hide the relevant blocks.
+                // I mean, it'll be a somewhat sparse fragment, but it'll at
+                // least not have ugly Stand By lines all over.
+                if(mPermissionsDenied) {
+                    mYouBlock.setVisibility(View.GONE);
+                    mDistanceBlock.setVisibility(View.GONE);
+                } else {
+                    mYouBlock.setVisibility(View.VISIBLE);
+                    mDistanceBlock.setVisibility(View.VISIBLE);
+                }
 
-                    // One by one, just like InfoBox!  I mean, not JUST like it.
-                    // We split the coordinate parts into different TextViews
-                    // here, and we have the date to display, but other than
-                    // THAT...
-                    if(mInfo == null) {
-                        mDestLat.setText(R.string.standby_title);
-                        mDestLon.setText("");
-                        mDate.setText("");
-                    } else {
-                        mDestLat.setText(UnitConverter.makeLatitudeCoordinateString(getActivity(), mInfo.getFinalLocation().getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
-                        mDestLon.setText(UnitConverter.makeLongitudeCoordinateString(getActivity(), mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
-                        mDate.setText(DateFormat.getDateInstance(DateFormat.LONG).format(
-                                mInfo.getCalendar().getTime()));
-                    }
+                // One by one, just like InfoBox!  I mean, not JUST like it.
+                // We split the coordinate parts into different TextViews
+                // here, and we have the date to display, but other than
+                // THAT...
+                if(mInfo == null) {
+                    mDestLat.setText(R.string.standby_title);
+                    mDestLon.setText("");
+                    mDate.setText("");
+                } else {
+                    mDestLat.setText(UnitConverter.makeLatitudeCoordinateString(getActivity(), mInfo.getFinalLocation().getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
+                    mDestLon.setText(UnitConverter.makeLongitudeCoordinateString(getActivity(), mInfo.getFinalLocation().getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
+                    mDate.setText(DateFormat.getDateInstance(DateFormat.LONG).format(
+                            mInfo.getCalendar().getTime()));
+                }
 
-                    // Location and accuracy!
-                    if(mLastLocation == null) {
-                        mYouLat.setText(R.string.standby_title);
-                        mYouLon.setText("");
-                        mAccuracy.setText("");
-                    } else {
-                        mYouLat.setText(UnitConverter.makeLatitudeCoordinateString(getActivity(), mLastLocation.getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
-                        mYouLon.setText(UnitConverter.makeLongitudeCoordinateString(getActivity(), mLastLocation.getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
+                // Location and accuracy!
+                if(mLastLocation == null) {
+                    mYouLat.setText(R.string.standby_title);
+                    mYouLon.setText("");
+                    mAccuracy.setText("");
+                } else {
+                    mYouLat.setText(UnitConverter.makeLatitudeCoordinateString(getActivity(), mLastLocation.getLatitude(), false, UnitConverter.OUTPUT_DETAILED));
+                    mYouLon.setText(UnitConverter.makeLongitudeCoordinateString(getActivity(), mLastLocation.getLongitude(), false, UnitConverter.OUTPUT_DETAILED));
 
-                        mAccuracy.setText(getString(R.string.details_accuracy,
-                                UnitConverter.makeDistanceString(getActivity(),
-                                        GHDConstants.ACCURACY_FORMAT, mLastLocation.getAccuracy())));
-                    }
+                    mAccuracy.setText(getString(R.string.details_accuracy,
+                            UnitConverter.makeDistanceString(getActivity(),
+                                    GHDConstants.ACCURACY_FORMAT, mLastLocation.getAccuracy())));
+                }
 
-                    // Distance!
-                    if(mLastLocation == null || mInfo == null) {
-                        mDistance.setText(R.string.standby_title);
+                // Distance!
+                if(mLastLocation == null || mInfo == null) {
+                    mDistance.setText(R.string.standby_title);
+                    mDistance.setTextColor(mDefaultTextColor);
+                } else {
+                    float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
+                    mDistance.setText(UnitConverter.makeDistanceString(getActivity(), GHDConstants.DIST_FORMAT, distance));
+
+                    // Plus, if we're close enough AND accurate enough, make the
+                    // text be green.  We COULD do this with geofencing
+                    // callbacks and all, but, I mean, we're already HERE,
+                    // aren't we?
+                    if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
+                        mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_in_range));
+                    else
                         mDistance.setTextColor(mDefaultTextColor);
-                    } else {
-                        float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
-                        mDistance.setText(UnitConverter.makeDistanceString(getActivity(), GHDConstants.DIST_FORMAT, distance));
 
-                        // Plus, if we're close enough AND accurate enough, make the
-                        // text be green.  We COULD do this with geofencing
-                        // callbacks and all, but, I mean, we're already HERE,
-                        // aren't we?
-                        if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
-                            mDistance.setTextColor(ContextCompat.getColor(getActivity(), R.color.details_in_range));
-                        else
-                            mDistance.setTextColor(mDefaultTextColor);
-
-                    }
                 }
             });
         }

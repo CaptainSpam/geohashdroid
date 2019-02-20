@@ -85,4 +85,10 @@
     <string name="pref_knownnotification_oncepergraticule">Notify once per graticule</string>
     <string name="pref_knownnotification_onceperlocation">Notify once per known location</string>
     <string name="pref_knownnotification_never">Don\'t notify at all</string>
+
+    <string name="pref_knownnotification_reminder_title">Because I\'m not a monster, that\'s why</string>
+    <string name="pref_knownnotification_pergraticule_reminder">Even with this option set, a maximum of ten notifications will be displayed (graticules with closer matching known locations will take precedence).</string>
+    <string name="pref_knownnotification_perlocation_reminder">Even with this option set, a maximum of ten notifications will be displayed (the closest matching known locations will take precedence).</string>
+    <!-- This one should never been seen. -->
+    <string name="pref_knownnotification_fallback_reminder">Even with this option set, a maximum of ten notifications will be displayed.</string>
 </resources>

@@ -16,7 +16,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -67,16 +66,13 @@ public class ErrorBanner extends LinearLayout {
         inflate(context, R.layout.error_banner, this);
 
         // Get us the message widget for later.
-        mMessage = (TextView)findViewById(R.id.error_text);
+        mMessage = findViewById(R.id.error_text);
 
         // The button is always close.
-        mClose = (ImageButton)findViewById(R.id.close);
-        mClose.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Away it goes!
-                animateBanner(false);
-            }
+        mClose = findViewById(R.id.close);
+        mClose.setOnClickListener(v -> {
+            // Away it goes!
+            animateBanner(false);
         });
 
         // Night?  Maybe?
@@ -88,15 +84,12 @@ public class ErrorBanner extends LinearLayout {
 
         // On startup, we want to make sure the view is off-screen until we're
         // told different.
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // Got a height!  Hopefully.
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
-                    setBannerVisible(false);
-                    setVisibility(View.VISIBLE);
-                }
+        getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Got a height!  Hopefully.
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
+                setBannerVisible(false);
+                setVisibility(View.VISIBLE);
             }
         });
     }
@@ -145,12 +138,9 @@ public class ErrorBanner extends LinearLayout {
      * @param text text to display
      */
     public void setText(final String text) {
-        ((Activity)getContext()).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setCloseVisible(true);
-                mMessage.setText(text);
-            }
+        ((Activity)getContext()).runOnUiThread(() -> {
+            setCloseVisible(true);
+            mMessage.setText(text);
         });
     }
 
@@ -187,12 +177,9 @@ public class ErrorBanner extends LinearLayout {
      * @param color the new color to set
      */
     public void setBackgroundErrorColor(@ColorRes final int color) {
-        ((Activity)getContext()).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setCloseVisible(true);
-                setBackgroundColor(ContextCompat.getColor(getContext(), color));
-            }
+        ((Activity)getContext()).runOnUiThread(() -> {
+            setCloseVisible(true);
+            setBackgroundColor(ContextCompat.getColor(getContext(), color));
         });
     }
 
@@ -212,11 +199,6 @@ public class ErrorBanner extends LinearLayout {
      * @param visible true to make visible, false to hide
      */
     public void setCloseVisible(final boolean visible) {
-        ((Activity)getContext()).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mClose.setVisibility(visible ? View.VISIBLE : View.GONE);
-            }
-        });
+        ((Activity)getContext()).runOnUiThread(() -> mClose.setVisibility(visible ? View.VISIBLE : View.GONE));
     }
 }

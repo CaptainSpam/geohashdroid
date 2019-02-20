@@ -1,4 +1,4 @@
-/**
+/*
  * QueueService.java
  * Copyright (C)2015 Nicholas Killewald
  * 

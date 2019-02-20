@@ -1,4 +1,4 @@
-/**
+/*
  * HashBuilder.java
  * Copyright (C)2009 Nicholas Killewald
  * 

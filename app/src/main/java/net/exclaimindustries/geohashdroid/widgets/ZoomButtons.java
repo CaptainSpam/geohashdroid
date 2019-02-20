@@ -13,7 +13,6 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
@@ -77,74 +76,52 @@ public class ZoomButtons extends RelativeLayout {
         inflate(c, R.layout.zoom_buttons, this);
 
         // Gather up all our sub-buttons...
-        mZoomMenu = (ImageButton) findViewById(R.id.zoom_button_menu);
-        mCancelMenu = (ImageButton) findViewById(R.id.zoom_button_cancel);
-        mZoomFitBoth = (ImageButton) findViewById(R.id.zoom_button_fit_both);
-        mZoomUser = (ImageButton) findViewById(R.id.zoom_button_you);
-        mZoomDestination = (ImageButton) findViewById(R.id.zoom_button_destination);
+        mZoomMenu = findViewById(R.id.zoom_button_menu);
+        mCancelMenu = findViewById(R.id.zoom_button_cancel);
+        mZoomFitBoth = findViewById(R.id.zoom_button_fit_both);
+        mZoomUser = findViewById(R.id.zoom_button_you);
+        mZoomDestination = findViewById(R.id.zoom_button_destination);
 
         // ...and make them do something.
-        mZoomFitBoth.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mListener != null)
-                    mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_FIT_BOTH);
-                showMenu(false);
-            }
+        mZoomFitBoth.setOnClickListener(v -> {
+            if(mListener != null)
+                mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_FIT_BOTH);
+            showMenu(false);
         });
 
-        mZoomUser.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mListener != null)
-                    mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_USER);
-                showMenu(false);
-            }
+        mZoomUser.setOnClickListener(v -> {
+            if(mListener != null)
+                mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_USER);
+            showMenu(false);
         });
 
-        mZoomDestination.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mListener != null)
-                    mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_DESTINATION);
-                showMenu(false);
-            }
+        mZoomDestination.setOnClickListener(v -> {
+            if(mListener != null)
+                mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_DESTINATION);
+            showMenu(false);
         });
 
-        mZoomMenu.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showMenu(true);
-            }
-        });
+        mZoomMenu.setOnClickListener(v -> showMenu(true));
 
-        mCancelMenu.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showMenu(false);
-            }
-        });
+        mCancelMenu.setOnClickListener(v -> showMenu(false));
 
         // Wait for layout, as usual...
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
-                    // Get hold of the basic widths of everything.  We'll just
-                    // re-use that a lot.
-                    mButtonWidth = mCancelMenu.getWidth() + (2 * getResources().getDimension(R.dimen.margin_zoom_button));
+        getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
+                // Get hold of the basic widths of everything.  We'll just
+                // re-use that a lot.
+                mButtonWidth = mCancelMenu.getWidth() + (2 * getResources().getDimension(R.dimen.margin_zoom_button));
 
-                    // First layout, make all the buttons be off-screen.  The
-                    // right mode will be set back on as need be.
-                    mZoomMenu.setTranslationX(-mButtonWidth);
-                    mCancelMenu.setTranslationX(-mButtonWidth);
-                    mZoomFitBoth.setTranslationX(-mButtonWidth);
-                    mZoomUser.setTranslationX(-mButtonWidth);
-                    mZoomDestination.setTranslationX(-mButtonWidth);
+                // First layout, make all the buttons be off-screen.  The
+                // right mode will be set back on as need be.
+                mZoomMenu.setTranslationX(-mButtonWidth);
+                mCancelMenu.setTranslationX(-mButtonWidth);
+                mZoomFitBoth.setTranslationX(-mButtonWidth);
+                mZoomUser.setTranslationX(-mButtonWidth);
+                mZoomDestination.setTranslationX(-mButtonWidth);
 
-                    showMenu(false);
-                }
+                showMenu(false);
             }
         });
     }
@@ -221,11 +198,6 @@ public class ZoomButtons extends RelativeLayout {
 
         // But with a button in hand...
         final View reallyToDisable = toDisable;
-        ((Activity)getContext()).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                reallyToDisable.setEnabled(enabled);
-            }
-        });
+        ((Activity)getContext()).runOnUiThread(() -> reallyToDisable.setEnabled(enabled));
     }
 }

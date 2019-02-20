@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C)2009 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.

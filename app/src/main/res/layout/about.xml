@@ -14,10 +14,10 @@
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="@string/about_icon_description"
-            android:src="@mipmap/ic_launcher"
+            android:layout_gravity="center_vertical"
             android:layout_margin="@dimen/standard_padding"
-            android:layout_gravity="center_vertical"/>
+            android:contentDescription="@string/about_icon_description"
+            android:src="@mipmap/ic_launcher_new"/>
 
         <LinearLayout
             android:layout_width="0dp"

@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.3" version="924" date="2018-07-08">
+        <title>Eleven Notifications If You Count A Potential Globalhash</title>
+        <header>FINALLY, the Oreo Notifications update!</header>
+        <bullets>
+            <bullet>Notification channels!  Geohash Droid now uses Oreo-style notification channels!  There\'s channels for wiki-related issues, the stock pre-fetcher, and Known Locations.  You can configure them via app settings in your device\'s main Android settings.  Note that by default this means Known Location notifications will now make noise.</bullet>
+            <bullet>New notification options regardless!  You can now have it send up individual Known Location notifications for each location that has a nearby point or each graticule with nearby points in them.  As the helpful popup will remind you, this is limited to ten notifications at a time.</bullet>
+            <bullet>Updated all the map-related stuff to newer versions of the Google Play libraries.</bullet>
+            <bullet>Fixed potentially broken Version History screen, specifically where every line with an apostrophe got cut off.  If this turned out to be a problem for you, hopefully it\'s fixed now and you don\'t see backslashes before every apostrophe in this window.</bullet>
+        </bullets>
+        <footer>Some of these updates (mostly the map-related part) involved a lot more tearup than I was expecting.  I tested things as much as I could, but if you run into problems with this version, please file issues at the Github repo.</footer>
+    </version>
     <version name="0.9.2.4" version="923" date="2017-06-22">
         <title>The Concept Of An Australian Tomorrow</title>
         <header>Here\'s a somewhat major change for geohashers in the 30W Rule.  You might like this one.</header>

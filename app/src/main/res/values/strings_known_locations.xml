@@ -28,6 +28,16 @@
     <string name="known_locations_alarm_title_global">The Globalhash for %1$s is nearby!</string>
     <string name="known_locations_alarm_distance">It\'s just %1$s away from %2$s!</string>
 
+    <plurals name="known_locations_alarm_group_title">
+        <item quantity="one">There\'s a nearby hashpoint!</item>
+        <item quantity="other">There\'s some nearby hashpoints!</item>
+    </plurals>
+
+    <plurals name="known_locations_alarm_group_text">
+        <item quantity="one">Exactly one, in fact!</item>
+        <item quantity="other">%1$d of them, to be exact!</item>
+    </plurals>
+
     <plurals name="known_locations_alarm_more">
         <item quantity="one">(it\'s also close to %1$d more known location!)</item>
         <item quantity="other">(it\'s also close to %1$d more known locations!)</item>

@@ -12,7 +12,6 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
 
@@ -41,12 +40,7 @@ public class AboutDialogFragment extends DialogFragment {
 
         return new AlertDialog.Builder(getActivity())
                 .setView(v)
-                .setPositiveButton(R.string.cool_label, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dismiss();
-                    }
-                })
+                .setPositiveButton(R.string.cool_label, (dialog, which) -> dismiss())
                 .create();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Graticule.java
  * Copyright (C)2009 Nicholas Killewald
  * 
@@ -305,7 +305,7 @@ public class Graticule implements Parcelable {
      * @return true if the 30W Rule is in effect, false otherwise
      */
     public boolean uses30WRule() {
-        return ((mLongitude < 30 && isWest()) || !isWest());
+        return (mLongitude < 30 || !isWest());
     }
 
     private void setLatitude(int latitude) {
@@ -489,7 +489,7 @@ public class Graticule implements Parcelable {
      */
     @NonNull
     public LatLng makePointFromHash(double latHash, double lonHash) {
-        if(latHash < 0 || latHash > 1 || lonHash < 0 || latHash > 1)
+        if(latHash < 0 || latHash > 1 || lonHash < 0 || lonHash > 1)
             throw new IllegalArgumentException("Those aren't valid hash values!");
 
         // getLatitude and getLongitude are absolute values, so we can do this:

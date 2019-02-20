@@ -1,7 +1,7 @@
-/**
+/*
  * AlarmService.java
  * Copyright (C)2015 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
  */
@@ -77,6 +77,8 @@ public class AlarmService extends JobIntentService {
     private NotificationManagerCompat mNotificationManager;
     
     private NotificationCompat.Builder mNotificationBuilder;
+
+    private int[] mNotifyIds;
     
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -489,6 +491,8 @@ public class AlarmService extends JobIntentService {
             .setContentTitle(getString(R.string.notification_title))
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+        mNotifyIds = getNotifyIds();
     }
     
     @Override
@@ -652,8 +656,9 @@ public class AlarmService extends JobIntentService {
         // still around, they're from previous days, so they're no longer valid.
         mNotificationManager.cancel(R.id.alarm_known_location);
         mNotificationManager.cancel(R.id.alarm_known_location_global);
-        int[] notifyIds = getResources().getIntArray(R.array.known_locations_multi_notifications);
-        for(int id : notifyIds) {
+        mNotificationManager.cancel(R.id.alarm_known_location_group);
+
+        for(int id : mNotifyIds) {
             mNotificationManager.cancel(id);
         }
 
@@ -704,6 +709,20 @@ public class AlarmService extends JobIntentService {
 
         // Did we get anything?  Anything AT ALL?
         if(!matched.isEmpty()) {
+            // A match!  First, we need the group summary notification...
+            NotificationCompat.Builder groupBuilder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_NEARBY_POINTS)
+                    .setGroupSummary(true)
+                    .setGroup(NOTIFICATION_GROUP_LOCAL)
+                    .setSmallIcon(R.drawable.ic_stat_av_new_releases)
+                    .setAutoCancel(true)
+                    .setOngoing(false)
+                    .setLights(Color.WHITE, 500, 2000)
+                    .setContentText(getResources().getQuantityString(R.plurals.known_locations_alarm_group_text, matched.size(), matched.size()))
+                    .setContentTitle(getResources().getQuantityString(R.plurals.known_locations_alarm_group_title, matched.size(), matched.size()))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+            mNotificationManager.notify(R.id.alarm_known_location_group, groupBuilder.build());
+
             // In any case, the matched selections need to be sorted out for
             // some reason.
             Collections.sort(matched);
@@ -761,11 +780,11 @@ public class AlarmService extends JobIntentService {
                     // per-location part.  Sort of.  I hope it's not too obvious
                     // I wrote and commented that part first.
                     int i;
-                    for(i = 0; i < notifyIds.length - 1; i++) {
+                    for(i = 0; i < mNotifyIds.length - 1; i++) {
                         if(byGraticuleList.isEmpty()) break;
 
                         List<KnownLocationMatchData> match = byGraticuleList.remove(0);
-                        launchNotification(match, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(match, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
 
                     }
 
@@ -777,7 +796,7 @@ public class AlarmService extends JobIntentService {
                         for(List<KnownLocationMatchData> match : byGraticuleList) {
                             remaining.addAll(match);
                         }
-                        launchNotification(remaining, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(remaining, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
                     }
 
                     break;
@@ -790,14 +809,14 @@ public class AlarmService extends JobIntentService {
                     // LESS than the length of notifyIds.  You'll see why in a
                     // sec.  Trust me.
                     int i;
-                    for(i = 0; i < notifyIds.length - 1; i++) {
+                    for(i = 0; i < mNotifyIds.length - 1; i++) {
                         if(matched.isEmpty()) break;
 
                         List<KnownLocationMatchData> single = new LinkedList<>();
                         single.add(matched.remove(0));
                         // Weird how this isn't causing the @IdRes annotation to
                         // throw a fit...
-                        launchNotification(single, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(single, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
                     }
 
                     // If matched didn't wind up empty, add the remainder of it
@@ -805,7 +824,7 @@ public class AlarmService extends JobIntentService {
                     // plain ol' notification like the others.  If it was more,
                     // it'll be a spillover, just like in only-once mode.
                     if(!matched.isEmpty())
-                        launchNotification(matched, START_INFO, notifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
+                        launchNotification(matched, START_INFO, mNotifyIds[i], R.string.known_locations_alarm_title, LOCAL_NOTIFICATION);
 
                     break;
                 }
@@ -900,5 +919,31 @@ public class AlarmService extends JobIntentService {
         } else {
             AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
         }
+    }
+
+    private int[] getNotifyIds() {
+        // We can't put IDs in an XML-defined integer-array, so we have to grab
+        // them like this.  Because I like using auto-generated IDs for things
+        // like this, that's why, and I might change the number of notification
+        // IDs at some point down the line.
+        List<Integer> idList = new LinkedList<>();
+        int lastId;
+        int curIndex = 0;
+        do {
+            lastId = getResources().getIdentifier("alarm_known_location_multi_" + curIndex, "id", this.getPackageName());
+            if(lastId != 0) {
+                idList.add(lastId);
+                curIndex++;
+            }
+        } while(lastId != 0);
+
+        int[] notifyIds = new int[idList.size()];
+        curIndex = 0;
+        for(Integer in : idList) {
+            notifyIds[curIndex] = in;
+            curIndex++;
+        }
+
+        return notifyIds;
     }
 }

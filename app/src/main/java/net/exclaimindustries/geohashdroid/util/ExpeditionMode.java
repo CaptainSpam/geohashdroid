@@ -123,12 +123,7 @@ public class ExpeditionMode
     private int mMarkerWidth = -1;
     private int mMarkerHeight = -1;
 
-    private View.OnClickListener mInfoBoxClicker = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
-        }
-    };
+    private View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
 
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
@@ -249,12 +244,7 @@ public class ExpeditionMode
 
         // The InfoBox should also go away at this point.
         if(mInfoBox != null) {
-            mInfoBox.animateInfoBoxOutWithEndAction(new Runnable() {
-                @Override
-                public void run() {
-                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox);
-                }
-            });
+            mInfoBox.animateInfoBoxOutWithEndAction(() -> ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mInfoBox));
         }
 
         // Plus, any bonus fragment we might have.
@@ -264,12 +254,7 @@ public class ExpeditionMode
         // Zoom buttons, you go away, too.  In this case, we animate the entire
         // block away ourselves and remove it when done with a callback.
         if(mZoomButtons != null) {
-            mZoomButtons.animate().translationX(-mZoomButtons.getWidth()).withEndAction(new Runnable() {
-                @Override
-                public void run() {
-                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons);
-                }
-            });
+            mZoomButtons.animate().translationX(-mZoomButtons.getWidth()).withEndAction(() -> ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons));
         }
     }
 
@@ -650,45 +635,42 @@ public class ExpeditionMode
         // I suppose a null Info MIGHT come in.  I don't know how yet, but sure,
         // let's assume a null Info here means we just don't render anything.
         if(mCurrentInfo != null) {
-            mCentralMap.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // Marker!
-                    addDestinationPoint(info);
+            mCentralMap.runOnUiThread(() -> {
+                // Marker!
+                addDestinationPoint(info);
 
-                    // With an Info in hand, we can also change the title.
-                    StringBuilder newTitle = new StringBuilder();
-                    Graticule g = mCurrentInfo.getGraticule();
-                    if(g == null)
-                        newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
-                    else {
-                        newTitle.append(g.getLatitudeString(false)).append(' ').append(g.getLongitudeString(false));
-                    }
-                    newTitle.append(", ");
-                    newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));
-                    setTitle(newTitle.toString());
-
-                    // Now, the Mercator projection that the map uses clips at
-                    // around 85 degrees north and south.  If that's where the
-                    // point is (if that's the Globalhash or if the user
-                    // legitimately lives in Antarctica), we'll still try to
-                    // draw it, but we'll throw up a warning that the marker
-                    // might not show up.  Sure is a good thing an extreme south
-                    // Globalhash showed up when I was testing this, else I
-                    // honestly might've forgot.
-                    ErrorBanner banner = mCentralMap.getErrorBanner();
-                    if(Math.abs(mCurrentInfo.getLatitude()) > 85) {
-                        banner.setErrorStatus(ErrorBanner.Status.WARNING);
-                        banner.setText(mCentralMap.getString(R.string.warning_outside_of_projection));
-                        banner.animateBanner(true);
-                    }
-
-                    // Finally, try to zoom the map to where it needs to be,
-                    // assuming we're connected to the APIs and have a location.
-                    // This is why you make sure things are ready before you
-                    // call init.
-                    doInitialZoom();
+                // With an Info in hand, we can also change the title.
+                StringBuilder newTitle = new StringBuilder();
+                Graticule g = mCurrentInfo.getGraticule();
+                if(g == null)
+                    newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
+                else {
+                    newTitle.append(g.getLatitudeString(false)).append(' ').append(g.getLongitudeString(false));
                 }
+                newTitle.append(", ");
+                newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));
+                setTitle(newTitle.toString());
+
+                // Now, the Mercator projection that the map uses clips at
+                // around 85 degrees north and south.  If that's where the
+                // point is (if that's the Globalhash or if the user
+                // legitimately lives in Antarctica), we'll still try to
+                // draw it, but we'll throw up a warning that the marker
+                // might not show up.  Sure is a good thing an extreme south
+                // Globalhash showed up when I was testing this, else I
+                // honestly might've forgot.
+                ErrorBanner banner = mCentralMap.getErrorBanner();
+                if(Math.abs(mCurrentInfo.getLatitude()) > 85) {
+                    banner.setErrorStatus(ErrorBanner.Status.WARNING);
+                    banner.setText(mCentralMap.getString(R.string.warning_outside_of_projection));
+                    banner.animateBanner(true);
+                }
+
+                // Finally, try to zoom the map to where it needs to be,
+                // assuming we're connected to the APIs and have a location.
+                // This is why you make sure things are ready before you
+                // call init.
+                doInitialZoom();
             });
 
         } else {
