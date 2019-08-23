@@ -692,7 +692,20 @@ public class AlarmService extends JobIntentService {
         for(KnownLocation kl : locations) {
             // Every KnownLocation has a method to do this.  Maybe it's a wee
             // bit inefficient and inelegant, but it does the job.
-            Info best = kl.getClosestInfo(this, (kl.is30w() ? tomorrow : today));
+            Info best;
+
+            try {
+                best = kl.getClosestInfo(this, (kl.is30w() ? tomorrow : today));
+            } catch (IllegalArgumentException iae) {
+                // This shouldn't happen under normal operation, but if this is
+                // the debug build and the party alarm's been triggered,
+                // makeNineThirty might refer to tomorrow (i.e. if the time zone
+                // is anywhere west of EST/EDT), which may not have a valid
+                // stock yet.  In that case, silently drop it and continue
+                // onward.  Chances are we'll skip all the known locations past
+                // this one anyway.
+                continue;
+            }
 
             if(kl.isCloseEnough(best.getFinalDestinationLatLng())) {
                 KnownLocationMatchData data = new KnownLocationMatchData(kl, best, kl.getDistanceFrom(best));
