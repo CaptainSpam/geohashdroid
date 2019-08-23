@@ -229,18 +229,8 @@ public class HashBuilder {
         @NonNull
         private String fetchStock(@NonNull Calendar sCal) throws IOException {
             // Now, generate a string for the URL.
-            String sMonthStr;
-            String sDayStr;
-
-            if (sCal.get(Calendar.MONTH) + 1 < 10)
-                sMonthStr = "0" + (sCal.get(Calendar.MONTH) + 1);
-            else
-                sMonthStr = Integer.valueOf(sCal.get(Calendar.MONTH) + 1).toString();
-
-            if (sCal.get(Calendar.DAY_OF_MONTH) < 10)
-                sDayStr = "0" + sCal.get(Calendar.DAY_OF_MONTH);
-            else
-                sDayStr = Integer.valueOf(sCal.get(Calendar.DAY_OF_MONTH)).toString();
+            String sMonthStr = String.format(Locale.US, "%02d", sCal.get(Calendar.MONTH) + 1);
+            String sDayStr = String.format(Locale.US, "%02d", sCal.get(Calendar.DAY_OF_MONTH));
 
             // Good, good! Now, to the web!  Go through our list of sites in
             // order until we find an answer, we bottom out, or we abort.  In
@@ -602,24 +592,13 @@ public class HashBuilder {
     private static String makeHash(@NonNull Calendar c, @NonNull String stockPrice) {
         // Just reset the hash. This can be handy alone if the graticule has
         // changed.  Remember, c is the REAL date, not the STOCK date!
-        String monthStr;
-        String dayStr;
-
-        // Zero-pad the month and date...
-        if (c.get(Calendar.MONTH) + 1 < 10)
-            monthStr = "0" + (c.get(Calendar.MONTH) + 1);
-        else
-            monthStr = Integer.valueOf(c.get(Calendar.MONTH) + 1).toString();
-
-        if (c.get(Calendar.DAY_OF_MONTH) < 10)
-            dayStr = "0" + c.get(Calendar.DAY_OF_MONTH);
-        else
-            dayStr = Integer.valueOf(c.get(Calendar.DAY_OF_MONTH)).toString();
-
-        // And here it goes!
-        String fullLine = c.get(Calendar.YEAR) + "-" + monthStr + "-"
-                + dayStr + "-" + stockPrice;
-        return MD5Tools.MD5hash(fullLine);
+        return MD5Tools.MD5hash(c.get(Calendar.YEAR) +
+                "-" +
+                String.format(Locale.US, "%02d", c.get(Calendar.MONTH) + 1) +
+                "-" +
+                String.format(Locale.US, "%02d", c.get(Calendar.DAY_OF_MONTH)) +
+                "-" +
+                stockPrice);
     }
 
     @Nullable
