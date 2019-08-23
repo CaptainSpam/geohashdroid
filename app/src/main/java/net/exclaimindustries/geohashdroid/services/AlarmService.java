@@ -913,12 +913,16 @@ public class AlarmService extends JobIntentService {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // JobScheduler time!  It's fancier!
             JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            JobInfo job = new JobInfo.Builder(
-                    ALARM_CONNECTIVITY_JOB,
-                    new ComponentName(this, AlarmServiceJobService.class))
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                    .build();
-            js.schedule(job);
+            if(js != null) {
+                JobInfo job = new JobInfo.Builder(
+                        ALARM_CONNECTIVITY_JOB,
+                        new ComponentName(this, AlarmServiceJobService.class))
+                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                        .build();
+                js.schedule(job);
+            } else {
+                Log.e(DEBUG_TAG, "Couldn't get a JobScheduler instance when scheduling the connectivity check!  THIS IS BAD, AND WE WON'T GET NETWORK UPDATES!");
+            }
         } else {
             // Otherwise, just use the ol' package component.
             AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, true);
@@ -928,7 +932,11 @@ public class AlarmService extends JobIntentService {
     private void stopWaitingForNetwork() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            js.cancel(ALARM_CONNECTIVITY_JOB);
+            if(js != null) {
+                js.cancel(ALARM_CONNECTIVITY_JOB);
+            } else {
+                Log.e(DEBUG_TAG, "Couldn't get a JobScheduler instance when stopping the connectivity check!  THIS IS BAD!");
+            }
         } else {
             AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
         }
