@@ -600,13 +600,12 @@ public class HashBuilder {
     private static String makeHash(@NonNull Calendar c, @NonNull String stockPrice) {
         // Just reset the hash. This can be handy alone if the graticule has
         // changed.  Remember, c is the REAL date, not the STOCK date!
-        return MD5Tools.MD5hash(c.get(Calendar.YEAR) +
-                "-" +
-                String.format(Locale.US, "%02d", c.get(Calendar.MONTH) + 1) +
-                "-" +
-                String.format(Locale.US, "%02d", c.get(Calendar.DAY_OF_MONTH)) +
-                "-" +
-                stockPrice);
+        return MD5Tools.MD5hash(String.format(Locale.US,
+                "%4d-%02d-%02d-%s",
+                c.get(Calendar.YEAR),
+                c.get(Calendar.MONTH) + 1,
+                c.get(Calendar.DAY_OF_MONTH),
+                stockPrice));
     }
 
     @Nullable
