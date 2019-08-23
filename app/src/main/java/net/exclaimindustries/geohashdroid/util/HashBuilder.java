@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -144,6 +145,7 @@ public class HashBuilder {
          * </p>
          */
         public void runStock() {
+            Log.d(DEBUG_TAG, "Now starting a StockRunner for " + DateTools.getHyphenatedDateString(mCal) + " at " + mGrat.getLatitudeString(false) + " " + mGrat.getLongitudeString(false) + "...");
             Info toReturn;
             String stock;
             
@@ -162,6 +164,7 @@ public class HashBuilder {
                 if(toReturn != null) {
                     // Hey, whadya know, we've got something!  Send this data
                     // back to the Handler and return!
+                    Log.d(DEBUG_TAG, "Found it in the cache!");
                     mStatus = ALL_OKAY;
                     sendMessage(toReturn);
                     return;
@@ -284,11 +287,18 @@ public class HashBuilder {
                     // If there was an exception, there was some issue with the
                     // server.  It might've been aborted by timeout, but still,
                     // move on to the next server.
+                    Log.d(DEBUG_TAG, "IOException!", e);
                     continue;
                 }
 
                 if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                    // If the server gives us a 404, that's saying it can't find
+                    // the stock for the day, which in turn implies it hasn't
+                    // been posted yet.  Log as such and try the next server.
+                    // Maybe they're just not in sync.
+                    Log.d(DEBUG_TAG, "Server said there was no stock for " + DateTools.getHyphenatedDateString(sCal));
                     curStatus = ERROR_NOT_POSTED;
+                    continue;
                 } else if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
                     // A non-okay response that isn't a 404 is bad.  Count this
                     // one as ERROR_SERVER and just continue.
@@ -301,7 +311,6 @@ public class HashBuilder {
                 // With that done, we try to convert the output to the float.
                 // If this fails, we got bogus data and should roll on.
                 try {
-                    //noinspection ResultOfMethodCallIgnored
                     Float.parseFloat(result);
                 } catch (NumberFormatException nfe) {
                     result = "";
@@ -309,6 +318,7 @@ public class HashBuilder {
                 }
                 
                 // We survived!  Set the status flag and keep going!
+                Log.d(DEBUG_TAG, "Success!  Stock found!  It's " + result + "!");
                 curStatus = ALL_OKAY;
                 client.close();
                 break;
@@ -320,8 +330,6 @@ public class HashBuilder {
                 throw new FileNotFoundException();
             else if(curStatus == ERROR_SERVER)
                 throw new IOException();
-
-
 
             // If we finally, FINALLY got this far, we've got a successful stock!
             return result;
@@ -344,7 +352,7 @@ public class HashBuilder {
 
             // Load it up...
             StringBuilder tempstring = new StringBuilder();
-            char bean[] = new char[1024];
+            char[] bean = new char[1024];
             int read;
             while ((read = buff.read(bean)) != -1) {
                 tempstring.append(bean, 0, read);
