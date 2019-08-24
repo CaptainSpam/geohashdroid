@@ -444,10 +444,9 @@ public class PreferencesScreen extends PreferenceActivity {
                 switch(preference.getKey()) {
                     case "_debug_non30w":
                         // Non-30W... how about the Lexington, KY graticule?
-                        // If you don't like this, then get me a better job
-                        // somewhere else and maybe I'll change it.  Start at
-                        // -85 and work your way RIGHT to make the 38N 84E
-                        // graticule.
+                        // If you don't like this, too bad, I lived there long
+                        // enough, so I'm choosing it.  Start at -85 and work
+                        // your way RIGHT to make the 38N 84E graticule.
                         baseLat = 38;
                         baseLon = -85;
                         break;
