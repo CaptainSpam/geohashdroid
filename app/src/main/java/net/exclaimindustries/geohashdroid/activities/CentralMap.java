@@ -765,6 +765,9 @@ public class CentralMap
         // this circumstance.
         if(checkLocationPermissions(0, true)) mPermissionsDenied = false;
 
+        // Then, do the ready checks.
+        doReadyChecks();
+
         // Listen up!
         startListening();
 
@@ -1192,28 +1195,32 @@ public class CentralMap
                 mCurrentMode.onLocationChanged(mLastKnownLocation);
             invalidateOptionsMenu();
 
-            // Now, read all the KnownLocations and put them on the map.  Remove
-            // anything we had before.
-            if(mKnownLocationMarkers != null)
-                for(Marker m : mKnownLocationMarkers)
-                    m.remove();
-
-            mKnownLocationMarkers = new LinkedList<>();
-
-            // Now, ONLY if prefs say so...
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-            if(prefs.getBoolean(GHDConstants.PREF_SHOW_KNOWN_LOCATIONS, true)) {
-                for(KnownLocation kl : KnownLocation.getAllKnownLocations(this)) {
-                    // No snippet this time; there's nothing to do with the marker
-                    // other than show its name.
-                    Marker mark = mMap.addMarker(kl.makeMarker(this));
-                    mKnownLocationMarkers.add(mark);
-                }
-            }
+            drawKnownLocations();
 
             // And finally, start listening.
             startListening();
+        }
+    }
+
+    private void drawKnownLocations() {
+        // Now, read all the KnownLocations and put them on the map.  Remove
+        // anything we had before.
+        if(mKnownLocationMarkers != null) {
+            for(Marker m : mKnownLocationMarkers)
+                m.remove();
+        }
+        mKnownLocationMarkers = new LinkedList<>();
+
+        // Now, ONLY if prefs say so...
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if(prefs.getBoolean(GHDConstants.PREF_SHOW_KNOWN_LOCATIONS, true)) {
+            for(KnownLocation kl : KnownLocation.getAllKnownLocations(this)) {
+                // No snippet this time; there's nothing to do with the marker
+                // other than show its name.
+                Marker mark = mMap.addMarker(kl.makeMarker(this));
+                mKnownLocationMarkers.add(mark);
+            }
         }
     }
 
