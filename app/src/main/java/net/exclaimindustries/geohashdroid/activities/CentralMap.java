@@ -34,7 +34,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -45,7 +44,6 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
@@ -651,7 +649,7 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
-        } else if(intent != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
+        } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
             mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
