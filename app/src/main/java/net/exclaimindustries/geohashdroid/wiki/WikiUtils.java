@@ -960,7 +960,7 @@ public class WikiUtils {
      */
     public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
-            return " [http://www.openstreetmap.org/?lat="
+            return " [https://openstreetmap.org/?lat="
                     + mLatLonLinkFormat.format(loc.getLatitude())
                     + "&lon="
                     + mLatLonLinkFormat.format(loc.getLongitude())
