@@ -934,7 +934,7 @@ public class CentralMap
                 // expecting something for geocaching.
                 Intent i = new Intent();
                 i.setAction(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("http://wiki.xkcd.com/geohashing/How_it_works"));
+                i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
                 startActivity(i);
                 return true;
             }
