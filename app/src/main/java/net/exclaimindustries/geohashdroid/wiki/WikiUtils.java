@@ -62,12 +62,12 @@ public class WikiUtils {
     /**
      * The base URL for all wiki activities.  Remember the trailing slash!
      */
-    private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/";
+    private static final String WIKI_BASE_URL = "https://geohashing.site/";
 
     /**
      * The URL for the MediaWiki API.  There's no trailing slash here.
      */
-    private static final String WIKI_API_URL = WIKI_BASE_URL + "wgh/api.php";
+    private static final String WIKI_API_URL = WIKI_BASE_URL + "/api.php";
 
     /**
      * The base URL for viewing pages on the wiki.  On the Geohashing wiki, the
