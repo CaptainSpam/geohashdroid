@@ -13,7 +13,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * <p>

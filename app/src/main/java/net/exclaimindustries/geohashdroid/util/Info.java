@@ -14,8 +14,8 @@ import java.util.GregorianCalendar;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.Nullable;
-import android.support.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 
