@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
-    <version name="0.9.4" version="925" date="2019-08-22">
-        <title>One year later...</title>
+    <version name="0.9.4" version="925" date="2020-02-19">
+        <title>A Wiki Housewarming Gift</title>
         <header>Wow, I&apos;ve got some work to do.  Did I mention I got a new job since the last update?</header>
         <bullets>
-            <bullet>Okay, THIS time I&apos;ve got the broken Version History entries fixed.  If you saw backslashed quotes show up in the previous version, that wasn&apos;t meant to be part of the joke; it turns out that, irritatingly, different versions of Android apparently parse single and double quotes in XML files differently.  Sorry for any confusion there.  Just remind me to always use &amp;apos; and &amp;quot; just to be safe and everything should be just fine.</bullet>
+            <bullet>The Geohashing Wiki has moved!  As such, Geohash Droid now points there.</bullet>
+            <bullet>Okay, THIS time I&apos;ve got the broken Version History entries fixed.  If you saw backslashed quotes show up in the previous version, that wasn&apos;t meant to be part of the joke; it turns out that, irritatingly, different versions of Android apparently parse single and double quotes in XML files differently.  Sorry for any confusion there.  Just remind me to always use &amp;apos; and &amp;quot; to be safe and everything should be fine.</bullet>
             <bullet>In the never-ending quest for fanciness and schmansiness, there&apos;s finally an adaptive-style icon for Geohash Droid.</bullet>
+            <bullet>A few minor bugs here and there should be fixed.  I have no clue if anyone ran across them or not.</bullet>
+            <bullet>A whoooooooole lotta code cleanup.  Library versions, linting, simplifying, the works.  If something exploded, do let me know.</bullet>
         </bullets>
-        <footer>Now, maybe I can get back to fixing offline wiki post queueing.</footer>
+        <footer>There&apos;s still more to go, like fixing offline wiki post queueing and native Android 10 dark mode stuff.</footer>
     </version>
     <version name="0.9.3" version="924" date="2018-07-08">
         <title>Eleven Notifications If You Count A Potential Globalhash</title>
