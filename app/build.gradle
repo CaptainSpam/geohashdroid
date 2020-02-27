@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
     defaultConfig {
         applicationId 'net.exclaimindustries.geohashdroid.debuggy'
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 29
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -19,12 +19,12 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.android.support:support-v4:27.1.1'
-    implementation 'com.android.support:support-v13:27.1.1'
-    implementation 'com.google.android.gms:play-services-maps:15.0.1'
-    implementation 'com.google.android.gms:play-services-location:15.0.1'
-    implementation 'com.google.guava:guava:22.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.legacy:legacy-support-v13:1.0.0'
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
+    implementation 'com.google.android.gms:play-services-location:17.0.0'
+    implementation 'com.google.guava:guava:24.1-jre'
     implementation 'cz.msebera.android:httpclient:4.4.1.1'
     implementation 'org.opensextant:geodesy:2.0.1'
-    implementation 'com.android.support:support-compat:27.1.1'
+    implementation 'androidx.core:core:1.2.0'
 }

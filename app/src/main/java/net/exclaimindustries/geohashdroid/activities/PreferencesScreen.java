@@ -21,7 +21,6 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.support.annotation.StringRes;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -36,6 +35,8 @@ import net.exclaimindustries.tools.QueueService;
 
 import java.util.LinkedList;
 import java.util.List;
+
+import androidx.annotation.StringRes;
 
 /**
  * <p>

@@ -24,11 +24,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.StringRes;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -935,7 +935,7 @@ public class CentralMap
                 // expecting something for geocaching.
                 Intent i = new Intent();
                 i.setAction(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("http://wiki.xkcd.com/geohashing/How_it_works"));
+                i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
                 startActivity(i);
                 return true;
             }

@@ -11,8 +11,8 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -62,12 +62,12 @@ public class WikiUtils {
     /**
      * The base URL for all wiki activities.  Remember the trailing slash!
      */
-    private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/";
+    private static final String WIKI_BASE_URL = "https://geohashing.site/";
 
     /**
      * The URL for the MediaWiki API.  There's no trailing slash here.
      */
-    private static final String WIKI_API_URL = WIKI_BASE_URL + "wgh/api.php";
+    private static final String WIKI_API_URL = WIKI_BASE_URL + "/api.php";
 
     /**
      * The base URL for viewing pages on the wiki.  On the Geohashing wiki, the
@@ -960,7 +960,7 @@ public class WikiUtils {
      */
     public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
-            return " [http://www.openstreetmap.org/?lat="
+            return " [https://openstreetmap.org/?lat="
                     + mLatLonLinkFormat.format(loc.getLatitude())
                     + "&lon="
                     + mLatLonLinkFormat.format(loc.getLongitude())
