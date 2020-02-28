@@ -445,6 +445,7 @@ public class KnownLocation implements Parcelable {
         return toReturn;
     }
 
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @NonNull
     private Bitmap buildMarkerBitmap(@NonNull Context c) {
         // Oh, this is going to be FUN.

@@ -1013,6 +1013,7 @@ public class KnownLocationsPicker
         }
     }
 
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @NonNull
     private Bitmap makeAddressBitmap(LatLng loc) {
         // The signpost for address search results will just be two rectangles.

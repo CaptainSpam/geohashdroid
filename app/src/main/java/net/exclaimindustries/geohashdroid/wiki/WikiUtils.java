@@ -792,6 +792,7 @@ public class WikiUtils {
             // Next, edit errors.  These come from the error element, code
             // attribute.
             case "protectedtitle":
+                //noinspection DuplicateBranchesInSwitch
                 error = R.string.wiki_error_protected;
                 break;
             case "cantcreate":
