@@ -11,11 +11,13 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.os.Bundle;
 import android.view.View;
 
 import net.exclaimindustries.geohashdroid.R;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * Where credits become due and links become available.
@@ -33,6 +35,7 @@ public class AboutDialogFragment extends DialogFragment {
         return new AboutDialogFragment();
     }
 
+    @NonNull
     @Override
     @SuppressLint("InflateParams")
     public Dialog onCreateDialog(Bundle savedInstanceState) {

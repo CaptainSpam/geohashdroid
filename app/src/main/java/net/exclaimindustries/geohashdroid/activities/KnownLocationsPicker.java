@@ -11,7 +11,6 @@ package net.exclaimindustries.geohashdroid.activities;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.Intent;
@@ -29,8 +28,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -73,6 +70,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * KnownLocationsPicker is another map-containing Activity.  This one allows the
@@ -140,6 +141,7 @@ public class KnownLocationsPicker
         private KnownLocation mExisting;
         private Address mAddress;
 
+        @NonNull
         @Override
         @SuppressLint("InflateParams")
         public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -753,7 +755,7 @@ public class KnownLocationsPicker
 
         EditKnownLocationDialog dialog = new EditKnownLocationDialog();
         dialog.setArguments(args);
-        dialog.show(getFragmentManager(), EDIT_DIALOG);
+        dialog.show(getSupportFragmentManager(), EDIT_DIALOG);
     }
 
     @Override

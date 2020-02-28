@@ -10,13 +10,10 @@ package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +31,10 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * This pops up the version history on demand.  Said demand also includes the
@@ -142,6 +143,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
         return frag;
     }
 
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         ArrayList<VersionEntry> entries = getArguments().getParcelableArrayList("entries");

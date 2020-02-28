@@ -8,7 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
-import android.app.Activity;
 import android.app.backup.BackupManager;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -17,12 +16,14 @@ import android.preference.PreferenceManager;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 
+import androidx.fragment.app.FragmentActivity;
+
 /**
  * A <code>BaseGHDThemeActivity</code> sets up the theme (day or night) during
  * onCreate, as well as offer methods to switch between the themes.
  */
 public abstract class BaseGHDThemeActivity
-        extends Activity {
+        extends FragmentActivity {
 
     private boolean mStartedInNight = false;
 

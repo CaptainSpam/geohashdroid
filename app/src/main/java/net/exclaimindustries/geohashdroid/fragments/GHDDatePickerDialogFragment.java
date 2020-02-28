@@ -11,10 +11,8 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.Context;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +21,9 @@ import android.widget.DatePicker;
 import net.exclaimindustries.geohashdroid.R;
 
 import java.util.Calendar;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * Really, this wouldn't be necessary if I didn't need to include that "Today"
@@ -73,6 +74,7 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
         mCallback = callback;
     }
 
+    @NonNull
     @Override
     @SuppressLint("InflateParams")
     public Dialog onCreateDialog(Bundle savedInstanceState) {

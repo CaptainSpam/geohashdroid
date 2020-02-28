@@ -16,8 +16,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
@@ -44,6 +42,9 @@ import net.exclaimindustries.tools.LocationUtil;
 
 import java.text.DateFormat;
 import java.util.Calendar;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * <code>WikiFragment</code> does double duty, handling what both of <code>WikiPictureEditor</code>
@@ -191,7 +192,7 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
         // We've also got a picture URI to deal with.

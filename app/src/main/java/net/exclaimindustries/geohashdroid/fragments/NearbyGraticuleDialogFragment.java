@@ -10,11 +10,8 @@ package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.location.Location;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -22,6 +19,10 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.LocationUtil;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * This handy Fragment is the dialog that pops up when the user wants to change
@@ -72,12 +73,13 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
         return frag;
     }
 
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         final Info info = getArguments().getParcelable("info");
         final Location location = getArguments().getParcelable("location");
 
-        if(info == null) return null;
+        if(info == null) throw new RuntimeException("Passed a null Info into NearbyGraticuleDialogFragment!");
 
         String message;
         if(LocationUtil.isLocationNewEnough(location)) {
@@ -92,7 +94,7 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
         // Fortunately, we've got GHDBasicDialogBuilder on-hand for just such
         // basic dialog purposes!
         Graticule g = info.getGraticule();
-        if(g == null) return null;
+        if(g == null) throw new RuntimeException("Passed a null Graticule into NearbyGraticuleDialogFragment!  You can't use this on a Globalhash!");
 
         return new AlertDialog.Builder(getActivity())
                 .setMessage(message)

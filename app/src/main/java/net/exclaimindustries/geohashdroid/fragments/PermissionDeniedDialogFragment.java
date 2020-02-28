@@ -10,10 +10,12 @@ package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.os.Bundle;
 
 import net.exclaimindustries.geohashdroid.R;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * Dialog that gets shown if the user doesn't feel like giving us the
@@ -24,6 +26,7 @@ public class PermissionDeniedDialogFragment
     public static final String TITLE = "title";
     public static final String MESSAGE = "message";
 
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Bundle args = getArguments();
