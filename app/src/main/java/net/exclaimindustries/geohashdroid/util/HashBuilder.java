@@ -145,7 +145,13 @@ public class HashBuilder {
          * </p>
          */
         public void runStock() {
-            Log.d(DEBUG_TAG, "Now starting a StockRunner for " + DateTools.getHyphenatedDateString(mCal) + " at " + mGrat.getLatitudeString(false) + " " + mGrat.getLongitudeString(false) + "...");
+            Log.d(DEBUG_TAG, "Now starting a StockRunner for " +
+                DateTools.getHyphenatedDateString(mCal) +
+                    (mGrat == null ? " for the Globalhash" : " at " +
+                        mGrat.getLatitudeString(false) +
+                        " " +
+                        mGrat.getLongitudeString(false))
+                    + "...");
             Info toReturn;
             String stock;
             
