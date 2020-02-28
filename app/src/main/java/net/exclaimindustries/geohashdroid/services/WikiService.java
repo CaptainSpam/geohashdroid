@@ -74,7 +74,7 @@ public class WikiService extends QueueService {
      * {@link NotificationCompat.Builder#addAction(int, CharSequence, PendingIntent)}
      * with the appropriate data to be "astonishingly similar", which I do.
      */
-    private class NotificationAction {
+    private static class NotificationAction {
         public int icon;
         public PendingIntent actionIntent;
         public CharSequence title;
@@ -504,9 +504,9 @@ public class WikiService extends QueueService {
             // The location is just two doubles.  Split 'em with a colon.
             Location loc = i.getParcelableExtra(EXTRA_LOCATION);
             if(loc != null)
-                builder.append(Double.toString(loc.getLatitude()))
+                builder.append(loc.getLatitude())
                         .append(':')
-                        .append(Double.toString(loc.getLongitude()));
+                        .append(loc.getLongitude());
             builder.append('\n');
 
             // The image is just a URI.  Easy so far.
@@ -521,21 +521,21 @@ public class WikiService extends QueueService {
             // null if this is a globalhash.
             Info info = i.getParcelableExtra(EXTRA_INFO);
             if(info != null) {
-                builder.append(Double.toString(info.getLatitude()))
+                builder.append(info.getLatitude())
                         .append(':')
-                        .append(Double.toString(info.getLongitude()))
+                        .append(info.getLongitude())
                         .append(':')
-                        .append(Long.toString(info.getDate().getTime()))
+                        .append(info.getDate().getTime())
                         .append(':');
 
                 Graticule g = info.getGraticule();
 
                 if(g != null) {
-                    builder.append(Integer.toString(g.getLatitude()))
+                    builder.append(g.getLatitude())
                             .append(':')
                             .append(g.isSouth() ? '1' : '0')
                             .append(':')
-                            .append(Integer.toString(g.getLongitude()))
+                            .append(g.getLongitude())
                             .append(':')
                             .append((g.isWest() ? '1' : '0'));
                 }
@@ -575,7 +575,7 @@ public class WikiService extends QueueService {
             // Location, as two doubles.
             read = br.readLine();
             if(read != null && !read.isEmpty()) {
-                String parts[] = read.split(":");
+                String[] parts = read.split(":");
                 Location loc = new Location("");
                 loc.setLatitude(Double.parseDouble(parts[0]));
                 loc.setLongitude(Double.parseDouble(parts[1]));
@@ -592,7 +592,7 @@ public class WikiService extends QueueService {
             // The Info object, as a mess of things.
             read = br.readLine();
             if(read != null && !read.isEmpty()) {
-                String parts[] = read.split(":");
+                String[] parts = read.split(":");
                 double lat = Double.parseDouble(parts[0]);
                 double lon = Double.parseDouble(parts[1]);
                 Calendar cal = Calendar.getInstance();

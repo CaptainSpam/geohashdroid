@@ -277,7 +277,7 @@ public class WikiImageUtils {
             }
 
             // Now, add the tallest of those into the height...
-            totalHeight += (textHeight > iconHeight ? textHeight : iconHeight);
+            totalHeight += Math.max(textHeight, iconHeight);
 
             // ...keep track of the individual heights so we don't have to keep
             // recalculating them...

@@ -249,7 +249,7 @@ public class KnownLocationsPicker
         }
 
         private double convertPositionToRange(int id) {
-            return (double)getResources().getIntArray(R.array.known_locations_values)[id];
+            return getResources().getIntArray(R.array.known_locations_values)[id];
         }
 
         private int convertRangeToPosition(double range) {
@@ -569,7 +569,7 @@ public class KnownLocationsPicker
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
         outState.putBoolean(RELOADING, true);
@@ -582,33 +582,31 @@ public class KnownLocationsPicker
         if(mActiveAddresses != null) {
             // mActiveAddresses is a List, not an ArrayList, so we have to do
             // this manually.
-            Address addresses[] = new Address[mActiveAddresses.size()];
+            Address[] addresses = new Address[mActiveAddresses.size()];
             outState.putParcelableArray(LAST_ADDRESSES, mActiveAddresses.toArray(addresses));
         }
     }
 
     @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
 
-        if(savedInstanceState != null) {
-            mReloaded = savedInstanceState.getBoolean(RELOADING, false);
+        mReloaded = savedInstanceState.getBoolean(RELOADING, false);
 
-            // Did we have a click marker?  Once the map's ready, we'll put it
-            // back in place.
-            if(savedInstanceState.containsKey(CLICKED_MARKER)) {
-                mMapClickMarkerOptions = savedInstanceState.getParcelable(CLICKED_MARKER);
-            }
+        // Did we have a click marker?  Once the map's ready, we'll put it
+        // back in place.
+        if(savedInstanceState.containsKey(CLICKED_MARKER)) {
+            mMapClickMarkerOptions = savedInstanceState.getParcelable(CLICKED_MARKER);
+        }
 
-            if(savedInstanceState.containsKey(LAST_ADDRESSES)) {
-                // I'm actually surprised Geocoder doesn't return an ArrayList,
-                // or that there's no direct putParcelableList method.
-                Address[] addresses = (Address[])savedInstanceState.getParcelableArray(LAST_ADDRESSES);
+        if(savedInstanceState.containsKey(LAST_ADDRESSES)) {
+            // I'm actually surprised Geocoder doesn't return an ArrayList,
+            // or that there's no direct putParcelableList method.
+            Address[] addresses = (Address[])savedInstanceState.getParcelableArray(LAST_ADDRESSES);
 
-                if(addresses != null) {
-                    mActiveAddresses = new ArrayList<>();
-                    Collections.addAll(mActiveAddresses, addresses);
-                }
+            if(addresses != null) {
+                mActiveAddresses = new ArrayList<>();
+                Collections.addAll(mActiveAddresses, addresses);
             }
         }
     }
@@ -698,7 +696,6 @@ public class KnownLocationsPicker
                 }
             }
 
-        } else {
         }
     }
 

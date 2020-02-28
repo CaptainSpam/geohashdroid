@@ -475,6 +475,7 @@ public class Info implements Parcelable {
     }
 
     @Override
+    @NonNull
     public String toString() {
         // This is mostly used for debugging purposes, so we may as well make it
         // useful.

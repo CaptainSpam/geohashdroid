@@ -127,8 +127,8 @@ public class Graticule implements Parcelable {
             throws NullPointerException, NumberFormatException {
         mSouth = latitude.charAt(0) == '-';
         mWest = longitude.charAt(0) == '-';
-        this.setLatitude(Math.abs(Integer.valueOf(latitude)));
-        this.setLongitude(Math.abs(Integer.valueOf(longitude)));
+        this.setLatitude(Math.abs(Integer.parseInt(latitude)));
+        this.setLongitude(Math.abs(Integer.parseInt(longitude)));
     }
 
     /**
@@ -541,6 +541,7 @@ public class Graticule implements Parcelable {
     }
 
     @Override
+    @NonNull
     public String toString() {
         return "Graticule for " + getLatitudeString(false) + " " + getLongitudeString(false);
     }

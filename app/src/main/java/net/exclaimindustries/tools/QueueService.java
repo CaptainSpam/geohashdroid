@@ -130,7 +130,7 @@ public abstract class QueueService extends Service {
         
         // To recreate, we want to go through everything we have in storage in
         // the same order we wrote it out.
-        String files[] = fileList();
+        String[] files = fileList();
         
         // But the only files we're interested in are Queue# files.
         int count = 0;
