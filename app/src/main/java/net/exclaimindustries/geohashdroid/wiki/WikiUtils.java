@@ -96,6 +96,7 @@ public class WikiUtils {
 
         private static final Pattern RE_VERSION = Pattern.compile("(.*)\\s+((\\d+)\\.(\\d+)\\.(\\d+)(.*)?)");
 
+        @SuppressWarnings("ConstantConditions")
         public WikiVersionData(@NonNull String input) {
             // Let's get parsing!
             mRawResult = input;
@@ -118,6 +119,10 @@ public class WikiUtils {
                 mRevision = Integer.parseInt(match.group(5));
             } catch (NumberFormatException nfe) {
                 // Those BETTER be ints.
+                mValid = false;
+                return;
+            } catch (NullPointerException npe) {
+                // There BETTER be enough groups.
                 mValid = false;
                 return;
             }

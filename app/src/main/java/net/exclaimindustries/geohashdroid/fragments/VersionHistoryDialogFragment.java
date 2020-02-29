@@ -35,6 +35,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * This pops up the version history on demand.  Said demand also includes the
@@ -146,11 +147,15 @@ public class VersionHistoryDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        ArrayList<VersionEntry> entries = getArguments().getParcelableArrayList("entries");
+        Bundle arguments = getArguments();
+        assert arguments != null;
+        ArrayList<VersionEntry> entries = arguments.getParcelableArrayList("entries");
 
         // Rack 'em!
-        return new AlertDialog.Builder(getActivity())
-                .setAdapter(new EntryAdapter(getActivity(), entries), null)
+        FragmentActivity act = getActivity();
+        assert act != null;
+        return new AlertDialog.Builder(act)
+                .setAdapter(new EntryAdapter(act, entries), null)
                 .setTitle(R.string.title_versionhistory)
                 .setPositiveButton(getString(R.string.cool_label), (dialog, which) -> dismiss())
                 .create();

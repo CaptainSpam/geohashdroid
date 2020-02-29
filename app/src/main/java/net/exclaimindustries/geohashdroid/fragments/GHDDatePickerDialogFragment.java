@@ -24,6 +24,7 @@ import java.util.Calendar;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * Really, this wouldn't be necessary if I didn't need to include that "Today"
@@ -81,8 +82,11 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
         Calendar startCal;
         if(savedInstanceState != null)
             startCal = (Calendar)savedInstanceState.getSerializable("calendar");
-        else
-            startCal = (Calendar)getArguments().getSerializable("calendar");
+        else {
+            Bundle arguments = getArguments();
+            assert arguments != null;
+            startCal = (Calendar) arguments.getSerializable("calendar");
+        }
 
         if(startCal == null) startCal = Calendar.getInstance();
 
@@ -92,7 +96,10 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
 
         // Set up the view first.  This means the date picker needs to get an
         // initial date and the button needs to be clickerable.
-        LayoutInflater inflater = ((LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE));
+        FragmentActivity act = getActivity();
+        assert act != null;
+        LayoutInflater inflater = ((LayoutInflater)act.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
+        assert inflater != null;
 
         View dialogView = inflater.inflate(R.layout.date_picker_dialog, null);
         final DatePicker picker = dialogView.findViewById(R.id.date_picker);

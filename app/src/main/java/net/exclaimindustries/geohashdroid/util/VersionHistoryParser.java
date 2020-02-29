@@ -64,6 +64,7 @@ public class VersionHistoryParser {
             dest.writeStringList(bullets);
         }
 
+        @SuppressWarnings("ConstantConditions")
         public void readFromParcel(Parcel in) {
             // Fill 'em back in!
             title = in.readString();

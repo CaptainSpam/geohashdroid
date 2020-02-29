@@ -131,7 +131,9 @@ public class WikiService extends QueueService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+            String action = intent.getAction();
+
+            if(action != null && action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
                 // Ding!  Are we back yet?
                 if(AndroidUtil.isConnected(context)) {
                     // Aha!  We're up!  Send off a command to resume the queue!
@@ -214,6 +216,7 @@ public class WikiService extends QueueService {
         
         // WakeLock awaaaaaay!
         PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
+        assert pm != null;
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "geohashdroid:WikiService");
         
         // Also, get the NotificationManager on standby.
@@ -683,6 +686,7 @@ public class WikiService extends QueueService {
                     new ComponentName(this, WikiServiceJobService.class))
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                     .build();
+            assert js != null;
             js.schedule(job);
         } else {
             // Make sure the connectivity listener's waiting for a connection.
@@ -696,6 +700,7 @@ public class WikiService extends QueueService {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // Cancel the job, if need be.
             JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            assert js != null;
             js.cancel(WIKI_CONNECTIVITY_JOB);
         } else {
             // Shut off the listener, if need be.

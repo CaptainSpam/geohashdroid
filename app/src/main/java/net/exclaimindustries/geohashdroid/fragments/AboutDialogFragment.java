@@ -18,6 +18,7 @@ import net.exclaimindustries.geohashdroid.R;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * Where credits become due and links become available.
@@ -39,7 +40,9 @@ public class AboutDialogFragment extends DialogFragment {
     @Override
     @SuppressLint("InflateParams")
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        View v = getActivity().getLayoutInflater().inflate(R.layout.about, null);
+        FragmentActivity act = getActivity();
+        assert act != null;
+        View v = act.getLayoutInflater().inflate(R.layout.about, null);
 
         return new AlertDialog.Builder(getActivity())
                 .setView(v)

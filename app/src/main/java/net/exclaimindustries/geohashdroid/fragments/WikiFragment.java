@@ -45,6 +45,7 @@ import java.util.Calendar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * <code>WikiFragment</code> does double duty, handling what both of <code>WikiPictureEditor</code>
@@ -201,30 +202,31 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch(requestCode) {
-            case GET_PICTURE: {
-                if(data != null) {
-                    // Picture in!  We need to stash the URL away and make a
-                    // thumbnail out of it, if we can!
-                    Uri uri = data.getData();
+        if(requestCode == GET_PICTURE) {
+            if(data != null) {
+                // Picture in!  We need to stash the URL away and make a
+                // thumbnail out of it, if we can!
+                Uri uri = data.getData();
 
-                    if(uri == null)
-                        return;
+                if(uri == null)
+                    return;
 
-                    setImageUri(uri);
-                }
+                setImageUri(uri);
             }
-            default:
-                super.onActivityResult(requestCode, resultCode, data);
         }
+
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void setImageUri(@NonNull Uri uri) {
         // Grab a new Bitmap.  We'll toss this into the button.
+        FragmentActivity act = getActivity();
+        assert act != null;
+
         int dimen = getResources().getDimensionPixelSize(R.dimen.wiki_nominal_icon_size);
         final Bitmap thumbnail = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromUri(
-                        getActivity(),
+                        act,
                         uri,
                         dimen,
                         dimen,
@@ -234,12 +236,12 @@ public class WikiFragment extends CentralMapExtraFragment {
         // Good!  Was it null?
         if(thumbnail == null) {
             // NO!  WRONG!  BAD!
-            Toast.makeText(getActivity(), R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
+            Toast.makeText(act, R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
             return;
         }
 
         // With bitmap in hand...
-        getActivity().runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
+        act.runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
 
         // And remember it for posting later.  Done!
         mPictureUri = uri;
@@ -255,11 +257,14 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void checkAnonStatus() {
-        getActivity().runOnUiThread(() -> {
+        FragmentActivity act = getActivity();
+        assert act != null;
+
+        act.runOnUiThread(() -> {
             // A user is anonymous if they either have no username or no
             // password (the wiki doesn't allow passwordless users, which
             // would just be silly anyway).
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(act);
 
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
             String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
@@ -287,8 +292,11 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void resolvePictureControlVisibility() {
+        FragmentActivity act = getActivity();
+        assert act != null;
+
         // One checkbox to rule them all!
-        getActivity().runOnUiThread(() -> {
+        act.runOnUiThread(() -> {
             if(mPictureCheckbox.isChecked()) {
                 mGalleryButton.setVisibility(View.VISIBLE);
 
@@ -309,7 +317,10 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void resolvePostButtonEnabledness() {
-        getActivity().runOnUiThread(() -> {
+        FragmentActivity act = getActivity();
+        assert act != null;
+
+        act.runOnUiThread(() -> {
             // We can make a few booleans here just so the eventual call to
             // setEnabled is easier to read.
             boolean isInPictureMode = mPictureCheckbox.isChecked();
@@ -324,7 +335,10 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void applyHeader() {
-        getActivity().runOnUiThread(() -> {
+        FragmentActivity act = getActivity();
+        assert act != null;
+
+        act.runOnUiThread(() -> {
             if(mInfo == null) {
                 mHeader.setText("");
             } else {
@@ -348,7 +362,10 @@ public class WikiFragment extends CentralMapExtraFragment {
         // bother.
         if(mLocationView == null || mDistanceView == null || mInfo == null) return;
 
-        getActivity().runOnUiThread(() -> {
+        final FragmentActivity act = getActivity();
+        assert act != null;
+
+        act.runOnUiThread(() -> {
             // Easy enough, this is just the current location data.
             if(mPermissionsDenied) {
                 mLocationView.setVisibility(View.INVISIBLE);
@@ -363,32 +380,35 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mLocationView.setText(R.string.standby_title);
                 mDistanceView.setText(R.string.standby_title);
             } else {
-                mLocationView.setText(UnitConverter.makeFullCoordinateString(getActivity(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
-                mDistanceView.setText(UnitConverter.makeDistanceString(getActivity(), UnitConverter.DISTANCE_FORMAT_SHORT, mLastLocation.distanceTo(mInfo.getFinalLocation())));
+                mLocationView.setText(UnitConverter.makeFullCoordinateString(act, mLastLocation, false, UnitConverter.OUTPUT_SHORT));
+                mDistanceView.setText(UnitConverter.makeDistanceString(act, UnitConverter.DISTANCE_FORMAT_SHORT, mLastLocation.distanceTo(mInfo.getFinalLocation())));
             }
         });
     }
 
     private void dispatchPost() {
+        FragmentActivity act = getActivity();
+        assert act != null;
+
         // Time for fun!
         boolean includeLocation = !mPermissionsDenied && mIncludeLocationCheckbox.isChecked();
         boolean includePicture = mPictureCheckbox.isChecked();
 
         // So.  If we didn't have an Info yet, we're hosed.
         if(mInfo == null) {
-            Toast.makeText(getActivity(), R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
+            Toast.makeText(act, R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
             return;
         }
 
         // If there's no message, we're hosed.
         if(mMessage.getText().toString().isEmpty()) {
-            Toast.makeText(getActivity(), R.string.error_no_message, Toast.LENGTH_LONG).show();
+            Toast.makeText(act, R.string.error_no_message, Toast.LENGTH_LONG).show();
             return;
         }
 
         // If this is a picture post but there's no picture, we're hosed.
         if(includePicture && mPictureUri == null) {
-            Toast.makeText(getActivity(), R.string.error_no_picture, Toast.LENGTH_LONG).show();
+            Toast.makeText(act, R.string.error_no_picture, Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -397,7 +417,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         Location loc = mLastLocation;
         if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
 
-        Intent i = new Intent(getActivity(), WikiService.class);
+        Intent i = new Intent(act, WikiService.class);
         i.putExtra(WikiService.EXTRA_INFO, mInfo);
         i.putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance());
         i.putExtra(WikiService.EXTRA_MESSAGE, message);
@@ -407,7 +427,8 @@ public class WikiFragment extends CentralMapExtraFragment {
             i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri);
 
         // And away it goes!
-        getActivity().startService(i);
+
+        act.startService(i);
 
         // Post complete!  We're done here!
         if(mCloseListener != null)

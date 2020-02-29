@@ -67,7 +67,9 @@ public class AndroidUtil {
      * @return true if an internet connection exists, false otherwise
      */
     public static boolean isConnected(Context context) {
-        NetworkInfo networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        ConnectivityManager connMan = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE));
+        assert connMan != null;
+        NetworkInfo networkInfo = connMan.getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
     }
 

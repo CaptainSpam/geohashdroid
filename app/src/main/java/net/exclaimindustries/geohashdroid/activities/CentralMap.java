@@ -537,6 +537,7 @@ public class CentralMap
             mProgress.animate().translationY(-mProgressHeight).alpha(0.0f);
 
             Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            assert bun != null;
             bun.setClassLoader(getClassLoader());
 
             // A stock result arrives!  Let's get data!  That oughta tell us
@@ -652,7 +653,9 @@ public class CentralMap
         } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
-            mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
+            Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            assert bun != null;
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, bun.getParcelable(StockService.EXTRA_INFO));
             mSelectAGraticule = false;
         }
 
@@ -708,7 +711,9 @@ public class CentralMap
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        View mapView = mapFrag.getView();
+        assert mapView != null;
+        mapView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             // Got a height!  Hopefully.
             if(!mAlreadyLaidOut) {
                 mAlreadyLaidOut = true;
@@ -996,15 +1001,15 @@ public class CentralMap
         // These prefs either don't exist any more or we found better ways to
         // deal with them.
         edit.remove("DefaultLatitude")
-                .remove("DefaultLongitude")
-                .remove("GlobalhashMode")
-                .remove("RememberGraticule")
-                .remove("ClosestOn")
-                .remove("AlwaysToday")
-                .remove("ClosenessReported");
+            .remove("DefaultLongitude")
+            .remove("GlobalhashMode")
+            .remove("RememberGraticule")
+            .remove("ClosestOn")
+            .remove("AlwaysToday")
+            .remove("ClosenessReported");
 
-        // Anything edit-worthy we just did needs to be committed.
-        edit.commit();
+        // Anything edit-worthy we just did needs to be applied right away.
+        edit.apply();
 
         // We still have that prefs object.  Let's see if we've got a newer
         // version than what we last saw.

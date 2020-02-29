@@ -23,6 +23,7 @@ import net.exclaimindustries.tools.LocationUtil;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * This handy Fragment is the dialog that pops up when the user wants to change
@@ -76,15 +77,19 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final Info info = getArguments().getParcelable("info");
+        Bundle arguments = getArguments();
+        assert arguments != null;
+        final Info info = arguments.getParcelable("info");
         final Location location = getArguments().getParcelable("location");
 
         if(info == null) throw new RuntimeException("Passed a null Info into NearbyGraticuleDialogFragment!");
 
         String message;
+        FragmentActivity act = getActivity();
+        assert act != null;
         if(LocationUtil.isLocationNewEnough(location)) {
             message = getString(R.string.dialog_switch_graticule_text,
-                    UnitConverter.makeDistanceString(getActivity(),
+                    UnitConverter.makeDistanceString(act,
                             UnitConverter.DISTANCE_FORMAT_SHORT,
                             location.distanceTo(info.getFinalLocation())));
         } else {

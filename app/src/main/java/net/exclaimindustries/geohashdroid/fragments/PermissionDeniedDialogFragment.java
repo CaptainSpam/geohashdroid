@@ -30,6 +30,7 @@ public class PermissionDeniedDialogFragment
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Bundle args = getArguments();
+        assert args != null;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(args.getInt(TITLE, 0))

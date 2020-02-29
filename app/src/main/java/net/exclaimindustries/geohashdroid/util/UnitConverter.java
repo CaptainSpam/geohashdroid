@@ -270,7 +270,9 @@ public class UnitConverter {
                     String[] split = temp.split(":");
 
                     // Get the double form of the minutes...
-                    double minutes = nf.parse(split[1]).doubleValue();
+                    Number parsed = nf.parse(split[1]);
+                    assert parsed != null;
+                    double minutes = parsed.doubleValue();
 
                     switch(format) {
                         case OUTPUT_SHORT:
@@ -287,7 +289,9 @@ public class UnitConverter {
                     String[] split = temp.split(":");
 
                     // Get the double form of the seconds...
-                    double seconds = nf.parse(split[2]).doubleValue();
+                    Number parsed = nf.parse(split[2]);
+                    assert parsed != null;
+                    double seconds = parsed.doubleValue();
 
                     switch(format) {
                         case OUTPUT_SHORT:

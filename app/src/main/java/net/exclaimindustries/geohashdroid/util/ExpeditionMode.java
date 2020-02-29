@@ -808,6 +808,7 @@ public class ExpeditionMode
         // switch to another point.
         if(mNearbyPoints.containsKey(marker)) {
             final Info newInfo = mNearbyPoints.get(marker);
+            assert newInfo != null;
 
             // Get the last-known location (if possible) and prompt the user
             // with a distance.  Then, we've got a fragment that'll do this sort
