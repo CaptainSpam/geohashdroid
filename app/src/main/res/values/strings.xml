@@ -19,6 +19,7 @@
     <string name="title_known_locations">Known Locations Manager</string>
 
     <string name="title_part_globalhash">Globalhash</string>
+    <string name="subtitle_part_retrohash">(retrohash)</string>
 
     <string name="graticule_label">Graticule</string>
     <string name="exit_graticule_label">Use This</string>

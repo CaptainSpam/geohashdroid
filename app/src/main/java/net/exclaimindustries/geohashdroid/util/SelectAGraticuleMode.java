@@ -143,6 +143,7 @@ public class SelectAGraticuleMode
         mPicker.setListener(this);
 
         setTitle(R.string.title_graticule_picker);
+        setSubtitle("");
 
         mInitComplete = true;
     }

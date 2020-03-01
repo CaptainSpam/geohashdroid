@@ -231,6 +231,24 @@ public class CentralMap
         }
 
         /**
+         * Sets the two {@link Toolbar}s used in this mode.
+         *
+         * @param toolbarTop the Toolbar on the top of the screen
+         * @param toolbarBottom the Toolbar on the bottom of the screen; if
+         *                      null, the bottom toolbar will be the same
+         *                      reference as the top
+         */
+        public void setToolbars(@NonNull Toolbar toolbarTop,
+                                @Nullable Toolbar toolbarBottom) {
+            mToolbarTop = toolbarTop;
+            if(toolbarBottom == null) {
+                mToolbarBottom = mToolbarTop;
+            } else {
+                mToolbarBottom = toolbarBottom;
+            }
+        }
+
+        /**
          * <p>
          * Does whatever init tomfoolery is needed for this class, using the
          * given Bundle of stuff.  You're probably best calling this AFTER
@@ -244,8 +262,8 @@ public class CentralMap
 
         /**
          * Does whatever cleanup rigmarole is needed for this class, such as
-         * unsubscribing to all those subscriptions you set up in {@link #setMap(GoogleMap)}
-         * or {@link #init(Bundle)}.
+         * unsubscribing to all those subscriptions you set up in
+         * {@link #setMap(GoogleMap)} or {@link #init(Bundle)}.
          */
         public void cleanUp() {
             // The marker always goes away, at the very least.
@@ -417,21 +435,39 @@ public class CentralMap
         }
 
         /**
-         * Sets the title of the map Activity using a String.
+         * Sets the title of the top toolbar using a String.
          *
          * @param title the new title
          */
         protected final void setTitle(String title) {
-            mCentralMap.setTitle(title);
+            mToolbarTop.setTitle(title);
         }
 
         /**
-         * Sets the title of the map Activity using a resource ID.
+         * Sets the title of the top toolbar using a resource ID.
          *
          * @param resid the new title's resource ID
          */
         protected final void setTitle(@StringRes int resid) {
-            mCentralMap.setTitle(resid);
+            mToolbarTop.setTitle(resid);
+        }
+
+        /**
+         * Sets the subtitle of the top toolbar using a String.
+         *
+         * @param title the new title
+         */
+        protected final void setSubtitle(String title) {
+            mToolbarTop.setSubtitle(title);
+        }
+
+        /**
+         * Sets the subtitle of the top toolbar using a resource ID.
+         *
+         * @param resid the new title's resource ID
+         */
+        protected final void setSubtitle(@StringRes int resid) {
+            mToolbarTop.setSubtitle(resid);
         }
 
         /**
@@ -676,6 +712,16 @@ public class CentralMap
 
         mBanner = findViewById(R.id.error_banner);
         mProgress = findViewById(R.id.progress_container);
+
+        mToolbarTop = findViewById(R.id.toolbar_top);
+        mToolbarBottom = findViewById(R.id.toolbar_bottom);
+        if(mToolbarBottom == null) {
+            // If this layout lacks a bottom toolbar, it's one of the wide
+            // versions where the menu is placed in the top bar.  Since neither
+            // use conflicts with each other, we can just make them the same
+            // reference.
+            mToolbarBottom = mToolbarTop;
+        }
 
         // Apply nighttime mode to the progress background!  Only do that if
         // this is less than Lollipop, though.  We can apply the color of the
@@ -1192,6 +1238,7 @@ public class CentralMap
             } else {
                 mCurrentMode.setMap(mMap);
                 mCurrentMode.setCentralMap(this);
+                mCurrentMode.setToolbars(mToolbarTop, mToolbarBottom);
                 mCurrentMode.init(mLastModeBundle);
             }
 

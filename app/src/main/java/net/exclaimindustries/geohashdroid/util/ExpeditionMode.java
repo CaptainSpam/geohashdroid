@@ -21,8 +21,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -60,6 +58,9 @@ import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * <code>ExpeditionMode</code> is the "main" mode, where it follows one point,
@@ -149,6 +150,7 @@ public class ExpeditionMode
 
         // Set a title to begin with.  We'll get a new one soon, hopefully.
         setTitle(R.string.app_name);
+        setSubtitle("");
 
         // Do we have a Bundle to un-Bundlify?
         if(bundle != null) {
@@ -640,16 +642,14 @@ public class ExpeditionMode
                 addDestinationPoint(info);
 
                 // With an Info in hand, we can also change the title.
-                StringBuilder newTitle = new StringBuilder();
                 Graticule g = mCurrentInfo.getGraticule();
                 if(g == null)
-                    newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
+                    setTitle(mCentralMap.getString(R.string.title_part_globalhash));
                 else {
-                    newTitle.append(g.getTitleString(false));
+                    setTitle(g.getTitleString(false));
                 }
-                newTitle.append(", ");
-                newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));
-                setTitle(newTitle.toString());
+                setSubtitle(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate())
+                        + (mCurrentInfo.isRetroHash() ? ' ' + mCentralMap.getString(R.string.subtitle_part_retrohash) : ""));
 
                 // Now, the Mercator projection that the map uses clips at
                 // around 85 degrees north and south.  If that's where the
@@ -676,6 +676,7 @@ public class ExpeditionMode
         } else {
             // Otherwise, make sure the title's back to normal.
             setTitle(R.string.app_name);
+            setSubtitle("");
         }
     }
 
