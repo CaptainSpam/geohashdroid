@@ -28,6 +28,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
@@ -143,6 +144,8 @@ public class CentralMap
     private View mProgress;
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
+    private Toolbar mToolbarTop;
+    private Toolbar mToolbarBottom;
 
     private float mProgressHeight = 0.0f;
 
@@ -197,6 +200,14 @@ public class CentralMap
 
         /** The current destination Marker. */
         protected Marker mDestination;
+
+        /** The toolbar on the top of the screen. */
+        protected Toolbar mToolbarTop;
+        /**
+         * The toolbar on the bottom of the screen, if it exists.  If not, this
+         * will be the same as mToolbarTop.
+         */
+        protected Toolbar mToolbarBottom;
 
         /**
          * Sets the {@link GoogleMap} this mode deals with.  When implementing

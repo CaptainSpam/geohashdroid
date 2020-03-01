@@ -1,47 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:keepScreenOn="true"
-                android:id="@+id/map_content">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    android:orientation="vertical">
 
-    <fragment
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:name="com.google.android.gms.maps.MapFragment"
-        android:id="@+id/map"
-        android:layout_gravity="center"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        tools:ignore="RtlHardcoded"
-        />
-
-    <view
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_top"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        class="net.exclaimindustries.geohashdroid.widgets.ErrorBanner"
-        android:id="@+id/error_banner"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_margin="@dimen/standard_padding"
-        android:visibility="gone"
-        android:elevation="@dimen/elevation_error_banner"/>
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme"
+        app:logo="@mipmap/ic_launcher_new" />
+
+    <RelativeLayout
+        android:id="@+id/map_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
 
-    <FrameLayout
-        android:id="@+id/progress_container"
-        android:layout_width="@dimen/progress_spinner_size"
-        android:layout_height="@dimen/progress_spinner_size"
-        android:padding="@dimen/standard_padding"
-        android:layout_margin="@dimen/double_padding"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:background="@drawable/progress_background"
-        android:elevation="@dimen/elevation_progress">
-        <ProgressBar
+        <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.MapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:indeterminate="true"/>
-    </FrameLayout>
-</RelativeLayout>
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_gravity="center"
+            tools:ignore="RtlHardcoded" />
+
+        <view
+            android:id="@+id/error_banner"
+            class="net.exclaimindustries.geohashdroid.widgets.ErrorBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="@dimen/standard_padding"
+            android:elevation="@dimen/elevation_error_banner"
+            android:visibility="gone" />
+
+
+        <FrameLayout
+            android:id="@+id/progress_container"
+            android:layout_width="@dimen/progress_spinner_size"
+            android:layout_height="@dimen/progress_spinner_size"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="@dimen/double_padding"
+            android:background="@drawable/progress_background"
+            android:elevation="@dimen/elevation_progress"
+            android:padding="@dimen/standard_padding">
+
+            <ProgressBar
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:indeterminate="true" />
+
+        </FrameLayout>
+    </RelativeLayout>
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme" />
+</LinearLayout>
