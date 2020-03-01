@@ -335,7 +335,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                         DateFormat.getDateInstance(DateFormat.MEDIUM).format(mInfo.getCalendar().getTime()),
                         (g == null
                                 ? getString(R.string.globalhash_label)
-                                : g.getLatitudeString(false) + " " + g.getLongitudeString(false))));
+                                : g.getTitleString(false))));
                 text.setSpan(new UnderlineSpan(), 0, text.length(), 0);
                 mHeader.setText(text);
             }
