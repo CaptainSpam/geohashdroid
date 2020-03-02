@@ -10,7 +10,6 @@ package net.exclaimindustries.geohashdroid.util;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
@@ -24,7 +23,6 @@ import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -225,6 +223,9 @@ public class ExpeditionMode
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
         mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
 
+        // Inflate us a MENU!
+        populateMenu();
+
         permissionsDenied(arePermissionsDenied());
 
         mInitComplete = true;
@@ -321,19 +322,25 @@ public class ExpeditionMode
         permissionsDenied(arePermissionsDenied());
     }
 
-    @Override
-    public void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu) {
-        inflater.inflate(R.menu.centralmap_expedition, menu);
+    private void populateMenu() {
+        // The "bottom" toolbar is what we want.  I say that in quotes because
+        // it might be the top toolbar if we're in a screen big enough to handle
+        // everything in one, but the mToolbarBottom reference points to the
+        // right thing.
+        Menu menu = mToolbarBottom.getMenu();
+        menu.clear();
+
+        mToolbarBottom.inflateMenu(R.menu.centralmap_expedition);
 
         // Maps?  You there?
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
-        if(!AndroidUtil.isIntentAvailable(c, i))
+        if(!AndroidUtil.isIntentAvailable(mCentralMap, i))
             menu.removeItem(R.id.action_send_to_maps);
 
         // Make sure radar is removed if there's no radar to radar our radar.
         // Radar radar radar radar radar.
-        if(!AndroidUtil.isIntentAvailable(c, GHDConstants.ACTION_SHOW_RADAR))
+        if(!AndroidUtil.isIntentAvailable(mCentralMap, GHDConstants.ACTION_SHOW_RADAR))
             menu.removeItem(R.id.action_send_to_radar);
 
         // If we don't have any Info yet, we can't have things that depend on
@@ -611,7 +618,7 @@ public class ExpeditionMode
         mVictoryReported = false;
 
         // Redraw the menu as need be, too.
-        mCentralMap.invalidateOptionsMenu();
+        populateMenu();
 
         // Set the infobox in motion as well.
         if(showInfoBox()) {

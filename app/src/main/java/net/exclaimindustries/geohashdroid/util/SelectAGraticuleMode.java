@@ -8,15 +8,9 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -36,6 +30,10 @@ import net.exclaimindustries.geohashdroid.widgets.GraticulePicker;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.util.Calendar;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 /**
  * <code>SelectAGraticuleMode</code> encompasses the user selecting a Graticule
@@ -142,6 +140,9 @@ public class SelectAGraticuleMode
         mPicker.setClosestHidden(arePermissionsDenied());
         mPicker.setListener(this);
 
+        // Menu time!
+        populateMenu();
+
         setTitle(R.string.title_graticule_picker);
         setSubtitle("");
 
@@ -205,19 +206,17 @@ public class SelectAGraticuleMode
         permissionsDenied(arePermissionsDenied());
     }
 
-    @Override
-    public void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu) {
-        inflater.inflate(R.menu.centralmap_selectagraticule, menu);
+    private void populateMenu() {
+        mToolbarBottom.getMenu().clear();
+        mToolbarBottom.inflateMenu(R.menu.centralmap_selectagraticule);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_exitgraticule: {
-                // We've left Select-A-Graticule for whatever reason.
-                mCentralMap.exitSelectAGraticuleMode();
-                return true;
-            }
+        if(item.getItemId() == R.id.action_exitgraticule) {
+            // We've left Select-A-Graticule for whatever reason.
+            mCentralMap.exitSelectAGraticuleMode();
+            return true;
         }
 
         return false;

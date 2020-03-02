@@ -1,7 +1,7 @@
 /*
  * CentralMap.java
  * Copyright (C)2015 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
@@ -24,15 +24,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-import androidx.annotation.StringRes;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -82,6 +74,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+
 /**
  * CentralMap replaces MainMap as the map display.  Unlike MainMap, it also
  * serves as the entry point for the entire app.  These comments are going to
@@ -90,7 +89,8 @@ import java.util.Set;
  */
 public class CentralMap
         extends BaseMapActivity
-        implements GHDDatePickerDialogFragment.GHDDatePickerCallback {
+        implements GHDDatePickerDialogFragment.GHDDatePickerCallback,
+                   Toolbar.OnMenuItemClickListener {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -328,15 +328,6 @@ public class CentralMap
          * @param responseCode the response code (won't be {@link StockService#RESPONSE_OKAY}, for obvious reasons)
          */
         public abstract void handleLookupFailure(int reqFlags, int responseCode);
-
-        /**
-         * Called when the menu needs to be built.
-         *
-         * @param c the current Context (the mode may not be fully up by the time this is needed, and thus may not have mCentralMap)
-         * @param inflater a MenuInflater, for convenience
-         * @param menu the Menu that needs inflating.
-         */
-        public abstract void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu);
 
         /**
          * Called when a menu item is selected but CentralMap didn't handle it
@@ -721,7 +712,10 @@ public class CentralMap
             // use conflicts with each other, we can just make them the same
             // reference.
             mToolbarBottom = mToolbarTop;
+        } else {
+            mToolbarBottom.setOnMenuItemClickListener(this);
         }
+        mToolbarTop.setOnMenuItemClickListener(this);
 
         // Apply nighttime mode to the progress background!  Only do that if
         // this is less than Lollipop, though.  We can apply the color of the
@@ -936,17 +930,7 @@ public class CentralMap
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-
-        // Just hand it off to the current mode, it'll know what to do.
-        mCurrentMode.onCreateOptionsMenu(this, inflater, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onMenuItemClick(MenuItem item) {
         // CentralMap should just cover the items that can always be selected no
         // matter what mode we're in.
         switch(item.getItemId()) {
