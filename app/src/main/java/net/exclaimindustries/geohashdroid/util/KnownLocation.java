@@ -19,8 +19,8 @@ import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -286,7 +286,7 @@ public class KnownLocation implements Parcelable {
      * @return the distance from here to the Info, in meters
      */
     public double getDistanceFrom(@NonNull Info info) {
-        return (double)LocationUtil.latLngToLocation(mLocation).distanceTo(info.getFinalLocation());
+        return LocationUtil.latLngToLocation(mLocation).distanceTo(info.getFinalLocation());
     }
 
     /**
@@ -302,7 +302,7 @@ public class KnownLocation implements Parcelable {
 
         // Stupid LatLngs.  I didn't have to deal with these conversions back
         // when everything just used Locations...
-        float dist[] = new float[1];
+        float[] dist = new float[1];
 
         Location.distanceBetween(mLocation.latitude, mLocation.longitude, to.latitude, to.longitude, dist);
 
@@ -445,6 +445,7 @@ public class KnownLocation implements Parcelable {
         return toReturn;
     }
 
+    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     @NonNull
     private Bitmap buildMarkerBitmap(@NonNull Context c) {
         // Oh, this is going to be FUN.
@@ -483,6 +484,7 @@ public class KnownLocation implements Parcelable {
     }
 
     @Override
+    @NonNull
     public String toString() {
         return "\"" + mName + "\": " + mLocation.latitude + ", " + mLocation.longitude;
     }

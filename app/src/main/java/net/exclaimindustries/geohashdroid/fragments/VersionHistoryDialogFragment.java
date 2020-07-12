@@ -12,12 +12,11 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,7 +47,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
     private class EntryAdapter extends ArrayAdapter<VersionEntry> {
         private boolean mIsNightMode;
 
-        public EntryAdapter(Context c, List<VersionEntry> entries) {
+        EntryAdapter(Context c, List<VersionEntry> entries) {
             super(c, 0, entries);
 
             mIsNightMode = PreferenceManager.getDefaultSharedPreferences(c).getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
@@ -76,7 +75,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
             ((TextView)convertView.findViewById(R.id.footer)).setText(entry.footer);
 
             // Meanwhile, each bullet has to be added in a for loop.
-            LinearLayout bullets = (LinearLayout)convertView.findViewById(R.id.bullets);
+            LinearLayout bullets = convertView.findViewById(R.id.bullets);
 
             // Clear out anything that was there before.
             bullets.removeAllViews();
@@ -86,7 +85,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
 
                 // And, of course, night-mode this sucker.
                 if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                    ImageView bulletIcon = (ImageView)bullet.findViewById(R.id.bulletIcon);
+                    ImageView bulletIcon = bullet.findViewById(R.id.bulletIcon);
 
                     if(mIsNightMode)
                         bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image_dark));
@@ -94,7 +93,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
                         bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image));
                 }
 
-                TextView bulletText = (TextView)bullet.findViewById(R.id.bulletText);
+                TextView bulletText = bullet.findViewById(R.id.bulletText);
                 bulletText.setText(s);
                 bullets.addView(bullet);
             }
@@ -151,12 +150,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
         return new AlertDialog.Builder(getActivity())
                 .setAdapter(new EntryAdapter(getActivity(), entries), null)
                 .setTitle(R.string.title_versionhistory)
-                .setPositiveButton(getString(R.string.cool_label), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dismiss();
-                    }
-                })
+                .setPositiveButton(getString(R.string.cool_label), (dialog, which) -> dismiss())
                 .create();
     }
 }

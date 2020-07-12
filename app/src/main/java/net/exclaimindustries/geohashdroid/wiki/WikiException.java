@@ -1,4 +1,4 @@
-/**
+/*
  * WikiException.java
  * Copyright (C)2010 Nicholas Killewald
  * 
@@ -18,7 +18,7 @@ package net.exclaimindustries.geohashdroid.wiki;
 public class WikiException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    private int mTextId = -1;
+    private int mTextId;
     
     public WikiException(int textId) {
         super();

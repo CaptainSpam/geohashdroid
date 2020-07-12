@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
         minSdkVersion 16
-        targetSdkVersion 28
+        targetSdkVersion 29
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -20,14 +20,14 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.android.support:support-v4:28.0.0'
-    implementation 'com.android.support:support-v13:28.0.0'
-    implementation 'com.google.android.gms:play-services-maps:16.0.0'
-    implementation 'com.google.android.gms:play-services-location:16.0.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.legacy:legacy-support-v13:1.0.0'
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
+    implementation 'com.google.android.gms:play-services-location:17.0.0'
     implementation 'com.google.guava:guava:24.1-jre'
     implementation 'cz.msebera.android:httpclient:4.4.1.1'
     implementation 'org.opensextant:geodesy:2.0.1'
-    implementation 'com.android.support:support-compat:28.0.0'
+    implementation 'androidx.core:core:1.2.0'
 
     // Required for local unit tests (JUnit 4 framework)
     testImplementation 'junit:junit:4.12'

@@ -1,4 +1,4 @@
-/**
+/*
  * StockService.java
  * Copyright (C)2014 Nicholas Killewald
  * 
@@ -11,9 +11,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.JobIntentService;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.JobIntentService;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -269,7 +269,7 @@ public class StockService extends JobIntentService {
         // which is almost as good!
         Serializable s = intent.getSerializableExtra(EXTRA_DATE);
         
-        if(s == null || !(s instanceof Calendar)) {
+        if(!(s instanceof Calendar)) {
             Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_DATE is null or not a Calendar!");
             return;
         }

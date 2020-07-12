@@ -11,7 +11,6 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.DialogInterface;
 import android.os.Bundle;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -32,12 +31,7 @@ public class PermissionDeniedDialogFragment
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(args.getInt(TITLE, 0))
                 .setMessage(args.getInt(MESSAGE, 0))
-                .setPositiveButton(R.string.darn_label, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dismiss();
-                    }
-                });
+                .setPositiveButton(R.string.darn_label, (dialog, which) -> dismiss());
         return builder.create();
     }
 }

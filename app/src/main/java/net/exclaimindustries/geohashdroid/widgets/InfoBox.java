@@ -13,12 +13,11 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.location.Location;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -85,11 +84,11 @@ public class InfoBox extends LinearLayout implements LocationListener {
         // INFLATE!
         inflate(c, R.layout.infobox, this);
 
-        mDest = (TextView)findViewById(R.id.infobox_hashpoint);
-        mYou = (TextView)findViewById(R.id.infobox_you);
-        mDistance = (TextView)findViewById(R.id.infobox_distance);
-        mAccuracyLow = (TextView)findViewById(R.id.infobox_accuracy_low);
-        mAccuracyReallyLow = (TextView)findViewById(R.id.infobox_accuracy_really_low);
+        mDest = findViewById(R.id.infobox_hashpoint);
+        mYou = findViewById(R.id.infobox_you);
+        mDistance = findViewById(R.id.infobox_distance);
+        mAccuracyLow = findViewById(R.id.infobox_accuracy_low);
+        mAccuracyReallyLow = findViewById(R.id.infobox_accuracy_really_low);
 
         // Make it not visible immediately.  We'll re-enable it if need be once
         // we get the global layout listener called.
@@ -97,17 +96,14 @@ public class InfoBox extends LinearLayout implements LocationListener {
 
         // As usual, make sure the view's just gone until we need it.
         // ExpeditionMode will pull it back in.
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // Got a height!  Hopefully.
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
+        getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Got a height!  Hopefully.
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
 
-                    // Make it off-screen first, then animate it on if need be.
-                    setInfoBoxVisible(false);
-                    animateInfoBoxVisible(mWaitingToShow);
-                }
+                // Make it off-screen first, then animate it on if need be.
+                setInfoBoxVisible(false);
+                animateInfoBoxVisible(mWaitingToShow);
             }
         });
     }
@@ -125,75 +121,72 @@ public class InfoBox extends LinearLayout implements LocationListener {
     }
 
     private void updateBox() {
-        ((Activity)getContext()).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                float accuracy = 5.0f;
-                if(mLastLocation != null)
-                    accuracy = mLastLocation.getAccuracy();
+        ((Activity)getContext()).runOnUiThread(() -> {
+            float accuracy = 5.0f;
+            if(mLastLocation != null)
+                accuracy = mLastLocation.getAccuracy();
 
-                // Make sure we're dealing with sane data if we got this from an
-                // emulator or mock location data...
-                if(accuracy == 0.0f)
-                    accuracy = 5.0f;
+            // Make sure we're dealing with sane data if we got this from an
+            // emulator or mock location data...
+            if(accuracy == 0.0f)
+                accuracy = 5.0f;
 
-                // Redraw the Info.  Always do this.  The user might be coming
-                // back from Preferences, for instance.
-                if(mInfo == null) {
-                    mDest.setText(R.string.unknown_title);
-                } else {
-                    mDest.setText(UnitConverter.makeFullCoordinateString(getContext(), mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_SHORT));
-                }
+            // Redraw the Info.  Always do this.  The user might be coming
+            // back from Preferences, for instance.
+            if(mInfo == null) {
+                mDest.setText(R.string.unknown_title);
+            } else {
+                mDest.setText(UnitConverter.makeFullCoordinateString(getContext(), mInfo.getFinalLocation(), false, UnitConverter.OUTPUT_SHORT));
+            }
 
-                // Reset the accuracy warnings.  The right one will go back up
-                // as need be.
-                mAccuracyLow.setVisibility(View.GONE);
-                mAccuracyReallyLow.setVisibility(View.GONE);
+            // Reset the accuracy warnings.  The right one will go back up
+            // as need be.
+            mAccuracyLow.setVisibility(View.GONE);
+            mAccuracyReallyLow.setVisibility(View.GONE);
 
-                // If we've got a location yet, use that.  If not, to standby
-                // with you!
-                if(mUnavailable) {
-                    mYou.setVisibility(View.GONE);
-                } else {
-                    mYou.setVisibility(View.VISIBLE);
-                }
+            // If we've got a location yet, use that.  If not, to standby
+            // with you!
+            if(mUnavailable) {
+                mYou.setVisibility(View.GONE);
+            } else {
+                mYou.setVisibility(View.VISIBLE);
+            }
 
-                if(mLastLocation == null) {
-                    mYou.setText(R.string.unknown_title);
-                } else {
-                    mYou.setText(UnitConverter.makeFullCoordinateString(getContext(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
+            if(mLastLocation == null) {
+                mYou.setText(R.string.unknown_title);
+            } else {
+                mYou.setText(UnitConverter.makeFullCoordinateString(getContext(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
 
-                    // Hey, as long as we're here, let's also do accuracy.
-                    if(accuracy >= GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD)
-                        mAccuracyReallyLow.setVisibility(View.VISIBLE);
-                    else if(accuracy >= GHDConstants.LOW_ACCURACY_THRESHOLD)
-                        mAccuracyLow.setVisibility(View.VISIBLE);
-                }
+                // Hey, as long as we're here, let's also do accuracy.
+                if(accuracy >= GHDConstants.REALLY_LOW_ACCURACY_THRESHOLD)
+                    mAccuracyReallyLow.setVisibility(View.VISIBLE);
+                else if(accuracy >= GHDConstants.LOW_ACCURACY_THRESHOLD)
+                    mAccuracyLow.setVisibility(View.VISIBLE);
+            }
 
-                // Next, calculate the distance, if possible.
-                if(mUnavailable) {
-                    mDistance.setVisibility(View.GONE);
-                } else {
-                    mDistance.setVisibility(View.VISIBLE);
-                }
+            // Next, calculate the distance, if possible.
+            if(mUnavailable) {
+                mDistance.setVisibility(View.GONE);
+            } else {
+                mDistance.setVisibility(View.VISIBLE);
+            }
 
-                if(mLastLocation == null || mInfo == null) {
-                    mDistance.setText(R.string.unknown_title);
+            if(mLastLocation == null || mInfo == null) {
+                mDistance.setText(R.string.unknown_title);
+                mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_text));
+            } else {
+                float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
+                mDistance.setText(UnitConverter.makeDistanceString(getContext(), DIST_FORMAT, distance));
+
+                // Plus, if we're close enough AND accurate enough, make the
+                // text be green.  We COULD do this with geofencing
+                // callbacks and all, but, I mean, we're already HERE,
+                // aren't we?
+                if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
+                    mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_in_range));
+                else
                     mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_text));
-                } else {
-                    float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
-                    mDistance.setText(UnitConverter.makeDistanceString(getContext(), DIST_FORMAT, distance));
 
-                    // Plus, if we're close enough AND accurate enough, make the
-                    // text be green.  We COULD do this with geofencing
-                    // callbacks and all, but, I mean, we're already HERE,
-                    // aren't we?
-                    if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
-                        mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_in_range));
-                    else
-                        mDistance.setTextColor(ContextCompat.getColor(getContext(), R.color.infobox_text));
-
-                }
             }
         });
     }

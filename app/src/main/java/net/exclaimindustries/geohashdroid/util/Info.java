@@ -1,4 +1,4 @@
-/**
+/*
  * Info.java
  * Copyright (C)2009 Nicholas Killewald
  * 
@@ -14,8 +14,8 @@ import java.util.GregorianCalendar;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.Nullable;
-import android.support.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -475,6 +475,7 @@ public class Info implements Parcelable {
     }
 
     @Override
+    @NonNull
     public String toString() {
         // This is mostly used for debugging purposes, so we may as well make it
         // useful.
@@ -503,6 +504,7 @@ public class Info implements Parcelable {
         if(!isGlobalHash() && !(mGraticule.equals(other.mGraticule))) return false;
 
         // ...and also check the date, latitude, and longitude.
+        //noinspection RedundantIfStatement
         if(!mDate.equals(other.mDate)
                 || (getLatitude() != other.getLatitude())
                 || (getLongitude() != other.getLongitude()))

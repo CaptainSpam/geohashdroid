@@ -13,9 +13,8 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -94,40 +93,29 @@ public class GHDDatePickerDialogFragment extends DialogFragment implements DateP
         LayoutInflater inflater = ((LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE));
 
         View dialogView = inflater.inflate(R.layout.date_picker_dialog, null);
-        final DatePicker picker = (DatePicker)dialogView.findViewById(R.id.date_picker);
+        final DatePicker picker = dialogView.findViewById(R.id.date_picker);
         picker.init(mYear, mMonth, mDay, this);
 
         View today = dialogView.findViewById(R.id.today);
-        today.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Calendar now = Calendar.getInstance();
-                picker.updateDate(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
-            }
+        today.setOnClickListener(v -> {
+            Calendar now = Calendar.getInstance();
+            picker.updateDate(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
         });
 
         return new AlertDialog.Builder(getActivity())
                 .setView(dialogView)
                 .setTitle(R.string.dialog_date_picker_title)
-                .setPositiveButton(R.string.ok_label, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Well, you heard the orders!
-                        Calendar cal = makeCalendar();
-                        dismiss();
-                        if(mCallback != null) {
-                            mCallback.datePicked(cal);
-                        }
-                        else
-                            Log.e(DEBUG_TAG, "You didn't specify a callback!");
+                .setPositiveButton(R.string.ok_label, (dialog, which) -> {
+                    // Well, you heard the orders!
+                    Calendar cal = makeCalendar();
+                    dismiss();
+                    if(mCallback != null) {
+                        mCallback.datePicked(cal);
                     }
+                    else
+                        Log.e(DEBUG_TAG, "You didn't specify a callback!");
                 })
-                .setNegativeButton(R.string.cancel_label, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dismiss();
-                    }
-                })
+                .setNegativeButton(R.string.cancel_label, (dialog, which) -> dismiss())
                 .create();
     }
 

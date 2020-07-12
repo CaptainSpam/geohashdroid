@@ -27,10 +27,10 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -77,7 +77,7 @@ public class WikiService extends PlainSQLiteQueueService {
      * {@link NotificationCompat.Builder#addAction(int, CharSequence, PendingIntent)}
      * with the appropriate data to be "astonishingly similar", which I do.
      */
-    private class NotificationAction {
+    private static class NotificationAction {
         public int icon;
         public PendingIntent actionIntent;
         public CharSequence title;
@@ -163,6 +163,9 @@ public class WikiService extends PlainSQLiteQueueService {
 
     /** How long we wait (in millis) before retrying a throttled edit. */
     private static final long THROTTLE_DELAY = 60000;
+
+    /** The wakelock timeout (10 minutes). */
+    private static final long WAKELOCK_TIMEOUT = 10 * 60 * 1000;
 
     /**
      * The {@link Info} object for the current expedition.
@@ -254,34 +257,33 @@ public class WikiService extends PlainSQLiteQueueService {
         }
 
         // Prep an HttpClient for later...
-        CloseableHttpClient client = HttpClients.createDefault();
 
         // To Preferences!
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-        String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 
         // If you're missing something vital, bail out.
-        if(info == null || message == null || timestamp == null) {
-            Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
-            return ReturnCode.CONTINUE;
-        }
 
         // Also, if there's an image specified, make sure there's also a
         // username.  The wiki does not allow anonymous image uploads.  This
         // one, unlike the previous one, produces an interruption so the user
         // can enter in a username and password.
-        if(imageLocation != null && username.isEmpty()) {
-            showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
-                    resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
-            return ReturnCode.PAUSE;
-        }
 
         // Location becomes null if we're not including it.  Nothing should need
         // to care.
-        if(!includeLocation) loc = null;
 
-        try {
+        try(CloseableHttpClient client = HttpClients.createDefault()) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+            String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
+            if(info == null || message == null || timestamp == null) {
+                Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
+                return ReturnCode.CONTINUE;
+            }
+            if(imageLocation != null && username.isEmpty()) {
+                showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
+                        resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
+                return ReturnCode.PAUSE;
+            }
+            if(!includeLocation) loc = null;
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
             if(!username.isEmpty() && !password.isEmpty()) {
@@ -313,7 +315,7 @@ public class WikiService extends PlainSQLiteQueueService {
             // enough in common between them, and wound up with methods with
             // ten or so arguments.  If anyone else has a better idea, feel free
             // to suggest.
-            if (imageLocation != null) {
+            if(imageLocation != null) {
                 // Let's say there's an image specified.  So, we try to look it
                 // up via readImageInfo.
                 WikiImageUtils.ImageInfo imageInfo;
@@ -330,8 +332,7 @@ public class WikiService extends PlainSQLiteQueueService {
                     // Get us a byte array!  We'll be uploading this soon.
                     byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, includeLocation);
 
-                    if(image == null)
-                    {
+                    if(image == null) {
                         // No image is a problem at this point...
                         showImageErrorNotification();
                         return ReturnCode.CONTINUE;
@@ -384,15 +385,14 @@ public class WikiService extends PlainSQLiteQueueService {
                 String before;
                 String after;
 
-                if(page == null)
-                {
+                if(page == null) {
                     // This shouldn't happen.  If it did, there's something very
                     // wrong with the wiki.
                     throw new WikiException(R.string.wiki_error_unknown);
                 }
 
                 Matcher expeditionq = RE_EXPEDITION.matcher(page);
-                if (expeditionq.matches()) {
+                if(expeditionq.matches()) {
                     before = expeditionq.group(1) + expeditionq.group(2);
                     after = expeditionq.group(3);
                 } else {
@@ -415,7 +415,7 @@ public class WikiService extends PlainSQLiteQueueService {
             }
 
             return ReturnCode.CONTINUE;
-        } catch (WikiException we) {
+        } catch(WikiException we) {
             // There's two possible exceptions we want to keep an eye on, both
             // of them related to throttling.  Since we're potentially posting
             // numerous edits one right after another (i.e. if the user's been
@@ -430,7 +430,7 @@ public class WikiService extends PlainSQLiteQueueService {
             }
 
             return ReturnCode.PAUSE;
-        } catch (Exception e) {
+        } catch(Exception e) {
             // Okay, first off, are we still connected?  An Exception will get
             // thrown if the connection just goes poof while we're trying to do
             // something.
@@ -445,19 +445,14 @@ public class WikiService extends PlainSQLiteQueueService {
             }
 
             return ReturnCode.PAUSE;
-        } finally {
-            try {
-                client.close();
-            } catch(Exception ex) {
-                // Eh, forget it.
-            }
         }
+        // Eh, forget it.
     }
 
     @Override
     protected void onQueueStart() {
         // WAKELOCK!  Front and center!
-        mWakeLock.acquire();
+        mWakeLock.acquire(WAKELOCK_TIMEOUT);
 
         // If we're starting, that means we're not waiting anymore.  Makes
         // sense.
@@ -511,9 +506,9 @@ public class WikiService extends PlainSQLiteQueueService {
             // The location is just two doubles.  Split 'em with a colon.
             Location loc = i.getParcelableExtra(EXTRA_LOCATION);
             if(loc != null)
-                builder.append(Double.toString(loc.getLatitude()))
+                builder.append(loc.getLatitude())
                         .append(':')
-                        .append(Double.toString(loc.getLongitude()));
+                        .append(loc.getLongitude());
             builder.append('\n');
 
             // The image is just a URI.  Easy so far.
@@ -528,21 +523,21 @@ public class WikiService extends PlainSQLiteQueueService {
             // null if this is a globalhash.
             Info info = i.getParcelableExtra(EXTRA_INFO);
             if(info != null) {
-                builder.append(Double.toString(info.getLatitude()))
+                builder.append(info.getLatitude())
                         .append(':')
-                        .append(Double.toString(info.getLongitude()))
+                        .append(info.getLongitude())
                         .append(':')
-                        .append(Long.toString(info.getDate().getTime()))
+                        .append(info.getDate().getTime())
                         .append(':');
 
                 Graticule g = info.getGraticule();
 
                 if(g != null) {
-                    builder.append(Integer.toString(g.getLatitude()))
+                    builder.append(g.getLatitude())
                             .append(':')
                             .append(g.isSouth() ? '1' : '0')
                             .append(':')
-                            .append(Integer.toString(g.getLongitude()))
+                            .append(g.getLongitude())
                             .append(':')
                             .append((g.isWest() ? '1' : '0'));
                 }
@@ -583,7 +578,7 @@ public class WikiService extends PlainSQLiteQueueService {
             // Location, as two doubles.
             read = br.readLine();
             if(read != null && !read.isEmpty()) {
-                String parts[] = read.split(":");
+                String[] parts = read.split(":");
                 Location loc = new Location("");
                 loc.setLatitude(Double.parseDouble(parts[0]));
                 loc.setLongitude(Double.parseDouble(parts[1]));
@@ -600,7 +595,7 @@ public class WikiService extends PlainSQLiteQueueService {
             // The Info object, as a mess of things.
             read = br.readLine();
             if(read != null && !read.isEmpty()) {
-                String parts[] = read.split(":");
+                String[] parts = read.split(":");
                 double lat = Double.parseDouble(parts[0]);
                 double lon = Double.parseDouble(parts[1]);
                 Calendar cal = Calendar.getInstance();

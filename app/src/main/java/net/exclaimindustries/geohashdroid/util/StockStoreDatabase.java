@@ -1,4 +1,4 @@
-/**
+/*
  * StockStoreDatabase.java
  * Copyright (C)2009 Nicholas Killewald
  * 
@@ -6,8 +6,6 @@
  * The source package should have a LICENSE file at the toplevel.
  */
 package net.exclaimindustries.geohashdroid.util;
-
-import java.util.Calendar;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -17,9 +15,12 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
+
 import net.exclaimindustries.tools.DateTools;
+
+import java.util.Calendar;
 
 /**
  * <p>
@@ -38,43 +39,25 @@ public class StockStoreDatabase {
     private static final String DEBUG_TAG = "StockStoreDatabase";
     
     /** The name of the column for the row's ID. */
-    public static final String KEY_STOCKS_ROWID = "_id";
+    private static final String KEY_STOCKS_ROWID = "_id";
     /** The name of the date column. */
-    public static final String KEY_STOCKS_DATE = "date";
+    private static final String KEY_STOCKS_DATE = "date";
     /** The name of the stock value column. */
-    public static final String KEY_STOCKS_STOCK = "stock";
+    private static final String KEY_STOCKS_STOCK = "stock";
     
     /** The name of the column for the row's IDs for hashes. */
-    public static final String KEY_HASHES_ROWID = "_id";
+    private static final String KEY_HASHES_ROWID = "_id";
     /** The name of the date column for hashes. */
-    public static final String KEY_HASHES_DATE = "date";
+    private static final String KEY_HASHES_DATE = "date";
     /** The name of the column flagging if the 30W rule was in effect here. */
-    public static final String KEY_HASHES_30W = "uses30w";
+    private static final String KEY_HASHES_30W = "uses30w";
     /** The name of the latitude hashpart column. */
-    public static final String KEY_HASHES_LATHASH = "lathash";
+    private static final String KEY_HASHES_LATHASH = "lathash";
     /** The name of the longitude hashpart column. */
-    public static final String KEY_HASHES_LONHASH = "lonhash";
-    
-    private static final String DATABASE_NAME = "stockstore";
+    private static final String KEY_HASHES_LONHASH = "lonhash";
     
     private static final String TABLE_STOCKS = "stocks";
     private static final String TABLE_HASHES = "hashes";
-    
-    private static final int DATABASE_VERSION = 3;
-    
-    private static final String CREATE_STOCKS_TABLE = 
-        "CREATE TABLE " + TABLE_STOCKS
-            + " (" + KEY_STOCKS_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + KEY_STOCKS_DATE + " INTEGER NOT NULL, "
-            + KEY_STOCKS_STOCK + " TEXT NOT NULL);";
-    
-    private static final String CREATE_HASHES_TABLE = 
-        "CREATE TABLE " + TABLE_HASHES
-            + " (" + KEY_HASHES_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + KEY_HASHES_DATE + " INTEGER NOT NULL, "
-            + KEY_HASHES_30W + " INTEGER NOT NULL, "
-            + KEY_HASHES_LATHASH + " REAL NOT NULL, "
-            + KEY_HASHES_LONHASH + " REAL NOT NULL);";
     
     /**
      * Implements SQLiteOpenHelper.  Much like Hamburger Helper, this can take
@@ -83,6 +66,22 @@ public class StockStoreDatabase {
      * @author Nicholas Killewald
      */
     private static class DatabaseHelper extends SQLiteOpenHelper {
+        private static final String DATABASE_NAME = "stockstore";
+        private static final int DATABASE_VERSION = 3;
+
+        private static final String CREATE_STOCKS_TABLE =
+                "CREATE TABLE " + TABLE_STOCKS
+                        + " (" + KEY_STOCKS_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                        + KEY_STOCKS_DATE + " INTEGER NOT NULL, "
+                        + KEY_STOCKS_STOCK + " TEXT NOT NULL);";
+
+        private static final String CREATE_HASHES_TABLE =
+                "CREATE TABLE " + TABLE_HASHES
+                        + " (" + KEY_HASHES_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                        + KEY_HASHES_DATE + " INTEGER NOT NULL, "
+                        + KEY_HASHES_30W + " INTEGER NOT NULL, "
+                        + KEY_HASHES_LATHASH + " REAL NOT NULL, "
+                        + KEY_HASHES_LONHASH + " REAL NOT NULL);";
 
         DatabaseHelper(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -105,16 +104,6 @@ public class StockStoreDatabase {
         }
     }
 
-    /**
-     * Checks to see if the database in this object is open.  If not, recreate
-     * a new one.
-     * 
-     * @return true if open, false if not
-     */
-    public boolean isDatabaseOpen() {
-        return mDatabase != null && mDatabase.isOpen();
-    }
-    
     /**
      * Initializes the store.  That is to say, opens the database for action.
      * Or creates it and THEN opens it.  Or just gives up and throws an
@@ -145,10 +134,9 @@ public class StockStoreDatabase {
      * parts of the coordinates (that is, the hash part).
      * 
      * @param i the aforementioned bundle of Info to be stored into the database
-     * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public synchronized long storeInfo(Info i) {
-        synchronized(mDatabase) {
+    public void storeInfo(Info i) {
+        synchronized(this) {
             // Fortunately, there's a handy ContentValues object for this sort
             // of thing.  I mean, we COULD do manual SQLite calls, but why
             // bother?
@@ -158,7 +146,7 @@ public class StockStoreDatabase {
             // TODO: No, wrong.  I need a better mechanism for that.
             if(getInfo(i.getCalendar(), i.getGraticule()) != null) {
                 Log.v(DEBUG_TAG, "Info already exists for that data, ignoring...");
-                return -1;
+                return;
             }
             
             ContentValues toGo = new ContentValues();
@@ -171,8 +159,8 @@ public class StockStoreDatabase {
             Log.v(DEBUG_TAG, "NOW STORING TO HASHES " + DateTools.getDateString(cal)
                     + (i.uses30WRule() ? " (30W)" : "") + " : "
                     + i.getLatitudeHash() + "," + i.getLongitudeHash());
-            
-            return mDatabase.insert(TABLE_HASHES, null, toGo);
+
+            mDatabase.insert(TABLE_HASHES, null, toGo);
         }
     }
     
@@ -183,15 +171,14 @@ public class StockStoreDatabase {
      * 
      * @param cal the date of the stock
      * @param stock the stock itself, as a string
-     * @return the new row ID created, or -1 if it went wrong or already exists
      */
-    public synchronized long storeStock(Calendar cal, String stock) {
-        synchronized(mDatabase) {
+    public void storeStock(Calendar cal, String stock) {
+        synchronized(this) {
             // First, check over the database to make sure it doesn't already
             // exist.
             if(getStock(cal) != null) {
                 Log.v(DEBUG_TAG, "Stock price already exists in database for " + DateTools.getDateString(cal) + ", ignoring...");
-                return -1;
+                return;
             }
             
             // Otherwise, store away!
@@ -201,8 +188,8 @@ public class StockStoreDatabase {
             
             Log.v(DEBUG_TAG, "NOW STORING TO STOCKS " + DateTools.getDateString(cal)
                     + " : " + stock);
-            
-            return mDatabase.insert(TABLE_STOCKS, null, toGo);
+
+            mDatabase.insert(TABLE_STOCKS, null, toGo);
         }
     }
     
@@ -218,7 +205,7 @@ public class StockStoreDatabase {
      *         have the data you want
      */
     public Info getInfo(Calendar c, Graticule g) {
-        synchronized(mDatabase) {
+        synchronized(this) {
             Log.v(DEBUG_TAG, "Querying the hashes database...");
             // First, adjust the calendar if we need to.
             Info toReturn = null;
@@ -269,7 +256,7 @@ public class StockStoreDatabase {
      * @return the String representation of the stock, or null if none is stored 
      */
     public String getStock(Calendar cal) {
-        synchronized(mDatabase) {
+        synchronized(this) {
             Log.v(DEBUG_TAG, "Querying the stock database...");
             
             String toReturn = null;
@@ -307,8 +294,8 @@ public class StockStoreDatabase {
      *
      * @param c Context to use to get preferences and such
      */
-    public synchronized void cleanup(@NonNull Context c) {
-        synchronized(mDatabase) {
+    public void cleanup(@NonNull Context c) {
+        synchronized(this) {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
             
             Log.v(DEBUG_TAG, "Pruning database...");
@@ -361,8 +348,8 @@ public class StockStoreDatabase {
      * Erases everything from the stock cache database.  This is really only to
      * be used if something's gone horribly wrong.
      */
-    public synchronized boolean deleteCache() {
-        synchronized(mDatabase) {
+    public boolean deleteCache() {
+        synchronized(this) {
             try {
                 Log.v(DEBUG_TAG, "Emptying the stock cache...");
                 // KABOOM!

@@ -3,7 +3,7 @@ A Geohashing app for Android devices.
 
 (*not* Geocaching)
 
-This is an Android app for Randall Munroe's Geohashing activity (see [its wiki](http://wiki.xkcd.com/geohashing/)).  It downloads stock values for the current day's hash points, puts them on a map for you to visit, and uploads pictures and live comments to the aforementioned wiki.
+This is an Android app for Randall Munroe's Geohashing activity (see [its wiki](https://geohashing.site/)).  It downloads stock values for the current day's hash points, puts them on a map for you to visit, and uploads pictures and live comments to the aforementioned wiki.
 
 If you want to check out the code behind the really old, pre-tablet version that existed before 0.9.0 was released, look at the legacy branch.
 

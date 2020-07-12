@@ -12,7 +12,7 @@ import android.content.Context;
 import android.content.res.XmlResourceParser;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import net.exclaimindustries.geohashdroid.R;
 
@@ -119,6 +119,7 @@ public class VersionHistoryParser {
         @NonNull public ArrayList<String> bullets = new ArrayList<>();
 
         @Override
+        @NonNull
         public String toString() {
             return "Version history entry, version " + versionName + " (" + versionCode + "), contains " + bullets.size() + " bullet(s)";
         }

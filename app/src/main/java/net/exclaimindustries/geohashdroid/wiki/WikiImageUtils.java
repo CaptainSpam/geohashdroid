@@ -17,9 +17,9 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -277,7 +277,7 @@ public class WikiImageUtils {
             }
 
             // Now, add the tallest of those into the height...
-            totalHeight += (textHeight > iconHeight ? textHeight : iconHeight);
+            totalHeight += Math.max(textHeight, iconHeight);
 
             // ...keep track of the individual heights so we don't have to keep
             // recalculating them...

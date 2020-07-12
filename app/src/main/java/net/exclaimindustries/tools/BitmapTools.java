@@ -1,7 +1,7 @@
-/**
+/*
  * BitmapTools.java
  * Copyright (C)2010 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
@@ -137,9 +137,7 @@ public class BitmapTools {
         int tempWidth = opts.outWidth;
         int tempHeight = opts.outHeight;
         int sampleFactor = 1;
-        while(true) {
-            if(tempWidth / 2 < maxWidth || tempHeight / 2 < maxHeight)
-                break;
+        while(tempWidth / 2 >= maxWidth && tempHeight / 2 >= maxHeight) {
             tempWidth /= 2;
             tempHeight /= 2;
             sampleFactor *= 2;
@@ -209,9 +207,7 @@ public class BitmapTools {
             int tempWidth = opts.outWidth;
             int tempHeight = opts.outHeight;
             int sampleFactor = 1;
-            while(true) {
-                if(tempWidth / 2 < maxWidth || tempHeight / 2 < maxHeight)
-                    break;
+            while(tempWidth / 2 >= maxWidth && tempHeight / 2 >= maxHeight) {
                 tempWidth /= 2;
                 tempHeight /= 2;
                 sampleFactor *= 2;

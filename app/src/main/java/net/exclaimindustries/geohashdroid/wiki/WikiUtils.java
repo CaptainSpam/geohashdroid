@@ -1,4 +1,4 @@
-/**
+/*
  * WikiUtils.java
  * Copyright (C)2009 Thomas Hirsch
  * Geohashdroid Copyright (C)2009 Nicholas Killewald
@@ -11,8 +11,8 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -62,12 +62,12 @@ public class WikiUtils {
     /**
      * The base URL for all wiki activities.  Remember the trailing slash!
      */
-    private static final String WIKI_BASE_URL = "http://wiki.xkcd.com/";
+    private static final String WIKI_BASE_URL = "https://geohashing.site/";
 
     /**
      * The URL for the MediaWiki API.  There's no trailing slash here.
      */
-    private static final String WIKI_API_URL = WIKI_BASE_URL + "wgh/api.php";
+    private static final String WIKI_API_URL = WIKI_BASE_URL + "/api.php";
 
     /**
      * The base URL for viewing pages on the wiki.  On the Geohashing wiki, the
@@ -85,7 +85,7 @@ public class WikiUtils {
      */
     @SuppressWarnings("unused")
     public static class WikiVersionData {
-        private String mRawResult = "";
+        private String mRawResult;
         private String mGeneratorName = "";
         private String mRawVersion = "";
         private int mMajor;
@@ -224,10 +224,10 @@ public class WikiUtils {
      * A bucketload of the usual stuff we grab from a wiki request.
      */
     private static class WikiResponse {
-        public Document document;
-        public Element rootElem;
-        public boolean hasError = false;
-        public int errorTextId;
+        Document document;
+        Element rootElem;
+        boolean hasError = false;
+        int errorTextId;
     }
 
     // The most recent request issued by WikiUtils.  This allows the abort()
@@ -237,14 +237,14 @@ public class WikiUtils {
     /**
      * This format is used for all latitude/longitude texts in the wiki.
      */
-    public static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
+    private static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
 
     /**
      * This format is used for all latitude/longitude <i>links</i> in the wiki.
      * This differs from mLatLonFormat in that it doesn't clip values to four
      * decimal points.
      */
-    protected static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
+    private static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
 
     /**
      * Aborts the current wiki request.  Well, technically, it's the most recent
@@ -792,6 +792,7 @@ public class WikiUtils {
             // Next, edit errors.  These come from the error element, code
             // attribute.
             case "protectedtitle":
+                //noinspection DuplicateBranchesInSwitch
                 error = R.string.wiki_error_protected;
                 break;
             case "cantcreate":
@@ -825,6 +826,8 @@ public class WikiUtils {
     }
 
     private static boolean doesResponseHaveError(@Nullable Element elem) {
+        if(elem == null) return false;
+
         try {
             DOMUtil.getFirstElement(elem, "error");
         } catch(Exception ex) {
@@ -835,6 +838,8 @@ public class WikiUtils {
     }
 
     private static String findErrorCode(@Nullable Element elem) {
+        if(elem == null) return "UnknownError";
+
         try {
             Element error = DOMUtil.getFirstElement(elem, "error");
             return DOMUtil.getSimpleAttributeText(error, "code");
@@ -956,7 +961,7 @@ public class WikiUtils {
      */
     public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
-            return " [http://www.openstreetmap.org/?lat="
+            return " [https://openstreetmap.org/?lat="
                     + mLatLonLinkFormat.format(loc.getLatitude())
                     + "&lon="
                     + mLatLonLinkFormat.format(loc.getLongitude())

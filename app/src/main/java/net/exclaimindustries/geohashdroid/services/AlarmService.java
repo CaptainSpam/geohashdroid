@@ -1,7 +1,7 @@
-/**
+/*
  * AlarmService.java
  * Copyright (C)2015 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
  */
@@ -23,14 +23,14 @@ import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.IdRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.StringRes;
-import android.support.v4.app.JobIntentService;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
+import androidx.core.app.JobIntentService;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -692,7 +692,20 @@ public class AlarmService extends JobIntentService {
         for(KnownLocation kl : locations) {
             // Every KnownLocation has a method to do this.  Maybe it's a wee
             // bit inefficient and inelegant, but it does the job.
-            Info best = kl.getClosestInfo(this, (kl.is30w() ? tomorrow : today));
+            Info best;
+
+            try {
+                best = kl.getClosestInfo(this, (kl.is30w() ? tomorrow : today));
+            } catch (IllegalArgumentException iae) {
+                // This shouldn't happen under normal operation, but if this is
+                // the debug build and the party alarm's been triggered,
+                // makeNineThirty might refer to tomorrow (i.e. if the time zone
+                // is anywhere west of EST/EDT), which may not have a valid
+                // stock yet.  In that case, silently drop it and continue
+                // onward.  Chances are we'll skip all the known locations past
+                // this one anyway.
+                continue;
+            }
 
             if(kl.isCloseEnough(best.getFinalDestinationLatLng())) {
                 KnownLocationMatchData data = new KnownLocationMatchData(kl, best, kl.getDistanceFrom(best));
@@ -900,12 +913,16 @@ public class AlarmService extends JobIntentService {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // JobScheduler time!  It's fancier!
             JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            JobInfo job = new JobInfo.Builder(
-                    ALARM_CONNECTIVITY_JOB,
-                    new ComponentName(this, AlarmServiceJobService.class))
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                    .build();
-            js.schedule(job);
+            if(js != null) {
+                JobInfo job = new JobInfo.Builder(
+                        ALARM_CONNECTIVITY_JOB,
+                        new ComponentName(this, AlarmServiceJobService.class))
+                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                        .build();
+                js.schedule(job);
+            } else {
+                Log.e(DEBUG_TAG, "Couldn't get a JobScheduler instance when scheduling the connectivity check!  THIS IS BAD, AND WE WON'T GET NETWORK UPDATES!");
+            }
         } else {
             // Otherwise, just use the ol' package component.
             AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, true);
@@ -915,7 +932,11 @@ public class AlarmService extends JobIntentService {
     private void stopWaitingForNetwork() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            js.cancel(ALARM_CONNECTIVITY_JOB);
+            if(js != null) {
+                js.cancel(ALARM_CONNECTIVITY_JOB);
+            } else {
+                Log.e(DEBUG_TAG, "Couldn't get a JobScheduler instance when stopping the connectivity check!  THIS IS BAD!");
+            }
         } else {
             AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
         }

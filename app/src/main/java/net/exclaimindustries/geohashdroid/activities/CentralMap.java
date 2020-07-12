@@ -24,18 +24,16 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.StringRes;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -46,7 +44,6 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
@@ -448,6 +445,7 @@ public class CentralMap
         }
 
         @Override
+        @NonNull
         public String toString() {
             return this.getClass().getSimpleName();
         }
@@ -651,7 +649,7 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
-        } else if(intent != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
+        } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
             mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
@@ -687,43 +685,37 @@ public class CentralMap
 
         // Get a map ready.  We'll know when we've got it.  Oh, we'll know.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
-        mapFrag.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(GoogleMap googleMap) {
-                mMap = googleMap;
+        mapFrag.getMapAsync(googleMap -> {
+            mMap = googleMap;
 
-                // I could swear you could do this in XML...
-                UiSettings set = mMap.getUiSettings();
+            // I could swear you could do this in XML...
+            UiSettings set = mMap.getUiSettings();
 
-                // The My Location button has to go off, as we're going to have the
-                // infobox right around there.
-                set.setMyLocationButtonEnabled(false);
+            // The My Location button has to go off, as we're going to have the
+            // infobox right around there.
+            set.setMyLocationButtonEnabled(false);
 
-                // Go to preferences to figure out what map type we're using.
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
-                mapTypeSelected(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
+            // Go to preferences to figure out what map type we're using.
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CentralMap.this);
+            mapTypeSelected(prefs.getInt(GHDConstants.PREF_LAST_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL));
 
-                // Now, set the flag that tells everything else (especially the
-                // doReadyChecks method) we're ready.  Then, call doReadyChecks.
-                mMapIsReady = true;
-                doReadyChecks();
+            // Now, set the flag that tells everything else (especially the
+            // doReadyChecks method) we're ready.  Then, call doReadyChecks.
+            mMapIsReady = true;
+            doReadyChecks();
 
 //                startListening();
-            }
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // Got a height!  Hopefully.
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
+        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Got a height!  Hopefully.
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
 
-                    // Flag!
-                    mLayoutComplete = true;
-                    doReadyChecks();
-                }
+                // Flag!
+                mLayoutComplete = true;
+                doReadyChecks();
             }
         });
 
@@ -770,6 +762,9 @@ public class CentralMap
         // big deal out of it and claim it's a common use case if I don't catch
         // this circumstance.
         if(checkLocationPermissions(0, true)) mPermissionsDenied = false;
+
+        // Then, do the ready checks.
+        doReadyChecks();
 
         // Listen up!
         startListening();
@@ -940,7 +935,7 @@ public class CentralMap
                 // expecting something for geocaching.
                 Intent i = new Intent();
                 i.setAction(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("http://wiki.xkcd.com/geohashing/How_it_works"));
+                i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
                 startActivity(i);
                 return true;
             }
@@ -1189,32 +1184,36 @@ public class CentralMap
                 mCurrentMode.init(mLastModeBundle);
             }
 
-            if(mLastKnownLocation != null && LocationUtil.isLocationNewEnough(mLastKnownLocation))
+            if(LocationUtil.isLocationNewEnough(mLastKnownLocation))
                 mCurrentMode.onLocationChanged(mLastKnownLocation);
             invalidateOptionsMenu();
 
-            // Now, read all the KnownLocations and put them on the map.  Remove
-            // anything we had before.
-            if(mKnownLocationMarkers != null)
-                for(Marker m : mKnownLocationMarkers)
-                    m.remove();
-
-            mKnownLocationMarkers = new LinkedList<>();
-
-            // Now, ONLY if prefs say so...
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-            if(prefs.getBoolean(GHDConstants.PREF_SHOW_KNOWN_LOCATIONS, true)) {
-                for(KnownLocation kl : KnownLocation.getAllKnownLocations(this)) {
-                    // No snippet this time; there's nothing to do with the marker
-                    // other than show its name.
-                    Marker mark = mMap.addMarker(kl.makeMarker(this));
-                    mKnownLocationMarkers.add(mark);
-                }
-            }
+            drawKnownLocations();
 
             // And finally, start listening.
             startListening();
+        }
+    }
+
+    private void drawKnownLocations() {
+        // Now, read all the KnownLocations and put them on the map.  Remove
+        // anything we had before.
+        if(mKnownLocationMarkers != null) {
+            for(Marker m : mKnownLocationMarkers)
+                m.remove();
+        }
+        mKnownLocationMarkers = new LinkedList<>();
+
+        // Now, ONLY if prefs say so...
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if(prefs.getBoolean(GHDConstants.PREF_SHOW_KNOWN_LOCATIONS, true)) {
+            for(KnownLocation kl : KnownLocation.getAllKnownLocations(this)) {
+                // No snippet this time; there's nothing to do with the marker
+                // other than show its name.
+                Marker mark = mMap.addMarker(kl.makeMarker(this));
+                mKnownLocationMarkers.add(mark);
+            }
         }
     }
 

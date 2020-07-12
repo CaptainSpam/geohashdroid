@@ -11,17 +11,16 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.DialogInterface;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Graticule;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.LocationUtil;
 
 /**
@@ -97,24 +96,16 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
 
         return new AlertDialog.Builder(getActivity())
                 .setMessage(message)
-                .setTitle(g.getLatitudeString(false) + " " + g.getLongitudeString(false))
-                .setPositiveButton(getString(R.string.dialog_switch_graticule_okay), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Well, you heard the orders!
-                        dismiss();
-                        if(mCallback != null)
-                            mCallback.nearbyGraticuleClicked(info);
-                        else
-                            Log.e(DEBUG_TAG, "You didn't specify a callback!");
-                    }
+                .setTitle(g.getTitleString(false))
+                .setPositiveButton(getString(R.string.dialog_switch_graticule_okay), (dialog, which) -> {
+                    // Well, you heard the orders!
+                    dismiss();
+                    if(mCallback != null)
+                        mCallback.nearbyGraticuleClicked(info);
+                    else
+                        Log.e(DEBUG_TAG, "You didn't specify a callback!");
                 })
-                .setNegativeButton(getString(R.string.dialog_switch_graticule_cancel), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dismiss();
-                    }
-                })
+                .setNegativeButton(getString(R.string.dialog_switch_graticule_cancel), (dialog, which) -> dismiss())
                 .create();
     }
 }

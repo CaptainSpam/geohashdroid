@@ -1,4 +1,4 @@
-/**
+/*
  * Graticule.java
  * Copyright (C)2009 Nicholas Killewald
  * 
@@ -13,7 +13,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * <p>
@@ -127,8 +127,8 @@ public class Graticule implements Parcelable {
             throws NullPointerException, NumberFormatException {
         mSouth = latitude.charAt(0) == '-';
         mWest = longitude.charAt(0) == '-';
-        this.setLatitude(Math.abs(Integer.valueOf(latitude)));
-        this.setLongitude(Math.abs(Integer.valueOf(longitude)));
+        this.setLatitude(Math.abs(Integer.parseInt(latitude)));
+        this.setLongitude(Math.abs(Integer.parseInt(longitude)));
     }
 
     /**
@@ -305,7 +305,7 @@ public class Graticule implements Parcelable {
      * @return true if the 30W Rule is in effect, false otherwise
      */
     public boolean uses30WRule() {
-        return ((mLongitude < 30 && isWest()) || !isWest());
+        return (mLongitude < 30 || !isWest());
     }
 
     private void setLatitude(int latitude) {
@@ -389,6 +389,20 @@ public class Graticule implements Parcelable {
                 return mLongitude + "E";
             }
         }
+    }
+
+    /**
+     * Returns the "title" of this Graticule.  In general, this will be in the
+     * form of "LAT LON".
+     *
+     * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
+     * @return a title string for this Graticule
+     */
+    @NonNull
+    public String getTitleString(boolean useNegativeValues) {
+        return getLatitudeString(useNegativeValues)
+                + ' '
+                + getLongitudeString(useNegativeValues);
     }
 
     /**
@@ -489,7 +503,7 @@ public class Graticule implements Parcelable {
      */
     @NonNull
     public LatLng makePointFromHash(double latHash, double lonHash) {
-        if(latHash < 0 || latHash > 1 || lonHash < 0 || latHash > 1)
+        if(latHash < 0 || latHash > 1 || lonHash < 0 || lonHash > 1)
             throw new IllegalArgumentException("Those aren't valid hash values!");
 
         // getLatitude and getLongitude are absolute values, so we can do this:
@@ -541,7 +555,8 @@ public class Graticule implements Parcelable {
     }
 
     @Override
+    @NonNull
     public String toString() {
-        return "Graticule for " + getLatitudeString(false) + " " + getLongitudeString(false);
+        return "Graticule for " + getTitleString(false);
     }
 }

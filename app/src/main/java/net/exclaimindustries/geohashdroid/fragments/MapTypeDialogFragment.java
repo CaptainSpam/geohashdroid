@@ -11,9 +11,8 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -68,30 +67,27 @@ public class MapTypeDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         return new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.menu_item_map_type)
-                .setItems(R.array.menu_item_map_types, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Picked!
-                        if(mCallback == null) {
-                            Log.e(DEBUG_TAG, "There's no callback set!");
-                            return;
-                        }
+                .setItems(R.array.menu_item_map_types, (dialog, which) -> {
+                    // Picked!
+                    if(mCallback == null) {
+                        Log.e(DEBUG_TAG, "There's no callback set!");
+                        return;
+                    }
 
-                        dialog.dismiss();
+                    dialog.dismiss();
 
-                        switch(which) {
-                            case 0:
-                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_NORMAL);
-                                break;
-                            case 1:
-                                mCallback.mapTypeSelected(MAP_STYLE_NIGHT);
-                                break;
-                            case 2:
-                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_HYBRID);
-                                break;
-                            case 3:
-                                mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_TERRAIN);
-                        }
+                    switch(which) {
+                        case 0:
+                            mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_NORMAL);
+                            break;
+                        case 1:
+                            mCallback.mapTypeSelected(MAP_STYLE_NIGHT);
+                            break;
+                        case 2:
+                            mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_HYBRID);
+                            break;
+                        case 3:
+                            mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_TERRAIN);
                     }
                 })
                 .create();

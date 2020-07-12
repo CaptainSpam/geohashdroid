@@ -11,9 +11,9 @@ package net.exclaimindustries.geohashdroid.util;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -160,12 +160,7 @@ public class SelectAGraticuleMode
         // And bye, picker!
         if(mPicker != null) {
             mPicker.setListener(null);
-            mPicker.animateGraticulePickerOutWithEndAction(new Runnable() {
-                @Override
-                public void run() {
-                    ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mPicker);
-                }
-            });
+            mPicker.animateGraticulePickerOutWithEndAction(() -> ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mPicker));
         }
 
         // Find Closest listener, you too!

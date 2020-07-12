@@ -12,17 +12,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -111,11 +109,11 @@ public class GraticulePicker extends RelativeLayout {
         inflate(c, R.layout.graticulepicker, this);
 
         // Here come the widgets.  Each is magical and unique.
-        mLat = (EditText)findViewById(R.id.grat_lat);
-        mLon = (EditText)findViewById(R.id.grat_lon);
-        mGlobal = (CheckBox)findViewById(R.id.grat_globalhash);
-        mClosest = (Button)findViewById(R.id.grat_closest);
-        ImageButton close = (ImageButton)findViewById(R.id.close);
+        mLat = findViewById(R.id.grat_lat);
+        mLon = findViewById(R.id.grat_lon);
+        mGlobal = findViewById(R.id.grat_globalhash);
+        mClosest = findViewById(R.id.grat_closest);
+        ImageButton close = findViewById(R.id.close);
 
         // And how ARE they magical?  Well, like this.  First, any time the
         // boxes are updated, send out a new Graticule to the Activity.
@@ -142,42 +140,33 @@ public class GraticulePicker extends RelativeLayout {
         mLon.addTextChangedListener(tw);
 
         // Also, when the checkbox gets changed, set/unset Globalhash mode.
-        mGlobal.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked) {
-                    // If it's checked, mLat and mLon go disabled, as you can't
-                    // set a specific graticule.
-                    mLat.setEnabled(false);
-                    mLon.setEnabled(false);
-                } else {
-                    mLat.setEnabled(true);
-                    mLon.setEnabled(true);
-                }
-
-                if(!mExternalUpdate)
-                    dispatchGraticule();
+        mGlobal.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(isChecked) {
+                // If it's checked, mLat and mLon go disabled, as you can't
+                // set a specific graticule.
+                mLat.setEnabled(false);
+                mLon.setEnabled(false);
+            } else {
+                mLat.setEnabled(true);
+                mLon.setEnabled(true);
             }
+
+            if(!mExternalUpdate)
+                dispatchGraticule();
         });
 
         // Then, the Find Closest button.  That one we foist off on the calling
         // Activity.
-        mClosest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                v.setEnabled(false);
-                if(mListener != null)
-                    mListener.findClosest();
-            }
+        mClosest.setOnClickListener(v -> {
+            v.setEnabled(false);
+            if(mListener != null)
+                mListener.findClosest();
         });
 
         // The close button needs to, well, close.
-        close.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mListener != null)
-                    mListener.graticulePickerClosing();
-            }
+        close.setOnClickListener(v -> {
+            if(mListener != null)
+                mListener.graticulePickerClosing();
         });
 
         // Plus, the close button needs updating if it's night.  That grey is
@@ -186,17 +175,14 @@ public class GraticulePicker extends RelativeLayout {
 
         // And then there's this again.  Huh.  You'd think I should make a
         // parent class to handle this.
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // Got a height!  Hopefully.
-                if(!mAlreadyLaidOut) {
-                    mAlreadyLaidOut = true;
+        getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Got a height!  Hopefully.
+            if(!mAlreadyLaidOut) {
+                mAlreadyLaidOut = true;
 
-                    // Make it off-screen first, then animate it on if need be.
-                    setGraticulePickerVisible(false);
-                    animateGraticulePickerVisible(mWaitingToShow);
-                }
+                // Make it off-screen first, then animate it on if need be.
+                setGraticulePickerVisible(false);
+                animateGraticulePickerVisible(mWaitingToShow);
             }
         });
     }

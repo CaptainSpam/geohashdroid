@@ -16,8 +16,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
@@ -27,7 +27,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -71,14 +70,11 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private Uri mPictureUri;
 
-    private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-        @Override
-        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-            // Huh, we register for ALL changes, not just for a few prefs.  May
-            // as well narrow it down...
-            if(key.equals(GHDConstants.PREF_WIKI_USER) || key.equals(GHDConstants.PREF_WIKI_PASS)) {
-                checkAnonStatus();
-            }
+    private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
+        // Huh, we register for ALL changes, not just for a few prefs.  May
+        // as well narrow it down...
+        if(key.equals(GHDConstants.PREF_WIKI_USER) || key.equals(GHDConstants.PREF_WIKI_PASS)) {
+            checkAnonStatus();
         }
     };
 
@@ -100,33 +96,25 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // The picture checkbox determines if the other boxes are visible or
         // not.
-        mPictureCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                resolvePictureControlVisibility();
-            }
-        });
+        mPictureCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> resolvePictureControlVisibility());
 
         // The gallery button needs to fire off to the gallery.  Or Photos.  Or
         // whatever's listening for this intent.
-        mGalleryButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Apparently there's been some... changes.  Changes in Kitkat
-                // or the like.
-                Intent i;
+        mGalleryButton.setOnClickListener(v -> {
+            // Apparently there's been some... changes.  Changes in Kitkat
+            // or the like.
+            Intent i;
 
-                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-                    i = new Intent(Intent.ACTION_GET_CONTENT);
-                    i.setType("image/*");
-                } else {
-                    i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                    i.addCategory(Intent.CATEGORY_OPENABLE);
-                    i.setType("image/*");
-                }
-
-                startActivityForResult(i, GET_PICTURE);
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.setType("image/*");
+            } else {
+                i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("image/*");
             }
+
+            startActivityForResult(i, GET_PICTURE);
         });
 
         // Any time the user edits the text, we also check to re-enable the post
@@ -146,25 +134,17 @@ public class WikiFragment extends CentralMapExtraFragment {
         });
 
         // The header goes to the current wiki page.
-        mHeader.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mInfo != null) {
-                    Intent i = new Intent();
-                    i.setAction(Intent.ACTION_VIEW);
-                    i.setData(Uri.parse(WikiUtils.getWikiBaseViewUrl() + WikiUtils.getWikiPageName(mInfo)));
-                    startActivity(i);
-                }
+        mHeader.setOnClickListener(v -> {
+            if(mInfo != null) {
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(WikiUtils.getWikiBaseViewUrl() + WikiUtils.getWikiPageName(mInfo)));
+                startActivity(i);
             }
         });
 
         // Here's the main event.
-        mPostButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dispatchPost();
-            }
-        });
+        mPostButton.setOnClickListener(v -> dispatchPost());
 
         // Make sure the header gets set here, too.
         applyHeader();
@@ -258,12 +238,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         }
 
         // With bitmap in hand...
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mGalleryButton.setImageBitmap(thumbnail);
-            }
-        });
+        getActivity().runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
 
         // And remember it for posting later.  Done!
         mPictureUri = uri;
@@ -279,102 +254,90 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void checkAnonStatus() {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                // A user is anonymous if they either have no username or no
-                // password (the wiki doesn't allow passwordless users, which
-                // would just be silly anyway).
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        getActivity().runOnUiThread(() -> {
+            // A user is anonymous if they either have no username or no
+            // password (the wiki doesn't allow passwordless users, which
+            // would just be silly anyway).
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
 
-                String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
-                String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
+            String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
+            String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 
-                if(username.isEmpty() || password.isEmpty()) {
-                    // If anything isn't defined, we can't set a picture.  Also,
-                    // uncheck the picture checkbox just to make sure.
-                    mPictureCheckbox.setChecked(false);
-                    mPictureCheckbox.setVisibility(View.GONE);
-                    mGalleryButton.setVisibility(View.GONE);
-                    mAnonWarning.setVisibility(View.VISIBLE);
-                } else {
-                    // Now, we can't just turn everything back on without
-                    // checking.  But we CAN get rid of the anon warning and
-                    // bring back the picture checkbox.
-                    mAnonWarning.setVisibility(View.GONE);
-                    mPictureCheckbox.setVisibility(View.VISIBLE);
-                }
-
-                // Now, make sure everything else is up to date, including the
-                // text on the post button.  This will do some redundant checks
-                // in the case of hiding things, but meh.
-                resolvePictureControlVisibility();
+            if(username.isEmpty() || password.isEmpty()) {
+                // If anything isn't defined, we can't set a picture.  Also,
+                // uncheck the picture checkbox just to make sure.
+                mPictureCheckbox.setChecked(false);
+                mPictureCheckbox.setVisibility(View.GONE);
+                mGalleryButton.setVisibility(View.GONE);
+                mAnonWarning.setVisibility(View.VISIBLE);
+            } else {
+                // Now, we can't just turn everything back on without
+                // checking.  But we CAN get rid of the anon warning and
+                // bring back the picture checkbox.
+                mAnonWarning.setVisibility(View.GONE);
+                mPictureCheckbox.setVisibility(View.VISIBLE);
             }
+
+            // Now, make sure everything else is up to date, including the
+            // text on the post button.  This will do some redundant checks
+            // in the case of hiding things, but meh.
+            resolvePictureControlVisibility();
         });
     }
 
     private void resolvePictureControlVisibility() {
         // One checkbox to rule them all!
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(mPictureCheckbox.isChecked()) {
-                    mGalleryButton.setVisibility(View.VISIBLE);
+        getActivity().runOnUiThread(() -> {
+            if(mPictureCheckbox.isChecked()) {
+                mGalleryButton.setVisibility(View.VISIBLE);
 
-                    // Oh, and update a few strings, too.
-                    mPostButton.setText(R.string.wiki_dialog_submit_picture);
-                    mIncludeLocationCheckbox.setText(R.string.wiki_dialog_stamp_image);
-                    mMessage.setHint(R.string.hint_caption);
-                } else {
-                    mGalleryButton.setVisibility(View.GONE);
-                    mPostButton.setText(R.string.wiki_dialog_submit_message);
-                    mIncludeLocationCheckbox.setText(R.string.wiki_dialog_append_coordinates);
-                    mMessage.setHint(R.string.hint_message);
-                }
-
-                // This also changes the post button's enabledness.
-                resolvePostButtonEnabledness();
+                // Oh, and update a few strings, too.
+                mPostButton.setText(R.string.wiki_dialog_submit_picture);
+                mIncludeLocationCheckbox.setText(R.string.wiki_dialog_stamp_image);
+                mMessage.setHint(R.string.hint_caption);
+            } else {
+                mGalleryButton.setVisibility(View.GONE);
+                mPostButton.setText(R.string.wiki_dialog_submit_message);
+                mIncludeLocationCheckbox.setText(R.string.wiki_dialog_append_coordinates);
+                mMessage.setHint(R.string.hint_message);
             }
+
+            // This also changes the post button's enabledness.
+            resolvePostButtonEnabledness();
         });
     }
 
     private void resolvePostButtonEnabledness() {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                // We can make a few booleans here just so the eventual call to
-                // setEnabled is easier to read.
-                boolean isInPictureMode = mPictureCheckbox.isChecked();
-                boolean hasPicture = (mPictureUri != null);
-                boolean hasMessage = !(mMessage.getText().toString().isEmpty());
+        getActivity().runOnUiThread(() -> {
+            // We can make a few booleans here just so the eventual call to
+            // setEnabled is easier to read.
+            boolean isInPictureMode = mPictureCheckbox.isChecked();
+            boolean hasPicture = (mPictureUri != null);
+            boolean hasMessage = !(mMessage.getText().toString().isEmpty());
 
-                // So, to review, the button is enabled ONLY if there's a
-                // message and, if we're in picture mode, there's a picture to
-                // go with it.
-                mPostButton.setEnabled(hasMessage && (hasPicture || !isInPictureMode));
-            }
+            // So, to review, the button is enabled ONLY if there's a
+            // message and, if we're in picture mode, there's a picture to
+            // go with it.
+            mPostButton.setEnabled(hasMessage && (hasPicture || !isInPictureMode));
         });
     }
 
     private void applyHeader() {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(mInfo == null) {
-                    mHeader.setText("");
-                } else {
-                    // Make sure it's underlined so it at least LOOKS like a
-                    // thing someone might click.
-                    Graticule g = mInfo.getGraticule();
+        getActivity().runOnUiThread(() -> {
+            if(mInfo == null) {
+                mHeader.setText("");
+            } else {
+                // Make sure it's underlined so it at least LOOKS like a
+                // thing someone might click.
+                Graticule g = mInfo.getGraticule();
 
-                    SpannableString text = new SpannableString(getString(R.string.wiki_dialog_header,
-                            DateFormat.getDateInstance(DateFormat.MEDIUM).format(mInfo.getCalendar().getTime()),
-                            (g == null
-                                    ? getString(R.string.globalhash_label)
-                                    : g.getLatitudeString(false) + " " + g.getLongitudeString(false))));
-                    text.setSpan(new UnderlineSpan(), 0, text.length(), 0);
-                    mHeader.setText(text);
-                }
+                SpannableString text = new SpannableString(getString(R.string.wiki_dialog_header,
+                        DateFormat.getDateInstance(DateFormat.MEDIUM).format(mInfo.getCalendar().getTime()),
+                        (g == null
+                                ? getString(R.string.globalhash_label)
+                                : g.getTitleString(false))));
+                text.setSpan(new UnderlineSpan(), 0, text.length(), 0);
+                mHeader.setText(text);
             }
         });
     }
@@ -384,26 +347,23 @@ public class WikiFragment extends CentralMapExtraFragment {
         // bother.
         if(mLocationView == null || mDistanceView == null || mInfo == null) return;
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                // Easy enough, this is just the current location data.
-                if(mPermissionsDenied) {
-                    mLocationView.setVisibility(View.INVISIBLE);
-                    mDistanceView.setVisibility(View.INVISIBLE);
-                } else {
-                    mLocationView.setVisibility(View.VISIBLE);
-                    mDistanceView.setVisibility(View.VISIBLE);
-                }
+        getActivity().runOnUiThread(() -> {
+            // Easy enough, this is just the current location data.
+            if(mPermissionsDenied) {
+                mLocationView.setVisibility(View.INVISIBLE);
+                mDistanceView.setVisibility(View.INVISIBLE);
+            } else {
+                mLocationView.setVisibility(View.VISIBLE);
+                mDistanceView.setVisibility(View.VISIBLE);
+            }
 
-                if(mLastLocation == null) {
-                    // Or not, if there's no location.
-                    mLocationView.setText(R.string.standby_title);
-                    mDistanceView.setText(R.string.standby_title);
-                } else {
-                    mLocationView.setText(UnitConverter.makeFullCoordinateString(getActivity(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
-                    mDistanceView.setText(UnitConverter.makeDistanceString(getActivity(), UnitConverter.DISTANCE_FORMAT_SHORT, mLastLocation.distanceTo(mInfo.getFinalLocation())));
-                }
+            if(mLastLocation == null) {
+                // Or not, if there's no location.
+                mLocationView.setText(R.string.standby_title);
+                mDistanceView.setText(R.string.standby_title);
+            } else {
+                mLocationView.setText(UnitConverter.makeFullCoordinateString(getActivity(), mLastLocation, false, UnitConverter.OUTPUT_SHORT));
+                mDistanceView.setText(UnitConverter.makeDistanceString(getActivity(), UnitConverter.DISTANCE_FORMAT_SHORT, mLastLocation.distanceTo(mInfo.getFinalLocation())));
             }
         });
     }

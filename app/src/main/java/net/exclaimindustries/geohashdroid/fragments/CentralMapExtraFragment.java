@@ -11,8 +11,8 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.view.View;
 
 import com.google.android.gms.location.LocationListener;
@@ -136,12 +136,9 @@ public abstract class CentralMapExtraFragment
      * @param v the View that will act as the close button
      */
     protected void registerCloseButton(@NonNull View v) {
-        v.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mCloseListener != null)
-                    mCloseListener.extraFragmentClosing(CentralMapExtraFragment.this);
-            }
+        v.setOnClickListener(v1 -> {
+            if(mCloseListener != null)
+                mCloseListener.extraFragmentClosing(CentralMapExtraFragment.this);
         });
     }
 
