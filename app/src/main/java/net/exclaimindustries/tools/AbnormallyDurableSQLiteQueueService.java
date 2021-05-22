@@ -9,20 +9,19 @@
 package net.exclaimindustries.tools;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 import android.util.Log;
 
 /**
- * This version of {@link AbstractSQLiteQueueService} does NOT use a {@link java.util.Queue}
- * to store Intents.  Rather, it keeps everything in the SQLite database at all
- * times and all calls go through it.  Because of that, this type of
- * QueueService CAN survive early termination with minimal loss of Intents (if
- * any at all), but it will potentially run considerably slower, given it will
- * make SQLite calls for literally every data access, including a trip through
- * serializing and deserializing as each is added to the queue AND processed.
+ * This version of {@link AbstractSQLiteQueueService} does NOT use a
+ * {@link java.util.Queue} to store Intents.  Rather, it keeps everything in the
+ * SQLite database at all times and all calls go through it.  Because of that,
+ * this type of QueueService CAN survive early termination with minimal loss of
+ * Intents (if any at all), but it will potentially run considerably slower,
+ * given it will make SQLite calls for literally every data access, including a
+ * trip through serializing and deserializing as each is added to the queue AND
+ * processed.
  */
 public abstract class AbnormallyDurableSQLiteQueueService
         extends AbstractSQLiteQueueService {

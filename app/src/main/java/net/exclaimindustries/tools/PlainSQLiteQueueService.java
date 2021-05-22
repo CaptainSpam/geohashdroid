@@ -37,7 +37,7 @@ public abstract class PlainSQLiteQueueService
         extends AbstractSQLiteQueueService {
     private static final String DEBUG_TAG = "PlainSQLiteQueueService";
 
-    private Queue<Intent> mQueue;
+    private final Queue<Intent> mQueue;
 
     public PlainSQLiteQueueService() {
         super();
