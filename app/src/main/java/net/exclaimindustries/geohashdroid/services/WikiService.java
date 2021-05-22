@@ -253,32 +253,27 @@ public class WikiService extends PlainSQLiteQueueService {
         }
 
         // Prep an HttpClient for later...
-
-        // To Preferences!
-
-        // If you're missing something vital, bail out.
-
-        // Also, if there's an image specified, make sure there's also a
-        // username.  The wiki does not allow anonymous image uploads.  This
-        // one, unlike the previous one, produces an interruption so the user
-        // can enter in a username and password.
-
-        // Location becomes null if we're not including it.  Nothing should need
-        // to care.
-
         try(CloseableHttpClient client = HttpClients.createDefault()) {
+            // To Preferences!
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
             String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
             if(info == null || message == null || timestamp == null) {
+                // If we're missing something vital, bail out.
                 Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
                 return ReturnCode.CONTINUE;
             }
             if(imageLocation != null && username.isEmpty()) {
+                // Also, if there's an image specified, make sure there's also a
+                // username.  The wiki does not allow anonymous image uploads.
+                // This one, unlike the previous one, produces an interruption
+                // so the user can enter in a username and password.
                 showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
                         resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
                 return ReturnCode.PAUSE;
             }
+            // Location becomes null if we're not including it.  Nothing should need
+            // to care.
             if(!includeLocation) loc = null;
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
