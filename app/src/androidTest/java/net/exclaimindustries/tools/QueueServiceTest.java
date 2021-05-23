@@ -2,13 +2,14 @@ package net.exclaimindustries.tools;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.rule.ServiceTestRule;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.rule.ServiceTestRule;
 import android.util.Log;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.*;
 
@@ -28,6 +30,9 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class QueueServiceTest {
+    @Rule
+    public final ServiceTestRule mServiceRule = new ServiceTestRule();
+
     /**
      * An implementation of {@link QueueService} solely used for this test.
      * Specifically, it tests the basic flow of running through the queue, not
@@ -67,8 +72,8 @@ public class QueueServiceTest {
 
         @Nullable
         @Override
-        protected Intent getNextIntentFromQueue() {
-            Log.d(DEBUG_TAG, "getNextIntentFromQueue...");
+        protected Intent peekNextIntentFromQueue() {
+            Log.d(DEBUG_TAG, "peekNextIntentFromQueue...");
             return mQueue.peek();
         }
 
@@ -148,40 +153,28 @@ public class QueueServiceTest {
             Log.d(DEBUG_TAG, "deserializeIntent (from " + s + ")...");
             return null;
         }
-
-        /**
-         * Forces the next Intent to the given return code.  This is used if a
-         * PAUSE came in, because otherwise the queue will be stopped on that
-         * Intent and it'll never change (barring {@link #COMMAND_RESUME_SKIP_FIRST}).
-         * This can only be called if the queue is paused and not empty.
-         *
-         * @param code new ReturnCode to set
-         * @return true on success, false on failure (which must fail the test)
-         */
-        boolean setNextIntentToReturnCode(ReturnCode code) {
-            if(isPaused()) {
-                Log.w(DEBUG_TAG, "Tried to set next Intent to ReturnCode " + code.name() + ", but the queue is not paused!");
-                return false;
-            }
-
-            Intent nextIntent = mQueue.peek();
-            if(nextIntent == null) {
-                Log.w(DEBUG_TAG, "Tried to set next Intent to ReturnCode " + code.name() + ", but the queue is empty!");
-                return false;
-            }
-            nextIntent.putExtra(TEST_RETURN_CODE, code.name());
-            return true;
-        }
     }
 
-    @Rule
-    public final ServiceTestRule mServiceRule = new ServiceTestRule();
+    @Before
+    public void theBeforeTimes() throws Exception {
+        initService();
+    }
 
     @Test
     public void useAppContext() {
         // Context of the app under test.
-        Context appContext = InstrumentationRegistry.getTargetContext();
+        Context appContext = ApplicationProvider.getApplicationContext();
 
         assertEquals("net.exclaimindustries.geohashdroid", appContext.getPackageName());
+    }
+
+    @Test
+    public void doesTheThing() {
+    }
+
+    private void initService() throws TimeoutException {
+        mServiceRule.startService(
+                new Intent(ApplicationProvider.getApplicationContext(),
+                        TestQueueService.class));
     }
 }
