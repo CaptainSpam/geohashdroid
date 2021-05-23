@@ -116,35 +116,41 @@ public abstract class PlainSQLiteQueueService
 
     @Override
     protected final void onQueueUnload() {
-        // If anything's still left, shove it back in.  The database better be
-        // empty right now, else we messed something up.
-        if(!mQueue.isEmpty()) {
-            for(Intent intent : mQueue) {
-                // Hey, look!  We've got a helper function!
-                try {
-                    writeIntentToDatabase(intent);
-                } catch (SQLiteException sqle) {
-                    Log.e(DEBUG_TAG, "Exception in onQueueUnload()! (will try to keep going)", sqle);
+        synchronized(this) {
+            // If anything's still left, shove it back in.  The database better
+            // be empty right now, else we messed something up.
+            if(!mQueue.isEmpty()) {
+                for(Intent intent : mQueue) {
+                    // Hey, look!  We've got a helper function!
+                    try {
+                        writeIntentToDatabase(intent);
+                    } catch(SQLiteException sqle) {
+                        Log.e(DEBUG_TAG, "Exception in onQueueUnload()! (will try to keep going)", sqle);
+                    }
                 }
-            }
 
-            // With that done, clear out the in-memory queue.
-            mQueue.clear();
+                // With that done, clear out the in-memory queue.
+                mQueue.clear();
+            }
         }
     }
 
     @Override
     protected int getQueueCount() {
         // If the queue is active, use the actual internal queue.
-        if(!isPaused()) return mQueue.size();
+        if(isThreadAlive()) {
+            Log.d(DEBUG_TAG, "Thread is live, returning size of queue...");
+            return mQueue.size();
+        }
 
         // Otherwise, go to the database.
+        Log.d(DEBUG_TAG, "Thread is not live, fetching size from database...");
         return getQueueCountFromDatabase();
     }
 
     @Override
     protected void removeNextIntentFromQueue() {
-        if(!isPaused()) {
+        if(isThreadAlive()) {
             if(!mQueue.isEmpty()) mQueue.remove();
         }
         else {
@@ -157,8 +163,8 @@ public abstract class PlainSQLiteQueueService
     }
 
     @Override
-    protected Intent getNextIntentFromQueue() {
-        if(!isPaused()) return mQueue.peek();
+    protected Intent peekNextIntentFromQueue() {
+        if(isThreadAlive()) return mQueue.peek();
 
         try {
             return getNextIntentFromDatabase();
@@ -170,7 +176,7 @@ public abstract class PlainSQLiteQueueService
 
     @Override
     protected void addIntentToQueue(@NonNull Intent i) {
-        if(!isPaused()) {
+        if(isThreadAlive()) {
             mQueue.add(i);
         }
         else {

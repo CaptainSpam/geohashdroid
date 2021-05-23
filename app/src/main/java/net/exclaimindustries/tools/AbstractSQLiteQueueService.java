@@ -155,6 +155,7 @@ public abstract class AbstractSQLiteQueueService extends QueueService {
      */
     protected final void writeIntentToDatabase(@NonNull Intent i) throws SQLiteException {
         synchronized(this) {
+            Log.d(DEBUG_TAG, "Writing an intent to the database...");
             SQLiteDatabase database = initDatabase();
 
             // Serialize the Intent, using whatever method the concrete

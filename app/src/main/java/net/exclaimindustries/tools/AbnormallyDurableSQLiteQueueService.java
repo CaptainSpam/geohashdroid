@@ -61,7 +61,7 @@ public abstract class AbnormallyDurableSQLiteQueueService
     }
 
     @Override
-    protected Intent getNextIntentFromQueue() {
+    protected Intent peekNextIntentFromQueue() {
         try {
             return getNextIntentFromDatabase();
         } catch(SQLException sqle) {

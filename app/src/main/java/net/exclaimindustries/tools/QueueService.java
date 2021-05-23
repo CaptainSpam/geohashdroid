@@ -20,15 +20,14 @@ import android.util.Log;
 
 /**
  * <p>
- * A <code>QueueService</code> is similar in theory to an {@link android.app.IntentService},
- * with the exception that the <code>Intent</code> is stored in a queue and
- * dealt with that way.  This also means the queue can be observed and iterated
- * as need be to, for instance, get a list of currently-waiting things to
- * process.
+ * A <code>QueueService</code> is similar in theory to an
+ * {@link android.app.IntentService}, with the exception that the
+ * <code>Intent</code> is stored in a queue independent of the OS's Intent
+ * delivery mechanism and dealt with that way.
  * </p>
  * 
  * <p>
- * Note that while <code>QueueService</code> has many superficial similarities
+ * Note that while <code>QueueService</code> has some superficial similarities
  * to <code>IntentService</code>, it is NOT a subclass of it.  They just don't
  * work similarly enough under the hood to justify it.
  * </p>
@@ -62,8 +61,9 @@ public abstract class QueueService extends Service {
         CONTINUE,
         /**
          * Queue should pause until resumed later.  Useful for temporary
-         * errors.  The queue will not be emptied, and the Intent which caused
-         * this pause won't be removed (though see {@link #COMMAND_RESUME_SKIP_FIRST}).
+         * errors.  The queue will be written back to long-term storage, the
+         * queue will be stopped, and the Intent which caused this pause won't
+         * be removed (though see {@link #COMMAND_RESUME_SKIP_FIRST}).
          */
         PAUSE,
         /**
@@ -75,49 +75,33 @@ public abstract class QueueService extends Service {
 
     /**
      * Send an Intent with this extra data in it, set to one of the command
-     * statics, to send a command.
+     * statics, to send a command.  Any Intent with this will NOT be processed
+     * by the queue; don't put actual work data in such an Intent.
      */
     public static final String COMMAND_EXTRA = "net.exclaimindustries.tools.QUEUETHREAD_COMMAND";
     
     /**
-     * Command code sent to ask a paused QueueService to resume processing.
+     * Command code sent to ask an inactive QueueService to resume processing.
      */
     public static final int COMMAND_RESUME = 0;
     /**
-     * Command code sent to ask a paused QueueService to resume processing,
+     * Command code sent to ask an inactive QueueService to resume processing,
      * skipping the first thing in the queue.
      */
     public static final int COMMAND_RESUME_SKIP_FIRST = 1;
     /**
      * Command code sent to ask a paused QueueService to give up entirely and
-     * empty the queue (and by extension stop the service).  Note that this is
-     * NOT guaranteed to stop the queue if it is currently not paused.
+     * empty the queue (and by extension stop the service).  Note that this will
+     * NOT stop the queue if it is currently active.
      */
     public static final int COMMAND_ABORT = 2;
     
     private Thread mThread;
-    
-    // Whether or not the queue is currently paused.
-    private volatile boolean mIsPaused;
-    
-    public QueueService() {
-        super();
-        
-        // We're not paused by default.
-        mIsPaused = false;
-    }
-    
+
     @Override
     public void onCreate() {
         super.onCreate();
 
-        // The database should have all the data we need already, and we'll be
-        // reading directly from it as we go.  What we DO need right off the bat
-        // is whether or not anything's in there, because if there is, we're
-        // going to assume we were paused in a previous life.
-        if(getQueueCount() > 0)
-            mIsPaused = true;
-        
         // (Re)start the HandlerThread.  We'll wait for further instructions.
         HandlerThread thread = new HandlerThread("QueueService Handler");
         thread.start();
@@ -165,14 +149,14 @@ public abstract class QueueService extends Service {
             // If so, take command.  Make sure it's a valid command.
             int command = intent.getIntExtra(COMMAND_EXTRA, -1);
             
-            if(!isPaused()) {
-                Log.w(DEBUG_TAG, "The queue isn't paused, ignoring the command...");
+            if(isThreadAlive()) {
+                Log.w(DEBUG_TAG, "The queue is active, ignoring command...");
                 return;
             }
             
             if(command == -1) {
                 // INVALID!
-                Log.w(DEBUG_TAG, "Command Intent didn't have a valid command in it!");
+                Log.w(DEBUG_TAG, "Command Intent didn't have a command in it, ignoring...");
                 return;
             }
             
@@ -181,16 +165,6 @@ public abstract class QueueService extends Service {
                 return;
             }
 
-            // The thread should NOT be active right now!  If it is, we're in
-            // trouble!
-            if(mThread != null && mThread.isAlive()) {
-                Log.e(DEBUG_TAG, "isPaused returned true, but the thread is still alive?  What?");
-                // Last ditch effort: Try to interrupt the thread to death.
-                mThread.interrupt();
-            }
-            
-            mIsPaused = false;
-            
             // It's a good command, send it off!
             if(command == COMMAND_RESUME) {
                 // Simply restart the thread.  The queue will start from where
@@ -214,22 +188,10 @@ public abstract class QueueService extends Service {
             Log.d(DEBUG_TAG, "Enqueueing an Intent!");
             addIntentToQueue(intent);
             
-            // Next, if the thread isn't already running (AND we're not paused),
-            // make it run.  If it IS running, we'll just process the next one
-            // in turn.
-            if(isPaused() && resumeOnNewIntent()) {
-                Log.d(DEBUG_TAG, "Queue was paused, resuming it now!");
-                
-                if(mThread != null && mThread.isAlive()) {
-                    Log.e(DEBUG_TAG, "isPaused returned true, but the thread is still alive?  What?");
-                    // Last ditch effort: Try to interrupt the thread to death.
-                    mThread.interrupt();
-                }
-                
-                mIsPaused = false;
-                doNewThread();
-            } else if(!isPaused() && (mThread == null || !mThread.isAlive())) {
-                Log.d(DEBUG_TAG, "Starting the thread fresh...");
+            // Next, if the thread isn't already running, make it run.  If it IS
+            // running, we'll just process the next one in turn normally.
+            if(!isThreadAlive() && resumeOnNewIntent()) {
+                Log.d(DEBUG_TAG, "Thread wasn't active, starting now!");
                 doNewThread();
             }
         }
@@ -239,6 +201,16 @@ public abstract class QueueService extends Service {
         // Only call this if the old thread isn't running.
         mThread = new Thread(new QueueThread(), "QueueService Runner");
         mThread.start();
+    }
+
+    /**
+     * Determines if the thread is alive, part of which also involves
+     * determining if the thread is not null.
+     *
+     * @return true if the thread is alive, false if not
+     */
+    protected boolean isThreadAlive() {
+        return mThread != null && mThread.isAlive();
     }
 
     /* (non-Javadoc)
@@ -253,17 +225,12 @@ public abstract class QueueService extends Service {
 
         @Override
         public void run() {
-            // Now!  Loop through the queue!
-            Intent i;
-            
-            if(getQueueCount() > 0) {
-                // Load 'er up!
-                onQueueLoad();
-                onQueueStart();
-            }
-            
+            // Load 'er up!
+            onQueueLoad();
+            onQueueStart();
+
             while(getQueueCount() > 0) {
-                i = getNextIntentFromQueue();
+                Intent i = peekNextIntentFromQueue();
 
                 Log.d(DEBUG_TAG, "Processing intent...");
                 
@@ -289,9 +256,9 @@ public abstract class QueueService extends Service {
                     // If we were told to pause, well, pause.  We'll be told to
                     // try again later.
                     Log.d(DEBUG_TAG, "Return said to pause.");
-
-                    mIsPaused = true;
                     onQueuePause(i);
+                    onQueueUnload();
+                    stopSelf();
                     return;
                 }
             }
@@ -300,15 +267,6 @@ public abstract class QueueService extends Service {
             onQueueEmpty(true);
             stopSelf();
         }
-    }
-    
-    /**
-     * Returns whether or not the queue is currently paused.
-     * 
-     * @return true if paused, false if not
-     */
-    public boolean isPaused() {
-        return mIsPaused;
     }
 
     /**
@@ -322,7 +280,7 @@ public abstract class QueueService extends Service {
      * Removes the next Intent from the queue.  This is a removal operation, not
      * a peek.
      *
-     * @see #getNextIntentFromQueue()
+     * @see #peekNextIntentFromQueue()
      */
     protected abstract void removeNextIntentFromQueue();
 
@@ -334,7 +292,7 @@ public abstract class QueueService extends Service {
      * @see #removeNextIntentFromQueue()
      */
     @Nullable
-    protected abstract Intent getNextIntentFromQueue();
+    protected abstract Intent peekNextIntentFromQueue();
 
     /**
      * Returns the number of Intents left in the queue.  You may want to
@@ -396,8 +354,8 @@ public abstract class QueueService extends Service {
      * <p>
      * This gets called if the queue needs to be paused for some reason.  The
      * Intent that caused the pause will be included.  The thread will be killed
-     * after this callback returns.  However, {@link #isPaused()} will return
-     * false if called during this callback.  Try not to block it.
+     * after this callback returns.  However, {@link #isThreadAlive()} ()} will
+     * return true if called during this callback.  Try not to block it.
      * </p>
      * 
      * <p>
