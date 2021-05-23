@@ -27,6 +27,7 @@
     <dimen name="wikipost_tiny_fontsize">14sp</dimen>
     <dimen name="wikipost_really_tiny_fontsize">12sp</dimen>
     <dimen name="wikipost_header_fontsize">24sp</dimen>
+    <dimen name="wikipost_message_minheight">120dp</dimen>
 
     <dimen name="version_history_leader_fontsize_version">24sp</dimen>
     <dimen name="version_history_leader_fontsize_date">20sp</dimen>
