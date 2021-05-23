@@ -272,8 +272,8 @@ public class WikiService extends PlainSQLiteQueueService {
                         resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
                 return ReturnCode.PAUSE;
             }
-            // Location becomes null if we're not including it.  Nothing should need
-            // to care.
+            // Location becomes null if we're not including it.  Nothing should
+            // need to care.
             if(!includeLocation) loc = null;
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
@@ -479,6 +479,7 @@ public class WikiService extends PlainSQLiteQueueService {
 
     @Override
     protected String serializeIntent(@NonNull Intent i) {
+        Log.d(DEBUG_TAG, "Now serializing an intent...");
         try {
             // Let's mash this all down into JSON.  It's a reasonably right
             // thing to do, more or less.
@@ -516,13 +517,15 @@ public class WikiService extends PlainSQLiteQueueService {
                         Long.valueOf(info.getDate().getTime()).toString());
 
                 Graticule g = info.getGraticule();
-                JSONObject graticule = new JSONObject();
-                graticule.put("latitude", g.getLatitude());
-                graticule.put("longitude", g.getLongitude());
-                graticule.put("isSouth", g.isSouth());
-                graticule.put("isWest", g.isWest());
+                if(g != null) {
+                    JSONObject graticule = new JSONObject();
+                    graticule.put("latitude", g.getLatitude());
+                    graticule.put("longitude", g.getLongitude());
+                    graticule.put("isSouth", g.isSouth());
+                    graticule.put("isWest", g.isWest());
 
-                infoObj.put("graticule", graticule);
+                    infoObj.put("graticule", graticule);
+                }
 
                 toReturn.put("info", infoObj);
             }
@@ -612,7 +615,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 } catch(NumberFormatException nfe) {
                     Log.w(DEBUG_TAG, "Couldn't parse info date " +
                             infoObj.getString("timestamp") +
-                            " as a long, ignoring...", nfe);
+                            " as a long, giving up and ignoring...", nfe);
                 }
             }
 
@@ -632,7 +635,9 @@ public class WikiService extends PlainSQLiteQueueService {
 
     @Override
     protected boolean resumeOnNewIntent() {
-        return false;
+        // Try to resume the queue on a new intent.  If it fails again, it'll
+        // just pause again.
+        return true;
     }
 
     private void showActiveNotification() {
@@ -819,9 +824,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 // the standard retry, skip, or abort choices.  This works for a
                 // surprising amount of cases, it turns out.  Simplicity wins!
                 toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
-
                 toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
-
                 toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
         }
 
@@ -859,5 +862,11 @@ public class WikiService extends PlainSQLiteQueueService {
             default:
                 return null;
         }
+    }
+
+    @NonNull
+    @Override
+    protected String getQueueName() {
+        return "wikiservice";
     }
 }
