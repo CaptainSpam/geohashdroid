@@ -218,7 +218,8 @@ public abstract class QueueService extends Service {
             
             // Next, if the thread isn't already running, make it run.  If it IS
             // running, we'll just process the next one in turn normally.
-            if(!isThreadAlive() && resumeOnNewIntent()) {
+            if(!isThreadAlive()
+                    && (getQueueCount() <= 0 || resumeOnNewIntent())) {
                 Log.d(DEBUG_TAG, "Thread wasn't active, starting now!");
                 doNewThread();
             }
