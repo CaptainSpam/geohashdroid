@@ -18,14 +18,15 @@
             android:textColor="@color/link_color"/>
 
         <EditText
+            android:id="@+id/wiki_message"
             android:layout_width="fill_parent"
             android:layout_height="0dp"
-            android:inputType="textMultiLine|textCapSentences"
-            android:ems="10"
-            android:id="@+id/wiki_message"
             android:layout_weight="1"
+            android:ems="10"
             android:hint="@string/hint_message"
-            />
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minHeight="@dimen/wikipost_message_minheight" />
 
         <LinearLayout
             android:orientation="vertical"

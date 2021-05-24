@@ -27,9 +27,6 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
-import androidx.annotation.RequiresApi;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -42,19 +39,21 @@ import net.exclaimindustries.geohashdroid.wiki.WikiImageUtils;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.DateTools;
+import net.exclaimindustries.tools.PlainSQLiteQueueService;
 import net.exclaimindustries.tools.QueueService;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
 
@@ -66,7 +65,7 @@ import cz.msebera.android.httpclient.impl.client.HttpClients;
  *
  * @author Nicholas Killewald
  */
-public class WikiService extends QueueService {
+public class WikiService extends PlainSQLiteQueueService {
     /**
      * This is only here because {@link NotificationCompat.Action} doesn't exist
      * in API 16, which is what I'm targeting.  Darn!  It works astonishingly
@@ -254,32 +253,27 @@ public class WikiService extends QueueService {
         }
 
         // Prep an HttpClient for later...
-
-        // To Preferences!
-
-        // If you're missing something vital, bail out.
-
-        // Also, if there's an image specified, make sure there's also a
-        // username.  The wiki does not allow anonymous image uploads.  This
-        // one, unlike the previous one, produces an interruption so the user
-        // can enter in a username and password.
-
-        // Location becomes null if we're not including it.  Nothing should need
-        // to care.
-
         try(CloseableHttpClient client = HttpClients.createDefault()) {
+            // To Preferences!
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
             String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
             if(info == null || message == null || timestamp == null) {
+                // If we're missing something vital, bail out.
                 Log.e(DEBUG_TAG, "Intent was missing some vital data (either Info, message, or timestamp), giving up...");
                 return ReturnCode.CONTINUE;
             }
             if(imageLocation != null && username.isEmpty()) {
+                // Also, if there's an image specified, make sure there's also a
+                // username.  The wiki does not allow anonymous image uploads.
+                // This one, unlike the previous one, produces an interruption
+                // so the user can enter in a username and password.
                 showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
                         resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
                 return ReturnCode.PAUSE;
             }
+            // Location becomes null if we're not including it.  Nothing should
+            // need to care.
             if(!includeLocation) loc = null;
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
@@ -484,153 +478,166 @@ public class WikiService extends QueueService {
     }
 
     @Override
-    protected void serializeToDisk(Intent i, OutputStream os) {
+    protected String serializeIntent(@NonNull Intent i) {
+        Log.d(DEBUG_TAG, "Now serializing an intent...");
         try {
-            // We'll encode one line per object, mashing the message into one
-            // URI-encoded line.
-            OutputStreamWriter osw = new OutputStreamWriter(os);
-            StringBuilder builder = new StringBuilder();
+            // Let's mash this all down into JSON.  It's a reasonably right
+            // thing to do, more or less.
+            JSONObject toReturn = new JSONObject();
 
-            // Always write out the \n, even if it's null.  An empty line will
-            // be deserialized as a null.  Yes, even if that'll cause an error
-            // later.
+            // For the date, just use the timestamp.
+            Calendar cal = (Calendar) i.getSerializableExtra(EXTRA_TIMESTAMP);
+            if(cal != null) {
+                toReturn.put("timestamp",
+                        Long.valueOf(cal.getTimeInMillis()).toString());
+            }
 
-            // The date can come in as a long.
-            Calendar c = (Calendar)i.getSerializableExtra(EXTRA_TIMESTAMP);
-            if(c != null)
-                builder.append(c.getTimeInMillis());
-            builder.append('\n');
-
-            // The location is just two doubles.  Split 'em with a colon.
+            // The location, if known, is two doubles.  Also easy.
             Location loc = i.getParcelableExtra(EXTRA_LOCATION);
-            if(loc != null)
-                builder.append(loc.getLatitude())
-                        .append(':')
-                        .append(loc.getLongitude());
-            builder.append('\n');
+            if(loc != null) {
+                JSONObject location = new JSONObject();
+                location.put("latitude", loc.getLatitude());
+                location.put("longitude", loc.getLongitude());
+                toReturn.put("location", location);
+            }
 
-            // The image is just a URI.  Easy so far.
+            // The image is just a URI.
             Uri uri = i.getParcelableExtra(EXTRA_IMAGE);
-            if(uri != null)
-                builder.append(uri.toString());
-            builder.append('\n');
+            if(uri != null) {
+                toReturn.put("image", uri.toString());
+            }
 
-            // And now comes Info.  It encompasses two doubles (the
-            // destination), a Date (the date of the expedition), and a
-            // Graticule (two ints and two booleans).  The Graticule part can be
-            // null if this is a globalhash.
+            // Info time!
             Info info = i.getParcelableExtra(EXTRA_INFO);
             if(info != null) {
-                builder.append(info.getLatitude())
-                        .append(':')
-                        .append(info.getLongitude())
-                        .append(':')
-                        .append(info.getDate().getTime())
-                        .append(':');
+                JSONObject infoObj = new JSONObject();
+                infoObj.put("latitude", info.getLatitude());
+                infoObj.put("longitude", info.getLongitude());
+                infoObj.put("timestamp",
+                        Long.valueOf(info.getDate().getTime()).toString());
 
                 Graticule g = info.getGraticule();
-
                 if(g != null) {
-                    builder.append(g.getLatitude())
-                            .append(':')
-                            .append(g.isSouth() ? '1' : '0')
-                            .append(':')
-                            .append(g.getLongitude())
-                            .append(':')
-                            .append((g.isWest() ? '1' : '0'));
+                    JSONObject graticule = new JSONObject();
+                    graticule.put("latitude", g.getLatitude());
+                    graticule.put("longitude", g.getLongitude());
+                    graticule.put("isSouth", g.isSouth());
+                    graticule.put("isWest", g.isWest());
+
+                    infoObj.put("graticule", graticule);
                 }
+
+                toReturn.put("info", infoObj);
             }
-            builder.append('\n');
 
-            // The rest of it is the message.  We'll URI-encode it so it comes
-            // out as a single string without line breaks.
+            // Finally, the message.
             String message = i.getStringExtra(EXTRA_MESSAGE);
-            if(message != null)
-                builder.append(Uri.encode(message));
+            if(message != null) {
+                toReturn.put("message", message);
+            }
 
-            // Right... let's write it out.
-            osw.write(builder.toString());
-        } catch (Exception e) {
+            // And out it goes!
+            return toReturn.toString();
+        } catch(Exception e) {
             // If we got an exception, we're in deep trouble.
             Log.e(DEBUG_TAG, "Exception when serializing an Intent!", e);
+            return "{}";
         }
     }
 
     @Override
-    protected Intent deserializeFromDisk(InputStream is) {
+    protected Intent deserializeIntent(@NonNull String input) {
         // Now we go the other way around.
-        InputStreamReader isr = new InputStreamReader(is);
-        BufferedReader br = new BufferedReader(isr);
         Intent toReturn = new Intent();
 
         try {
-            // Date, as a long.
-            String read = br.readLine();
-            if(read != null && !read.isEmpty()) {
-                Calendar cal = Calendar.getInstance();
-                cal.setTimeInMillis(Long.parseLong(read));
-                toReturn.putExtra(EXTRA_TIMESTAMP, cal);
+            // Since this should be all JSON, all the time, this simplifies
+            // quite a bit, it turns out.
+            JSONObject incoming = new JSONObject(input);
+
+            // Date, as a long (as a String).
+            String timestamp = incoming.optString("timestamp");
+            if(!timestamp.isEmpty()) {
+                try {
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTimeInMillis(Long.parseLong(timestamp));
+                    toReturn.putExtra(EXTRA_TIMESTAMP, cal);
+                } catch(NumberFormatException nfe) {
+                    Log.w(DEBUG_TAG, "Couldn't parse post date " +
+                            timestamp + " as a long, ignoring...", nfe);
+                }
             }
 
             // Location, as two doubles.
-            read = br.readLine();
-            if(read != null && !read.isEmpty()) {
-                String[] parts = read.split(":");
-                Location loc = new Location("");
-                loc.setLatitude(Double.parseDouble(parts[0]));
-                loc.setLongitude(Double.parseDouble(parts[1]));
-                toReturn.putExtra(EXTRA_LOCATION, loc);
+            JSONObject location = incoming.optJSONObject("location");
+            if(location != null) {
+                try {
+                    Location loc = new Location("");
+                    loc.setLatitude(location.getDouble("latitude"));
+                    loc.setLongitude(location.getDouble("longitude"));
+                    toReturn.putExtra(EXTRA_LOCATION, loc);
+                } catch(JSONException je) {
+                    Log.w(DEBUG_TAG, "Couldn't parse location from " +
+                            location.toString() + ", ignoring...", je);
+                }
             }
 
             // Image URI, as a string.
-            read = br.readLine();
-            if(read != null && !read.isEmpty()) {
-                Uri file = Uri.parse(read);
-                toReturn.putExtra(EXTRA_IMAGE, file);
+            String image = incoming.optString("image");
+            if(!image.isEmpty()) {
+                toReturn.putExtra(EXTRA_IMAGE, image);
             }
 
             // The Info object, as a mess of things.
-            read = br.readLine();
-            if(read != null && !read.isEmpty()) {
-                String[] parts = read.split(":");
-                double lat = Double.parseDouble(parts[0]);
-                double lon = Double.parseDouble(parts[1]);
-                Calendar cal = Calendar.getInstance();
-                cal.setTimeInMillis(Long.parseLong(parts[2]));
+            JSONObject infoObj = incoming.optJSONObject("info");
+            if(infoObj != null) {
+                try {
+                    double lat = infoObj.getDouble("latitude");
+                    double lon = infoObj.getDouble("longitude");
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTimeInMillis(
+                            Long.parseLong(infoObj.getString("timestamp")));
 
-                Graticule grat = null;
+                    Graticule grat = null;
+                    JSONObject gratObj = infoObj.optJSONObject("graticule");
+                    if(gratObj != null) {
+                        // Notably, this doesn't have to have a graticule.  It
+                        // could be a globalhash.
+                        grat = new Graticule(gratObj.getInt("latitude"),
+                                gratObj.getBoolean("isSouth"),
+                                gratObj.getInt("longitude"),
+                                gratObj.getBoolean("isWest"));
+                    }
 
-                // If there's less than seven elements, this is a null Graticule
-                // and thus a globalhash.  Otherwise...
-                if(parts.length >= 7) {
-                    int glat = Integer.parseInt(parts[3]);
-                    boolean gsouth = parts[4].equals("1");
-                    int glon = Integer.parseInt(parts[5]);
-                    boolean gwest = parts[6].equals("1");
-                    grat = new Graticule(glat, gsouth, glon, gwest);
+                    toReturn.putExtra(EXTRA_INFO, new Info(lat, lon, grat, cal));
+                } catch(JSONException je) {
+                    Log.w(DEBUG_TAG, "Couldn't parse something from the Info object, giving up and ignoring...", je);
+                } catch(NumberFormatException nfe) {
+                    Log.w(DEBUG_TAG, "Couldn't parse info date " +
+                            infoObj.getString("timestamp") +
+                            " as a long, giving up and ignoring...", nfe);
                 }
-
-                // And now we can form an Info.
-                toReturn.putExtra(EXTRA_INFO, new Info(lat, lon, grat, cal));
             }
 
-            // Finally, the message.  This is just one URI-encoded string.
-            read = br.readLine();
-            if(read != null && !read.isEmpty())
-                toReturn.putExtra(EXTRA_MESSAGE, Uri.decode(read));
+            // Finally, the message.
+            String message = incoming.optString("message");
+            if(!message.isEmpty()) {
+                toReturn.putExtra(EXTRA_MESSAGE, message);
+            }
 
             // There!  Rebuilt!
             return toReturn;
-
-        } catch (IOException e) {
-            Log.e(DEBUG_TAG, "Exception when deserializing an Intent!" , e);
+        } catch(JSONException je) {
+            Log.e(DEBUG_TAG, "Something went really wrong deserializing a JSON blob, returning null...", je);
             return null;
         }
     }
 
     @Override
     protected boolean resumeOnNewIntent() {
-        return false;
+        // Try to resume the queue on a new intent.  If it fails again, it'll
+        // just pause again.
+        return true;
     }
 
     private void showActiveNotification() {
@@ -817,9 +824,7 @@ public class WikiService extends QueueService {
                 // the standard retry, skip, or abort choices.  This works for a
                 // surprising amount of cases, it turns out.  Simplicity wins!
                 toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
-
                 toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
-
                 toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
         }
 
@@ -857,5 +862,11 @@ public class WikiService extends QueueService {
             default:
                 return null;
         }
+    }
+
+    @NonNull
+    @Override
+    protected String getQueueName() {
+        return "wikiservice";
     }
 }
