@@ -1,19 +1,11 @@
 /*
  * QueueService.java
- * Copyright (C)2015 Nicholas Killewald
+ * Copyright (C)2018 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
  */
 package net.exclaimindustries.tools;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.app.Service;
 import android.content.Intent;
@@ -22,19 +14,20 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 /**
  * <p>
- * A <code>QueueService</code> is similar in theory to an {@link android.app.IntentService},
- * with the exception that the <code>Intent</code> is stored in a queue and
- * dealt with that way.  This also means the queue can be observed and iterated
- * as need be to, for instance, get a list of currently-waiting things to
- * process.
+ * A <code>QueueService</code> is similar in theory to an
+ * {@link android.app.IntentService}, with the exception that the
+ * <code>Intent</code> is stored in a queue independent of the OS's Intent
+ * delivery mechanism and dealt with that way.
  * </p>
  * 
  * <p>
- * Note that while <code>QueueService</code> has many superficial similarities
+ * Note that while <code>QueueService</code> has some superficial similarities
  * to <code>IntentService</code>, it is NOT a subclass of it.  They just don't
  * work similarly enough under the hood to justify it.
  * </p>
@@ -68,120 +61,48 @@ public abstract class QueueService extends Service {
         CONTINUE,
         /**
          * Queue should pause until resumed later.  Useful for temporary
-         * errors.  The queue will not be emptied, and the Intent which caused
-         * this pause won't be removed (though see {@link #COMMAND_RESUME_SKIP_FIRST}).
+         * errors.  The queue will be written back to long-term storage, the
+         * queue will be stopped, and the Intent which caused this pause won't
+         * be removed (though see {@link #COMMAND_RESUME_SKIP_FIRST}).
          */
         PAUSE,
         /**
-         * Queue should stop entirely and not be resumed.  This implies the
-         * queue will be emptied.
+         * Queue should stop entirely with no plans to resume it later.  The
+         * queue WILL be emptied afterward.
          */
         STOP
     }
-    
-    /**
-     * Internal prefix of serialized intent data.  Don't change this unless you
-     * know you'll be running multiple QueueServices, which is the sole reason
-     * it's not static or final.
-     */
-    protected String mInternalQueueFilePrefix = "Queue";
-    
+
     /**
      * Send an Intent with this extra data in it, set to one of the command
-     * statics, to send a command.
+     * statics, to send a command.  Any Intent with this will NOT be processed
+     * by the queue; don't put actual work data in such an Intent.
      */
     public static final String COMMAND_EXTRA = "net.exclaimindustries.tools.QUEUETHREAD_COMMAND";
     
     /**
-     * Command code sent to ask a paused QueueService to resume processing.
+     * Command code sent to ask an inactive QueueService to resume processing.
      */
     public static final int COMMAND_RESUME = 0;
     /**
-     * Command code sent to ask a paused QueueService to resume processing,
+     * Command code sent to ask an inactive QueueService to resume processing,
      * skipping the first thing in the queue.
      */
     public static final int COMMAND_RESUME_SKIP_FIRST = 1;
     /**
      * Command code sent to ask a paused QueueService to give up entirely and
-     * empty the queue (and by extension stop the service).  Note that this is
-     * NOT guaranteed to stop the queue if it is currently not paused.
+     * empty the queue (and by extension stop the service).  Note that this will
+     * NOT stop the queue if it is currently active.
      */
     public static final int COMMAND_ABORT = 2;
     
-    private Queue<Intent> mQueue;
     private Thread mThread;
-    
-    // Whether or not the queue is currently paused.
-    private volatile boolean mIsPaused;
-    
-    public QueueService() {
-        super();
-        
-        // Give us a queue!
-        mQueue = new ConcurrentLinkedQueue<>();
-        
-        // And we're not paused by default.
-        mIsPaused = false;
-    }
-    
+
     @Override
     public void onCreate() {
         super.onCreate();
-        
-        // To recreate, we want to go through everything we have in storage in
-        // the same order we wrote it out.
-        String files[] = fileList();
-        
-        // But the only files we're interested in are Queue# files.
-        int count = 0;
-        
-        for(String s : files) {
-            if(s.startsWith(mInternalQueueFilePrefix))
-                count++;
-        }
-        
-        if(count >= 1) {
-            // Now, open each one in order and have the deserializer deserialize
-            // them.  And because we're being paranoid today, make sure we
-            // account for gaps in the numbering.
-            int processed = 0;
-            
-            int i = 0;
-            
-            while(processed < count) {
-                try {
-                    // All the queue files are named Queue#.  We know there are
-                    // as many as the count variable.  We don't know if all
-                    // those digits exist, though, so track how many files we
-                    // deserialized and stop when we run out.  I really hope we
-                    // don't wind up in an infinite loop here.
-                    InputStream is = openFileInput(mInternalQueueFilePrefix + i);
-                    
-                    Intent intent = deserializeFromDisk(is);
-                    if(intent != null) mQueue.add(intent);
-                    
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        // Ignore this.
-                    }
-                    
-                    deleteFile(mInternalQueueFilePrefix + i);
-                    processed++;
-                } catch (FileNotFoundException e) {
-                    // If we get here, we're apparently out of order.
-                    Log.w(DEBUG_TAG, "Couldn't find " + mInternalQueueFilePrefix + i + ", apparently we missed a number when writing...");
-                }
-                
-                i++;
-            }
-            
-            // Always assume that a non-empty queue involved a pause somewhere.
-            mIsPaused = true;
-        }
-        
-        // Finally, restart the HandlerThread.  We'll wait for further
-        // instructions.
+
+        // (Re)start the HandlerThread.  We'll wait for further instructions.
         HandlerThread thread = new HandlerThread("QueueService Handler");
         thread.start();
 
@@ -191,44 +112,10 @@ public abstract class QueueService extends Service {
 
     @Override
     public void onDestroy() {
-        // Before destruction, serialize!  Make it snappy!
-        int i = 0;
-        
-        if(mQueue != null) {
-            for(Intent in : mQueue) {
-                try {
-                    serializeToDisk(in, openFileOutput(mInternalQueueFilePrefix + i, MODE_PRIVATE));
-                } catch (FileNotFoundException e) {
-                    // If we get an exception, complain about it and just move
-                    // on.
-                    Log.e(DEBUG_TAG, "Couldn't write queue entry to persistant storage!  Stack trace follows...");
-                    e.printStackTrace();
-                }
-                i++;
-            }
-        }
-        
+        // Shut down the looper.
         mServiceLooper.quit();
         
         super.onDestroy();
-    }
-
-    /**
-     * Gets an iterator to the current queue.
-     * 
-     * @return an iterator to the current queue
-     */
-    public Iterator<Intent> getIterator() {
-        return mQueue.iterator();
-    }
-    
-    /**
-     * Gets how many items are currently in the queue.
-     * 
-     * @return the number of items in the queue
-     */
-    public int getSize() {
-        return mQueue.size();
     }
 
     @Override
@@ -262,14 +149,14 @@ public abstract class QueueService extends Service {
             // If so, take command.  Make sure it's a valid command.
             int command = intent.getIntExtra(COMMAND_EXTRA, -1);
             
-            if(!isPaused()) {
-                Log.w(DEBUG_TAG, "The queue isn't paused, ignoring the command...");
+            if(isThreadAlive()) {
+                Log.w(DEBUG_TAG, "The queue is active, ignoring command...");
                 return;
             }
             
             if(command == -1) {
                 // INVALID!
-                Log.w(DEBUG_TAG, "Command Intent didn't have a valid command in it!");
+                Log.w(DEBUG_TAG, "Command Intent didn't have a command in it, ignoring...");
                 return;
             }
             
@@ -278,16 +165,6 @@ public abstract class QueueService extends Service {
                 return;
             }
 
-            // The thread should NOT be active right now!  If it is, we're in
-            // trouble!
-            if(mThread != null && mThread.isAlive()) {
-                Log.e(DEBUG_TAG, "isPaused returned true, but the thread is still alive?  What?");
-                // Last ditch effort: Try to interrupt the thread to death.
-                mThread.interrupt();
-            }
-            
-            mIsPaused = false;
-            
             // It's a good command, send it off!
             if(command == COMMAND_RESUME) {
                 // Simply restart the thread.  The queue will start from where
@@ -296,41 +173,25 @@ public abstract class QueueService extends Service {
                 doNewThread();
             } else if(command == COMMAND_RESUME_SKIP_FIRST) {
                 Log.d(DEBUG_TAG, "Restarting the thread now, skipping the first Intent...");
-                if(mQueue.isEmpty()) {
-                    Log.w(DEBUG_TAG, "The queue is empty!  There's nothing to skip!");
-                } else {
-                    mQueue.remove();
-                }
+                removeNextIntentFromQueue();
                 doNewThread();
             } else {
                 // This is a COMMAND_ABORT.  Simply empty the queue (but call
                 // the callback first).
-                Log.d(DEBUG_TAG, "Emptying out the queue (removing " + mQueue.size() + " Intents)...");
+                Log.d(DEBUG_TAG, "Emptying out the queue (removing " + getQueueCount() + " Intents)...");
                 onQueueEmpty(false);
-                mQueue.clear();
+                clearQueue();
                 stopSelf();
             }
         } else {
             // If this isn't a control message, add the intent to the queue.
             Log.d(DEBUG_TAG, "Enqueueing an Intent!");
-            mQueue.add(intent);
+            addIntentToQueue(intent);
             
-            // Next, if the thread isn't already running (AND we're not paused),
-            // make it run.  If it IS running, we'll just process the next one
-            // in turn.
-            if(isPaused() && resumeOnNewIntent()) {
-                Log.d(DEBUG_TAG, "Queue was paused, resuming it now!");
-                
-                if(mThread != null && mThread.isAlive()) {
-                    Log.e(DEBUG_TAG, "isPaused returned true, but the thread is still alive?  What?");
-                    // Last ditch effort: Try to interrupt the thread to death.
-                    mThread.interrupt();
-                }
-                
-                mIsPaused = false;
-                doNewThread();
-            } else if(!isPaused() && (mThread == null || !mThread.isAlive())) {
-                Log.d(DEBUG_TAG, "Starting the thread fresh...");
+            // Next, if the thread isn't already running, make it run.  If it IS
+            // running, we'll just process the next one in turn normally.
+            if(!isThreadAlive() && resumeOnNewIntent()) {
+                Log.d(DEBUG_TAG, "Thread wasn't active, starting now!");
                 doNewThread();
             }
         }
@@ -340,6 +201,16 @@ public abstract class QueueService extends Service {
         // Only call this if the old thread isn't running.
         mThread = new Thread(new QueueThread(), "QueueService Runner");
         mThread.start();
+    }
+
+    /**
+     * Determines if the thread is alive, part of which also involves
+     * determining if the thread is not null.
+     *
+     * @return true if the thread is alive, false if not
+     */
+    protected boolean isThreadAlive() {
+        return mThread != null && mThread.isAlive();
     }
 
     /* (non-Javadoc)
@@ -354,14 +225,12 @@ public abstract class QueueService extends Service {
 
         @Override
         public void run() {
-            // Now!  Loop through the queue!
-            Intent i;
-            
-            if(!mQueue.isEmpty())
-                onQueueStart();
-            
-            while(!mQueue.isEmpty()) {
-                i = mQueue.peek();
+            // Load 'er up!
+            onQueueLoad();
+            onQueueStart();
+
+            while(getQueueCount() > 0) {
+                Intent i = peekNextIntentFromQueue();
 
                 Log.d(DEBUG_TAG, "Processing intent...");
                 
@@ -373,23 +242,23 @@ public abstract class QueueService extends Service {
                 if(r == ReturnCode.STOP) {
                     // If the return code we got instructed us to stop entirely,
                     // wipe the queue and bail out.
-                    Log.d(DEBUG_TAG, "Return said to stop, stopping now and abandoning " + mQueue.size() + " Intent(s).");
+                    Log.d(DEBUG_TAG, "Return said to stop, stopping now and abandoning " + getQueueCount() + " Intent(s).");
                     onQueueEmpty(false);
-                    mQueue.clear();
+                    clearQueue();
                     stopSelf();
                     return;
                 } else if(r == ReturnCode.CONTINUE) {
                     // CONTINUE means processing was a success, so we can yoink
                     // the Intent from the front of the queue and scrap it.
                     Log.d(DEBUG_TAG, "Return said to continue.");
-                    mQueue.remove();
+                    removeNextIntentFromQueue();
                 } else if(r == ReturnCode.PAUSE) {
                     // If we were told to pause, well, pause.  We'll be told to
                     // try again later.
                     Log.d(DEBUG_TAG, "Return said to pause.");
-
-                    mIsPaused = true;
                     onQueuePause(i);
+                    onQueueUnload();
+                    stopSelf();
                     return;
                 }
             }
@@ -399,22 +268,52 @@ public abstract class QueueService extends Service {
             stopSelf();
         }
     }
-    
+
     /**
-     * Returns whether or not the queue is currently paused.
-     * 
-     * @return true if paused, false if not
+     * Adds an Intent to whatever queue is in use.
+     *
+     * @param i the Intent to be added
      */
-    public boolean isPaused() {
-        return mIsPaused;
-    }
-    
+    protected abstract void addIntentToQueue(@NonNull Intent i);
+
+    /**
+     * Removes the next Intent from the queue.  This is a removal operation, not
+     * a peek.
+     *
+     * @see #peekNextIntentFromQueue()
+     */
+    protected abstract void removeNextIntentFromQueue();
+
+    /**
+     * Gets the next Intent from the queue.  This is a peek operation, not a
+     * removal.
+     *
+     * @return the next Intent in the queue (may be null)
+     * @see #removeNextIntentFromQueue()
+     */
+    @Nullable
+    protected abstract Intent peekNextIntentFromQueue();
+
+    /**
+     * Returns the number of Intents left in the queue.  You may want to
+     * synchronize this against the instance of the service.
+     *
+     * @return the number of Intents left in the queue
+     */
+    protected abstract int getQueueCount();
+
+    /**
+     * Clears everything out of the queue.  The queue must be empty after this,
+     * and any storage used must be cleared out, too.
+     */
+    protected abstract void clearQueue();
+
     /**
      * Called whenever a new data Intent comes in and the queue is paused to
      * determine if the queue should resume immediately.  If this returns false,
      * the queue will remain paused until an explicit {@link #COMMAND_RESUME}
-     * command Intent is sent.  Note that the queue will always start if the
-     * queue is empty.
+     * command Intent is sent.  Note that the queue will always start if a new
+     * Intent arrives and the queue is empty.
      *
      * @return true to resume on a new Intent, false to remain paused
      */
@@ -431,7 +330,17 @@ public abstract class QueueService extends Service {
      * @return a ReturnCode indicating what the queue should do next
      */
     protected abstract ReturnCode handleIntent(Intent i);
-    
+
+    /**
+     * This gets called immediately before {@link #onQueueStart()}.  Here, you
+     * want to load the queue into memory, if need be.  It's perfectly
+     * acceptable to just make this an empty method if your particular
+     * implementation keeps everything on storage and not in memory.  It's also
+     * perfectly acceptable to make this final, and chances are it will be by
+     * the time an actual concrete implementation comes by.
+     */
+    protected abstract void onQueueLoad();
+
     /**
      * This gets called immediately before the first Intent is processed in a
      * given run of QueueService.  That is to say, after the service is started
@@ -445,8 +354,8 @@ public abstract class QueueService extends Service {
      * <p>
      * This gets called if the queue needs to be paused for some reason.  The
      * Intent that caused the pause will be included.  The thread will be killed
-     * after this callback returns.  However, {@link #isPaused()} will return
-     * false if called during this callback.  Try not to block it.
+     * after this callback returns.  However, {@link #isThreadAlive()} ()} will
+     * return true if called during this callback.  Try not to block it.
      * </p>
      * 
      * <p>
@@ -483,38 +392,75 @@ public abstract class QueueService extends Service {
      *                     aborted before all Intents were processed
      */
     protected abstract void onQueueEmpty(boolean allProcessed);
-    
+
+    /**
+     * This is called at the end of processing, whether it be via pausing or
+     * stopping.  You would want to unload the queue back to storage at this
+     * point, if applicable.  That is, this should be the opposite of
+     * {@link #onQueueLoad()}.
+     */
+    protected abstract void onQueueUnload();
+
+    /**
+     * Returns a name to be used by whatever this queue is using for storage.
+     * This could wind up being a filename prefix, an SQLite database name, etc.
+     * Make sure it's unique within your package's context.  By default, it will
+     * just return the class's canonical name (or its normal name, if
+     * getCanonicalName() returns null for some reason).
+     *
+     * @return a database name
+     */
+    @NonNull
+    protected String getQueueName() {
+        String name = getClass().getCanonicalName();
+        if(name == null) {
+           name = getClass().getName();
+        }
+
+        return name;
+    }
+
     /**
      * <p>
-     * Serializes the given Intent to disk for later re-reading.  Note that at
-     * this point, an Intent is solely used as a means of storing data.  Which,
-     * really, it can be, though I doubt that's why it was made.  This gets
-     * called at onDestroy time for each Intent left in the queue (if any are
-     * left at all) so that they can be recreated at onCreate time to persist
-     * the Service's state (there doesn't appear to be an onSaveInstanceState
-     * like you'd get with Activities).
+     * Serializes the given Intent to a String.  Note that at this point, an
+     * Intent is solely used as a means of storing data.  This can be called at
+     * any time; maybe it's writing into storage when the Intent comes in, maybe
+     * it's only when writing it back to storage in the event of a pause.  You
+     * can return whatever String you want here in any format you want, but
+     * whatever you return, it'll be your responsibility to deserialize it later
+     * in {@link #deserializeIntent(String)}.
      * </p>
-     * 
+     *
      * <p>
-     * Note that no checking is done to ensure you actually wrote anything to
-     * the stream.  If the result is a zero-byte file, that's your
-     * responsibility to handle it at deserialize time.
+     * If this returns null, it will be treated as an empty string.  If you
+     * choose not to do anything with it, you may return null from
+     * {@link #deserializeIntent(String)} later.
      * </p>
-     * 
-     * @param i the Intent to serialize
-     * @param os what you'll be writing to
+     *
+     * @param i Intent to serialize
+     * @return a String representation of the vital info in the Intent
+     * @see #deserializeIntent(String)
      */
-    protected abstract void serializeToDisk(Intent i, OutputStream os);
-    
+    @Nullable
+    protected abstract String serializeIntent(@NonNull Intent i);
+
     /**
-     * Deserializes an Intent previously written to disk by serializeToDisk.
-     * This will be called once for each Intent found on disk, and will be
-     * called in the order of the queue.  All you have to do is pull back
-     * whatever you wrote in serializeToDisk and get an Intent out of it.
-     * 
-     * @param is what you'll be reading from
-     * @return a new Intent to be processed at the right time (if null is
-     *         returned, it will be ignored)
+     * <p>
+     * Deserializes the given String back into an Intent.  Your responsibility
+     * is to pull back whatever you wrote in {@link #serializeIntent(Intent)}
+     * and get an Intent out of it that {@link #handleIntent(Intent)} will deal
+     * with.
+     * </p>
+     *
+     * <p>
+     * If this returns null, this entry in the queue will be ignored and
+     * removed.  {@link #handleIntent(Intent)} will NOT be called on it.
+     * </p>
+     *
+     * @param s a String to deserialize
+     * @return an Intent formed by deserializing the input String
+     * @see #serializeIntent(Intent)
      */
-    protected abstract Intent deserializeFromDisk(InputStream is);
+    @Nullable
+    protected abstract Intent deserializeIntent(@NonNull String s);
 }

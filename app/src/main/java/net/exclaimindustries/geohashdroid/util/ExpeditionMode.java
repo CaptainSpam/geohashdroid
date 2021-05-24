@@ -472,7 +472,7 @@ public class ExpeditionMode
             // the graticule's location.  We DO know that this isn't a
             // Globalhash, though.
             String title;
-            String gratString = g.getLatitudeString(false) + " " + g.getLongitudeString(false);
+            String gratString = g.getTitleString(false);
 
             // We have strings for today, tomorrow, and the day after tomorrow.
             // If it's none of those (i.e. either a retro hash or we have stock
@@ -645,7 +645,7 @@ public class ExpeditionMode
                 if(g == null)
                     newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
                 else {
-                    newTitle.append(g.getLatitudeString(false)).append(' ').append(g.getLongitudeString(false));
+                    newTitle.append(g.getTitleString(false));
                 }
                 newTitle.append(", ");
                 newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));

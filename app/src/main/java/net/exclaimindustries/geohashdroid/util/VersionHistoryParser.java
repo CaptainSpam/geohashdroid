@@ -119,6 +119,7 @@ public class VersionHistoryParser {
         @NonNull public ArrayList<String> bullets = new ArrayList<>();
 
         @Override
+        @NonNull
         public String toString() {
             return "Version history entry, version " + versionName + " (" + versionCode + "), contains " + bullets.size() + " bullet(s)";
         }

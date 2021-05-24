@@ -8,10 +8,14 @@
         android:singleLine="true"/>
     <EditTextPreference
         android:dialogTitle="@string/pref_wikipassword_dialogtitle"
+        android:inputType="textPassword"
         android:key="WikiPassword"
         android:persistent="true"
-        android:summary="@string/pref_wikipassword_summary"
-        android:title="@string/pref_wikipassword_title"
         android:singleLine="true"
-        android:password="true" />
+        android:summary="@string/pref_wikipassword_summary"
+        android:title="@string/pref_wikipassword_title" />
+    <Preference
+        android:key="_releaseWikiQueue"
+        android:title="@string/pref_wikireleasequeue_title"
+        android:summary="@string/pref_wikireleasequeue_summary"/>
 </PreferenceScreen>

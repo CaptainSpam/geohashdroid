@@ -285,6 +285,16 @@ public class PreferencesScreen extends PreferenceActivity {
                 mHasChanged = true;
                 return true;
             });
+
+            // Releasing wiki posts doesn't need a reminder.
+            findPreference("_releaseWikiQueue").setOnPreferenceClickListener(preference -> {
+                resumeWikiQueue();
+                Toast.makeText(
+                        getActivity(),
+                        R.string.toast_releasing_wiki_queue,
+                        Toast.LENGTH_SHORT).show();
+                return true;
+            });
         }
 
         @Override
@@ -295,15 +305,19 @@ public class PreferencesScreen extends PreferenceActivity {
             // comes in.
             if(mHasChanged) {
                 mHasChanged = false;
-                Intent i = new Intent(getActivity(), WikiService.class);
-                i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
-                getActivity().startService(i);
+                resumeWikiQueue();
             }
 
             BackupManager bm = new BackupManager(getActivity());
             bm.dataChanged();
 
             super.onStop();
+        }
+
+        private void resumeWikiQueue() {
+            Intent i = new Intent(getActivity(), WikiService.class);
+            i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
+            getActivity().startService(i);
         }
     }
 
