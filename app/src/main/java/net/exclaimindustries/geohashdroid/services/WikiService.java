@@ -207,12 +207,16 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static final String EXTRA_INCLUDE_LOCATION = "net.exclaimindustries.geohashdroid.EXTRA_INCLUDE_LOCATION";
 
+    /** The name of the queue. */
+    public static final String QUEUE_NAME = "wikiservice";
+
     @Override
     public void onCreate() {
         super.onCreate();
         
         // WakeLock awaaaaaay!
         PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
+        assert pm != null;
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "geohashdroid:WikiService");
         
         // Also, get the NotificationManager on standby.
@@ -690,6 +694,7 @@ public class WikiService extends PlainSQLiteQueueService {
                     new ComponentName(this, WikiServiceJobService.class))
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                     .build();
+            assert js != null;
             js.schedule(job);
         } else {
             // Make sure the connectivity listener's waiting for a connection.
@@ -703,6 +708,7 @@ public class WikiService extends PlainSQLiteQueueService {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // Cancel the job, if need be.
             JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            assert js != null;
             js.cancel(WIKI_CONNECTIVITY_JOB);
         } else {
             // Shut off the listener, if need be.
@@ -867,6 +873,6 @@ public class WikiService extends PlainSQLiteQueueService {
     @NonNull
     @Override
     protected String getQueueName() {
-        return "wikiservice";
+        return QUEUE_NAME;
     }
 }
