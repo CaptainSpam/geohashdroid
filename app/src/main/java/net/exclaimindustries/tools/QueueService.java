@@ -161,7 +161,8 @@ public abstract class QueueService extends Service {
      * command or shoves the Intent into the queue to be processed, starting the
      * queue-working thread if need be.  This gets called on a separate thread
      * from the rest of the GUI (AND a separate thread from the queue worker).
-     * The actual application-specific work happens in {@link #handleIntent(Intent)}.
+     * The actual application-specific work happens in
+     * {@link #handleIntent(Intent)}.
      * </p>
      * 
      * @param intent the incoming Intent
@@ -387,7 +388,8 @@ public abstract class QueueService extends Service {
      * to be processed.  This will not be called on the main thread.  There will
      * be no callback on successful processing of an individual Intent, but
      * {@link #onQueuePause(Intent)} will be called if the queue is paused, and
-     * {@link #onQueueEmpty(boolean)} will be called at the end of all processing.
+     * {@link #onQueueEmpty(boolean)} will be called at the end of all
+     * processing.
      * 
      * @param i Intent to be processed
      * @return a ReturnCode indicating what the queue should do next
