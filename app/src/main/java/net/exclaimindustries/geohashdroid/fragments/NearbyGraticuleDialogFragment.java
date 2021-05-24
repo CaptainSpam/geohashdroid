@@ -103,7 +103,7 @@ public class NearbyGraticuleDialogFragment extends DialogFragment {
 
         return new AlertDialog.Builder(getActivity())
                 .setMessage(message)
-                .setTitle(g.getLatitudeString(false) + " " + g.getLongitudeString(false))
+                .setTitle(g.getTitleString(false))
                 .setPositiveButton(getString(R.string.dialog_switch_graticule_okay), (dialog, which) -> {
                     // Well, you heard the orders!
                     dismiss();

@@ -392,6 +392,20 @@ public class Graticule implements Parcelable {
     }
 
     /**
+     * Returns the "title" of this Graticule.  In general, this will be in the
+     * form of "LAT LON".
+     *
+     * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
+     * @return a title string for this Graticule
+     */
+    @NonNull
+    public String getTitleString(boolean useNegativeValues) {
+        return getLatitudeString(useNegativeValues)
+                + ' '
+                + getLongitudeString(useNegativeValues);
+    }
+
+    /**
      * Returns whether or not this is a southern latitude (negative).
      * 
      * @return true if south, false if north
@@ -543,6 +557,6 @@ public class Graticule implements Parcelable {
     @Override
     @NonNull
     public String toString() {
-        return "Graticule for " + getLatitudeString(false) + " " + getLongitudeString(false);
+        return "Graticule for " + getTitleString(false);
     }
 }
