@@ -9,7 +9,7 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
-import android.app.FragmentManager;
+import androidx.fragment.app.FragmentManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -52,7 +52,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
 
     protected Info mInfo;
 
-    private LocationCallback mLocationCallback = new LocationCallback() {
+    private final LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             // When we get a location, let the fragment know.  We're sort of
@@ -69,7 +69,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
 
         // Grab the fragment.  We know it's there, it's right there in the
         // layout.
-        FragmentManager manager = getFragmentManager();
+        FragmentManager manager = getSupportFragmentManager();
         mFrag = (CentralMapExtraFragment) manager.findFragmentById(getFragmentResource());
 
         // We'd BETTER have an Intent.

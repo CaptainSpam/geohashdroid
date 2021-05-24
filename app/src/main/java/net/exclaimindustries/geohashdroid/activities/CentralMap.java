@@ -825,6 +825,8 @@ public class CentralMap
 
     @Override
     protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
         // An Intent just came in!  That's telling us to go off to a new
         // Graticule.  Since onNewIntent is only called if the Activity's
         // already going, it just means we need to tell ExpeditionMode that it
@@ -902,21 +904,21 @@ public class CentralMap
                 // The map type can be changed at any time, so it has to be
                 // common.  To the alert dialog!
                 MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
-                frag.show(getFragmentManager(), MAP_TYPE_DIALOG);
+                frag.show(getSupportFragmentManager(), MAP_TYPE_DIALOG);
 
                 return true;
             }
             case R.id.action_versionhistory: {
                 // The version history has no real actions at all.
                 VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
-                frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+                frag.show(getSupportFragmentManager(), VERSION_HISTORY_DIALOG);
 
                 return true;
             }
             case R.id.action_about: {
                 // About is just a dialog with a view.
                 AboutDialogFragment frag = AboutDialogFragment.newInstance();
-                frag.show(getFragmentManager(), ABOUT_DIALOG);
+                frag.show(getSupportFragmentManager(), ABOUT_DIALOG);
 
                 return true;
             }
@@ -930,7 +932,7 @@ public class CentralMap
 
                 GHDDatePickerDialogFragment frag = GHDDatePickerDialogFragment.newInstance(mLastCalendar);
                 frag.setCallback(this);
-                frag.show(getFragmentManager(), DATE_PICKER_DIALOG);
+                frag.show(getSupportFragmentManager(), DATE_PICKER_DIALOG);
 
                 return true;
             }
@@ -1041,7 +1043,7 @@ public class CentralMap
                 Log.d(DEBUG_TAG, "Newest version with an entry is " + entries.get(0).versionCode);
                 if(entries.get(0).versionCode > lastVersion) {
                     VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(entries);
-                    frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+                    frag.show(getSupportFragmentManager(), VERSION_HISTORY_DIALOG);
                 }
             }
         }
@@ -1283,6 +1285,7 @@ public class CentralMap
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
 
@@ -1295,7 +1298,7 @@ public class CentralMap
 
             PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
             frag.setArguments(args);
-            frag.show(getFragmentManager(), "PermissionDeniedDialog");
+            frag.show(getSupportFragmentManager(), "PermissionDeniedDialog");
 
             mPermissionsDenied = true;
         } else {
@@ -1306,7 +1309,8 @@ public class CentralMap
             mPermissionsDenied = false;
         }
 
-        if(mCurrentMode != null) mCurrentMode.permissionsDenied(mPermissionsDenied);
+        if(mCurrentMode != null)
+            mCurrentMode.permissionsDenied(mPermissionsDenied);
     }
 
     private void updateLastGraticule(@NonNull Info info) {

@@ -8,8 +8,8 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -117,13 +117,13 @@ public class ExpeditionMode
     // Then there's this one empty start boolean.
     private boolean mWaitingOnEmptyStartInfo = false;
 
-    private Rect mMarkerDimens = new Rect();
-    private Rect mInfoBoxDimens = new Rect();
+    private final Rect mMarkerDimens = new Rect();
+    private final Rect mInfoBoxDimens = new Rect();
 
     private int mMarkerWidth = -1;
     private int mMarkerHeight = -1;
 
-    private View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
+    private final View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
 
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
@@ -204,7 +204,7 @@ public class ExpeditionMode
         if(fragmentContainer != null) {
             // Plus, if the detailed info fragment's already there, make its
             // container go visible, too.
-            FragmentManager manager = mCentralMap.getFragmentManager();
+            FragmentManager manager = mCentralMap.getSupportFragmentManager();
             mExtraFragment = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
             if(mExtraFragment != null) {
                 fragmentContainer.setVisibility(View.VISIBLE);
@@ -292,11 +292,7 @@ public class ExpeditionMode
         if(mWaitingOnEmptyStart)
             doEmptyStart();
 
-        if(showInfoBox()) {
-            mInfoBox.animateInfoBoxVisible(true);
-        } else {
-            mInfoBox.animateInfoBoxVisible(false);
-        }
+        mInfoBox.animateInfoBoxVisible(showInfoBox());
 
         // Re-check the nearby points pref.  If that changed, we need to either
         // remove or add the points.  Actually, to keep it simple, just wipe
@@ -612,11 +608,7 @@ public class ExpeditionMode
         mCentralMap.invalidateOptionsMenu();
 
         // Set the infobox in motion as well.
-        if(showInfoBox()) {
-            mInfoBox.animateInfoBoxVisible(true);
-        } else {
-            mInfoBox.animateInfoBoxVisible(false);
-        }
+        mInfoBox.animateInfoBoxVisible(showInfoBox());
 
         if(!mInitComplete) return;
 
@@ -815,7 +807,7 @@ public class ExpeditionMode
             // of work for us.
             NearbyGraticuleDialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, getLastKnownLocation());
             frag.setCallback(this);
-            frag.show(mCentralMap.getFragmentManager(), NEARBY_DIALOG);
+            frag.show(mCentralMap.getSupportFragmentManager(), NEARBY_DIALOG);
         }
     }
 
@@ -907,7 +899,7 @@ public class ExpeditionMode
             mCentralMap.startActivity(i);
         } else {
             // Check to see if the fragment's already there.
-            FragmentManager manager = mCentralMap.getFragmentManager();
+            FragmentManager manager = mCentralMap.getSupportFragmentManager();
             CentralMapExtraFragment f;
             try {
                 f = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
@@ -962,7 +954,7 @@ public class ExpeditionMode
 
     private void clearExtraFragment() {
         // This simply clears out the extra fragment.
-        FragmentManager manager = mCentralMap.getFragmentManager();
+        FragmentManager manager = mCentralMap.getSupportFragmentManager();
         try {
             manager.popBackStack(EXTRA_FRAGMENT_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         } catch(IllegalStateException ise) {

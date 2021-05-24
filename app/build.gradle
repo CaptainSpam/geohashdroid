@@ -27,7 +27,8 @@ dependencies {
     implementation 'com.google.guava:guava:24.1-jre'
     implementation 'cz.msebera.android:httpclient:4.4.1.1'
     implementation 'org.opensextant:geodesy:2.0.1'
-    implementation 'androidx.core:core:1.2.0'
+    implementation 'androidx.core:core:1.5.0'
+    implementation 'androidx.appcompat:appcompat:1.3.0'
 
     // Required for local unit tests (JUnit 4 framework)
     testImplementation 'junit:junit:4.12'
