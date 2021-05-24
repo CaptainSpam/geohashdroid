@@ -54,6 +54,9 @@
     <string name="pref_wikiphonetime_on">Use the time on the phone instead of the wiki\'s time for wiki posts</string>
     <string name="pref_wikiphonetime_off">Use the standard wiki time signature for wiki posts</string>
 
+    <string name="pref_wikireleasequeue_title">Release pending wiki posts</string>
+    <string name="pref_wikireleasequeue_summary">If any wiki posts didn\'t get sent, try to send them</string>
+
     <string name="pref_usestockservice_title">Prefetch stocks</string>
     <string name="pref_usestockservice_on">Try to prefetch each day\'s stock value</string>
     <string name="pref_usestockservice_off">Only fetch stock values on-demand</string>
@@ -72,6 +75,7 @@
     <string name="dialog_reset_bugging_me_yes">Yes, start reminding me</string>
     <string name="dialog_reset_bugging_me_no">No, keep not reminding me</string>
     <string name="toast_reset_bugging_me_success">You will be reminded.</string>
+    <string name="toast_releasing_wiki_queue">Attempting to send pending wiki posts…</string>
 
     <string name="pref_startup_title">Startup behavior</string>
     <string name="pref_startup_dialogtitle">On startup, it should…</string>
