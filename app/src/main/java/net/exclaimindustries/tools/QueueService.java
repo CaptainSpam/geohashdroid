@@ -14,9 +14,10 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.util.Log;
 
 /**
  * <p>
@@ -281,8 +282,8 @@ public abstract class QueueService extends Service {
                     // CONTINUE means processing was a success, so we can yoink
                     // the Intent from the front of the queue and scrap it.
                     Log.d(DEBUG_TAG, "Return said to continue.");
-                    onQueueItemProcessed();
                     removeNextIntentFromQueue();
+                    onQueueItemProcessed();
                 } else if(r == ReturnCode.PAUSE) {
                     // If we were told to pause, well, pause.  We'll be told to
                     // try again later.
