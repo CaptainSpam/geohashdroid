@@ -11,8 +11,6 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -42,6 +40,8 @@ import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
@@ -231,10 +231,6 @@ public class WikiUtils {
         int errorTextId;
     }
 
-    // The most recent request issued by WikiUtils.  This allows the abort()
-    // method to work.
-    private static HttpUriRequest mLastRequest;
-
     /**
      * This format is used for all latitude/longitude texts in the wiki.
      */
@@ -246,16 +242,6 @@ public class WikiUtils {
      * decimal points.
      */
     private static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
-
-    /**
-     * Aborts the current wiki request.  Well, technically, it's the most recent
-     * wiki request.  If it's already done, nothing happens.  This will, of
-     * course, cause exceptions in whatever's servicing the request.
-     */
-    public static void abort() {
-        if(mLastRequest != null)
-            mLastRequest.abort();
-    }
 
     /**
      * Returns the wiki view URL.  Attach a wiki page name to this to send it to
@@ -270,17 +256,6 @@ public class WikiUtils {
     }
 
     /**
-     * Returns the URL for the MediaWiki API.  This is where any queries should
-     * go, in standard HTTP query form.
-     *
-     * @return the MediaWiki API URL
-     */
-    @NonNull
-    public static String getWikiApiUrl() {
-        return WIKI_API_URL;
-    }
-
-    /**
      * Returns the content of a http request as an XML Document.  This is to be
      * used only when we know the response to a request will be XML.  Otherwise,
      * this will probably throw an exception.
@@ -291,9 +266,6 @@ public class WikiUtils {
      */
     private static Document getHttpDocument(@NonNull CloseableHttpClient httpclient,
                                             @NonNull HttpUriRequest httpreq) throws Exception {
-        // Remember the last request. We might want to abort it later.
-        mLastRequest = httpreq;
-
         HttpResponse response = httpclient.execute(httpreq);
 
         HttpEntity entity = response.getEntity();
@@ -369,7 +341,6 @@ public class WikiUtils {
      * @throws Exception     anything else happened, use getMessage
      */
     @NonNull
-    @SuppressWarnings("unused")
     public static WikiVersionData getWikiVersion(@NonNull CloseableHttpClient httpclient) throws Exception {
         // SiteInfo call!
         HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=siteinfo&siprop=general");
