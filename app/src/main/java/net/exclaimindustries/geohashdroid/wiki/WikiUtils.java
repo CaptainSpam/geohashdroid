@@ -36,6 +36,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,7 +86,7 @@ public class WikiUtils {
      */
     @SuppressWarnings("unused")
     public static class WikiVersionData {
-        private String mRawResult;
+        private final String mRawResult;
         private String mGeneratorName = "";
         private String mRawVersion = "";
         private int mMajor;
@@ -113,9 +114,9 @@ public class WikiUtils {
             mRawVersion = match.group(2);
 
             try {
-                mMajor = Integer.parseInt(match.group(3));
-                mMinor = Integer.parseInt(match.group(4));
-                mRevision = Integer.parseInt(match.group(5));
+                mMajor = Integer.parseInt(Objects.requireNonNull(match.group(3)));
+                mMinor = Integer.parseInt(Objects.requireNonNull(match.group(4)));
+                mRevision = Integer.parseInt(Objects.requireNonNull(match.group(5)));
             } catch (NumberFormatException nfe) {
                 // Those BETTER be ints.
                 mValid = false;
