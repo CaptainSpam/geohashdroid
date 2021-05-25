@@ -14,9 +14,10 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.util.Log;
 
 /**
  * <p>
@@ -95,7 +96,30 @@ public abstract class QueueService extends Service {
      * NOT stop the queue if it is currently active.
      */
     public static final int COMMAND_ABORT = 2;
-    
+    /**
+     * Command code sent to ask for the queue count to be sent out as a
+     * BroadcastIntent.  Under normal circumstances, this status will be sent
+     * after every item is processed.  This may be ignored (and status Intents
+     * NOT sent) if the implementation returns false for
+     * {@link #queueCountBroadcastsAllowed()}.
+     */
+    public static final int COMMAND_QUEUE_COUNT = 10;
+
+    /**
+     * Intent action broadcast by QueueService whenever the queue count changes
+     * or a queue count request is made (though see
+     * {@link #queueCountBroadcastsAllowed()}.
+     */
+    public static final String ACTION_QUEUE_COUNT = "net.exclaimindustries.tools.ACTION_QUEUETHREAD_COUNT";
+    /** Intent extra containing the queue count.  Will be an int. */
+    public static final String EXTRA_QUEUE_COUNT = "net.exclaimindustries.tools.EXTRA_QUEUETHREAD_COUNT";
+    /**
+     * Intent extra containing the name of the queue.  Is sent with any
+     * broadcasts to differentiate between potential multiple queues.  Will be a
+     * String, and will be whatever {@link #getQueueName()} returns.
+     */
+    public static final String EXTRA_QUEUE_NAME = "net.exclaimindustries.tools.EXTRA_QUEUETHREAD_NAME";
+
     private Thread mThread;
 
     @Override
@@ -138,7 +162,8 @@ public abstract class QueueService extends Service {
      * command or shoves the Intent into the queue to be processed, starting the
      * queue-working thread if need be.  This gets called on a separate thread
      * from the rest of the GUI (AND a separate thread from the queue worker).
-     * The actual application-specific work happens in {@link #handleIntent(Intent)}.
+     * The actual application-specific work happens in
+     * {@link #handleIntent(Intent)}.
      * </p>
      * 
      * @param intent the incoming Intent
@@ -159,29 +184,34 @@ public abstract class QueueService extends Service {
                 Log.w(DEBUG_TAG, "Command Intent didn't have a command in it, ignoring...");
                 return;
             }
-            
-            if(command != COMMAND_RESUME && command != COMMAND_ABORT && command != COMMAND_RESUME_SKIP_FIRST) {
-                Log.w(DEBUG_TAG, "I don't know what sort of command " + command + " is supposed to be, ignoring...");
-                return;
-            }
 
             // It's a good command, send it off!
-            if(command == COMMAND_RESUME) {
-                // Simply restart the thread.  The queue will start from where
-                // it left off.
-                Log.d(DEBUG_TAG, "Restarting the thread now...");
-                doNewThread();
-            } else if(command == COMMAND_RESUME_SKIP_FIRST) {
-                Log.d(DEBUG_TAG, "Restarting the thread now, skipping the first Intent...");
-                removeNextIntentFromQueue();
-                doNewThread();
-            } else {
-                // This is a COMMAND_ABORT.  Simply empty the queue (but call
-                // the callback first).
-                Log.d(DEBUG_TAG, "Emptying out the queue (removing " + getQueueCount() + " Intents)...");
-                onQueueEmpty(false);
-                clearQueue();
-                stopSelf();
+            switch(command) {
+                case COMMAND_QUEUE_COUNT:
+                    // Send out the queue count (if permitted).  That's all.
+                    dispatchQueueCountIntent();
+                    break;
+                case COMMAND_RESUME:
+                    // Simply restart the thread.  The queue will start from
+                    // where it left off.
+                    Log.d(DEBUG_TAG, "Restarting the thread now...");
+                    doNewThread();
+                    break;
+                case COMMAND_RESUME_SKIP_FIRST:
+                    Log.d(DEBUG_TAG, "Restarting the thread now, skipping the first Intent...");
+                    removeNextIntentFromQueue();
+                    doNewThread();
+                    break;
+                case COMMAND_ABORT:
+                    // Empty the queue (but call the callback first).
+                    Log.d(DEBUG_TAG, "Emptying out the queue (removing " + getQueueCount() + " Intents)...");
+                    onQueueEmpty(false);
+                    clearQueue();
+                    stopSelf();
+                    break;
+                default:
+                    // This shouldn't happen at all.
+                    Log.w(DEBUG_TAG, "I don't know what sort of command " + command + " is supposed to be, ignoring...");
             }
         } else {
             // If this isn't a control message, add the intent to the queue.
@@ -190,7 +220,8 @@ public abstract class QueueService extends Service {
             
             // Next, if the thread isn't already running, make it run.  If it IS
             // running, we'll just process the next one in turn normally.
-            if(!isThreadAlive() && resumeOnNewIntent()) {
+            if(!isThreadAlive()
+                    && (getQueueCount() <= 0 || resumeOnNewIntent())) {
                 Log.d(DEBUG_TAG, "Thread wasn't active, starting now!");
                 doNewThread();
             }
@@ -252,6 +283,7 @@ public abstract class QueueService extends Service {
                     // the Intent from the front of the queue and scrap it.
                     Log.d(DEBUG_TAG, "Return said to continue.");
                     removeNextIntentFromQueue();
+                    onQueueItemProcessed();
                 } else if(r == ReturnCode.PAUSE) {
                     // If we were told to pause, well, pause.  We'll be told to
                     // try again later.
@@ -266,6 +298,18 @@ public abstract class QueueService extends Service {
             Log.d(DEBUG_TAG, "Processing complete.");
             onQueueEmpty(true);
             stopSelf();
+        }
+    }
+
+    private void dispatchQueueCountIntent() {
+        if(queueCountBroadcastsAllowed()) {
+            Intent broadcast = new Intent(ACTION_QUEUE_COUNT);
+            broadcast.putExtra(EXTRA_QUEUE_COUNT, getQueueCount());
+            broadcast.putExtra(EXTRA_QUEUE_NAME, getQueueName());
+            Log.d(DEBUG_TAG, "Dispatching queue count...");
+            sendBroadcast(broadcast);
+        } else {
+            Log.d(DEBUG_TAG, "NOT dispatching queue count (queueCountRequestsAllowed() returned false)...");
         }
     }
 
@@ -296,7 +340,9 @@ public abstract class QueueService extends Service {
 
     /**
      * Returns the number of Intents left in the queue.  You may want to
-     * synchronize this against the instance of the service.
+     * synchronize this against the instance of the service.  Try not to make
+     * this too expensive of an operation; it will get called as part of a while
+     * loop as the queue is processed.
      *
      * @return the number of Intents left in the queue
      */
@@ -320,11 +366,31 @@ public abstract class QueueService extends Service {
     protected abstract boolean resumeOnNewIntent();
 
     /**
+     * <p>
+     * Whether or not to allow broadcasts for queue counts.  Overriding this to
+     * return false will cause any {@link #COMMAND_QUEUE_COUNT} requests to
+     * silently fail and stop broadcasts from being sent by default in
+     * {@link #onQueueItemProcessed()}.
+     * </p>
+     *
+     * <p>
+     * Note that {@link #getQueueCount()} will still be called after each item
+     * is processed as a matter of processing everything.
+     * </p>
+     *
+     * @return true to allow queue counts via command Intents, false to not
+     */
+    protected boolean queueCountBroadcastsAllowed() {
+        return true;
+    }
+
+    /**
      * Subclasses get this called every time something from the queue comes in
      * to be processed.  This will not be called on the main thread.  There will
      * be no callback on successful processing of an individual Intent, but
      * {@link #onQueuePause(Intent)} will be called if the queue is paused, and
-     * {@link #onQueueEmpty(boolean)} will be called at the end of all processing.
+     * {@link #onQueueEmpty(boolean)} will be called at the end of all
+     * processing.
      * 
      * @param i Intent to be processed
      * @return a ReturnCode indicating what the queue should do next
@@ -373,7 +439,16 @@ public abstract class QueueService extends Service {
      * @param i Intent that caused the pause
      */
     protected abstract void onQueuePause(Intent i);
-    
+
+    /**
+     * Called after each item is successfully processed.  The default
+     * implementation broadcasts the current queue count (if
+     * {@link #queueCountBroadcastsAllowed()} returns true).
+     */
+    protected void onQueueItemProcessed() {
+        dispatchQueueCountIntent();
+    }
+
     /**
      * <p>
      * This is called right after the queue is done processing and right before

@@ -57,6 +57,11 @@
     <string name="pref_wikireleasequeue_title">Release pending wiki posts</string>
     <string name="pref_wikireleasequeue_summary">If any wiki posts didn\'t get sent, try to send them</string>
 
+    <plurals name="pref_wikireleasequeue_count">
+        <item quantity="one">%1$d post is queued up</item>
+        <item quantity="other">%1$d posts are queued up</item>
+    </plurals>
+
     <string name="pref_usestockservice_title">Prefetch stocks</string>
     <string name="pref_usestockservice_on">Try to prefetch each day\'s stock value</string>
     <string name="pref_usestockservice_off">Only fetch stock values on-demand</string>

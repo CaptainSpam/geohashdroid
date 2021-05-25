@@ -12,7 +12,10 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.backup.BackupManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -262,6 +265,29 @@ public class PreferencesScreen extends PreferenceActivity {
          */
         private boolean mHasChanged = false;
 
+        private Preference mReleaseWikiQueue = null;
+
+        private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int queueCount = intent.getIntExtra(WikiService.EXTRA_QUEUE_COUNT, 0);
+                if(mReleaseWikiQueue != null) {
+                    // Disable the button if it's zero and reset its summary to
+                    // the default.
+                    if(queueCount == 0) {
+                        mReleaseWikiQueue.setEnabled(false);
+                        mReleaseWikiQueue.setSummary(R.string.pref_wikireleasequeue_summary);
+                    } else {
+                        mReleaseWikiQueue.setEnabled(true);
+                        mReleaseWikiQueue.setSummary(context
+                                .getResources()
+                                .getQuantityString(R.plurals.pref_wikireleasequeue_count,
+                                        queueCount, queueCount));
+                    }
+                }
+            }
+        };
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -287,7 +313,8 @@ public class PreferencesScreen extends PreferenceActivity {
             });
 
             // Releasing wiki posts doesn't need a reminder.
-            findPreference("_releaseWikiQueue").setOnPreferenceClickListener(preference -> {
+            mReleaseWikiQueue = findPreference("_releaseWikiQueue");
+            mReleaseWikiQueue.setOnPreferenceClickListener(preference -> {
                 resumeWikiQueue();
                 Toast.makeText(
                         getActivity(),
@@ -295,6 +322,17 @@ public class PreferencesScreen extends PreferenceActivity {
                         Toast.LENGTH_SHORT).show();
                 return true;
             });
+
+            // Get ready to receive updates for the wiki queue release!
+            IntentFilter filt = new IntentFilter();
+            filt.addAction(QueueService.ACTION_QUEUE_COUNT);
+            getActivity().registerReceiver(mReceiver, filt);
+
+            // And, fire off the first count request to initialize.
+            Intent i = new Intent(getActivity(), WikiService.class)
+                    .putExtra(QueueService.COMMAND_EXTRA, WikiService.COMMAND_QUEUE_COUNT);
+
+            getActivity().startService(i);
         }
 
         @Override
@@ -310,6 +348,8 @@ public class PreferencesScreen extends PreferenceActivity {
 
             BackupManager bm = new BackupManager(getActivity());
             bm.dataChanged();
+
+            getActivity().unregisterReceiver(mReceiver);
 
             super.onStop();
         }
