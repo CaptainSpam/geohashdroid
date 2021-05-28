@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5" version="927" date="2020-05-28">
+        <title>Excuse the Queues</title>
+        <header>It&apos;s been a rough year for all, but there&apos;s finally an update!</header>
+        <bullets>
+            <bullet>Completely overhauled how the wiki posting queue works.  This is a background thing that stores wiki posts for later if anything goes wrong (i.e. there&apos;s no internet connection).  Or rather, it SHOULD have been doing that, but the way I implemented it didn&apos;t work the way I planned it.  I've gone back over it and hopefully made it far more bulletproof, so it should actually queue up anything you send if it can&apos;t get them posted for some reason.  Should be handy for those trips way away from data coverage.</bullet>
+            <bullet>This also adds an new preference in the wiki section of the preferences screen to manually release any posts queued up (or at least try to).  If there was no internet connection when you tried sending the posts, Geohash Droid will automatically try to re-send everything once it detects one, unless Android decided to shut it down in the meantime.  However, in that case the posts should still be persisted in the app, so you can use this button to release anything currently on standby.</bullet>
+        </bullets>
+        <footer>Do let me know on the GitHub page if anything went wrong.  I&apos;ve got more on the way, including more wiki options, slightly more night-mode support, and an overall UI refresh to bring things more up-to-date with modern Android sensibilities.  More to come, is all.</footer>
+    </version>
     <version name="0.9.4.1" version="926" date="2020-02-28">
         <title>The Debugging Statement&apos;s Lament</title>
         <header>Quick problem that just came up...</header>

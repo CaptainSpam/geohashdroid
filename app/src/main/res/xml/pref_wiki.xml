@@ -17,5 +17,6 @@
     <Preference
         android:key="_releaseWikiQueue"
         android:title="@string/pref_wikireleasequeue_title"
-        android:summary="@string/pref_wikireleasequeue_summary"/>
+        android:summary="@string/pref_wikireleasequeue_summary"
+        android:enabled="false"/>
 </PreferenceScreen>
