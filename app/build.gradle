@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-    def appcompat_version = "1.2.0-alpha02"
+    def appcompat_version = "1.4.0-alpha01"
 
     implementation "androidx.appcompat:appcompat:$appcompat_version"
     implementation "androidx.appcompat:appcompat-resources:$appcompat_version"
