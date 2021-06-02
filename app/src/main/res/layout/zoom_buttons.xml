@@ -14,8 +14,8 @@
         android:src="@drawable/zoom_button"
         android:contentDescription="@string/content_desc_zoom"
         android:layout_below="@+id/zoom_button_fit_both"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
 
     <ImageButton
         android:id="@+id/zoom_button_cancel"
@@ -27,8 +27,8 @@
         android:src="@drawable/zoom_cancel"
         android:contentDescription="@string/content_desc_zoom_cancel"
         android:layout_below="@+id/zoom_button_fit_both"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
 
     <ImageButton
         android:id="@+id/zoom_button_fit_both"
@@ -40,8 +40,8 @@
         android:src="@drawable/zoom_fit_both_button"
         android:contentDescription="@string/content_desc_zoom_fit_both"
         android:layout_below="@+id/zoom_button_you"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
 
     <ImageButton
         android:id="@+id/zoom_button_you"
@@ -53,8 +53,8 @@
         android:src="@drawable/current_location_zoom"
         android:contentDescription="@string/content_desc_zoom_your_location"
         android:layout_below="@+id/zoom_button_destination"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
 
     <ImageButton
         android:id="@+id/zoom_button_destination"
@@ -66,6 +66,6 @@
         android:src="@drawable/final_destination_zoom"
         android:contentDescription="@string/content_desc_zoom_final_destination"
         android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"/>
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
 </merge>

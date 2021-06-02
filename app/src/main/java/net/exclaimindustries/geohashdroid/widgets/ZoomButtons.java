@@ -27,11 +27,11 @@ import net.exclaimindustries.geohashdroid.R;
 public class ZoomButtons extends RelativeLayout {
     private static final String DEBUG_TAG = "ZoomButtons";
 
-    private ImageButton mZoomMenu;
-    private ImageButton mCancelMenu;
-    private ImageButton mZoomFitBoth;
-    private ImageButton mZoomUser;
-    private ImageButton mZoomDestination;
+    private final ImageButton mZoomMenu;
+    private final ImageButton mCancelMenu;
+    private final ImageButton mZoomFitBoth;
+    private final ImageButton mZoomUser;
+    private final ImageButton mZoomDestination;
 
     private boolean mAlreadyLaidOut = false;
 
@@ -115,11 +115,11 @@ public class ZoomButtons extends RelativeLayout {
 
                 // First layout, make all the buttons be off-screen.  The
                 // right mode will be set back on as need be.
-                mZoomMenu.setTranslationX(-mButtonWidth);
-                mCancelMenu.setTranslationX(-mButtonWidth);
-                mZoomFitBoth.setTranslationX(-mButtonWidth);
-                mZoomUser.setTranslationX(-mButtonWidth);
-                mZoomDestination.setTranslationX(-mButtonWidth);
+                mZoomMenu.setTranslationX(mButtonWidth);
+                mCancelMenu.setTranslationX(mButtonWidth);
+                mZoomFitBoth.setTranslationX(mButtonWidth);
+                mZoomUser.setTranslationX(mButtonWidth);
+                mZoomDestination.setTranslationX(mButtonWidth);
 
                 showMenu(false);
             }
@@ -138,7 +138,7 @@ public class ZoomButtons extends RelativeLayout {
             // with the widget sizes if mButtonWidth isn't defined.
             if(show) {
                 // Menu in!  Button out!
-                mZoomMenu.animate().translationX(-mButtonWidth);
+                mZoomMenu.animate().translationX(mButtonWidth);
                 mCancelMenu.animate().translationX(0.0f);
                 mZoomFitBoth.animate().translationX(0.0f);
                 mZoomUser.animate().translationX(0.0f);
@@ -146,10 +146,10 @@ public class ZoomButtons extends RelativeLayout {
             } else {
                 // Menu out!  Button in!
                 mZoomMenu.animate().translationX(0.0f);
-                mCancelMenu.animate().translationX(-mButtonWidth);
-                mZoomFitBoth.animate().translationX(-mButtonWidth);
-                mZoomUser.animate().translationX(-mButtonWidth);
-                mZoomDestination.animate().translationX(-mButtonWidth);
+                mCancelMenu.animate().translationX(mButtonWidth);
+                mZoomFitBoth.animate().translationX(mButtonWidth);
+                mZoomUser.animate().translationX(mButtonWidth);
+                mZoomDestination.animate().translationX(mButtonWidth);
             }
         }
     }
