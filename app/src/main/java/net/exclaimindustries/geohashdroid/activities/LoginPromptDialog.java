@@ -80,10 +80,7 @@ public class LoginPromptDialog extends Activity {
             edit.putString(GHDConstants.PREF_WIKI_USER, mUsername.getText().toString());
             edit.putString(GHDConstants.PREF_WIKI_PASS, mPassword.getText().toString());
 
-            // Commit's a good idea here.  Sure, chances are the background
-            // operation will finish before WikiService kicks back in, but
-            // we should make sure.
-            edit.commit();
+            edit.apply();
 
             BackupManager bm = new BackupManager(LoginPromptDialog.this);
             bm.dataChanged();

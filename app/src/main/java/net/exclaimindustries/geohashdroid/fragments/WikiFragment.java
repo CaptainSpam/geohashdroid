@@ -109,12 +109,11 @@ public class WikiFragment extends CentralMapExtraFragment {
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
                 i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.setType("image/*");
             } else {
                 i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("image/*");
             }
+            i.setType("image/*");
 
             startActivityForResult(i, GET_PICTURE);
         });

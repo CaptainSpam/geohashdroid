@@ -8,7 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
-import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -54,7 +53,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
 
     private ClipboardManager mClipManager;
 
-    private View.OnLongClickListener mYouListener = new View.OnLongClickListener() {
+    private final View.OnLongClickListener mYouListener = new View.OnLongClickListener() {
         @Override
         public boolean onLongClick(View v) {
             FragmentActivity act = getActivity();
@@ -77,7 +76,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         }
     };
 
-    private View.OnLongClickListener mDestListener = new View.OnLongClickListener() {
+    private final View.OnLongClickListener mDestListener = new View.OnLongClickListener() {
         @Override
         public boolean onLongClick(View v) {
             FragmentActivity act = getActivity();
@@ -235,7 +234,7 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         // Ding!
         mLastLocation = location;
         updateDisplay();

@@ -211,12 +211,10 @@ public class SelectAGraticuleMode
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_exitgraticule: {
-                // We've left Select-A-Graticule for whatever reason.
-                mCentralMap.exitSelectAGraticuleMode();
-                return true;
-            }
+        if(item.getItemId() == R.id.action_exitgraticule) {
+            // We've left Select-A-Graticule for whatever reason.
+            mCentralMap.exitSelectAGraticuleMode();
+            return true;
         }
 
         return false;
