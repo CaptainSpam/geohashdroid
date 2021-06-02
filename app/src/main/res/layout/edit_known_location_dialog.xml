@@ -29,7 +29,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/standard_padding"
                 android:ems="12"
-                android:hint="@string/known_locations_add_name_hint"/>
+                android:hint="@string/known_locations_add_name_hint"
+                android:importantForAutofill="no" />
         </LinearLayout>
 
         <TextView
