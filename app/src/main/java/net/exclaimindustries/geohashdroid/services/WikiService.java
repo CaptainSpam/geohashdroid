@@ -209,6 +209,9 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static final String EXTRA_INCLUDE_LOCATION = "net.exclaimindustries.geohashdroid.EXTRA_INCLUDE_LOCATION";
 
+    /** The name of the queue. */
+    public static final String QUEUE_NAME = "wikiservice";
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -863,6 +866,6 @@ public class WikiService extends PlainSQLiteQueueService {
     @NonNull
     @Override
     protected String getQueueName() {
-        return "wikiservice";
+        return QUEUE_NAME;
     }
 }

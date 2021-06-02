@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
         minSdkVersion 16
-        targetSdkVersion 29
+        targetSdkVersion 30
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -22,10 +22,10 @@ repositories {
 dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.legacy:legacy-support-v13:1.0.0'
-    implementation 'com.google.android.gms:play-services-maps:17.0.0'
-    implementation 'com.google.android.gms:play-services-location:17.0.0'
+    implementation 'com.google.android.gms:play-services-maps:17.0.1'
+    implementation 'com.google.android.gms:play-services-location:18.0.0'
     implementation 'com.google.guava:guava:24.1-jre'
-    implementation 'cz.msebera.android:httpclient:4.4.1.1'
+    implementation 'cz.msebera.android:httpclient:4.5.8'
     implementation 'org.opensextant:geodesy:2.0.1'
     implementation 'androidx.core:core:1.5.0'
     implementation 'androidx.preference:preference:1.1.1'
