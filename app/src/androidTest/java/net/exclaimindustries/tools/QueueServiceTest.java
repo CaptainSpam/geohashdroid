@@ -5,8 +5,9 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ServiceTestRule;
+import androidx.test.runner.AndroidJUnit4;
+
 import android.util.Log;
 
 import org.junit.Before;
