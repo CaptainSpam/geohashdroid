@@ -272,7 +272,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 // This one, unlike the previous one, produces an interruption
                 // so the user can enter in a username and password.
                 showPausingErrorNotification(getString(R.string.wiki_conn_anon_pic_error),
-                        resolveWikiExceptionActions(new WikiException(R.string.wiki_conn_anon_pic_error)));
+                        resolveWikiExceptionActions(new WikiException(WikiException.INTERNAL_ERROR_NO_ANON_PICS)));
                 return ReturnCode.PAUSE;
             }
             // Location becomes null if we're not including it.  Nothing should
@@ -382,7 +382,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 if(page == null) {
                     // This shouldn't happen.  If it did, there's something very
                     // wrong with the wiki.
-                    throw new WikiException(R.string.wiki_error_unknown);
+                    throw new WikiException(WikiException.INTERNAL_ERROR_GENERIC);
                 }
 
                 Matcher expeditionq = RE_EXPEDITION.matcher(page);
@@ -435,7 +435,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 // Otherwise, we're kinda stumped.  Maybe the user will know
                 // what to do?
                 Log.e(DEBUG_TAG, "Unknown wiki problem", e);
-                showPausingErrorNotification(getString(R.string.wiki_notification_general_error), resolveWikiExceptionActions(null));
+                showPausingErrorNotification(getString(R.string.wiki_notification_general_error), resolveWikiExceptionActions(new WikiException(WikiException.INTERNAL_ERROR_GENERIC)));
             }
 
             return ReturnCode.PAUSE;
@@ -798,21 +798,12 @@ public class WikiService extends PlainSQLiteQueueService {
         return before + galleryEntry + after;
     }
 
-    private NotificationAction[] resolveWikiExceptionActions(WikiException we) {
+    private NotificationAction[] resolveWikiExceptionActions(@NonNull WikiException we) {
         // This'll get the (up to) three NotificationActions associated with a
-        // given WikiException (identified by string ID).
-        int id = -1;
-
-        if(we != null)
-            id = we.getErrorTextId();
-
+        // given WikiException.
         NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
-        switch(id) {
-            case R.string.wiki_conn_anon_pic_error:
-            case R.string.wiki_error_bad_password:
-            case R.string.wiki_error_bad_username:
-            case R.string.wiki_error_username_nonexistant:
-            case R.string.wiki_error_bad_login:
+        switch(we.getNotificationType()) {
+            case NEEDS_LOGIN:
                 toReturn[0] = new NotificationAction(
                         0,
                         PendingIntent.getActivity(this,
@@ -824,7 +815,7 @@ public class WikiService extends PlainSQLiteQueueService {
 
                 toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
                 break;
-            default:
+            case GENERAL:
                 // As a general case (or if a null was passed in), we just use
                 // the standard retry, skip, or abort choices.  This works for a
                 // surprising amount of cases, it turns out.  Simplicity wins!
