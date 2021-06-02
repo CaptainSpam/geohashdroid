@@ -618,6 +618,7 @@ public class KnownLocationsPicker
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
 
