@@ -43,12 +43,15 @@ public class ZoomButtons extends RelativeLayout {
     private float mTopLevelContainerWidth = 0.0f;
     private float mZoomContainerWidth = 0.0f;
 
-    /** Zoom to fit both the user and the hashpoint on screen at once. */
-    public static final int ZOOM_FIT_BOTH = 0;
-    /** Zoom to the user's location. */
-    public static final int ZOOM_USER = 1;
-    /** Zoom to the hashpoint. */
-    public static final int ZOOM_DESTINATION = 2;
+    /** An enum of whatever button was just pressed. */
+    public enum ButtonPressed {
+        /** Zoom to fit both the user and the hashpoint on screen at once. */
+        ZOOM_FIT_BOTH,
+        /** Zoom to the user's location. */
+        ZOOM_USER,
+        /** Zoom to the hashpoint. */
+        ZOOM_DESTINATION,
+    }
 
     /**
      * This should be implemented by anything that's waiting to respond to the
@@ -60,12 +63,9 @@ public class ZoomButtons extends RelativeLayout {
          * menu button itself or the cancel button are pressed.
          *
          * @param container this, for convenience
-         * @param which an int specifying which button just got pressed
-         * @see #ZOOM_FIT_BOTH
-         * @see #ZOOM_USER
-         * @see #ZOOM_DESTINATION
+         * @param which an enum specifying which button just got pressed
          */
-        void zoomButtonPressed(View container, int which);
+        void zoomButtonPressed(View container, ButtonPressed which);
     }
 
     private ZoomButtonListener mListener;
@@ -92,19 +92,19 @@ public class ZoomButtons extends RelativeLayout {
         // ...and make them do something.
         mZoomFitBoth.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_FIT_BOTH);
+                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_FIT_BOTH);
             showMenu(false);
         });
 
         mZoomUser.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_USER);
+                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_USER);
             showMenu(false);
         });
 
         mZoomDestination.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(ZoomButtons.this, ZOOM_DESTINATION);
+                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_DESTINATION);
             showMenu(false);
         });
 
@@ -171,13 +171,10 @@ public class ZoomButtons extends RelativeLayout {
      * sure "fit both" is disabled when either "your location" or "final
      * destination" are, so do that yourself.
      *
-     * @param button button to disable, by  ZOOM_* statics
+     * @param button button to disable
      * @param enabled true to enable, false to disable
-     * @see #ZOOM_FIT_BOTH
-     * @see #ZOOM_USER
-     * @see #ZOOM_DESTINATION
      */
-    public void setButtonEnabled(int button, final boolean enabled) {
+    public void setButtonEnabled(ButtonPressed button, final boolean enabled) {
         View toDisable = null;
 
         switch(button) {

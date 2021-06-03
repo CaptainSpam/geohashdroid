@@ -220,8 +220,8 @@ public class ExpeditionMode
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
         mZoomButtons.setListener(this);
         mZoomButtons.showMenu(false);
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_DESTINATION, false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_FIT_BOTH, false);
 
         // Inflate us a MENU!
         populateMenu();
@@ -1007,13 +1007,13 @@ public class ExpeditionMode
     }
 
     @Override
-    public void zoomButtonPressed(View container, int which) {
+    public void zoomButtonPressed(View container, ZoomButtons.ButtonPressed which) {
         // BEEP.
         switch(which) {
-            case ZoomButtons.ZOOM_FIT_BOTH:
+            case ZOOM_FIT_BOTH:
                 doInitialZoom();
                 break;
-            case ZoomButtons.ZOOM_DESTINATION:
+            case ZOOM_DESTINATION:
                 // Assuming we already have the destination...
                 if(mCurrentInfo == null) {
                     Log.e(DEBUG_TAG, "Tried to zoom to the destination when there is no destination set!");
@@ -1021,7 +1021,7 @@ public class ExpeditionMode
                     zoomToPoint(mCurrentInfo.getFinalLocation());
                 }
                 break;
-            case ZoomButtons.ZOOM_USER:
+            case ZOOM_USER:
                 // Hopefully the user's already got a valid location.  Else...
                 Location loc = getLastKnownLocation();
                 if(LocationUtil.isLocationNewEnough(loc)) {
@@ -1143,14 +1143,14 @@ public class ExpeditionMode
 
     private void setZoomButtonsEnabled() {
         // Zoom to user is always on if permissions aren't denied.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_USER, !arePermissionsDenied());
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_USER, !arePermissionsDenied());
 
         // Zoom to destination is only on if we have a valid info.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, mCurrentInfo != null);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_DESTINATION, mCurrentInfo != null);
 
         // Zoom to both is only on if we have a valid info AND permissions
         // aren't denied.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
     }
 
     @Nullable
