@@ -19,6 +19,8 @@ import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
 
+import androidx.annotation.NonNull;
+
 /**
  * The <code>MenuButtons</code> container handles the buttons in the lower-right
  * of CentralMap.  It pops out when tapped, revealing more buttons that, sadly,
@@ -50,6 +52,10 @@ public class MenuButtons extends RelativeLayout {
         ZOOM_USER,
         /** Zoom to the hashpoint. */
         ZOOM_DESTINATION,
+    }
+
+    private enum MenuType {
+        ZOOM,
     }
 
     /**
@@ -92,24 +98,24 @@ public class MenuButtons extends RelativeLayout {
         mZoomFitBoth.setOnClickListener(v -> {
             if(mListener != null)
                 mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_FIT_BOTH);
-            showMenu(false);
+            hideMenus();
         });
 
         mZoomUser.setOnClickListener(v -> {
             if(mListener != null)
                 mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_USER);
-            showMenu(false);
+            hideMenus();
         });
 
         mZoomDestination.setOnClickListener(v -> {
             if(mListener != null)
                 mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_DESTINATION);
-            showMenu(false);
+            hideMenus();
         });
 
-        mZoomMenu.setOnClickListener(v -> showMenu(true));
+        mZoomMenu.setOnClickListener(v -> showMenu(MenuType.ZOOM));
 
-        mCancelMenu.setOnClickListener(v -> showMenu(false));
+        mCancelMenu.setOnClickListener(v -> hideMenus());
 
         // Wait for layout, as usual...
         getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -128,31 +134,48 @@ public class MenuButtons extends RelativeLayout {
                 mTopLevelContainer.setTranslationX(mTopLevelContainerWidth);
                 mZoomContainer.setTranslationX(mZoomContainerWidth);
 
-                showMenu(false);
+                hideMenus();
             }
         });
     }
 
-    /**
-     * Sets whether the menu is showing (the three options and cancel are up) or
-     * not (the button that triggers the menu is up).
-     *
-     * @param show true to show, false to hide
-     */
-    public void showMenu(boolean show) {
+    /** Resets MenuButtons back to its initial state. */
+    public void reset() {
+        hideMenus();
+
+        for(ButtonPressed b : ButtonPressed.values()) {
+            setButtonEnabled(b, true);
+        }
+    }
+
+    private void showMenu(@NonNull MenuType menu) {
         if(mAlreadyLaidOut) {
             // Only do this if we're laid out.  Otherwise, this'll go haywire
-            // with the widget sizes if mButtonWidth isn't defined.
-            if(show) {
-                // Menu in!  Button out!
-                mTopLevelContainer.animate().translationX(mTopLevelContainerWidth);
-                mZoomContainer.animate().translationX(0.0f);
-            } else {
-                // Menu out!  Button in!
-                mTopLevelContainer.animate().translationX(0.0f);
-                mZoomContainer.animate().translationX(mZoomContainerWidth);
+            // with the widget sizes if mButtonWidth isn't defined.  Same with
+            // hideMenus, really.
+            mTopLevelContainer.animate().translationX(mTopLevelContainerWidth);
+
+            hideSubMenus();
+
+            switch(menu) {
+                case ZOOM:
+                    mZoomContainer.animate().translationX(0.0f);
+                    break;
             }
         }
+    }
+
+    private void hideMenus() {
+        if(mAlreadyLaidOut) {
+            // Submenus out!  Top-level buttons in!
+            hideSubMenus();
+
+            mTopLevelContainer.animate().translationX(0.0f);
+        }
+    }
+
+    private void hideSubMenus() {
+        mZoomContainer.animate().translationX(mZoomContainerWidth);
     }
 
     /**

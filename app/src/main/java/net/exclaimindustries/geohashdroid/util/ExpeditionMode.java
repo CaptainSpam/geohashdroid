@@ -219,7 +219,7 @@ public class ExpeditionMode
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mMenuButtons, params);
         mMenuButtons.setListener(this);
-        mMenuButtons.showMenu(false);
+        mMenuButtons.reset();
         mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_DESTINATION, false);
         mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_FIT_BOTH, false);
 
