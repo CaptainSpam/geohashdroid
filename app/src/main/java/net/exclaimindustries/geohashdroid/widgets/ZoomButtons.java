@@ -14,6 +14,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -27,17 +28,20 @@ import net.exclaimindustries.geohashdroid.R;
 public class ZoomButtons extends RelativeLayout {
     private static final String DEBUG_TAG = "ZoomButtons";
 
-    private final ImageButton mZoomMenu;
     private final ImageButton mCancelMenu;
     private final ImageButton mZoomFitBoth;
     private final ImageButton mZoomUser;
     private final ImageButton mZoomDestination;
 
+    private final LinearLayout mZoomContainer;
+    private final LinearLayout mTopLevelContainer;
+
     private boolean mAlreadyLaidOut = false;
 
-    // So we don't have to keep recalculating it for five buttons and their
-    // margins, that's why.
-    private float mButtonWidth = 0.0f;
+    // Keep these here so we don't have to keep recalculating them every time we
+    // need them.
+    private float mTopLevelContainerWidth = 0.0f;
+    private float mZoomContainerWidth = 0.0f;
 
     /** Zoom to fit both the user and the hashpoint on screen at once. */
     public static final int ZOOM_FIT_BOTH = 0;
@@ -76,11 +80,14 @@ public class ZoomButtons extends RelativeLayout {
         inflate(c, R.layout.zoom_buttons, this);
 
         // Gather up all our sub-buttons...
-        mZoomMenu = findViewById(R.id.zoom_button_menu);
+        ImageButton mZoomMenu = findViewById(R.id.zoom_button_menu);
         mCancelMenu = findViewById(R.id.zoom_button_cancel);
         mZoomFitBoth = findViewById(R.id.zoom_button_fit_both);
         mZoomUser = findViewById(R.id.zoom_button_you);
         mZoomDestination = findViewById(R.id.zoom_button_destination);
+
+        mZoomContainer = findViewById(R.id.group_zoom);
+        mTopLevelContainer = findViewById(R.id.group_toplevel);
 
         // ...and make them do something.
         mZoomFitBoth.setOnClickListener(v -> {
@@ -111,15 +118,17 @@ public class ZoomButtons extends RelativeLayout {
                 mAlreadyLaidOut = true;
                 // Get hold of the basic widths of everything.  We'll just
                 // re-use that a lot.
-                mButtonWidth = mCancelMenu.getWidth() + (2 * getResources().getDimension(R.dimen.margin_zoom_button));
+                mTopLevelContainerWidth = mCancelMenu.getWidth()
+                        + (2 * getResources()
+                        .getDimension(R.dimen.margin_zoom_button));
+                mZoomContainerWidth = mZoomContainer.getWidth()
+                        + (2 * getResources()
+                        .getDimension(R.dimen.margin_zoom_button));
 
                 // First layout, make all the buttons be off-screen.  The
                 // right mode will be set back on as need be.
-                mZoomMenu.setTranslationX(mButtonWidth);
-                mCancelMenu.setTranslationX(mButtonWidth);
-                mZoomFitBoth.setTranslationX(mButtonWidth);
-                mZoomUser.setTranslationX(mButtonWidth);
-                mZoomDestination.setTranslationX(mButtonWidth);
+                mTopLevelContainer.setTranslationX(mTopLevelContainerWidth);
+                mZoomContainer.setTranslationX(mZoomContainerWidth);
 
                 showMenu(false);
             }
@@ -138,18 +147,12 @@ public class ZoomButtons extends RelativeLayout {
             // with the widget sizes if mButtonWidth isn't defined.
             if(show) {
                 // Menu in!  Button out!
-                mZoomMenu.animate().translationX(mButtonWidth);
-                mCancelMenu.animate().translationX(0.0f);
-                mZoomFitBoth.animate().translationX(0.0f);
-                mZoomUser.animate().translationX(0.0f);
-                mZoomDestination.animate().translationX(0.0f);
+                mTopLevelContainer.animate().translationX(mTopLevelContainerWidth);
+                mZoomContainer.animate().translationX(0.0f);
             } else {
                 // Menu out!  Button in!
-                mZoomMenu.animate().translationX(0.0f);
-                mCancelMenu.animate().translationX(mButtonWidth);
-                mZoomFitBoth.animate().translationX(mButtonWidth);
-                mZoomUser.animate().translationX(mButtonWidth);
-                mZoomDestination.animate().translationX(mButtonWidth);
+                mTopLevelContainer.animate().translationX(0.0f);
+                mZoomContainer.animate().translationX(mZoomContainerWidth);
             }
         }
     }
