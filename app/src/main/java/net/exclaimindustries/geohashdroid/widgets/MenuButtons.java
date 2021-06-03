@@ -117,12 +117,11 @@ public class MenuButtons extends RelativeLayout {
                 mAlreadyLaidOut = true;
                 // Get hold of the basic widths of everything.  We'll just
                 // re-use that a lot.
-                mTopLevelContainerWidth = mCancelMenu.getWidth()
-                        + (2 * getResources()
-                        .getDimension(R.dimen.margin_zoom_button));
-                mZoomContainerWidth = mZoomContainer.getWidth()
-                        + (2 * getResources()
-                        .getDimension(R.dimen.margin_zoom_button));
+                float padding = 2 * getResources()
+                        .getDimension(R.dimen.margin_zoom_button);
+
+                mTopLevelContainerWidth = mCancelMenu.getWidth() + padding;
+                mZoomContainerWidth = mZoomContainer.getWidth() + padding;
 
                 // First layout, make all the buttons be off-screen.  The
                 // right mode will be set back on as need be.
