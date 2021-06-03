@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid.wiki;
 
+import androidx.annotation.StringRes;
+
 /**
  * A <code>WikiException</code> is thrown when some problem happens with the
  * wiki.  This can be anything from bad XML to an error in logging in to
@@ -18,9 +20,9 @@ package net.exclaimindustries.geohashdroid.wiki;
 public class WikiException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    private int mTextId;
+    @StringRes private final int mTextId;
     
-    public WikiException(int textId) {
+    public WikiException(@StringRes int textId) {
         super();
         mTextId = textId;
     }
@@ -37,6 +39,7 @@ public class WikiException extends Exception {
      *
      * @return the text ID of the exception's cause
      */
+    @StringRes
     public int getErrorTextId() {
         return mTextId;
     }
