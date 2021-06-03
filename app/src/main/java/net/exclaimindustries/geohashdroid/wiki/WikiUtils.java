@@ -258,7 +258,7 @@ public class WikiUtils {
 
         toReturn.rootElem = toReturn.document.getDocumentElement();
         if(doesResponseHaveError(toReturn.rootElem)) {
-            throw new WikiException(findErrorCode(toReturn.rootElem));
+            throw new WikiException(getErrorTextId(findErrorCode(toReturn.rootElem)));
         }
 
         return toReturn;
@@ -287,7 +287,7 @@ public class WikiUtils {
         try {
             pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
         } catch(Exception e) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         // "invalid" or "missing" both resolve to the same answer: No.  Anything
@@ -317,12 +317,12 @@ public class WikiUtils {
         try {
             generalElem = DOMUtil.getFirstElement(response.rootElem, "general");
         } catch(Exception e) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         // If the generator attribute isn't there, there's a problem.
         if(!generalElem.hasAttribute("generator")) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         // Finally, we've got us a WikiVersionData!
@@ -358,13 +358,13 @@ public class WikiUtils {
         try {
             pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
         } catch(Exception e) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         // If we got an "invalid" attribute, the page not only doesn't exist,
         // but it CAN'T exist, and is therefore an error.
         if(pageElem.hasAttribute("invalid"))
-            throw new WikiException(WikiException.INTERNAL_ERROR_INVALID_PAGE);
+            throw new WikiException(R.string.wiki_error_invalid_page);
 
         if(formfields != null) {
             // If we have a formfields hash ready, populate it with a couple
@@ -385,7 +385,7 @@ public class WikiUtils {
         try {
             text = DOMUtil.getFirstElement(pageElem, "rev");
         } catch(Exception e) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         page = DOMUtil.getSimpleElementText(text);
@@ -408,7 +408,7 @@ public class WikiUtils {
                                    @NonNull HashMap<String, String> formfields) throws Exception {
         // If there's no edit token in the hash map, we can't do anything.
         if(!formfields.containsKey("token")) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_PROTECTED);
+            throw new WikiException(R.string.wiki_error_protected);
         }
 
         HttpPost httppost = new HttpPost(WIKI_API_URL);
@@ -444,7 +444,7 @@ public class WikiUtils {
                                     @NonNull HashMap<String, String> formfields,
                                     @NonNull byte[] data) throws Exception {
         if(!formfields.containsKey("token")) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_GENERIC);
+            throw new WikiException(R.string.wiki_error_unknown);
         }
 
         HttpPost httppost = new HttpPost(WIKI_API_URL);
@@ -468,12 +468,12 @@ public class WikiUtils {
             page = DOMUtil.getFirstElement(response.rootElem, "page");
             token = DOMUtil.getSimpleAttributeText(page, "edittoken");
         } catch(Exception e) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         // We very much need an edit token here.
         if(token == null) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+            throw new WikiException(R.string.wiki_error_xml);
         }
 
         // TOKEN GET!  Now we've got us enough to get our upload on!
@@ -513,7 +513,7 @@ public class WikiUtils {
         WikiVersionData version = getWikiVersion(httpclient);
 
         if(!version.valid) {
-            throw new WikiException(WikiException.INTERNAL_ERROR_GENERIC);
+            throw new WikiException(R.string.wiki_error_unknown);
         }
 
         if(version.minorVersion >= 27) {
@@ -533,7 +533,7 @@ public class WikiUtils {
                 token = DOMUtil.getSimpleAttributeText(tokenElem, "logintoken");
             } catch(Exception e) {
                 Log.d(DEBUG_TAG, "Couldn't get a token!");
-                throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+                throw new WikiException(R.string.wiki_error_xml);
             }
 
             // Okay, now let's try a login.  I hope this works.
@@ -558,11 +558,11 @@ public class WikiUtils {
 
                 // If we got a clientlogin response but no status in it, I
                 // just... what?
-                if(status == null) throw new WikiException(WikiException.INTERNAL_ERROR_GENERIC);
+                if(status == null) throw new WikiException(R.string.wiki_error_unknown);
             } catch(WikiException we) {
                 throw we;
             } catch (Exception e) {
-                throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+                throw new WikiException(R.string.wiki_error_xml);
             }
 
             // Our result will hopefully either be PASS or FAIL.  If it's UI or
@@ -570,19 +570,19 @@ public class WikiUtils {
             // don't have to cover those on the Geohashing wiki.
             if(status.equals("UI") || status.equals("REDIRECT")) {
                 Log.w(DEBUG_TAG, "The wiki gave us a " + status + " result on login!  The bug reports will be rolling in soon...");
-                throw new WikiException(WikiException.INTERNAL_ERROR_FANCY_SCHMANSY_LOGIN);
+                throw new WikiException(R.string.wiki_error_fancy_schmansy_login);
             }
 
             // Fail means, well, failure.
             if(status.equals("FAIL")) {
                 Log.d(DEBUG_TAG, "Login failure, telling the user this...");
-                throw new WikiException(WikiException.INTERNAL_ERROR_BAD_LOGIN);
+                throw new WikiException(R.string.wiki_error_bad_login);
             }
 
             // If this ISN'T just PASS at this point, that's very very bad.
             if(!status.equals("PASS")) {
                 Log.e(DEBUG_TAG, "The wiki gave us a " + status + " result on login, and I have no clue what that means.");
-                throw new WikiException(WikiException.INTERNAL_ERROR_GENERIC);
+                throw new WikiException(R.string.wiki_error_unknown);
             }
 
             // Otherwise, we're good!
@@ -612,7 +612,7 @@ public class WikiUtils {
                 login = DOMUtil.getFirstElement(response.rootElem, "login");
                 result = DOMUtil.getSimpleAttributeText(login, "result");
             } catch(Exception e) {
-                throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+                throw new WikiException(R.string.wiki_error_xml);
             }
 
             Log.d(DEBUG_TAG, "After login, result is " + result);
@@ -648,7 +648,7 @@ public class WikiUtils {
                     login = DOMUtil.getFirstElement(response.rootElem, "login");
                     result = DOMUtil.getSimpleAttributeText(login, "result");
                 } catch(Exception e) {
-                    throw new WikiException(WikiException.INTERNAL_ERROR_BAD_XML);
+                    throw new WikiException(R.string.wiki_error_xml);
                 }
             }
 
@@ -658,9 +658,109 @@ public class WikiUtils {
                 Log.d(DEBUG_TAG, "Success!");
             } else {
                 Log.d(DEBUG_TAG, "FAILURE!  Result was " + result);
-                throw new WikiException(result != null ? result : WikiException.INTERNAL_ERROR_GENERIC);
+                throw new WikiException(getErrorTextId(result));
             }
         }
+    }
+
+    /**
+     * Gets the text ID that corresponds to a given error code.  If the code
+     * isn't recognized, this returns wiki_error_unknown instead.  Note that
+     * this WON'T understand a non-error condition; check to make sure it isn't
+     * first.
+     *
+     * @param code String returned from the wiki
+     * @return text ID that corresponds to that error
+     */
+    private static int getErrorTextId(@Nullable String code) {
+        // If we don't recognize the error (or shouldn't get it at all), we use
+        // this, because we don't have the slightest clue what's wrong.
+        int error = R.string.wiki_error_unknown;
+
+        if(code == null) return error;
+
+        // First, general errors.  These are the only general ones we care
+        // about; there's more, but those aren't likely to come up.
+        switch(code) {
+            case "unsupportednamespace":
+                error = R.string.wiki_error_illegal_namespace;
+                break;
+            case "protectednamespace-interface":
+            case "protectednamespace":
+            case "customcssjsprotected":
+            case "cascadeprotected":
+            case "protectedpage":
+                error = R.string.wiki_error_protected;
+                break;
+            case "confirmemail":
+                error = R.string.wiki_error_email_confirm;
+                break;
+            case "permissiondenied":
+                error = R.string.wiki_error_permission_denied;
+                break;
+            case "blocked":
+            case "autoblocked":
+                error = R.string.wiki_error_blocked;
+                break;
+            case "ratelimited":
+                error = R.string.wiki_error_rate_limit;
+                break;
+            case "readonly":
+                error = R.string.wiki_error_read_only;
+                break;
+
+            // Then, login errors.  These come from the result attribute.
+            case "Illegal":
+            case "NoName":
+            case "CreateBlocked":
+                error = R.string.wiki_error_bad_username;
+                break;
+            case "NotExists":
+                error = R.string.wiki_error_username_nonexistant;
+                break;
+            case "EmptyPass":
+            case "WrongPass":
+            case "WrongPluginPass":
+                error = R.string.wiki_error_bad_password;
+                break;
+            case "Throttled":
+                error = R.string.wiki_error_throttled;
+                break;
+
+            // Next, edit errors.  These come from the error element, code
+            // attribute.
+            case "protectedtitle":
+                //noinspection DuplicateBranchesInSwitch
+                error = R.string.wiki_error_protected;
+                break;
+            case "cantcreate":
+            case "cantcreate-anon":
+                error = R.string.wiki_error_no_create;
+                break;
+            case "spamdetected":
+                error = R.string.wiki_error_spam;
+                break;
+            case "filtered":
+                error = R.string.wiki_error_filtered;
+                break;
+            case "contenttoobig":
+                error = R.string.wiki_error_too_big;
+                break;
+            case "noedit":
+            case "noedit-anon":
+                error = R.string.wiki_error_no_edit;
+                break;
+            case "editconflict":
+                error = R.string.wiki_error_conflict;
+                break;
+
+            // If all else fails, log what we got.
+            default:
+                Log.d(DEBUG_TAG, "Unknown error code came back: " + code);
+                break;
+        }
+
+        return error;
     }
 
     private static boolean doesResponseHaveError(@Nullable Element elem) {
