@@ -20,12 +20,11 @@ import android.widget.RelativeLayout;
 import net.exclaimindustries.geohashdroid.R;
 
 /**
- * The <code>ZoomButtons</code> container handles the button in the lower-left
- * of CentralMap.  It pops out when tapped, revealing more buttons to center and
- * re-zoom the view as need be.  No, this isn't related to the zoom buttons on
- * the old API v1 maps.
+ * The <code>MenuButtons</code> container handles the buttons in the lower-right
+ * of CentralMap.  It pops out when tapped, revealing more buttons that, sadly,
+ * do not make even more buttons appear.
  */
-public class ZoomButtons extends RelativeLayout {
+public class MenuButtons extends RelativeLayout {
     private static final String DEBUG_TAG = "ZoomButtons";
 
     private final ImageButton mCancelMenu;
@@ -33,8 +32,8 @@ public class ZoomButtons extends RelativeLayout {
     private final ImageButton mZoomUser;
     private final ImageButton mZoomDestination;
 
-    private final LinearLayout mZoomContainer;
     private final LinearLayout mTopLevelContainer;
+    private final LinearLayout mZoomContainer;
 
     private boolean mAlreadyLaidOut = false;
 
@@ -57,7 +56,7 @@ public class ZoomButtons extends RelativeLayout {
      * This should be implemented by anything that's waiting to respond to the
      * zoom buttons.  So, ExpeditionMode, really.
      */
-    public interface ZoomButtonListener {
+    public interface MenuButtonListener {
         /**
          * Called when a zoom button is pressed.  Not, mind you, when either the
          * menu button itself or the cancel button are pressed.
@@ -68,13 +67,13 @@ public class ZoomButtons extends RelativeLayout {
         void zoomButtonPressed(View container, ButtonPressed which);
     }
 
-    private ZoomButtonListener mListener;
+    private MenuButtonListener mListener;
 
-    public ZoomButtons(Context c) {
+    public MenuButtons(Context c) {
         this(c, null);
     }
 
-    public ZoomButtons(Context c, AttributeSet attrs) {
+    public MenuButtons(Context c, AttributeSet attrs) {
         super(c, attrs);
 
         inflate(c, R.layout.zoom_buttons, this);
@@ -92,19 +91,19 @@ public class ZoomButtons extends RelativeLayout {
         // ...and make them do something.
         mZoomFitBoth.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_FIT_BOTH);
+                mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_FIT_BOTH);
             showMenu(false);
         });
 
         mZoomUser.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_USER);
+                mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_USER);
             showMenu(false);
         });
 
         mZoomDestination.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_DESTINATION);
+                mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_DESTINATION);
             showMenu(false);
         });
 
@@ -162,7 +161,7 @@ public class ZoomButtons extends RelativeLayout {
      *
      * @param listener said listener
      */
-    public void setListener(ZoomButtonListener listener) {
+    public void setListener(MenuButtonListener listener) {
         mListener = listener;
     }
 
