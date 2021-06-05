@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5.1" version="928" date="2021-06-05">
+        <title>The Maze of Permissions</title>
+        <header>This one slipped past me...</header>
+        <bullets>
+            <bullet>Fixed wiki image posting.  There was an internal permissions issue I wasn&apos;t properly handling.  This fix should take care of that.  There is a chance that if you had any uploading issues before, you may get warnings about images not uploading properly next time you post.  These warnings should only show up once.</bullet>
+            <bullet>Fixed the year on the previous version note.  Oops.</bullet>
+            <bullet>Also fixed the build date on the About screen.  I should really wire that into a build system script sometime.</bullet>
+        </bullets>
+        <footer>Enjoy!</footer>
+    </version>
     <version name="0.9.5" version="927" date="2021-05-28">
         <title>Excuse the Queues</title>
         <header>It&apos;s been a rough year for all, but there&apos;s finally an update!</header>
