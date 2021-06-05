@@ -589,7 +589,7 @@ public class WikiService extends PlainSQLiteQueueService {
             // Image URI, as a string.
             String image = incoming.optString("image");
             if(!image.isEmpty()) {
-                toReturn.putExtra(EXTRA_IMAGE, image);
+                toReturn.putExtra(EXTRA_IMAGE, Uri.parse(image));
             }
 
             // The Info object, as a mess of things.
