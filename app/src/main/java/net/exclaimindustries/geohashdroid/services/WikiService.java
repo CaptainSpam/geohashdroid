@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
+import android.util.Base64;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -189,6 +190,13 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static final String EXTRA_IMAGE = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE";
 
+    /**
+     * Actual literal {@link android.graphics.Bitmap} image data to be uploaded.
+     * This is needed because WikiService is a different Context from what
+     * selected the image in the first place, causing a security exception.
+     */
+    public static final String EXTRA_IMAGE_DATA = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_DATA";
+
     /** 
      * The user's current geographic coordinates.  Should be a {@link Location}.
      * If not given, will assume the user's location is/was unknown.  If posting
@@ -241,6 +249,7 @@ public class WikiService extends PlainSQLiteQueueService {
         String message;
         Calendar timestamp;
         Uri imageLocation;
+        byte[] imageData;
         boolean includeLocation;
 
         try {
@@ -249,6 +258,7 @@ public class WikiService extends PlainSQLiteQueueService {
             message = i.getStringExtra(EXTRA_MESSAGE);
             timestamp = (Calendar) i.getSerializableExtra(EXTRA_TIMESTAMP);
             imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
+            imageData = i.getByteArrayExtra(EXTRA_IMAGE_DATA);
             includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
         } catch(ClassCastException cce) {
             // If any of those threw a CCE, bail out.
@@ -321,22 +331,20 @@ public class WikiService extends PlainSQLiteQueueService {
                 String wikiName = WikiImageUtils.getImageWikiName(info, imageInfo, username);
 
                 // Make sure the image doesn't already exist.  If it does, we
-                // can skip the entire "shrink image, annotate it, and upload
-                // it" steps.
+                // can skip the upload.
                 if(!WikiUtils.doesWikiPageExist(client, wikiName)) {
-                    // Get us a byte array!  We'll be uploading this soon.
-                    byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, includeLocation);
-
-                    if(image == null) {
+                    if(imageData == null) {
                         // No image is a problem at this point...
+                        Log.w(DEBUG_TAG, "Trying to upload an image, but imageData was null at upload time?");
                         showImageErrorNotification();
                         return ReturnCode.CONTINUE;
                     }
 
-                    // And by "soon", I mean "right now", because that byte
-                    // array takes up a decent amount of memory.
+                    // Upload now!  Do it!
                     String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
-                    WikiUtils.putWikiImage(client, wikiName, description, formfields, image);
+                    WikiUtils.putWikiImage(client, wikiName, description, formfields, imageData);
+                } else {
+                    Log.w(DEBUG_TAG, "Trying to upload an image, but it already exists on the wiki?");
                 }
 
                 // Good, good.  Now, let's get some tags for posting.
@@ -505,10 +513,17 @@ public class WikiService extends PlainSQLiteQueueService {
                 toReturn.put("location", location);
             }
 
-            // The image is just a URI.
+            // The image is a URI...
             Uri uri = i.getParcelableExtra(EXTRA_IMAGE);
             if(uri != null) {
                 toReturn.put("image", uri.toString());
+            }
+
+            // ...and a byte array.  That's the troublesome one, as it's large.
+            byte[] imageData = i.getByteArrayExtra(EXTRA_IMAGE_DATA);
+            if(imageData != null) {
+                toReturn.put("imageData",
+                        Base64.encodeToString(imageData, Base64.DEFAULT));
             }
 
             // Info time!
@@ -590,6 +605,13 @@ public class WikiService extends PlainSQLiteQueueService {
             String image = incoming.optString("image");
             if(!image.isEmpty()) {
                 toReturn.putExtra(EXTRA_IMAGE, Uri.parse(image));
+            }
+
+            // Image data, as a byte array.
+            String imageDataBase64 = incoming.optString("imageData");
+            if(!imageDataBase64.isEmpty()) {
+                toReturn.putExtra(EXTRA_IMAGE_DATA,
+                        Base64.decode(imageDataBase64, Base64.DEFAULT));
             }
 
             // The Info object, as a mess of things.

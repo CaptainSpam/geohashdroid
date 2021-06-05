@@ -38,6 +38,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.geohashdroid.wiki.WikiImageUtils;
 import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.LocationUtil;
@@ -70,7 +71,7 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private Uri mPictureUri;
 
-    private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
+    private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
         // Huh, we register for ALL changes, not just for a few prefs.  May
         // as well narrow it down...
         if(key.equals(GHDConstants.PREF_WIKI_USER) || key.equals(GHDConstants.PREF_WIKI_PASS)) {
@@ -107,12 +108,12 @@ public class WikiFragment extends CentralMapExtraFragment {
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
                 i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.setType("image/*");
             } else {
                 i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("image/*");
             }
+
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("image/*");
 
             startActivityForResult(i, GET_PICTURE);
         });
@@ -200,22 +201,19 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch(requestCode) {
-            case GET_PICTURE: {
-                if(data != null) {
-                    // Picture in!  We need to stash the URL away and make a
-                    // thumbnail out of it, if we can!
-                    Uri uri = data.getData();
+        if(requestCode == GET_PICTURE) {
+            if(data != null) {
+                // Picture in!  We need to stash the URL away and make a
+                // thumbnail out of it, if we can!
+                Uri uri = data.getData();
 
-                    if(uri == null)
-                        return;
+                if(uri == null)
+                    return;
 
-                    setImageUri(uri);
-                }
+                setImageUri(uri);
             }
-            default:
-                super.onActivityResult(requestCode, resultCode, data);
         }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void setImageUri(@NonNull Uri uri) {
@@ -396,14 +394,31 @@ public class WikiFragment extends CentralMapExtraFragment {
         Location loc = mLastLocation;
         if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
 
-        Intent i = new Intent(getActivity(), WikiService.class);
-        i.putExtra(WikiService.EXTRA_INFO, mInfo);
-        i.putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance());
-        i.putExtra(WikiService.EXTRA_MESSAGE, message);
-        i.putExtra(WikiService.EXTRA_LOCATION, loc);
-        i.putExtra(WikiService.EXTRA_INCLUDE_LOCATION, includeLocation);
-        if(includePicture)
-            i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri);
+        Intent i = new Intent(getActivity(), WikiService.class)
+                .putExtra(WikiService.EXTRA_INFO, mInfo)
+                .putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance())
+                .putExtra(WikiService.EXTRA_MESSAGE, message)
+                .putExtra(WikiService.EXTRA_LOCATION, loc)
+                .putExtra(WikiService.EXTRA_INCLUDE_LOCATION, includeLocation);
+        if(includePicture) {
+            // Now hold on!  Let's ALSO make the uploadable version here, as
+            // we're the ones with permission to open the file, NOT WikiService!
+            // This is actually a thing.  WikiService won't be on the same
+            // Context by the time it uploads, so that'd be a SecurityException.
+            WikiImageUtils.ImageInfo imageInfo = WikiImageUtils.readImageInfo(
+                    mPictureUri,
+                    loc,
+                    Calendar.getInstance());
+
+            byte[] mPictureData = WikiImageUtils.createWikiImage(
+                    getActivity(),
+                    mInfo,
+                    imageInfo,
+                    includeLocation);
+
+            i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri)
+                    .putExtra(WikiService.EXTRA_IMAGE_DATA, mPictureData);
+        }
 
         // And away it goes!
         getActivity().startService(i);
@@ -420,7 +435,7 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         // We'll get this in either from CentralMap or WikiActivity.  In either
         // case, we act the same way.
         mLastLocation = location;
