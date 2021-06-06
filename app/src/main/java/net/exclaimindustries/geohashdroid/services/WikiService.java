@@ -11,19 +11,11 @@ package net.exclaimindustries.geohashdroid.services;
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.app.job.JobInfo;
-import android.app.job.JobParameters;
-import android.app.job.JobScheduler;
-import android.app.job.JobService;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
-import android.net.ConnectivityManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
@@ -48,13 +40,21 @@ import org.json.JSONObject;
 
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.work.Constraints;
+import androidx.work.ListenableWorker;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
 
@@ -87,59 +87,27 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     /**
-     * This kicks in on connectivity changes in the event that JobScheduler is
-     * available (Android 21 or higher).  All what it does is kick the queue
-     * back into action.
+     * This Worker does little more than try to fire off a RESUME command once
+     * the network returns.
      */
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static class WikiServiceJobService extends JobService {
+    public static class ConnectivityWorker extends Worker {
+        public ConnectivityWorker(@NonNull Context context,
+                           @NonNull WorkerParameters workerParams) {
+            super(context, workerParams);
+        }
+
+        @NonNull
         @Override
-        public boolean onStartJob(JobParameters params) {
+        public Result doWork() {
             // Just launch into the service.  The scheduler ONLY should've woken
             // us up if we've got an internet connection, but if not, the queue
             // will just pause anyway.
-            Intent i = new Intent(this, WikiService.class);
+            Intent i = new Intent(getApplicationContext(), WikiService.class);
             i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
-            startService(i);
+            getApplicationContext().startService(i);
 
-            // Since we're done now, return false so we don't have a thread
-            // spinning away.
-            return false;
-        }
-
-        @Override
-        public boolean onStopJob(JobParameters params) {
-            // I'm pretty sure there's not much of a way that sending out an
-            // Intent can take long enough to stop the job.
-            return false;
-        }
-    }
-
-    /**
-     * <p>
-     * This listens for the connectivity broadcasts so we know if it's safe to
-     * kick the queue back in action after a disconnect.  Well... I guess not so
-     * much "safe" as "possible".
-     * </p>
-     *
-     * <p>
-     * This is only used in Android SDKs that don't have JobScheduler.  This
-     * whole thing was deprecated in Android N.
-     * </p>
-     */
-    public static class WikiServiceConnectivityListener extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
-                // Ding!  Are we back yet?
-                if(AndroidUtil.isConnected(context)) {
-                    // Aha!  We're up!  Send off a command to resume the queue!
-                    Intent i = new Intent(context, WikiService.class);
-                    i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
-                    context.startService(i);
-                }
-            }
+            // Whatever the case, this was a smashing success.  Well done.
+            return ListenableWorker.Result.success();
         }
     }
 
@@ -149,7 +117,7 @@ public class WikiService extends PlainSQLiteQueueService {
     private AlarmManager mAlarmManager;
     private WakeLock mWakeLock;
 
-    private static final int WIKI_CONNECTIVITY_JOB = 0;
+    private UUID mLastWikiConnectivityRequestId;
 
     /** Matches the gallery section. */
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
@@ -707,34 +675,27 @@ public class WikiService extends PlainSQLiteQueueService {
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
 
-        // If we have JobScheduler (SDK 21 or higher), use that.  Otherwise, go
-        // with the old ConnectivityListener style.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            JobInfo job = new JobInfo.Builder(
-                    WIKI_CONNECTIVITY_JOB,
-                    new ComponentName(this, WikiServiceJobService.class))
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                    .build();
-            assert js != null;
-            js.schedule(job);
-        } else {
-            // Make sure the connectivity listener's waiting for a connection.
-            AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, true);
-        }
+        WorkRequest connectivityWorkRequest =
+                new OneTimeWorkRequest.Builder(ConnectivityWorker.class)
+                        .setConstraints(new Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build())
+                        .build();
+
+        mLastWikiConnectivityRequestId = connectivityWorkRequest.getId();
+        WorkManager.getInstance(this).enqueue(connectivityWorkRequest);
     }
 
     private void hideWaitingForConnectionNotification() {
         mNotificationManager.cancel(R.id.wiki_waiting_notification);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Cancel the job, if need be.
-            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            assert js != null;
-            js.cancel(WIKI_CONNECTIVITY_JOB);
-        } else {
-            // Shut off the listener, if need be.
-            AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
+        // If there's still a request waiting, cancel it.  This really shouldn't
+        // matter (worst case, it just means a stray RESUME will be shot off),
+        // and chances are the ID will be lost as soon as this service ends,
+        // but let's just try anyway.
+        if(mLastWikiConnectivityRequestId != null) {
+            WorkManager.getInstance(this)
+                    .cancelWorkById(mLastWikiConnectivityRequestId);
         }
     }
 

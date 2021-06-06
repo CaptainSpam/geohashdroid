@@ -9,28 +9,14 @@ package net.exclaimindustries.geohashdroid.services;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.app.job.JobInfo;
-import android.app.job.JobParameters;
-import android.app.job.JobScheduler;
-import android.app.job.JobService;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import androidx.annotation.IdRes;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-import androidx.annotation.StringRes;
-import androidx.core.app.JobIntentService;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -41,7 +27,6 @@ import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
-import net.exclaimindustries.tools.AndroidUtil;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -51,6 +36,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.UUID;
+
+import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.core.app.JobIntentService;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.work.Constraints;
+import androidx.work.ListenableWorker;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 
 /**
  * <p>
@@ -79,6 +81,8 @@ public class AlarmService extends JobIntentService {
     private NotificationCompat.Builder mNotificationBuilder;
 
     private int[] mNotifyIds;
+
+    private UUID mLastConnectivityRequestId;
     
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -137,72 +141,35 @@ public class AlarmService extends JobIntentService {
      */
     public static final String NOTIFICATION_GROUP_LOCAL = "net.exclaimindustries.geohashdroid.NOTIFICATION_GROUP_LOCAL";
 
-    private static final int ALARM_CONNECTIVITY_JOB = 1;
     private static final int LOCAL_NOTIFICATION = 1;
     private static final int GLOBAL_NOTIFICATION = 2;
 
     private static final int SERVICE_JOB_ID = 1000;
 
     /**
-     * <p>
-     * This receiver listens for network connectivity changes in case we ran
-     * into a problem with network connectivity and wanted to know if that
-     * changed.
-     * </p>
-     *
-     * <p>
-     * This is only used in Android SDKs that don't have JobScheduler.  This
-     * whole thing was deprecated in Android N.
-     * </p>
+     * This Worker wakes up the fetcher when the connection comes back.  That's
+     * it.
      */
-    public static class NetworkReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if(action == null) return;
-
-            if(action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
-                Log.d(DEBUG_TAG, "Network status update!");
-                if(AndroidUtil.isConnected(context)) {
-                    Log.d(DEBUG_TAG, "The network is back up!");
-
-                    // NETWORK'D!!!
-                    Intent i = new Intent(context, AlarmService.class);
-                    i.setAction(STOCK_ALARM_NETWORK_BACK);
-                    enqueueWork(context, i);
-                }
-            }
+    public static class ConnectivityWorker extends Worker {
+        public ConnectivityWorker(@NonNull Context context,
+                                  @NonNull WorkerParameters workerParams) {
+            super(context, workerParams);
         }
-    }
 
-    /**
-     * This kicks in on connectivity changes in the event that JobScheduler is
-     * available (Android 21 or higher).  All what it does is wake up the
-     * fetcher.
-     */
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static class AlarmServiceJobService extends JobService {
+        @NonNull
         @Override
-        public boolean onStartJob(JobParameters params) {
+        public Result doWork() {
             // Since we should only get this when we have a network connection,
             // send out the Intent that says we're back.
-            Intent i = new Intent(this, AlarmService.class);
+            Intent i = new Intent(getApplicationContext(), AlarmService.class);
             i.setAction(STOCK_ALARM_NETWORK_BACK);
-            enqueueWork(this, i);
+            AlarmService.enqueueWork(getApplicationContext(), i);
 
-            // And we're done now!  No thread to spin up or anything.
-            return false;
-        }
-
-        @Override
-        public boolean onStopJob(JobParameters params) {
-            // Man, I really hope sending out one Intent doesn't require so much
-            // time that onStopJob gets triggered.
-            return false;
+            // Aaaaand success.
+            return ListenableWorker.Result.success();
         }
     }
-    
+
     /**
      * This wakes up the service when the party alarm starts.
      */
@@ -486,7 +453,9 @@ public class AlarmService extends JobIntentService {
         // Ready the notification!  The detail text will be set by date, of
         // course.  Also, we can go ahead and make this a public Notification.
         // It's not really sensitive.
-        mNotificationBuilder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_STOCK_PREFETCHER)
+        mNotificationBuilder = new NotificationCompat.Builder(
+                this,
+                GHDConstants.CHANNEL_STOCK_PREFETCHER)
             .setSmallIcon(R.drawable.ic_stat_file_file_download)
             .setContentTitle(getString(R.string.notification_title))
             .setPriority(NotificationCompat.PRIORITY_MIN)
@@ -504,8 +473,21 @@ public class AlarmService extends JobIntentService {
             case STOCK_ALARM_OFF:
                 // We've been told to stop all alarms!
                 Log.d(DEBUG_TAG, "Got STOCK_ALARM_OFF!");
-                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM).setClass(this, StockAlarmReceiver.class), 0));
-                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
+                mAlarmManager.cancel(PendingIntent.getBroadcast(
+                        this, 0,
+                        new Intent(STOCK_ALARM)
+                                .setClass(
+                                        this,
+                                        StockAlarmReceiver.class),
+                        0));
+                mAlarmManager.cancel(PendingIntent.getBroadcast(
+                        this,
+                        0,
+                        new Intent(STOCK_ALARM_RETRY)
+                                .setClass(
+                                        this,
+                                        StockAlarmReceiver.class),
+                        0));
                 stopWaitingForNetwork();
                 clearNotification();
                 break;
@@ -515,8 +497,8 @@ public class AlarmService extends JobIntentService {
                 setNextAlarm();
 
                 // AlarmManager sends out broadcasts, and the receiver we've got
-                // will wake the service back up, so we can stop everything right
-                // now.
+                // will wake the service back up, so we can stop everything
+                // right now.
                 break;
             case STOCK_ALARM:
             case STOCK_ALARM_RETRY:
@@ -525,44 +507,53 @@ public class AlarmService extends JobIntentService {
                 // Aha!  NOW we've got something!
                 Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
 
-                // If we've been told the network just came back, we can shut off
-                // the network receiver.  If we're still in trouble network-wise,
-                // it'll go right back on when we check in a second.
+                // If we've been told the network just came back, we can shut
+                // off the network receiver.  If we're still in trouble
+                // network-wise, it'll go right back on when we check in a
+                // second.
                 if(intent.getAction().equals(STOCK_ALARM_NETWORK_BACK)) {
                     Log.d(DEBUG_TAG, "The network came back!  Yay!");
                     stopWaitingForNetwork();
                 }
 
-                // If we just got the stock alarm, we need to reschedule right away.
+                // If we just got the stock alarm, we need to reschedule right
+                // away.
                 if(intent.getAction().equals(STOCK_ALARM)) {
                     Log.d(DEBUG_TAG, "Rescheduling next STOCK_ALARM...");
                     setNextAlarm(true);
                 }
 
-                // If we got the REAL stock alarm while still waiting on the RETRY
-                // alarm (i.e. the server kept reporting the stock wasn't posted all
-                // day until the next 9:30), we should stop the retry alarm.  It'll
-                // get set back up if the stock is STILL unavailable, and by
-                // shutting it down here, we preferably avoid acting on two alarms
-                // at the same time.
-                mAlarmManager.cancel(PendingIntent.getBroadcast(this, 0, new Intent(STOCK_ALARM_RETRY).setClass(this, StockAlarmReceiver.class), 0));
+                // If we got the REAL stock alarm while still waiting on the
+                // RETRY alarm (i.e. the server kept reporting the stock wasn't
+                // posted all day until the next 9:30), we should stop the retry
+                // alarm.  It'll get set back up if the stock is STILL
+                // unavailable, and by shutting it down here, we preferably
+                // avoid acting on two alarms at the same time.
+                mAlarmManager.cancel(PendingIntent.getBroadcast(this,
+                        0,
+                        new Intent(STOCK_ALARM_RETRY)
+                                .setClass(this,
+                                        StockAlarmReceiver.class),
+                        0));
 
-                // StockService takes care of all the network connectivity checks
-                // and other things that the alarm-checking StockService used to
-                // take care of.  It'll also tell us if the stock hasn't been
-                // posted just yet.  So, we can count on that for error checking.
+                // StockService takes care of all the network connectivity
+                // checks and other things that the alarm-checking StockService
+                // used to take care of.  It'll also tell us if the stock hasn't
+                // been posted just yet.  So, we can count on that for error
+                // checking.
                 if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
                     Log.d(DEBUG_TAG, "Just got a stock result!");
 
                     Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
                     bun.setClassLoader(getClassLoader());
 
-                    int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NOT_POSTED_YET);
+                    int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE,
+                            StockService.RESPONSE_NOT_POSTED_YET);
                     Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
 
                     if(result == StockService.RESPONSE_NO_CONNECTION) {
-                        // No connection means we just set up the receiver and wait.
-                        // And wait.  And wait.
+                        // No connection means we just set up the receiver and
+                        // wait.  And wait.  And wait.
                         Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
 
                         waitForNetwork();
@@ -572,8 +563,8 @@ public class AlarmService extends JobIntentService {
                     }
 
                     if(result == StockService.RESPONSE_NOT_POSTED_YET) {
-                        // Not posted yet means we hit the snooze and try again in a
-                        // half hour or so.  Good night!
+                        // Not posted yet means we hit the snooze and try again
+                        // in a half hour or so.  Good night!
                         Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
                         snooze();
                         clearNotification();
@@ -582,9 +573,9 @@ public class AlarmService extends JobIntentService {
 
                     if(result == StockService.RESPONSE_NETWORK_ERROR) {
                         // A network error that ISN'T "no connection" is usually
-                        // really bad.  But, with Doze in effect, that might mean
-                        // something weird with how it denies us network access, so
-                        // let's just snooze for now.
+                        // really bad.  But, with Doze in effect, that might
+                        // mean something weird with how it denies us network
+                        // access, so let's just snooze for now.
                         Log.w(DEBUG_TAG, "Network reported an error, snoozing for a half hour...");
                         snooze();
                         clearNotification();
@@ -592,32 +583,32 @@ public class AlarmService extends JobIntentService {
                     }
 
                     if(result == StockService.RESPONSE_OKAY) {
-                        // An okay response means the Graticule IS good.  If not,
-                        // fix StockService.
+                        // An okay response means the Graticule IS good.  If
+                        // not, fix StockService.
                         if(g == null) {
                             Log.w(DEBUG_TAG, "g is somehow null in AlarmService?");
                             clearNotification();
                         } else if(g.uses30WRule()) {
-                            // If the response we just checked for was a 30W one and
-                            // it came back okay, then we fire off a check for the
-                            // non-30W one.
+                            // If the response we just checked for was a 30W one
+                            // and it came back okay, then we fire off a check
+                            // for the non-30W one.
                             Log.d(DEBUG_TAG, "That was the 30W response, going up to non-30W...");
                             sendRequest(GHDConstants.DUMMY_TODAY);
                         } else {
-                            // If, however, we got the non-30W back, then our job is
-                            // done!  Yay!
+                            // If, however, we got the non-30W back, then our
+                            // job is done!  Yay!
                             Log.d(DEBUG_TAG, "The 30W response!  We're done!");
                             clearNotification();
 
-                            // And since it's done, we can go off to the part where
-                            // we deal with KnownLocations!
+                            // And since it's done, we can go off to the part
+                            // where we deal with KnownLocations!
                             doKnownLocations();
                         }
                     }
                 } else {
-                    // If it's NOT a result, that means we're starting a new check
-                    // at a 30W hash for some reason.  Doesn't matter what reason.
-                    // We just need to do it.
+                    // If it's NOT a result, that means we're starting a new
+                    // check at a 30W hash for some reason.  Doesn't matter what
+                    // reason.  We just need to do it.
                     Log.d(DEBUG_TAG, "That wasn't a result, so asking for a 30W...");
                     sendRequest(GHDConstants.DUMMY_YESTERDAY);
                 }
@@ -909,36 +900,25 @@ public class AlarmService extends JobIntentService {
     }
 
     private void waitForNetwork() {
-        // SDK check!  We'll go with JobScheduler if we can.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // JobScheduler time!  It's fancier!
-            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            if(js != null) {
-                JobInfo job = new JobInfo.Builder(
-                        ALARM_CONNECTIVITY_JOB,
-                        new ComponentName(this, AlarmServiceJobService.class))
-                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+        // Just like in WikiService.  This oughta be easy.
+        WorkRequest connectivityWorkRequest =
+                new OneTimeWorkRequest.Builder(ConnectivityWorker.class)
+                        .setConstraints(new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build())
                         .build();
-                js.schedule(job);
-            } else {
-                Log.e(DEBUG_TAG, "Couldn't get a JobScheduler instance when scheduling the connectivity check!  THIS IS BAD, AND WE WON'T GET NETWORK UPDATES!");
-            }
-        } else {
-            // Otherwise, just use the ol' package component.
-            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, true);
-        }
+
+        mLastConnectivityRequestId = connectivityWorkRequest.getId();
+        WorkManager.getInstance(this).enqueue(connectivityWorkRequest);
     }
 
     private void stopWaitingForNetwork() {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            if(js != null) {
-                js.cancel(ALARM_CONNECTIVITY_JOB);
-            } else {
-                Log.e(DEBUG_TAG, "Couldn't get a JobScheduler instance when stopping the connectivity check!  THIS IS BAD!");
-            }
-        } else {
-            AndroidUtil.setPackageComponentEnabled(this, NetworkReceiver.class, false);
+        // Also like in WikiService, I don't really think this is that
+        // important, nor do I actually think the UUID will ever actually
+        // survive the service being shut down.
+        if(mLastConnectivityRequestId != null) {
+            WorkManager.getInstance(this)
+                    .cancelWorkById(mLastConnectivityRequestId);
         }
     }
 

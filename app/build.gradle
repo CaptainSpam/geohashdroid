@@ -20,14 +20,17 @@ repositories {
 }
 
 dependencies {
+    def work_version = "2.5.0"
+
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.legacy:legacy-support-v13:1.0.0'
     implementation 'com.google.android.gms:play-services-maps:17.0.1'
     implementation 'com.google.android.gms:play-services-location:18.0.0'
-    implementation 'com.google.guava:guava:24.1-jre'
     implementation 'cz.msebera.android:httpclient:4.5.8'
     implementation 'org.opensextant:geodesy:2.0.1'
     implementation 'androidx.core:core:1.5.0'
+    implementation "androidx.work:work-runtime:$work_version"
+    implementation 'com.google.guava:guava:27.0.1-android'
 
     // Required for local unit tests (JUnit 4 framework)
     testImplementation 'junit:junit:4.12'
