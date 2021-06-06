@@ -27,6 +27,7 @@ import net.exclaimindustries.geohashdroid.util.HashBuilder;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.tools.DateTools;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -418,7 +419,7 @@ public class AlarmService extends JobIntentService {
         // and we WANT that owing to when it triggers.
         if(g.uses30WRule()) cal.add(Calendar.DATE, 1);
         cal = getMostRecentStockDate(cal);
-        
+
         Intent request = new Intent(this, StockService.class);
         request.setAction(StockService.ACTION_STOCK_REQUEST)
             .putExtra(StockService.EXTRA_GRATICULE, g)
@@ -427,8 +428,19 @@ public class AlarmService extends JobIntentService {
             .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM)
             .putExtra(StockService.EXTRA_RESPOND_TO, StockReceiver.class);
         
-        // The notification goes up first.
-        showNotification(Info.makeAdjustedCalendar(cal, g));
+        // The notification goes up first, if need be.
+        if(HashBuilder.getStoredStock(this, cal) != null) {
+            // Hold up, we've already got a stock for that.  Don't throw up the
+            // notification; StockService will send the Intent immediately.
+            Log.d(DEBUG_TAG, "Stock is already cached for "
+                    + DateTools.getHyphenatedDateString(cal)
+                    + ", ignoring the notification...");
+        } else {
+            Log.d(DEBUG_TAG, "Notification going up for a fetch on "
+                    + DateTools.getHyphenatedDateString(cal)
+                    + "...");
+            showNotification(Info.makeAdjustedCalendar(cal, g));
+        }
         
         // THEN we send the request.
         StockService.enqueueWork(this, request);
