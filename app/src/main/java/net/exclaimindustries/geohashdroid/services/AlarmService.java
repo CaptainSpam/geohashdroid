@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -43,6 +42,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.app.AlarmManagerCompat;
 import androidx.core.app.JobIntentService;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -339,15 +339,10 @@ public class AlarmService extends JobIntentService {
         // Even if the user's added us to the whitelist, we won't be able to use
         // the plain set call in Marshmallow or higher.  Not with Doze to worry
         // about.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            mAlarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
-                    cal.getTimeInMillis(),
-                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
-        } else {
-            mAlarmManager.set(AlarmManager.RTC_WAKEUP,
-                    cal.getTimeInMillis(),
-                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
-        }
+        AlarmManagerCompat.setAndAllowWhileIdle(mAlarmManager,
+                AlarmManager.RTC_WAKEUP,
+                cal.getTimeInMillis(),
+                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
     }
 
     /**
@@ -395,16 +390,10 @@ public class AlarmService extends JobIntentService {
 
         // Because there's no Doze-friendly version of setRepeating (grr), we
         // have to re-set an allow-idle alarm every time.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            mAlarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
-                    alarmTime.getTimeInMillis(),
-                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
-        } else {
-            mAlarmManager.set(AlarmManager.RTC_WAKEUP,
-                    alarmTime.getTimeInMillis(),
-                    PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
-        }
-
+        AlarmManagerCompat.setAndAllowWhileIdle(mAlarmManager,
+                AlarmManager.RTC_WAKEUP,
+                alarmTime.getTimeInMillis(),
+                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
     }
     
     private void sendRequest(@NonNull Graticule g) {
