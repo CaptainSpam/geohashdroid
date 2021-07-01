@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5.2" version="929" date="2021-07-01">
+        <title>Alarming Compatibility</title>
+        <header>So I&apos;ve got this branch in the repository labeled &quot;androidx&quot;.  In it, there&apos;s a bunch of commits in my quest to convert a lot of my old code into more modern, AndroidX-ish stuff.  If you don&apos;t know what that means, don&apos;t worry about it, but I felt these changes may be important:</header>
+        <bullets>
+            <bullet>The stock precacher is now using AndroidX compatibility layer stuff.  This might fix a problem some users have seen with it excessively draining the battery.  Might.</bullet>
+            <bullet>The stock fetching notification should no longer show up at all if the stock doesn&apos;t need to be fetched.  This should further save battery, because I think those notifications could wake up the screen under certain circumstances, even if they only show up for a moment as the cache is read.</bullet>
+        </bullets>
+        <footer>There&apos;s other changes in that branch that I haven&apos;t included in this update, but I don&apos;t think they really have any visible effect, so I left them out until I have more of them ready.  I&apos;ll get those up in a later version.</footer>
+    </version>
     <version name="0.9.5.1" version="928" date="2021-06-05">
         <title>The Maze of Permissions</title>
         <header>This one slipped past me...</header>
@@ -15,7 +24,7 @@
         <header>It&apos;s been a rough year for all, but there&apos;s finally an update!</header>
         <bullets>
             <bullet>Completely overhauled how the wiki posting queue works.  This is a background thing that stores wiki posts for later if anything goes wrong (i.e. there&apos;s no internet connection).  Or rather, it SHOULD have been doing that, but the way I implemented it didn&apos;t work the way I planned it.  I've gone back over it and hopefully made it far more bulletproof, so it should actually queue up anything you send if it can&apos;t get them posted for some reason.  Should be handy for those trips way away from data coverage.</bullet>
-            <bullet>This also adds an new preference in the wiki section of the preferences screen to manually release any posts queued up (or at least try to).  If there was no internet connection when you tried sending the posts, Geohash Droid will automatically try to re-send everything once it detects one, unless Android decided to shut it down in the meantime.  However, in that case the posts should still be persisted in the app, so you can use this button to release anything currently on standby.</bullet>
+            <bullet>This also adds a new preference in the wiki section of the preferences screen to manually release any posts queued up (or at least try to).  If there was no internet connection when you tried sending the posts, Geohash Droid will automatically try to re-send everything once it detects one, unless Android decided to shut it down in the meantime.  However, in that case the posts should still be persisted in the app, so you can use this button to release anything currently on standby.</bullet>
         </bullets>
         <footer>Do let me know on the GitHub page if anything went wrong.  I&apos;ve got more on the way, including more wiki options, slightly more night-mode support, and an overall UI refresh to bring things more up-to-date with modern Android sensibilities.  More to come, is all.</footer>
     </version>
