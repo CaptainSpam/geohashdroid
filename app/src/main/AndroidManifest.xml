@@ -3,8 +3,8 @@
           package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="927"
-          android:versionName="0.9.5">
+          android:versionCode="929"
+          android:versionName="0.9.5.2">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -110,18 +110,6 @@
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="true">
         </service>
-        <service
-            android:name=".services.WikiService$WikiServiceJobService"
-            android:label="@string/title_wikijobservice"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="true">
-        </service>
-        <service
-            android:name=".services.AlarmService$AlarmServiceJobService"
-            android:label="@string/title_alarmjobservice"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="true">
-        </service>
 
         <receiver
             android:name=".services.AlarmService$StockReceiver"
@@ -131,24 +119,8 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".services.AlarmService$NetworkReceiver"
-            android:enabled="false"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
-            </intent-filter>
-        </receiver>
-        <receiver
             android:name=".services.AlarmService$StockAlarmReceiver"
             android:exported="false">
-        </receiver>
-        <receiver
-            android:name=".services.WikiService$WikiServiceConnectivityListener"
-            android:enabled="false"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
-            </intent-filter>
         </receiver>
         <receiver android:name=".services.AlarmService$BootReceiver"
                   android:exported="false">

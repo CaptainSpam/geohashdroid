@@ -899,11 +899,11 @@ public class WikiUtils {
      */
     public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
-            return " [https://openstreetmap.org/?lat="
+            return " [https://openstreetmap.org/?mlat="
                     + mLatLonLinkFormat.format(loc.getLatitude())
-                    + "&lon="
+                    + "&mlon="
                     + mLatLonLinkFormat.format(loc.getLongitude())
-                    + "&zoom=16&layers=B000FTF @"
+                    + "&zoom=16 @"
                     + mLatLonFormat.format(loc.getLatitude())
                     + ","
                     + mLatLonFormat.format(loc.getLongitude())

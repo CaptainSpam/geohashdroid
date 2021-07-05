@@ -11,22 +11,15 @@ package net.exclaimindustries.geohashdroid.services;
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.app.job.JobInfo;
-import android.app.job.JobParameters;
-import android.app.job.JobScheduler;
-import android.app.job.JobService;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
-import android.net.ConnectivityManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
+import android.util.Base64;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -47,13 +40,21 @@ import org.json.JSONObject;
 
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.work.Constraints;
+import androidx.work.ListenableWorker;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
 
@@ -86,61 +87,27 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     /**
-     * This kicks in on connectivity changes in the event that JobScheduler is
-     * available (Android 21 or higher).  All what it does is kick the queue
-     * back into action.
+     * This Worker does little more than try to fire off a RESUME command once
+     * the network returns.
      */
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static class WikiServiceJobService extends JobService {
+    public static class ConnectivityWorker extends Worker {
+        public ConnectivityWorker(@NonNull Context context,
+                                  @NonNull WorkerParameters workerParams) {
+            super(context, workerParams);
+        }
+
+        @NonNull
         @Override
-        public boolean onStartJob(JobParameters params) {
+        public Result doWork() {
             // Just launch into the service.  The scheduler ONLY should've woken
             // us up if we've got an internet connection, but if not, the queue
             // will just pause anyway.
-            Intent i = new Intent(this, WikiService.class);
+            Intent i = new Intent(getApplicationContext(), WikiService.class);
             i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
-            startService(i);
+            getApplicationContext().startService(i);
 
-            // Since we're done now, return false so we don't have a thread
-            // spinning away.
-            return false;
-        }
-
-        @Override
-        public boolean onStopJob(JobParameters params) {
-            // I'm pretty sure there's not much of a way that sending out an
-            // Intent can take long enough to stop the job.
-            return false;
-        }
-    }
-
-    /**
-     * <p>
-     * This listens for the connectivity broadcasts so we know if it's safe to
-     * kick the queue back in action after a disconnect.  Well... I guess not so
-     * much "safe" as "possible".
-     * </p>
-     *
-     * <p>
-     * This is only used in Android SDKs that don't have JobScheduler.  This
-     * whole thing was deprecated in Android N.
-     * </p>
-     */
-    public static class WikiServiceConnectivityListener extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-
-            if(action != null && action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
-                // Ding!  Are we back yet?
-                if(AndroidUtil.isConnected(context)) {
-                    // Aha!  We're up!  Send off a command to resume the queue!
-                    Intent i = new Intent(context, WikiService.class);
-                    i.putExtra(QueueService.COMMAND_EXTRA, QueueService.COMMAND_RESUME);
-                    context.startService(i);
-                }
-            }
+            // Whatever the case, this was a smashing success.  Well done.
+            return ListenableWorker.Result.success();
         }
     }
 
@@ -150,7 +117,7 @@ public class WikiService extends PlainSQLiteQueueService {
     private AlarmManager mAlarmManager;
     private WakeLock mWakeLock;
 
-    private static final int WIKI_CONNECTIVITY_JOB = 0;
+    private UUID mLastWikiConnectivityRequestId;
 
     /** Matches the gallery section. */
     private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
@@ -190,6 +157,13 @@ public class WikiService extends PlainSQLiteQueueService {
      * there's no image to upload.
      */
     public static final String EXTRA_IMAGE = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE";
+
+    /**
+     * Actual literal {@link android.graphics.Bitmap} image data to be uploaded.
+     * This is needed because WikiService is a different Context from what
+     * selected the image in the first place, causing a security exception.
+     */
+    public static final String EXTRA_IMAGE_DATA = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_DATA";
 
     /** 
      * The user's current geographic coordinates.  Should be a {@link Location}.
@@ -243,6 +217,7 @@ public class WikiService extends PlainSQLiteQueueService {
         String message;
         Calendar timestamp;
         Uri imageLocation;
+        byte[] imageData;
         boolean includeLocation;
 
         try {
@@ -251,6 +226,7 @@ public class WikiService extends PlainSQLiteQueueService {
             message = i.getStringExtra(EXTRA_MESSAGE);
             timestamp = (Calendar) i.getSerializableExtra(EXTRA_TIMESTAMP);
             imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
+            imageData = i.getByteArrayExtra(EXTRA_IMAGE_DATA);
             includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
         } catch(ClassCastException cce) {
             // If any of those threw a CCE, bail out.
@@ -323,22 +299,20 @@ public class WikiService extends PlainSQLiteQueueService {
                 String wikiName = WikiImageUtils.getImageWikiName(info, imageInfo, username);
 
                 // Make sure the image doesn't already exist.  If it does, we
-                // can skip the entire "shrink image, annotate it, and upload
-                // it" steps.
+                // can skip the upload.
                 if(!WikiUtils.doesWikiPageExist(client, wikiName)) {
-                    // Get us a byte array!  We'll be uploading this soon.
-                    byte[] image = WikiImageUtils.createWikiImage(this, info, imageInfo, includeLocation);
-
-                    if(image == null) {
+                    if(imageData == null) {
                         // No image is a problem at this point...
+                        Log.w(DEBUG_TAG, "Trying to upload an image, but imageData was null at upload time?");
                         showImageErrorNotification();
                         return ReturnCode.CONTINUE;
                     }
 
-                    // And by "soon", I mean "right now", because that byte
-                    // array takes up a decent amount of memory.
+                    // Upload now!  Do it!
                     String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
-                    WikiUtils.putWikiImage(client, wikiName, description, formfields, image);
+                    WikiUtils.putWikiImage(client, wikiName, description, formfields, imageData);
+                } else {
+                    Log.w(DEBUG_TAG, "Trying to upload an image, but it already exists on the wiki?");
                 }
 
                 // Good, good.  Now, let's get some tags for posting.
@@ -507,10 +481,17 @@ public class WikiService extends PlainSQLiteQueueService {
                 toReturn.put("location", location);
             }
 
-            // The image is just a URI.
+            // The image is a URI...
             Uri uri = i.getParcelableExtra(EXTRA_IMAGE);
             if(uri != null) {
                 toReturn.put("image", uri.toString());
+            }
+
+            // ...and a byte array.  That's the troublesome one, as it's large.
+            byte[] imageData = i.getByteArrayExtra(EXTRA_IMAGE_DATA);
+            if(imageData != null) {
+                toReturn.put("imageData",
+                        Base64.encodeToString(imageData, Base64.DEFAULT));
             }
 
             // Info time!
@@ -591,7 +572,14 @@ public class WikiService extends PlainSQLiteQueueService {
             // Image URI, as a string.
             String image = incoming.optString("image");
             if(!image.isEmpty()) {
-                toReturn.putExtra(EXTRA_IMAGE, image);
+                toReturn.putExtra(EXTRA_IMAGE, Uri.parse(image));
+            }
+
+            // Image data, as a byte array.
+            String imageDataBase64 = incoming.optString("imageData");
+            if(!imageDataBase64.isEmpty()) {
+                toReturn.putExtra(EXTRA_IMAGE_DATA,
+                        Base64.decode(imageDataBase64, Base64.DEFAULT));
             }
 
             // The Info object, as a mess of things.
@@ -687,34 +675,27 @@ public class WikiService extends PlainSQLiteQueueService {
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
 
-        // If we have JobScheduler (SDK 21 or higher), use that.  Otherwise, go
-        // with the old ConnectivityListener style.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            JobInfo job = new JobInfo.Builder(
-                    WIKI_CONNECTIVITY_JOB,
-                    new ComponentName(this, WikiServiceJobService.class))
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                    .build();
-            assert js != null;
-            js.schedule(job);
-        } else {
-            // Make sure the connectivity listener's waiting for a connection.
-            AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, true);
-        }
+        WorkRequest connectivityWorkRequest =
+                new OneTimeWorkRequest.Builder(ConnectivityWorker.class)
+                        .setConstraints(new Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build())
+                        .build();
+
+        mLastWikiConnectivityRequestId = connectivityWorkRequest.getId();
+        WorkManager.getInstance(this).enqueue(connectivityWorkRequest);
     }
 
     private void hideWaitingForConnectionNotification() {
         mNotificationManager.cancel(R.id.wiki_waiting_notification);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Cancel the job, if need be.
-            JobScheduler js = (JobScheduler)getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            assert js != null;
-            js.cancel(WIKI_CONNECTIVITY_JOB);
-        } else {
-            // Shut off the listener, if need be.
-            AndroidUtil.setPackageComponentEnabled(this, WikiServiceConnectivityListener.class, false);
+        // If there's still a request waiting, cancel it.  This really shouldn't
+        // matter (worst case, it just means a stray RESUME will be shot off),
+        // and chances are the ID will be lost as soon as this service ends,
+        // but let's just try anyway.
+        if(mLastWikiConnectivityRequestId != null) {
+            WorkManager.getInstance(this)
+                    .cancelWorkById(mLastWikiConnectivityRequestId);
         }
     }
 
