@@ -17,8 +17,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.ListPreference;
-import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
@@ -32,12 +30,13 @@ import net.exclaimindustries.tools.QueueService;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
-
-import androidx.annotation.StringRes;
 
 /**
  * <p>
@@ -460,7 +459,7 @@ public class PreferencesScreen extends AppCompatActivity
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.pref_other, rootKey);
 
-            bindPreferenceSummaryToValue(Objects.requireNonNull(findPreference(GHDConstants.PREF_STOCK_CACHE_SIZE)));
+            bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_STOCK_CACHE_SIZE));
 
             // The stock alarm preference needs to enable/disable the alarm as
             // need be.
