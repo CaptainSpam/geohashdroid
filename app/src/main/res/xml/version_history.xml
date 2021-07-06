@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5.3" version="930" date="2021-07-06">
+        <title>A Fun Game Of Find-The-Version-History</title>
+        <header>But wait, there&apos;s more!</header>
+        <bullets>
+            <bullet>Thanks to what I think is an anonymous contributor (at least I&apos;m assuming that's what Github meant), when a wiki post is made, links to OSM should be better, in that they&apos;ll put a marker on the map and use the default layer options.</bullet>
+            <bullet>I&apos;m pretty sure I removed the last references to the v1 Maps API.  I&apos;m not using v1 anyway, so I&apos;m not sure why the publishing console keeps insisting I am.  Hopefully that&apos;s taken care of now.  You probably won&apos;t notice anything.</bullet>
+            <bullet>Version History (that is, this dialog) has moved to a button within About.  I felt that popup menu was getting cluttered, and Version History didn&apos;t seem to belong in the top-level menu anyway.  Note that it will still pop up on a new version regardless, which is most likely why you&apos;re reading this now.</bullet>
+        </bullets>
+        <footer>I might have the key idea I was missing for the UI changes that will finally bring in native dark/night mode.  I&apos;m hoping for as little disruption as possible in how this normally works.</footer>
+    </version>
     <version name="0.9.5.2" version="929" date="2021-07-01">
         <title>Alarming Compatibility</title>
         <header>So I&apos;ve got this branch in the repository labeled &quot;androidx&quot;.  In it, there&apos;s a bunch of commits in my quest to convert a lot of my old code into more modern, AndroidX-ish stuff.  If you don&apos;t know what that means, don&apos;t worry about it, but I felt these changes may be important:</header>
