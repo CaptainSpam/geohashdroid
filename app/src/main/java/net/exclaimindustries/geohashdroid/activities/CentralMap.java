@@ -907,12 +907,6 @@ public class CentralMap
             frag.show(getSupportFragmentManager(), MAP_TYPE_DIALOG);
 
             return true;
-        } else if(itemId == R.id.action_versionhistory) {
-            // The version history has no real actions at all.
-            VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
-            frag.show(getSupportFragmentManager(), VERSION_HISTORY_DIALOG);
-
-            return true;
         } else if(itemId == R.id.action_about) {
             // About is just a dialog with a view.
             AboutDialogFragment frag = AboutDialogFragment.newInstance();

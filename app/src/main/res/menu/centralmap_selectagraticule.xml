@@ -26,8 +26,4 @@
         android:title="@string/title_about"
         android:titleCondensed="@string/menu_item_about"
         app:showAsAction="never" />
-    <item
-        android:id="@+id/action_versionhistory"
-        android:title="@string/title_versionhistory"
-        app:showAsAction="never" />
 </menu>

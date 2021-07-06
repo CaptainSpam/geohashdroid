@@ -24,6 +24,8 @@ import androidx.fragment.app.FragmentActivity;
  * Where credits become due and links become available.
  */
 public class AboutDialogFragment extends DialogFragment {
+    private static final String VERSION_HISTORY_DIALOG = "versionHistory";
+
     /**
      * Generates a new AboutDialogFragment, suitable for use in a dialog.
      *
@@ -47,6 +49,12 @@ public class AboutDialogFragment extends DialogFragment {
         return new AlertDialog.Builder(getActivity())
                 .setView(v)
                 .setPositiveButton(R.string.cool_label, (dialog, which) -> dismiss())
+                .setNeutralButton(R.string.title_versionhistory, (dialog, which) ->
+                    VersionHistoryDialogFragment
+                            .newInstance(act)
+                            .show(act.getSupportFragmentManager(),
+                                    VERSION_HISTORY_DIALOG)
+                )
                 .create();
     }
 }
