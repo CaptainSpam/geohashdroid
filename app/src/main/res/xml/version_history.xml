@@ -45,7 +45,7 @@
             <bullet>Fixed a bug where searching for a Globalhash could lead to a crash if it turns out the stock value hadn&apos;t been cached.</bullet>
             <bullet>Resisted trying to make that last bulletpoint follow a proper poetic meter.</bullet>
         </bullets>
-        <footer>Thanks to Philip Ostendorf for helping me track this one down.</footer>
+        <footer>Thanks to someone in the community for helping me track this one down.</footer>
     </version>
     <version name="0.9.4" version="925" date="2020-02-19">
         <title>A Wiki Housewarming Gift</title>
