@@ -17,9 +17,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -27,8 +24,15 @@ import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.BitmapTools;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.Calendar;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.exifinterface.media.ExifInterface;
 
 /**
  * <code>WikiImageUtils</code> contains static methods that do stuff to
@@ -103,7 +107,7 @@ public class WikiImageUtils {
      * same timestamp.  So don't do that.
      *
      * @param info Info object containing expedition data
-     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Uri, Location, Calendar)}
+     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Context, Uri, Location, Calendar)}
      * @param username current username (must not be null)
      * @return the name of the image on the wiki
      */
@@ -115,28 +119,58 @@ public class WikiImageUtils {
 
     /**
      * <p>
-     * Creates an {@link ImageInfo} object from the given Uri.  Note that as far
-     * as Android goes for the time being, locationIfNoneSet and timeIfNoneSet
-     * will ALWAYS be what's used, ever since the changes that require me to use
-     * the document opening interface as opposed to the old MediaStore method.
-     * This will change if I can ever get reasonable metadata out of the
-     * document provider's methods.
+     * Creates an {@link ImageInfo} object from the given Uri.  This depends
+     * heavily on being able to read EXIF data from the given Uri.
      * </p>
      *
      * @param uri the URI of the image
-     * @param locationIfNoneSet location to use if the image has no location metadata stored in it (it won't)
-     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it (it won't)
+     * @param locationIfNoneSet location to use if the image has no location metadata stored in it
+     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it
      * @return a brand new ImageInfo
      */
     @NonNull
-    public static ImageInfo readImageInfo(@NonNull Uri uri,
+    public static ImageInfo readImageInfo(@NonNull Context context,
+                                          @NonNull Uri uri,
                                           @Nullable Location locationIfNoneSet,
                                           @NonNull Calendar timeIfNoneSet) {
-        // This got a lot simpler, but sadly much less robust, after the Android
-        // change that broke permissions on MediaStore...
+        ExifInterface exif = null;
+
+        try {
+            InputStream input = context.getContentResolver().openInputStream(uri);
+            if(input != null) {
+                exif = new ExifInterface(input);
+            }
+        } catch(IOException ioe) {
+            // This can happen, the error is handled right up next.
+        }
+
+        if(exif == null) {
+            // If there's any problem, just fall back to the supplied defaults.
+            return new ImageInfo(uri,
+                    locationIfNoneSet,
+                    timeIfNoneSet.getTimeInMillis());
+        }
+
+        // Grab location data.
+        double[] latLon = exif.getLatLong();
+        Location loc;
+        if(latLon == null) {
+            // If there is none, fall back to the default, if given.
+            loc = locationIfNoneSet;
+        } else {
+            loc = new Location("");
+            loc.setLatitude(latLon[0]);
+            loc.setLongitude(latLon[1]);
+        }
+
+        // Timestamp data, too.  That's also useful.
+        Long timestamp = exif.getGpsDateTime();
+
         return new ImageInfo(uri,
-                locationIfNoneSet,
-                timeIfNoneSet.getTimeInMillis());
+                loc,
+                timestamp != null
+                        ? timestamp
+                        : timeIfNoneSet.getTimeInMillis());
     }
 
     /**

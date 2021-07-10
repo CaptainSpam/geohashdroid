@@ -8,6 +8,8 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -217,11 +219,13 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void setImageUri(@NonNull Uri uri) {
+        Activity a = getActivity();
+
         // Grab a new Bitmap.  We'll toss this into the button.
         int dimen = getResources().getDimensionPixelSize(R.dimen.wiki_nominal_icon_size);
         final Bitmap thumbnail = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromUri(
-                        getActivity(),
+                        a,
                         uri,
                         dimen,
                         dimen,
@@ -231,12 +235,12 @@ public class WikiFragment extends CentralMapExtraFragment {
         // Good!  Was it null?
         if(thumbnail == null) {
             // NO!  WRONG!  BAD!
-            Toast.makeText(getActivity(), R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
+            Toast.makeText(a, R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
             return;
         }
 
         // With bitmap in hand...
-        getActivity().runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
+        a.runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
 
         // And remember it for posting later.  Done!
         mPictureUri = uri;
@@ -261,7 +265,10 @@ public class WikiFragment extends CentralMapExtraFragment {
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
             String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 
-            if(username.isEmpty() || password.isEmpty()) {
+            if(username == null
+                    || username.isEmpty()
+                    || password == null
+                    || password.isEmpty()) {
                 // If anything isn't defined, we can't set a picture.  Also,
                 // uncheck the picture checkbox just to make sure.
                 mPictureCheckbox.setChecked(false);
@@ -367,25 +374,27 @@ public class WikiFragment extends CentralMapExtraFragment {
     }
 
     private void dispatchPost() {
+        Context c = getActivity();
+
         // Time for fun!
         boolean includeLocation = !mPermissionsDenied && mIncludeLocationCheckbox.isChecked();
         boolean includePicture = mPictureCheckbox.isChecked();
 
         // So.  If we didn't have an Info yet, we're hosed.
         if(mInfo == null) {
-            Toast.makeText(getActivity(), R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
+            Toast.makeText(c, R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
             return;
         }
 
         // If there's no message, we're hosed.
         if(mMessage.getText().toString().isEmpty()) {
-            Toast.makeText(getActivity(), R.string.error_no_message, Toast.LENGTH_LONG).show();
+            Toast.makeText(c, R.string.error_no_message, Toast.LENGTH_LONG).show();
             return;
         }
 
         // If this is a picture post but there's no picture, we're hosed.
         if(includePicture && mPictureUri == null) {
-            Toast.makeText(getActivity(), R.string.error_no_picture, Toast.LENGTH_LONG).show();
+            Toast.makeText(c, R.string.error_no_picture, Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -394,7 +403,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         Location loc = mLastLocation;
         if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
 
-        Intent i = new Intent(getActivity(), WikiService.class)
+        Intent i = new Intent(c, WikiService.class)
                 .putExtra(WikiService.EXTRA_INFO, mInfo)
                 .putExtra(WikiService.EXTRA_TIMESTAMP, Calendar.getInstance())
                 .putExtra(WikiService.EXTRA_MESSAGE, message)
@@ -406,12 +415,13 @@ public class WikiFragment extends CentralMapExtraFragment {
             // This is actually a thing.  WikiService won't be on the same
             // Context by the time it uploads, so that'd be a SecurityException.
             WikiImageUtils.ImageInfo imageInfo = WikiImageUtils.readImageInfo(
+                    c,
                     mPictureUri,
                     loc,
                     Calendar.getInstance());
 
             byte[] mPictureData = WikiImageUtils.createWikiImage(
-                    getActivity(),
+                    c,
                     mInfo,
                     imageInfo,
                     includeLocation);
@@ -421,7 +431,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         }
 
         // And away it goes!
-        getActivity().startService(i);
+        c.startService(i);
 
         // Post complete!  We're done here!
         if(mCloseListener != null)
