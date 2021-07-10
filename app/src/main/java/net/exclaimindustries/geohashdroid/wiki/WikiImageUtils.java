@@ -60,7 +60,8 @@ public class WikiImageUtils {
 
     private static Paint mBackgroundPaint;
     private static Paint mTextPaint;
-    private static DecimalFormat mDistFormat = new DecimalFormat("###.######");
+    private static final DecimalFormat DIST_FORMAT =
+            new DecimalFormat("###.######");
 
     /**
      * This is just a convenient holder for the various info related to an
@@ -68,14 +69,32 @@ public class WikiImageUtils {
      */
     public static class ImageInfo {
         /** The image's URI.  Should not be null. */
-        public Uri uri;
+        @NonNull public final Uri uri;
         /**
          * The location of either the image or the user, depending on if the
          * geodata from the image could be read.  May be null.
          */
-        public Location location;
-        /** The timestamp of the image, if possible.  Defaults to -1. */
-        public long timestamp = -1L;
+        @Nullable public final Location location;
+        /**
+         * The timestamp of the image, if possible.  Should be -1 if that's not
+         * possible.
+         */
+        public final long timestamp;
+
+        /**
+         * Constructs an ImageInfo.  It's a basic immutable data object, really.
+         *
+         * @param uri the image URI
+         * @param location the image location if known, or null if not
+         * @param timestamp the image's timestamp if known, or -1 if not
+         */
+        public ImageInfo(@NonNull Uri uri,
+                         @Nullable Location location,
+                         long timestamp) {
+            this.uri = uri;
+            this.location = location;
+            this.timestamp = timestamp;
+        }
     }
 
     /**
@@ -110,15 +129,14 @@ public class WikiImageUtils {
      * @return a brand new ImageInfo
      */
     @NonNull
-    public static ImageInfo readImageInfo(@NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
+    public static ImageInfo readImageInfo(@NonNull Uri uri,
+                                          @Nullable Location locationIfNoneSet,
+                                          @NonNull Calendar timeIfNoneSet) {
         // This got a lot simpler, but sadly much less robust, after the Android
         // change that broke permissions on MediaStore...
-        ImageInfo toReturn = new ImageInfo();
-        toReturn.uri = uri;
-        toReturn.location = locationIfNoneSet;
-        toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
-
-        return toReturn;
+        return new ImageInfo(uri,
+                locationIfNoneSet,
+                timeIfNoneSet.getTimeInMillis());
     }
 
     /**
@@ -188,7 +206,7 @@ public class WikiImageUtils {
 
             strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
             strings[1] = UnitConverter.makeFullCoordinateString(context, imageInfo.location, false, UnitConverter.OUTPUT_LONG);
-            strings[2] = UnitConverter.makeDistanceString(context, mDistFormat, info.getDistanceInMeters(imageInfo.location));
+            strings[2] = UnitConverter.makeDistanceString(context, DIST_FORMAT, info.getDistanceInMeters(imageInfo.location));
 
             // Then, to the render method!
             icons = new int[3];
