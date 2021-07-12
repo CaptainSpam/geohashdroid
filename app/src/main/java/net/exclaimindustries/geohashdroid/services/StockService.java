@@ -289,6 +289,7 @@ public class StockService extends JobIntentService {
         
         // If we got something, great!  Broadcast it right on out!
         if(info != null) {
+            Log.i(DEBUG_TAG, "Stock was cached, returning it...");
             respFlags |= FLAG_CACHED;
             Info[] nearby = null;
             if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
@@ -301,6 +302,7 @@ public class StockService extends JobIntentService {
                 Log.i(DEBUG_TAG, "We're not connected, stopping now.");
                 dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
             } else {
+                Log.i(DEBUG_TAG, "Making a StockRunner to run stocks...");
                 StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule);
                 runner.runStock();
 

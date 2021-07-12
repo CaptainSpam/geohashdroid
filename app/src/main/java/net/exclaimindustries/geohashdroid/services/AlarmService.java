@@ -162,6 +162,7 @@ public class AlarmService extends JobIntentService {
         public Result doWork() {
             // Since we should only get this when we have a network connection,
             // send out the Intent that says we're back.
+            Log.d(DEBUG_TAG, "ConnectivityWorker just woke up and is sending STOCK_ALARM_NETWORK_BACK!");
             Intent i = new Intent(getApplicationContext(), AlarmService.class);
             i.setAction(STOCK_ALARM_NETWORK_BACK);
             AlarmService.enqueueWork(getApplicationContext(), i);
@@ -432,6 +433,7 @@ public class AlarmService extends JobIntentService {
         }
         
         // THEN we send the request.
+        Log.d(DEBUG_TAG, "StockService will handle it from here.");
         StockService.enqueueWork(this, request);
     }
 
@@ -902,6 +904,7 @@ public class AlarmService extends JobIntentService {
 
     private void waitForNetwork() {
         // Just like in WikiService.  This oughta be easy.
+        Log.d(DEBUG_TAG, "In waitForNetwork now, telling ConnectivityWorker to stand by...");
         WorkRequest connectivityWorkRequest =
                 new OneTimeWorkRequest.Builder(ConnectivityWorker.class)
                         .setConstraints(new Constraints.Builder()
