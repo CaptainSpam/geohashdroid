@@ -46,10 +46,6 @@
         android:titleCondensed="@string/menu_item_about"
         android:showAsAction="never" />
     <item
-        android:id="@+id/action_versionhistory"
-        android:title="@string/title_versionhistory"
-        android:showAsAction="never" />
-    <item
         android:id="@+id/action_logcat"
         android:title="@string/menu_item_logcat"
         android:showAsAction="never" />

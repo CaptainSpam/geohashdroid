@@ -902,13 +902,6 @@ public class CentralMap
 
                 return true;
             }
-            case R.id.action_versionhistory: {
-                // The version history has no real actions at all.
-                VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(this);
-                frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
-
-                return true;
-            }
             case R.id.action_about: {
                 // About is just a dialog with a view.
                 AboutDialogFragment frag = AboutDialogFragment.newInstance();

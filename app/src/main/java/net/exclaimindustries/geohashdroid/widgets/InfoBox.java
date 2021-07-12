@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.location.Location;
-import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -39,11 +38,11 @@ public class InfoBox extends LinearLayout implements LocationListener {
 
     private Info mInfo;
 
-    private TextView mDest;
-    private TextView mYou;
-    private TextView mDistance;
-    private TextView mAccuracyLow;
-    private TextView mAccuracyReallyLow;
+    private final TextView mDest;
+    private final TextView mYou;
+    private final TextView mDistance;
+    private final TextView mAccuracyLow;
+    private final TextView mAccuracyReallyLow;
 
     private Location mLastLocation;
 
@@ -75,11 +74,6 @@ public class InfoBox extends LinearLayout implements LocationListener {
         int padding = getResources().getDimensionPixelSize(R.dimen.infobox_padding);
         setPadding(padding, padding, padding, padding);
         setOrientation(LinearLayout.VERTICAL);
-
-        // I stand by my decision to elevate!  Even though I'm pretty sure it
-        // doesn't do anything with a translucent background.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            setElevation(getResources().getDimension(R.dimen.elevation_infobox));
 
         // INFLATE!
         inflate(c, R.layout.infobox, this);
@@ -302,7 +296,7 @@ public class InfoBox extends LinearLayout implements LocationListener {
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         // Hey, look, a location!
         mLastLocation = location;
         updateBox();
