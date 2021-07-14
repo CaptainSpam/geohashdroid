@@ -180,18 +180,23 @@ public class WikiImageUtils {
      *
      * @param context a Context for getting necessary paints and resources
      * @param info an Info object for determining the distance to the destination
-     * @param imageInfo ImageInfo containing image stuff to retrieve
+     * @param uri the URI of the image
+     * @param location a location for the image, for the infobox (can be null)
      * @param drawInfobox true to draw the infobox, false to just shrink and compress
      * @return a byte array of JPEG data, or null if something went wrong
      */
     @Nullable
-    public static byte[] createWikiImage(@NonNull Context context, @NonNull Info info, @NonNull ImageInfo imageInfo, boolean drawInfobox) {
+    public static byte[] createWikiImage(@NonNull Context context,
+                                         @NonNull Info info,
+                                         @NonNull Uri uri,
+                                         @Nullable Location location,
+                                         boolean drawInfobox) {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
         // 150k, so scaling and compressing are the way to go.
         Bitmap bitmap = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromUri(
-                        context, imageInfo.uri, MAX_UPLOAD_WIDTH,
+                        context, uri, MAX_UPLOAD_WIDTH,
                         MAX_UPLOAD_HEIGHT, true);
 
         // If the Bitmap wound up null, we're in trouble.
@@ -199,7 +204,7 @@ public class WikiImageUtils {
 
         // Then, put the infobox up if that's what we're into.
         if(drawInfobox)
-            drawInfobox(context, info, imageInfo, bitmap);
+            drawInfobox(context, info, location, bitmap);
 
         // Finally, compress it and away it goes!
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -214,11 +219,14 @@ public class WikiImageUtils {
      *
      * @param context a Context, for resources
      * @param info an Info object for the current expedition
-     * @param imageInfo some ImageInfo
+     * @param location the location to stamp onto the infobox (can be null)
      * @param bitmap the Bitmap (must be read/write, will be edited)
      * @throws java.lang.IllegalArgumentException if you tried to pass an immutable Bitmap
      */
-    public static void drawInfobox(@NonNull Context context, @NonNull Info info, @NonNull ImageInfo imageInfo, @NonNull Bitmap bitmap) {
+    public static void drawInfobox(@NonNull Context context,
+                                   @NonNull Info info,
+                                   @Nullable Location location,
+                                   @NonNull Bitmap bitmap) {
         if (!bitmap.isMutable())
             throw new IllegalArgumentException("The Bitmap has to be mutable in order to draw an infobox on it!");
 
@@ -233,14 +241,22 @@ public class WikiImageUtils {
 
         // I'm sure this could have less redundant code if I wasn't thinking too
         // hard about it...
-        if (imageInfo.location != null) {
+        if (location != null) {
             // Assemble all our data.  Our three strings will be the final
             // destination, our current location, and the distance.
             strings = new String[3];
 
-            strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
-            strings[1] = UnitConverter.makeFullCoordinateString(context, imageInfo.location, false, UnitConverter.OUTPUT_LONG);
-            strings[2] = UnitConverter.makeDistanceString(context, DIST_FORMAT, info.getDistanceInMeters(imageInfo.location));
+            strings[0] = UnitConverter.makeFullCoordinateString(context,
+                    info.getFinalLocation(),
+                    false,
+                    UnitConverter.OUTPUT_LONG);
+            strings[1] = UnitConverter.makeFullCoordinateString(context,
+                    location,
+                    false,
+                    UnitConverter.OUTPUT_LONG);
+            strings[2] = UnitConverter.makeDistanceString(context,
+                    DIST_FORMAT,
+                    info.getDistanceInMeters(location));
 
             // Then, to the render method!
             icons = new int[3];
@@ -251,7 +267,10 @@ public class WikiImageUtils {
             // Otherwise, just throw up an unknown.  Location's still there,
             // though.
             strings = new String[2];
-            strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            strings[0] = UnitConverter.makeFullCoordinateString(context,
+                    info.getFinalLocation(),
+                    false,
+                    UnitConverter.OUTPUT_LONG);
             strings[1] = context.getString(R.string.location_unknown);
 
             icons = new int[2];

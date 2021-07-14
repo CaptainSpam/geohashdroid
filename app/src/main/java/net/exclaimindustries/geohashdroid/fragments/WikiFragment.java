@@ -18,6 +18,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import android.text.Editable;
@@ -31,6 +33,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,10 +53,9 @@ import java.text.DateFormat;
 import java.util.Calendar;
 
 /**
- * <code>WikiFragment</code> does double duty, handling what both of <code>WikiPictureEditor</code>
- * and <code>WikiMessageEditor</code> used to do.  Well, most of it.  Honestly,
- * most of that's been dumped into {@link WikiService}, but the interface part
- * here can handle either pictures or messages.
+ * <code>WikiFragment</code> handles any wiki-related UI (besides the username
+ * and password inputs).  It takes text, asks for pictures, and sends all the
+ * data off to {@link WikiService} when it's ready to go.
  */
 public class WikiFragment extends CentralMapExtraFragment {
     private static final String PICTURE_URI = "pictureUri";
@@ -68,8 +71,13 @@ public class WikiFragment extends CentralMapExtraFragment {
     private EditText mMessage;
     private Button mPostButton;
     private TextView mHeader;
+    private RadioGroup mLocationTypeGroup;
+    private RadioButton mUsePictureLocationButton;
+    private RadioButton mUseDeviceLocationButton;
+    private RadioButton mUseNoLocationButton;
 
-    private Location mLastLocation;
+    private Location mLastLocation = null;
+    private WikiImageUtils.ImageInfo mLastImageInfo = null;
 
     private Uri mPictureUri;
 
@@ -96,16 +104,22 @@ public class WikiFragment extends CentralMapExtraFragment {
         mLocationView = layout.findViewById(R.id.wiki_current_location);
         mDistanceView = layout.findViewById(R.id.wiki_distance);
         mHeader = layout.findViewById(R.id.wiki_header);
+        mLocationTypeGroup = layout.findViewById(R.id.wiki_location_type_group);
+        mUsePictureLocationButton = layout.findViewById(R.id.wiki_use_picture_location);
+        mUseDeviceLocationButton = layout.findViewById(R.id.wiki_use_device_location);
+        mUseNoLocationButton = layout.findViewById(R.id.wiki_use_no_location);
 
         // The picture checkbox determines if the other boxes are visible or
         // not.
         mPictureCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> resolvePictureControlVisibility());
 
-        // The gallery button needs to fire off to the gallery.  Or Photos.  Or
-        // whatever's listening for this intent.
+        // The include location checkbox determines if the picture location
+        // options are enabled.
+        mIncludeLocationCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> resolveLocationTypeSelection());
+
+        // The gallery button needs to fire off to the gallery.  Or Files.  Or
+        // whatever else might be listening for this intent.
         mGalleryButton.setOnClickListener(v -> {
-            // Apparently there's been some... changes.  Changes in Kitkat
-            // or the like.
             Intent i;
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
@@ -160,6 +174,7 @@ public class WikiFragment extends CentralMapExtraFragment {
             // setImageUri will call resolvePostButtonEnabledness, but since we
             // don't want to pass a null to the former, we'll call the latter if
             // we got a null.
+            resolveLocationTypeSelection();
             resolvePostButtonEnabledness();
         }
 
@@ -242,10 +257,23 @@ public class WikiFragment extends CentralMapExtraFragment {
         // With bitmap in hand...
         a.runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
 
+        // Plus, we want vital info for later.  If there's no location, just
+        // give back an ImageInfo with a null in it.  We'll know what to do with
+        // it when the time comes.
+        mLastImageInfo = WikiImageUtils.readImageInfo(a,
+                uri,
+                null,
+                Calendar.getInstance()
+        );
+
         // And remember it for posting later.  Done!
         mPictureUri = uri;
 
         resolvePostButtonEnabledness();
+
+        // It's a new image, so reset the location selection.
+        mLocationTypeGroup.clearCheck();
+        resolveLocationTypeSelection();
     }
 
     @Override
@@ -295,6 +323,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         getActivity().runOnUiThread(() -> {
             if(mPictureCheckbox.isChecked()) {
                 mGalleryButton.setVisibility(View.VISIBLE);
+                mLocationTypeGroup.setVisibility(View.VISIBLE);
 
                 // Oh, and update a few strings, too.
                 mPostButton.setText(R.string.wiki_dialog_submit_picture);
@@ -302,6 +331,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mMessage.setHint(R.string.hint_caption);
             } else {
                 mGalleryButton.setVisibility(View.GONE);
+                mLocationTypeGroup.setVisibility(View.GONE);
                 mPostButton.setText(R.string.wiki_dialog_submit_message);
                 mIncludeLocationCheckbox.setText(R.string.wiki_dialog_append_coordinates);
                 mMessage.setHint(R.string.hint_message);
@@ -309,7 +339,56 @@ public class WikiFragment extends CentralMapExtraFragment {
 
             // This also changes the post button's enabledness.
             resolvePostButtonEnabledness();
+
+            // And the location type selector's options.
+            resolveLocationTypeSelection();
         });
+    }
+
+    private void resolveLocationTypeSelection() {
+        getActivity().runOnUiThread(() -> {
+            @IdRes int selection = mLocationTypeGroup.getCheckedRadioButtonId();
+
+            if(mIncludeLocationCheckbox.getVisibility() != View.VISIBLE
+                    || !mIncludeLocationCheckbox.isChecked()) {
+                // If the user isn't including a location at all, disable the
+                // radios.  Keep the text and selection, though, if plausible.
+                mUsePictureLocationButton.setEnabled(false);
+                mUseDeviceLocationButton.setEnabled(false);
+                mUseNoLocationButton.setEnabled(false);
+            } else if(mLastImageInfo == null) {
+                // If there's no image at all, all the buttons get disabled.
+                mUsePictureLocationButton.setEnabled(false);
+                mUseDeviceLocationButton.setEnabled(false);
+                mUseNoLocationButton.setEnabled(false);
+                mUsePictureLocationButton.setText(R.string.wiki_dialog_location_from_picture);
+                mLocationTypeGroup.clearCheck();
+            } else if(mLastImageInfo.location != null) {
+                // If there's an image with a valid location, the from-picture
+                // button gets enabled.
+                mUsePictureLocationButton.setEnabled(true);
+                mUseDeviceLocationButton.setEnabled(true);
+                mUseNoLocationButton.setEnabled(true);
+                mUsePictureLocationButton.setText(R.string.wiki_dialog_location_from_picture);
+
+                // Default to picture location.
+                if(selection == -1) {
+                    mLocationTypeGroup.check(R.id.wiki_use_picture_location);
+                }
+            } else {
+                // If not, it gets disabled.
+                mUsePictureLocationButton.setEnabled(false);
+                mUseDeviceLocationButton.setEnabled(true);
+                mUseNoLocationButton.setEnabled(true);
+                mUsePictureLocationButton.setText(R.string.wiki_dialog_location_picture_has_none);
+
+                // Default to device location.
+                if(selection == -1 || selection == R.id.wiki_use_picture_location) {
+                    mLocationTypeGroup.check(R.id.wiki_use_device_location);
+                }
+            }
+        });
+
     }
 
     private void resolvePostButtonEnabledness() {
@@ -379,6 +458,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         // Time for fun!
         boolean includeLocation = !mPermissionsDenied && mIncludeLocationCheckbox.isChecked();
         boolean includePicture = mPictureCheckbox.isChecked();
+        @IdRes int locationSelection = mLocationTypeGroup.getCheckedRadioButtonId();
 
         // So.  If we didn't have an Info yet, we're hosed.
         if(mInfo == null) {
@@ -393,15 +473,36 @@ public class WikiFragment extends CentralMapExtraFragment {
         }
 
         // If this is a picture post but there's no picture, we're hosed.
-        if(includePicture && mPictureUri == null) {
+        if(includePicture && (mPictureUri == null || mLastImageInfo == null)) {
             Toast.makeText(c, R.string.error_no_picture, Toast.LENGTH_LONG).show();
             return;
         }
 
         // Otherwise, it's time to send!
         String message = mMessage.getText().toString();
-        Location loc = mLastLocation;
-        if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
+
+        // The location depends on if there's a picture and what the options on
+        // said picture are.  And the checkbox that says whether to include the
+        // location in the first place.
+        Location loc;
+        if(!includeLocation || (includePicture && locationSelection == R.id.wiki_use_no_location)) {
+            // Either the user said not to include a location or the user said
+            // to draw the infobox without the current location.
+            loc = null;
+        } else if(!includePicture || locationSelection == R.id.wiki_use_device_location) {
+            // The user said to include the location (as per passing the prior
+            // clause) and either this isn't a picture post (and thus we have to
+            // use the device's location) or the user explicitly said to use the
+            // device's location for an infobox.
+            loc = mLastLocation;
+
+            // BUT, if the device's location isn't new enough, ignore it.
+            if(!LocationUtil.isLocationNewEnough(loc)) loc = null;
+        } else {
+            // The user said to include the location AND include a picture AND
+            // the only other option is to use the picture's location.
+            loc = mLastImageInfo.location;
+        }
 
         Intent i = new Intent(c, WikiService.class)
                 .putExtra(WikiService.EXTRA_INFO, mInfo)
@@ -414,16 +515,11 @@ public class WikiFragment extends CentralMapExtraFragment {
             // we're the ones with permission to open the file, NOT WikiService!
             // This is actually a thing.  WikiService won't be on the same
             // Context by the time it uploads, so that'd be a SecurityException.
-            WikiImageUtils.ImageInfo imageInfo = WikiImageUtils.readImageInfo(
-                    c,
-                    mPictureUri,
-                    loc,
-                    Calendar.getInstance());
-
             byte[] mPictureData = WikiImageUtils.createWikiImage(
                     c,
                     mInfo,
-                    imageInfo,
+                    mLastImageInfo.uri,
+                    loc,
                     includeLocation);
 
             i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri)
