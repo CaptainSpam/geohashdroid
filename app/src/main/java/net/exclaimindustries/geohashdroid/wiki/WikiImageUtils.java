@@ -161,10 +161,13 @@ public class WikiImageUtils {
      * @param username current username (must not be null)
      * @return the name of the image on the wiki
      */
-    public static String getImageWikiName(Info info, ImageInfo imageInfo, String username) {
+    public static String getImageWikiName(@NonNull Info info,
+                                          @NonNull ImageInfo imageInfo,
+                                          @NonNull String username) {
         // Just to be clear, this is the wiki page name (expedition and all),
         // the username, and the image's timestamp (as millis past the epoch).
-        return WikiUtils.getWikiPageName(info) + "_" + username + "_" + imageInfo.timestamp + ".jpg";
+        return WikiUtils.getWikiPageName(info) + "_" + username + "_"
+                + imageInfo.timestamp + ".jpg";
     }
 
     /**
@@ -331,7 +334,7 @@ public class WikiImageUtils {
         drawStrings(context.getResources(), strings, icons, c, mTextPaint, mBackgroundPaint);
     }
 
-    private static void makePaints(Context context) {
+    private static void makePaints(@NonNull Context context) {
         // These are for efficiency's sake so we don't rebuild paints uselessly.
         if(mBackgroundPaint == null) {
             mBackgroundPaint = new Paint();
@@ -347,7 +350,12 @@ public class WikiImageUtils {
         }
     }
 
-    private static void drawStrings(Resources resources, String[] strings, int[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
+    private static void drawStrings(@NonNull Resources resources,
+                                    @NonNull String[] strings,
+                                    @NonNull int[] icons,
+                                    @NonNull Canvas c,
+                                    @NonNull Paint textPaint,
+                                    @NonNull Paint backgroundPaint) {
         // All we do here is prepare the Bitmaps before tossing them to the
         // OTHER method.  Hence the need for a Resources.
         Bitmap[] bitmaps = new Bitmap[icons.length];
@@ -361,7 +369,11 @@ public class WikiImageUtils {
         drawStrings(strings, bitmaps, c, textPaint, backgroundPaint);
     }
 
-    private static void drawStrings(String[] strings, Bitmap[] bitmaps, Canvas c, Paint textPaint, Paint backgroundPaint) {
+    private static void drawStrings(@NonNull String[] strings,
+                                    @Nullable Bitmap[] bitmaps,
+                                    @NonNull Canvas c,
+                                    @NonNull Paint textPaint,
+                                    @NonNull Paint backgroundPaint) {
         // The default paint should do, right?
         Paint paint = new Paint();
 
@@ -488,7 +500,9 @@ public class WikiImageUtils {
      * @return a prefix tag
      */
     @NonNull
-    public static String getImagePrefixTag(Context context, ImageInfo imageInfo, Info info) {
+    public static String getImagePrefixTag(@NonNull Context context,
+                                           @NonNull ImageInfo imageInfo,
+                                           @NonNull Info info) {
         if(info.isRetroHash()) {
             return context.getText(R.string.wiki_post_picture_summary_retro).toString();
         } else if(System.currentTimeMillis() - imageInfo.timestamp < LIVE_TIMEOUT) {
