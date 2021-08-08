@@ -515,7 +515,7 @@ public class WikiFragment extends CentralMapExtraFragment {
             // we're the ones with permission to open the file, NOT WikiService!
             // This is actually a thing.  WikiService won't be on the same
             // Context by the time it uploads, so that'd be a SecurityException.
-            byte[] mPictureData = WikiImageUtils.createWikiImage(
+            byte[] pictureData = WikiImageUtils.createWikiImage(
                     c,
                     mInfo,
                     mLastImageInfo.uri,
@@ -523,7 +523,8 @@ public class WikiFragment extends CentralMapExtraFragment {
                     includeLocation);
 
             i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri)
-                    .putExtra(WikiService.EXTRA_IMAGE_DATA, mPictureData);
+                    .putExtra(WikiService.EXTRA_IMAGE_INFO, mLastImageInfo)
+                    .putExtra(WikiService.EXTRA_IMAGE_DATA, pictureData);
         }
 
         // And away it goes!
