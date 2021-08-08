@@ -17,6 +17,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -71,7 +73,7 @@ public class WikiImageUtils {
      * This is just a convenient holder for the various info related to an
      * image.  It's used when making image calls.
      */
-    public static class ImageInfo {
+    public static class ImageInfo implements Parcelable {
         /** The image's URI.  Should not be null. */
         @NonNull public final Uri uri;
         /**
@@ -84,6 +86,11 @@ public class WikiImageUtils {
          * possible.
          */
         public final long timestamp;
+
+        public static final Parcelable.Creator<ImageInfo> CREATOR = new Parcelable.Creator<ImageInfo>() {
+            public ImageInfo createFromParcel(Parcel in) {return new ImageInfo(in); }
+            public ImageInfo[] newArray(int size) { return new ImageInfo[size]; }
+        };
 
         /**
          * Constructs an ImageInfo.  It's a basic immutable data object, really.
@@ -98,6 +105,49 @@ public class WikiImageUtils {
             this.uri = uri;
             this.location = location;
             this.timestamp = timestamp;
+        }
+
+        /**
+         * Deparcelizes an ImageInfo object.  Because we need to go the other
+         * way around, too.
+         *
+         * @param in the parcel to deparcelize
+         */
+        private ImageInfo(Parcel in) {
+            Uri uri = in.readParcelable(Uri.class.getClassLoader());
+
+            if(uri == null) {
+                throw new IllegalArgumentException("Error deparcelizing ImageInfo: uri was somehow null?");
+            }
+            this.uri = uri;
+            this.timestamp = in.readLong();
+            // Read and consume the flag!
+            if(in.readInt() > 0) {
+                this.location = new Location("");
+                this.location.setLatitude(in.readDouble());
+                this.location.setLongitude(in.readDouble());
+            } else {
+                this.location = null;
+            }
+        }
+
+        @Override
+        public int describeContents() {
+            // This really isn't special; the Location is the only thing
+            // stopping this from being a plain ol' Serializable, really.
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeParcelable(uri, 0);
+            dest.writeLong(timestamp);
+            // This is a flag that indicates if there's a location.
+            dest.writeInt(location != null ? 1 : 0);
+            if(location != null) {
+                dest.writeDouble(location.getLatitude());
+                dest.writeDouble(location.getLongitude());
+            }
         }
     }
 
