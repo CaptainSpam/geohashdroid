@@ -17,13 +17,6 @@
             android:layout_height="wrap_content"
             android:text="@string/wiki_dialog_add_picture"
             android:textSize="@dimen/wikipost_tiny_fontsize"/>
-        <CheckBox
-            android:id="@+id/wiki_check_include_location"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/wiki_dialog_append_coordinates"
-            android:textSize="@dimen/wikipost_fontsize"
-            android:checked="true"/>
         <RadioGroup
             android:id="@+id/wiki_location_type_group"
             android:layout_width="match_parent"
@@ -49,6 +42,13 @@
                 android:text="@string/wiki_dialog_location_none"
                 android:textSize="@dimen/wikipost_tiny_fontsize"/>
         </RadioGroup>
+        <CheckBox
+            android:id="@+id/wiki_check_include_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/wiki_dialog_append_coordinates"
+            android:textSize="@dimen/wikipost_fontsize"
+            android:checked="true"/>
 
         <ImageButton
             android:id="@+id/wiki_thumbnail"
