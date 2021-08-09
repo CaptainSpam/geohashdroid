@@ -12,42 +12,92 @@
             android:orientation="vertical"
             android:layout_width="@dimen/wikipost_options_size"
             android:layout_height="match_parent"
-            android:layout_margin="@dimen/wiki_fragment_padding"
-            >
-
-            <CheckBox
-                android:id="@+id/wiki_check_include_location"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/wiki_dialog_append_coordinates"
-                android:textSize="@dimen/wikipost_fontsize"
-                android:checked="true"/>
+            android:layout_margin="@dimen/wiki_fragment_padding">
 
             <CheckBox
                 android:id="@+id/wiki_check_include_picture"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/wiki_dialog_add_picture"
-                android:textSize="@dimen/wikipost_fontsize"/>
-
-            <ImageButton
-                android:id="@+id/wiki_thumbnail"
+                android:textSize="@dimen/wikipost_tiny_fontsize"/>
+            <CheckBox
+                android:id="@+id/wiki_check_include_location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_margin="@dimen/gallery_button_padding"
-                android:scaleType="centerInside"
-                android:src="@android:drawable/ic_menu_gallery"
-                android:contentDescription="@string/accessibility_wiki_thumbnail"/>
-
-            <TextView
-                android:id="@+id/wiki_anon_warning"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/wiki_editor_not_logged_in"
+                android:text="@string/wiki_dialog_append_coordinates"
                 android:textSize="@dimen/wikipost_tiny_fontsize"
-                android:visibility="gone" />
+                android:checked="true"/>
+            <RadioGroup
+                android:id="@+id/wiki_location_type_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/standard_padding"
+                android:layout_marginLeft="@dimen/standard_padding">
+                <RadioButton
+                    android:id="@+id/wiki_use_picture_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/wiki_dialog_location_from_picture"
+                    android:textSize="@dimen/wikipost_tiny_fontsize"/>
+                <RadioButton
+                    android:id="@+id/wiki_use_device_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/wiki_dialog_location_from_device"
+                    android:textSize="@dimen/wikipost_tiny_fontsize"/>
+                <RadioButton
+                    android:id="@+id/wiki_use_no_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/wiki_dialog_location_none"
+                    android:textSize="@dimen/wikipost_tiny_fontsize"/>
+            </RadioGroup>
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <ImageButton
+                    android:id="@+id/wiki_thumbnail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_margin="@dimen/gallery_button_padding"
+                    android:scaleType="centerInside"
+                    android:src="@android:drawable/ic_menu_gallery"
+                    android:contentDescription="@string/accessibility_wiki_thumbnail"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/wiki_anon_warning"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/wiki_editor_not_logged_in"
+                        android:textSize="@dimen/wikipost_tiny_fontsize"
+                        android:layout_gravity="center_horizontal"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wiki_picture_location_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/wiki_dialog_location_picture"
+                        android:textSize="@dimen/wikipost_tiny_fontsize"
+                        android:layout_gravity="center_horizontal"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wiki_picture_location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/wikipost_tiny_fontsize"
+                        android:layout_gravity="center_horizontal"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -88,8 +138,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="@string/wiki_dialog_location_device"
+                    android:id="@+id/wiki_device_location_label"
+                    android:layout_gravity="center_horizontal"
+                    tools:ignore="InconsistentLayout"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/standby_title"
                     android:id="@+id/wiki_current_location"
+                    android:layout_gravity="center_horizontal"
                     tools:ignore="InconsistentLayout"/>
 
                 <TextView
@@ -97,6 +156,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/standby_title"
                     android:id="@+id/wiki_distance"
+                    android:layout_gravity="center_horizontal"
                     tools:ignore="InconsistentLayout"/>
             </LinearLayout>
 

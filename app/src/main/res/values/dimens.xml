@@ -22,7 +22,7 @@
 
     <dimen name="details_accuracy_fontsize_small">12sp</dimen>
 
-    <dimen name="wikipost_options_size">200dp</dimen>
+    <dimen name="wikipost_options_size">264dp</dimen>
     <dimen name="wikipost_fontsize">16sp</dimen>
     <dimen name="wikipost_tiny_fontsize">14sp</dimen>
     <dimen name="wikipost_really_tiny_fontsize">12sp</dimen>
@@ -65,8 +65,7 @@
     <dimen name="elevation_error_banner">@dimen/elevation_standard</dimen>
     <dimen name="elevation_progress">@dimen/elevation_standard</dimen>
     <dimen name="elevation_extra_fragment">@dimen/elevation_standard</dimen>
-    <dimen name="elevation_infobox">2dp</dimen>
-    <dimen name="elevation_zoom_button">8dp</dimen>
+    <dimen name="elevation_zoom_button">16dp</dimen>
 
     <dimen name="error_banner_height">64dp</dimen>
     <dimen name="map_zoom_padding">64dp</dimen>
