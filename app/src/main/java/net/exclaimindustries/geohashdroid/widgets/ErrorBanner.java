@@ -154,16 +154,16 @@ public class ErrorBanner extends LinearLayout {
 
         switch(b) {
             case NORMAL:
-                color = (mIsNightMode ? R.color.error_banner_normal_dark : R.color.error_banner_normal);
+                color = R.color.error_banner_normal;
                 break;
             case WARNING:
-                color = (mIsNightMode ? R.color.error_banner_warning_dark : R.color.error_banner_warning);
+                color = R.color.error_banner_warning;
                 break;
             case ERROR:
-                color = (mIsNightMode ? R.color.error_banner_error_dark : R.color.error_banner_error);
+                color = R.color.error_banner_error;
                 break;
             case VICTORY:
-                color = (mIsNightMode ? R.color.error_banner_victory_dark : R.color.error_banner_victory);
+                color = R.color.error_banner_victory;
         }
 
         setBackgroundErrorColor(color);

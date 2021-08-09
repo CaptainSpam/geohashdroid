@@ -12,11 +12,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser.VersionEntry;
 
@@ -34,6 +29,9 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 
 /**
  * This pops up the version history on demand.  Said demand also includes the
@@ -45,12 +43,8 @@ public class VersionHistoryDialogFragment extends DialogFragment {
     // This is just a simple dialog with a simple list.  But, said list needs a
     // less-simple adapter, which we bring up here.
     private class EntryAdapter extends ArrayAdapter<VersionEntry> {
-        private boolean mIsNightMode;
-
         EntryAdapter(Context c, List<VersionEntry> entries) {
             super(c, 0, entries);
-
-            mIsNightMode = PreferenceManager.getDefaultSharedPreferences(c).getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
         }
 
         @NonNull
@@ -70,7 +64,7 @@ public class VersionHistoryDialogFragment extends DialogFragment {
             // all the child views handy.  First, all the TextViews.
             ((TextView)convertView.findViewById(R.id.version)).setText(entry.versionName);
             ((TextView)convertView.findViewById(R.id.release_date)).setText(entry.date);
-            ((TextView)convertView.findViewById(R.id.title)).setText("\"" + entry.title + "\"");
+            ((TextView)convertView.findViewById(R.id.title)).setText(getString(R.string.version_title_wrapper, entry.title));
             ((TextView)convertView.findViewById(R.id.header)).setText(entry.header);
             ((TextView)convertView.findViewById(R.id.footer)).setText(entry.footer);
 
@@ -81,17 +75,13 @@ public class VersionHistoryDialogFragment extends DialogFragment {
             bullets.removeAllViews();
 
             for(String s : entry.bullets) {
-                View bullet = LayoutInflater.from(getActivity()).inflate(R.layout.version_history_bullet, bullets, false);
+                View bullet = LayoutInflater.from(getActivity()).inflate(
+                        R.layout.version_history_bullet, bullets, false);
 
-                // And, of course, night-mode this sucker.
-                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                    ImageView bulletIcon = bullet.findViewById(R.id.bulletIcon);
-
-                    if(mIsNightMode)
-                        bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image_dark));
-                    else
-                        bulletIcon.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.version_history_bullet_image));
-                }
+                // Apply bullet.
+                ImageView bulletIcon = bullet.findViewById(R.id.bulletIcon);
+                bulletIcon.setImageDrawable(ContextCompat.getDrawable(
+                        getContext(), R.drawable.version_history_bullet_image));
 
                 TextView bulletText = bullet.findViewById(R.id.bulletText);
                 bulletText.setText(s);
