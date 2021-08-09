@@ -50,32 +50,6 @@ import androidx.annotation.StringRes;
  * </p>
  */
 public class PreferencesScreen extends PreferenceActivity {
-    private boolean mStartedInNight = false;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mStartedInNight = prefs.getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
-
-        // We have to do this BEFORE any layouts are set up.
-        if(mStartedInNight)
-            setTheme(R.style.Theme_GeohashDroidDark);
-        else
-            setTheme(R.style.Theme_GeohashDroid);
-
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        // If the nightiness has changed since we paused, do a recreate.
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        if(prefs.getBoolean(GHDConstants.PREF_NIGHT_MODE, false) != mStartedInNight)
-            recreate();
-    }
-
     /**
      * This largely comes from Android Studio's default Setting Activity wizard
      * thingamajig.  It conveniently updates preferences with summaries.
