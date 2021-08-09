@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5.4" version="931" date="2021-08-08">
+        <title>Picture Locations From Picture Locations</title>
+        <header>This one&apos;s bringing back an old feature that got disabled ages ago.</header>
+        <bullets>
+            <bullet>There&apos;s a new option when making a picture post!  Now you can specify that the location should be derived from data in the picture itself (if possible), rather than the device&apos;s location.  This can be handy if you wait until you get home to post pictures.</bullet>
+            <bullet>This does mean the wiki posting layout has been rearranged a little bit.  Keep an eye out.</bullet>
+        </bullets>
+        <footer>Note that if you make a wiki post and it doesn&apos;t go through due to not having a network connection, it should still remember the location at the time you attempted the post.</footer>
+    </version>
     <version name="0.9.5.3" version="930" date="2021-07-06">
         <title>A Fun Game Of Find-The-Version-History</title>
         <header>But wait, there&apos;s more!</header>
