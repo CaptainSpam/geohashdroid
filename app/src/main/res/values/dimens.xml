@@ -22,7 +22,7 @@
 
     <dimen name="details_accuracy_fontsize_small">12sp</dimen>
 
-    <dimen name="wikipost_options_size">200dp</dimen>
+    <dimen name="wikipost_options_size">264dp</dimen>
     <dimen name="wikipost_fontsize">16sp</dimen>
     <dimen name="wikipost_tiny_fontsize">14sp</dimen>
     <dimen name="wikipost_really_tiny_fontsize">12sp</dimen>

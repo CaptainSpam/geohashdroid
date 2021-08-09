@@ -64,6 +64,8 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private View mAnonWarning;
     private ImageButton mGalleryButton;
+    private TextView mPictureLocationLabel;
+    private TextView mPictureLocationText;
     private CheckBox mPictureCheckbox;
     private CheckBox mIncludeLocationCheckbox;
     private TextView mLocationView;
@@ -97,6 +99,8 @@ public class WikiFragment extends CentralMapExtraFragment {
         // Views!
         mAnonWarning = layout.findViewById(R.id.wiki_anon_warning);
         mPictureCheckbox = layout.findViewById(R.id.wiki_check_include_picture);
+        mPictureLocationLabel = layout.findViewById(R.id.wiki_picture_location_label);
+        mPictureLocationText = layout.findViewById(R.id.wiki_picture_location);
         mIncludeLocationCheckbox = layout.findViewById(R.id.wiki_check_include_location);
         mGalleryButton = layout.findViewById(R.id.wiki_thumbnail);
         mPostButton = layout.findViewById(R.id.wiki_post_button);
@@ -274,6 +278,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         // It's a new image, so reset the location selection.
         mLocationTypeGroup.clearCheck();
         resolveLocationTypeSelection();
+        resolvePictureLocationText();
     }
 
     @Override
@@ -342,6 +347,9 @@ public class WikiFragment extends CentralMapExtraFragment {
 
             // And the location type selector's options.
             resolveLocationTypeSelection();
+
+            // And the visibility of the picture's location text.
+            resolvePictureLocationText();
         });
     }
 
@@ -403,6 +411,37 @@ public class WikiFragment extends CentralMapExtraFragment {
             // message and, if we're in picture mode, there's a picture to
             // go with it.
             mPostButton.setEnabled(hasMessage && (hasPicture || !isInPictureMode));
+        });
+    }
+
+    private void resolvePictureLocationText() {
+        getActivity().runOnUiThread(() -> {
+            if(!mPictureCheckbox.isChecked()) {
+                // If we're not posting a picture, remove the picture location
+                // stuff.
+                mPictureLocationLabel.setVisibility(View.GONE);
+                mPictureLocationText.setVisibility(View.GONE);
+            } else {
+                // Otherwise, turn 'em back on and get a location.
+                mPictureLocationLabel.setVisibility(View.VISIBLE);
+                mPictureLocationText.setVisibility(View.VISIBLE);
+
+                // But, what text goes on the texty bit?  Well...
+                if(mLastImageInfo != null && mLastImageInfo.location != null) {
+                    // There's a location, so apply that.  Converted, of course.
+                    mPictureLocationText.setText(
+                            UnitConverter.makeFullCoordinateString(
+                                    getActivity(),
+                                    mLastImageInfo.location,
+                                    false,
+                                    UnitConverter.OUTPUT_SHORT));
+                } else {
+                    // Otherwise, put the placeholder in place.
+                    mPictureLocationText.setText(
+                            getString(
+                                    R.string.wiki_dialog_location_picture_none));
+                }
+            }
         });
     }
 
