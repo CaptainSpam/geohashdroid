@@ -165,6 +165,14 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static final String EXTRA_IMAGE_DATA = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_DATA";
 
+    /**
+     * The {@link net.exclaimindustries.geohashdroid.wiki.WikiImageUtils.ImageInfo}
+     * object associated with an image to be uploaded.  This gets generated in
+     * WikiFragment due to the same security exception reasons as
+     * {@link #EXTRA_IMAGE_DATA}.
+     */
+    public static final String EXTRA_IMAGE_INFO = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_INFO";
+
     /** 
      * The user's current geographic coordinates.  Should be a {@link Location}.
      * If not given, will assume the user's location is/was unknown.  If posting
@@ -218,6 +226,7 @@ public class WikiService extends PlainSQLiteQueueService {
         Calendar timestamp;
         Uri imageLocation;
         byte[] imageData;
+        WikiImageUtils.ImageInfo imageInfo;
         boolean includeLocation;
 
         try {
@@ -227,6 +236,7 @@ public class WikiService extends PlainSQLiteQueueService {
             timestamp = (Calendar) i.getSerializableExtra(EXTRA_TIMESTAMP);
             imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
             imageData = i.getByteArrayExtra(EXTRA_IMAGE_DATA);
+            imageInfo = i.getParcelableExtra(EXTRA_IMAGE_INFO);
             includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
         } catch(ClassCastException cce) {
             // If any of those threw a CCE, bail out.
@@ -289,13 +299,15 @@ public class WikiService extends PlainSQLiteQueueService {
             // ten or so arguments.  If anyone else has a better idea, feel free
             // to suggest.
             if(imageLocation != null) {
-                // Let's say there's an image specified.  So, we try to look it
-                // up via readImageInfo.
-                WikiImageUtils.ImageInfo imageInfo;
-                imageInfo = WikiImageUtils.readImageInfo(imageLocation, loc, timestamp);
+                // If there's an image location, the image info better be
+                // defined.
+                if(imageInfo == null) {
+                    throw new IllegalArgumentException("There's an image location, but there's no image info?");
+                }
 
-                // Get the image's filename, too.  Well, that is, the name it'll
-                // have on the wiki.
+                // Let's say there's an image specified.  Get the image's
+                // filename, too.  Well, that is, the name it'll have on the
+                // wiki.
                 String wikiName = WikiImageUtils.getImageWikiName(info, imageInfo, username);
 
                 // Make sure the image doesn't already exist.  If it does, we
@@ -517,6 +529,25 @@ public class WikiService extends PlainSQLiteQueueService {
                 toReturn.put("info", infoObj);
             }
 
+            // IMAGE info time!
+            WikiImageUtils.ImageInfo imageInfo = i.getParcelableExtra(EXTRA_IMAGE_INFO);
+            if(imageInfo != null) {
+                JSONObject imageInfoObj = new JSONObject();
+                imageInfoObj.put("uri", imageInfo.uri.toString());
+                imageInfoObj.put("timestamp", imageInfo.timestamp);
+
+                Location imageLocation = imageInfo.location;
+                if(imageLocation != null) {
+                    JSONObject locationObj = new JSONObject();
+                    locationObj.put("latitude", imageLocation.getLatitude());
+                    locationObj.put("longitude", imageLocation.getLongitude());
+
+                    imageInfoObj.put("location", locationObj);
+                }
+
+                toReturn.put("imageInfo", imageInfoObj);
+            }
+
             // Finally, the message.
             String message = i.getStringExtra(EXTRA_MESSAGE);
             if(message != null) {
@@ -610,6 +641,28 @@ public class WikiService extends PlainSQLiteQueueService {
                     Log.w(DEBUG_TAG, "Couldn't parse info date " +
                             infoObj.getString("timestamp") +
                             " as a long, giving up and ignoring...", nfe);
+                }
+            }
+
+            // Image info, as a mess of not quite so many things.
+            JSONObject imageInfoObj = incoming.optJSONObject("imageInfo");
+            if(imageInfoObj != null) {
+                try {
+                    Uri uri = Uri.parse(imageInfoObj.getString("uri"));
+                    long imageTimestamp = imageInfoObj.getLong("timestamp");
+
+                    Location imageLocation = null;
+                    JSONObject locationObj = incoming.optJSONObject("location");
+                    if(locationObj != null) {
+                        imageLocation = new Location("");
+                        imageLocation.setLatitude(locationObj.getDouble("latitude"));
+                        imageLocation.setLongitude(locationObj.getDouble("longitude"));
+                    }
+
+                    toReturn.putExtra(EXTRA_IMAGE_INFO,
+                            new WikiImageUtils.ImageInfo(uri, imageLocation, imageTimestamp));
+                } catch(JSONException je) {
+                    Log.w(DEBUG_TAG, "Couldn't parse something from the ImageInfo object, giving up and ignoring...", je);
                 }
             }
 

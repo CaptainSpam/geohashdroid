@@ -42,6 +42,16 @@
 	<string name="wiki_dialog_header">Wiki post for %1$s\n(%2$s)</string>
     <string name="wiki_dialog_append_coordinates">Append location</string>
     <string name="wiki_dialog_stamp_image">Draw infobox</string>
+
+	<string name="wiki_dialog_location_from_picture">Use location from picture</string>
+	<string name="wiki_dialog_location_from_device">Use your current location</string>
+	<string name="wiki_dialog_location_none">Just add the hashpoint location</string>
+
+	<string name="wiki_dialog_location_picture_has_none">(this picture has no location data)</string>
+	<string name="wiki_dialog_location_device">Your location:</string>
+	<string name="wiki_dialog_location_picture">Picture location:</string>
+	<!-- I'm sure this ID won't be confusing later. -->
+	<string name="wiki_dialog_location_picture_none">(none)</string>
 	
 	<string name="wiki_generic_error">There was an unknown problem communicating with the wiki.</string>
 	<string name="wiki_generic_image_error">There was a problem loading that image.</string>
