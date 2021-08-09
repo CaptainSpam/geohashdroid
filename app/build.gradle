@@ -20,8 +20,8 @@ repositories {
 }
 
 dependencies {
-    def appcompat_version = "1.4.0-alpha01"
-    def work_version = "2.5.0"
+    def appcompat_version = "1.4.0-alpha03"
+    def work_version = "2.6.0-rc01"
 
     implementation "androidx.appcompat:appcompat:$appcompat_version"
     implementation "androidx.appcompat:appcompat-resources:$appcompat_version"
@@ -35,7 +35,7 @@ dependencies {
     implementation 'androidx.core:core:1.6.0'
     implementation "androidx.work:work-runtime:$work_version"
     implementation 'com.google.guava:guava:27.0.1-android'
-    implementation "androidx.exifinterface:exifinterface:1.3.2"
+    implementation "androidx.exifinterface:exifinterface:1.3.3"
 
     // Required for local unit tests (JUnit 4 framework)
     testImplementation 'junit:junit:4.12'
