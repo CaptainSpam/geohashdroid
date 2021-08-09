@@ -11,7 +11,6 @@ package net.exclaimindustries.geohashdroid.activities;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.Intent;
@@ -29,8 +28,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -73,6 +70,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * KnownLocationsPicker is another map-containing Activity.  This one allows the
@@ -140,6 +141,7 @@ public class KnownLocationsPicker
         private KnownLocation mExisting;
         private Address mAddress;
 
+        @NonNull
         @Override
         @SuppressLint("InflateParams")
         public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -159,6 +161,7 @@ public class KnownLocationsPicker
             // Time to inflate!
             LayoutInflater inflater = ((LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE));
 
+            assert inflater != null;
             View dialogView = inflater.inflate(R.layout.edit_known_location_dialog, null);
 
             String name;
@@ -514,7 +517,9 @@ public class KnownLocationsPicker
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        View mapView = mapFrag.getView();
+        assert mapView != null;
+        mapView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             // Got a height!  Hopefully.
             if(!mAlreadyLaidOut) {
                 mAlreadyLaidOut = true;
@@ -613,6 +618,7 @@ public class KnownLocationsPicker
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
 
@@ -712,7 +718,7 @@ public class KnownLocationsPicker
         // the user the option to add that as a known location.  We want to keep
         // track of the MarkerOptions object because that's Parcelable, allowing
         // us to stash it away if we need to save the activity's bundle state.
-        mMapClickMarkerOptions = createMarker(latLng, null);
+        mMapClickMarkerOptions = createMarker(latLng);
 
         mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
         mMapClickMarker.showInfoWindow();
@@ -731,12 +737,14 @@ public class KnownLocationsPicker
         if(mMarkerMap.containsKey(marker)) {
             // Got it!
             loc = mMarkerMap.get(marker);
+            assert loc != null;
             name = loc.getName();
             range = loc.getRange();
             restrict = loc.isRestrictedGraticule();
         } else if(mActiveAddressMap.containsKey(marker)) {
             // An address!
             address = mActiveAddressMap.get(marker);
+            assert address != null;
             name = address.getFeatureName();
         }
 
@@ -753,7 +761,7 @@ public class KnownLocationsPicker
 
         EditKnownLocationDialog dialog = new EditKnownLocationDialog();
         dialog.setArguments(args);
-        dialog.show(getFragmentManager(), EDIT_DIALOG);
+        dialog.show(getSupportFragmentManager(), EDIT_DIALOG);
     }
 
     @Override
@@ -762,20 +770,17 @@ public class KnownLocationsPicker
     }
 
     @NonNull
-    private MarkerOptions createMarker(@NonNull LatLng latLng, @Nullable String title) {
+    private MarkerOptions createMarker(@NonNull LatLng latLng) {
         // This builds up the basic marker for a potential KnownLocation.  By
         // "potential", I mean something that isn't stored yet as a
         // KnownLocation, such as search results or map taps.  KnownLocation
         // ITSELF has a makeMarker method.
-        if(title == null || title.isEmpty())
-            title = UnitConverter.makeFullCoordinateString(this, latLng, false, UnitConverter.OUTPUT_SHORT);
-
         return new MarkerOptions()
                 .position(latLng)
                 .flat(true)
                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.known_location_tap_marker))
                 .anchor(0.5f, 0.5f)
-                .title(title)
+                .title(UnitConverter.makeFullCoordinateString(this, latLng, false, UnitConverter.OUTPUT_SHORT))
                 .snippet(getString(R.string.known_locations_tap_to_add));
     }
 
@@ -822,7 +827,11 @@ public class KnownLocationsPicker
         mLocations.add(newLoc);
 
         // And what's more, it's guaranteed to have an old version on the map!
-        mActiveAddressMap.inverse().remove(address).remove();
+        // But, since defensive paranoia is usually good in code, let's assert
+        // anyway.
+        Marker mark = mActiveAddressMap.inverse().remove(address);
+        assert mark != null;
+        mark.remove();
 
         // Then, replace it with the new one.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
@@ -856,8 +865,12 @@ public class KnownLocationsPicker
 
             // Since this is an existing KnownLocation, the marker should be in
             // that map, ripe for removal.
-            mMarkerMap.inverse().remove(existing).remove();
-            mCircleMap.inverse().remove(existing).remove();
+            Marker mark = mMarkerMap.inverse().remove(existing);
+            Circle circle = mCircleMap.inverse().remove(existing);
+            assert mark != null;
+            assert circle != null;
+            mark.remove();
+            circle.remove();
         } else {
             // Brand new!
             mLocations.add(newLoc);
@@ -871,7 +884,6 @@ public class KnownLocationsPicker
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // And remove the marker from the map.  The visual one this time.
-        // TODO: Null-checking shouldn't be necessary here.
         if(mActiveMarker != null) mActiveMarker.remove();
 
         // And end the active parts.
@@ -884,9 +896,13 @@ public class KnownLocationsPicker
 
         // Clear it from the map and from the marker list.
         Marker marker = mMarkerMap.inverse().get(existing);
+        assert marker != null;
         marker.remove();
         mMarkerMap.remove(marker);
-        mCircleMap.inverse().remove(existing).remove();
+
+        Circle circle = mCircleMap.inverse().remove(existing);
+        assert circle != null;
+        circle.remove();
 
         // Then, remove it from the location list and push that back to the
         // preferences.

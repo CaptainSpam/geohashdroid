@@ -546,6 +546,8 @@ public class AlarmService extends JobIntentService {
                     Log.d(DEBUG_TAG, "Just got a stock result!");
 
                     Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+
+                    assert bun != null;
                     bun.setClassLoader(getClassLoader());
 
                     int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE,
@@ -764,6 +766,7 @@ public class AlarmService extends JobIntentService {
                         }
 
                         // Add it in!
+                        //noinspection ConstantConditions
                         byGraticule.get(matchGrat).add(single);
                     }
 

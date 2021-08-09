@@ -23,7 +23,8 @@
             android:ems="10"
             android:hint="@string/pref_wikiusername_hint"
             android:layout_margin="@dimen/standard_padding"
-            android:inputType="textNoSuggestions"/>
+            android:inputType="textNoSuggestions"
+            android:importantForAutofill="no" />
     </LinearLayout>
 
     <LinearLayout
@@ -45,7 +46,8 @@
             android:ems="10"
             android:id="@+id/input_password"
             android:hint="@string/pref_wikipassword_hint"
-            android:layout_margin="@dimen/standard_padding"/>
+            android:layout_margin="@dimen/standard_padding"
+            android:importantForAutofill="no" />
 
 
     </LinearLayout>

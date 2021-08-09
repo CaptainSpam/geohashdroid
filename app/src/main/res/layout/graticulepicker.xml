@@ -24,7 +24,8 @@
             android:maxLength="4"
             android:saveEnabled="true"
             android:selectAllOnFocus="true"
-            android:textSize="@dimen/input_graticule_fontsize"/>
+            android:textSize="@dimen/input_graticule_fontsize"
+            android:importantForAutofill="no" />
 
         <EditText
             android:id="@+id/grat_lon"
@@ -39,7 +40,8 @@
             android:maxLength="4"
             android:saveEnabled="true"
             android:selectAllOnFocus="true"
-            android:textSize="@dimen/input_graticule_fontsize"/>
+            android:textSize="@dimen/input_graticule_fontsize"
+            android:importantForAutofill="no" />
 
     </LinearLayout>
 

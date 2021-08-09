@@ -8,15 +8,16 @@
 
 package net.exclaimindustries.geohashdroid.activities;
 
-import android.app.Activity;
 import android.content.res.Configuration;
+
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * A <code>BaseGHDThemeActivity</code> sets up the theme (day or night) during
  * onCreate, as well as offer methods to switch between the themes.
  */
 public abstract class BaseGHDThemeActivity
-        extends Activity {
+        extends FragmentActivity {
     /**
      * Returns whether or not the app is in night mode, as a convenience method.
      * Note that this only returns if it's actively night mode, and does not

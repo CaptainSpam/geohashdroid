@@ -92,7 +92,7 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static class ConnectivityWorker extends Worker {
         public ConnectivityWorker(@NonNull Context context,
-                           @NonNull WorkerParameters workerParams) {
+                                  @NonNull WorkerParameters workerParams) {
             super(context, workerParams);
         }
 
@@ -844,30 +844,28 @@ public class WikiService extends PlainSQLiteQueueService {
             id = we.getErrorTextId();
 
         NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
-        switch(id) {
-            case R.string.wiki_conn_anon_pic_error:
-            case R.string.wiki_error_bad_password:
-            case R.string.wiki_error_bad_username:
-            case R.string.wiki_error_username_nonexistant:
-            case R.string.wiki_error_bad_login:
-                toReturn[0] = new NotificationAction(
-                        0,
-                        PendingIntent.getActivity(this,
-                                0,
-                                new Intent(this, LoginPromptDialog.class),
-                                PendingIntent.FLAG_UPDATE_CURRENT),
-                        getString(R.string.wiki_notification_action_update_login)
-                );
+        if(id == R.string.wiki_conn_anon_pic_error
+                || id == R.string.wiki_error_bad_password
+                || id == R.string.wiki_error_bad_username
+                || id == R.string.wiki_error_username_nonexistant
+                || id == R.string.wiki_error_bad_login) {
+            toReturn[0] = new NotificationAction(
+                    0,
+                    PendingIntent.getActivity(this,
+                            0,
+                            new Intent(this, LoginPromptDialog.class),
+                            PendingIntent.FLAG_UPDATE_CURRENT),
+                    getString(R.string.wiki_notification_action_update_login)
+            );
 
-                toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
-                break;
-            default:
-                // As a general case (or if a null was passed in), we just use
-                // the standard retry, skip, or abort choices.  This works for a
-                // surprising amount of cases, it turns out.  Simplicity wins!
-                toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
-                toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
-                toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
+            toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
+        } else {
+            // As a general case (or if a null was passed in), we just use the
+            // standard retry, skip, or abort choices.  This works for a
+            // surprising amount of cases, it turns out.  Simplicity wins!
+            toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
+            toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
+            toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
         }
 
         return toReturn;

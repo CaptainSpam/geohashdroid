@@ -8,11 +8,12 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
-import android.app.Fragment;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
+
+import androidx.fragment.app.Fragment;
 
 /**
  * Sort of like a {@link net.exclaimindustries.geohashdroid.activities.BaseGHDThemeActivity},

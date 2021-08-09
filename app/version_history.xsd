@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+<xs:schema elementFormDefault="qualified"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:element name="versionHistory" type="versionHistoryType"/>
 
     <xs:complexType name="versionHistoryType">
         <xs:sequence>
-            <xs:element name="version" maxOccurs="unbounded" minOccurs="1"
-                        type="versionType"/>
+            <xs:element name="version" maxOccurs="unbounded" type="versionType"/>
         </xs:sequence>
     </xs:complexType>
 

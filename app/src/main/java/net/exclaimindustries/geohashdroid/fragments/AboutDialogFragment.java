@@ -11,11 +11,14 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.os.Bundle;
 import android.view.View;
 
 import net.exclaimindustries.geohashdroid.R;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * Where credits become due and links become available.
@@ -35,18 +38,22 @@ public class AboutDialogFragment extends DialogFragment {
         return new AboutDialogFragment();
     }
 
+    @NonNull
     @Override
     @SuppressLint("InflateParams")
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        View v = getActivity().getLayoutInflater().inflate(R.layout.about, null);
+        FragmentActivity act = getActivity();
+        assert act != null;
+        View v = act.getLayoutInflater().inflate(R.layout.about, null);
 
         return new AlertDialog.Builder(getActivity())
                 .setView(v)
                 .setPositiveButton(R.string.cool_label, (dialog, which) -> dismiss())
                 .setNeutralButton(R.string.title_versionhistory, (dialog, which) ->
                     VersionHistoryDialogFragment
-                            .newInstance(getActivity())
-                            .show(getFragmentManager(), VERSION_HISTORY_DIALOG)
+                            .newInstance(act)
+                            .show(act.getSupportFragmentManager(),
+                                    VERSION_HISTORY_DIALOG)
                 )
                 .create();
     }

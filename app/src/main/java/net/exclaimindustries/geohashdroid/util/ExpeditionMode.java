@@ -8,8 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
@@ -59,6 +57,8 @@ import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 /**
  * <code>ExpeditionMode</code> is the "main" mode, where it follows one point,
@@ -116,13 +116,13 @@ public class ExpeditionMode
     // Then there's this one empty start boolean.
     private boolean mWaitingOnEmptyStartInfo = false;
 
-    private Rect mMarkerDimens = new Rect();
-    private Rect mInfoBoxDimens = new Rect();
+    private final Rect mMarkerDimens = new Rect();
+    private final Rect mInfoBoxDimens = new Rect();
 
     private int mMarkerWidth = -1;
     private int mMarkerHeight = -1;
 
-    private View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
+    private final View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
 
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
@@ -204,7 +204,7 @@ public class ExpeditionMode
         if(fragmentContainer != null) {
             // Plus, if the detailed info fragment's already there, make its
             // container go visible, too.
-            FragmentManager manager = mCentralMap.getFragmentManager();
+            FragmentManager manager = mCentralMap.getSupportFragmentManager();
             mExtraFragment = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
             if(mExtraFragment != null) {
                 fragmentContainer.setVisibility(View.VISIBLE);
@@ -295,11 +295,7 @@ public class ExpeditionMode
         if(mWaitingOnEmptyStart)
             doEmptyStart();
 
-        if(showInfoBox()) {
-            mInfoBox.animateInfoBoxVisible(true);
-        } else {
-            mInfoBox.animateInfoBoxVisible(false);
-        }
+        mInfoBox.animateInfoBoxVisible(showInfoBox());
 
         // Re-check the nearby points pref.  If that changed, we need to either
         // remove or add the points.  Actually, to keep it simple, just wipe
@@ -356,70 +352,64 @@ public class ExpeditionMode
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_selectagraticule: {
-                // It's Select-A-Graticule Mode!  At long last!
-                mCentralMap.enterSelectAGraticuleMode();
-                return true;
-            }
-            case R.id.action_details: {
-                // Here, the user's pressed the menu item for details, probably
-                // either because they don't have the infobox visible on the
-                // main display or they were poking every option and wanted to
-                // see what this would do.  Here's what it do:
-                launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
-                return true;
-            }
-            case R.id.action_wiki: {
-                // Same as with details, but with the wiki instead.
-                launchExtraFragment(CentralMapExtraFragment.FragmentType.WIKI);
-                return true;
-            }
-            case R.id.action_send_to_maps: {
-                // Juuuuuuust like in DetailedInfoActivity...
-                if(mCurrentInfo != null) {
-                    // To the map!
-                    Intent i = new Intent();
-                    i.setAction(Intent.ACTION_VIEW);
+        int itemId = item.getItemId();
+        if(itemId == R.id.action_selectagraticule) {
+            // It's Select-A-Graticule Mode!  At long last!
+            mCentralMap.enterSelectAGraticuleMode();
+            return true;
+        } else if(itemId == R.id.action_details) {
+            // Here, the user's pressed the menu item for details, probably
+            // either because they don't have the infobox visible on the
+            // main display or they were poking every option and wanted to
+            // see what this would do.  Here's what it do:
+            launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
+            return true;
+        } else if(itemId == R.id.action_wiki) {
+            // Same as with details, but with the wiki instead.
+            launchExtraFragment(CentralMapExtraFragment.FragmentType.WIKI);
+            return true;
+        } else if(itemId == R.id.action_send_to_maps) {
+            // Juuuuuuust like in DetailedInfoActivity...
+            if(mCurrentInfo != null) {
+                // To the map!
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
 
-                    String location = mCurrentInfo.getLatitude() + "," + mCurrentInfo.getLongitude();
+                String location = mCurrentInfo.getLatitude() + "," + mCurrentInfo.getLongitude();
 
-                    i.setData(Uri.parse("geo:0,0?q=loc:"
-                            + location
-                            + "("
-                            + mCentralMap.getString(
-                            R.string.send_to_maps_point_name,
-                            DateFormat.getDateInstance(DateFormat.LONG).format(
-                                    mCurrentInfo.getCalendar().getTime())) + ")&z=15"));
-                    mCentralMap.startActivity(i);
-                } else {
-                    Toast.makeText(mCentralMap, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
-                }
-
-                return true;
+                i.setData(Uri.parse("geo:0,0?q=loc:"
+                        + location
+                        + "("
+                        + mCentralMap.getString(
+                        R.string.send_to_maps_point_name,
+                        DateFormat.getDateInstance(DateFormat.LONG).format(
+                                mCurrentInfo.getCalendar().getTime())) + ")&z=15"));
+                mCentralMap.startActivity(i);
+            } else {
+                Toast.makeText(mCentralMap, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
             }
-            case R.id.action_send_to_radar: {
-                // Someone actually picked radar!  How 'bout that?
-                if(mCurrentInfo != null) {
-                    Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
-                    i.putExtra("latitude", (float) mCurrentInfo.getLatitude());
-                    i.putExtra("longitude", (float) mCurrentInfo.getLongitude());
-                    mCentralMap.startActivity(i);
-                } else {
-                    Toast.makeText(mCentralMap, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
-                }
 
-                return true;
+            return true;
+        } else if(itemId == R.id.action_send_to_radar) {
+            // Someone actually picked radar!  How 'bout that?
+            if(mCurrentInfo != null) {
+                Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
+                i.putExtra("latitude", (float) mCurrentInfo.getLatitude());
+                i.putExtra("longitude", (float) mCurrentInfo.getLongitude());
+                mCentralMap.startActivity(i);
+            } else {
+                Toast.makeText(mCentralMap, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
             }
-            case R.id.action_try_tomorrow: {
-                // Trying tomorrow is easy: Just get today, make it tomorrow,
-                // and try it.  What's more, we've already got the mechanisms in
-                // place to handle what happens if tomorrow doesn't exist yet.
-                if(mCurrentInfo != null) {
-                    Calendar cal = (Calendar)mCurrentInfo.getCalendar().clone();
-                    cal.add(Calendar.DATE, 1);
-                    changeCalendar(cal);
-                }
+
+            return true;
+        } else if(itemId == R.id.action_try_tomorrow) {
+            // Trying tomorrow is easy: Just get today, make it tomorrow, and
+            // try it.  What's more, we've already got the mechanisms in place
+            // to handle what happens if tomorrow doesn't exist yet.
+            if(mCurrentInfo != null) {
+                Calendar cal = (Calendar) mCurrentInfo.getCalendar().clone();
+                cal.add(Calendar.DATE, 1);
+                changeCalendar(cal);
             }
         }
 
@@ -621,11 +611,7 @@ public class ExpeditionMode
         populateMenu();
 
         // Set the infobox in motion as well.
-        if(showInfoBox()) {
-            mInfoBox.animateInfoBoxVisible(true);
-        } else {
-            mInfoBox.animateInfoBoxVisible(false);
-        }
+        mInfoBox.animateInfoBoxVisible(showInfoBox());
 
         if(!mInitComplete) return;
 
@@ -811,18 +797,19 @@ public class ExpeditionMode
     }
 
     @Override
-    public void onInfoWindowClick(Marker marker) {
+    public void onInfoWindowClick(@NonNull Marker marker) {
         // If a nearby marker's info window was clicked, that means we can
         // switch to another point.
         if(mNearbyPoints.containsKey(marker)) {
             final Info newInfo = mNearbyPoints.get(marker);
+            assert newInfo != null;
 
             // Get the last-known location (if possible) and prompt the user
             // with a distance.  Then, we've got a fragment that'll do this sort
             // of work for us.
             NearbyGraticuleDialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, getLastKnownLocation());
             frag.setCallback(this);
-            frag.show(mCentralMap.getFragmentManager(), NEARBY_DIALOG);
+            frag.show(mCentralMap.getSupportFragmentManager(), NEARBY_DIALOG);
         }
     }
 
@@ -914,7 +901,7 @@ public class ExpeditionMode
             mCentralMap.startActivity(i);
         } else {
             // Check to see if the fragment's already there.
-            FragmentManager manager = mCentralMap.getFragmentManager();
+            FragmentManager manager = mCentralMap.getSupportFragmentManager();
             CentralMapExtraFragment f;
             try {
                 f = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
@@ -969,7 +956,7 @@ public class ExpeditionMode
 
     private void clearExtraFragment() {
         // This simply clears out the extra fragment.
-        FragmentManager manager = mCentralMap.getFragmentManager();
+        FragmentManager manager = mCentralMap.getSupportFragmentManager();
         try {
             manager.popBackStack(EXTRA_FRAGMENT_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         } catch(IllegalStateException ise) {
@@ -1043,7 +1030,7 @@ public class ExpeditionMode
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         // This listener handles all listening duties.  We've got a few
         // booleans that tell us what's waiting to be done.
         if(mWaitingOnInitialZoom) {

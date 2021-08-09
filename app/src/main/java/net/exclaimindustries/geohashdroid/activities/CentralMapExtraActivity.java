@@ -9,7 +9,7 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
-import android.app.FragmentManager;
+import androidx.fragment.app.FragmentManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -52,7 +52,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
 
     protected Info mInfo;
 
-    private LocationCallback mLocationCallback = new LocationCallback() {
+    private final LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             // When we get a location, let the fragment know.  We're sort of
@@ -69,7 +69,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
 
         // Grab the fragment.  We know it's there, it's right there in the
         // layout.
-        FragmentManager manager = getFragmentManager();
+        FragmentManager manager = getSupportFragmentManager();
         mFrag = (CentralMapExtraFragment) manager.findFragmentById(getFragmentResource());
 
         // We'd BETTER have an Intent.
@@ -141,65 +141,61 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_wiki: {
-                // Wiki time!  Wiki time!  It's time for wiki time!
-                if(mInfo != null) {
-                    // Since we're in the activity version of Detailed Info, we
-                    // know we're just starting the wiki activity.
-                    Intent i = new Intent(this, WikiActivity.class);
-                    i.putExtra(WikiActivity.INFO, mInfo);
-                    startActivity(i);
-                } else {
-                    Toast.makeText(this, R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
-                }
-
-                return true;
-            }
-            case R.id.action_preferences: {
-                // We've got preferences, so we've got an Activity.
-                Intent i = new Intent(this, PreferencesScreen.class);
+        int itemId = item.getItemId();
+        if(itemId == R.id.action_wiki) {
+            // Wiki time!  Wiki time!  It's time for wiki time!
+            if(mInfo != null) {
+                // Since we're in the activity version of Detailed Info, we know
+                // we're just starting the wiki activity.
+                Intent i = new Intent(this, WikiActivity.class);
+                i.putExtra(WikiActivity.INFO, mInfo);
                 startActivity(i);
-                return true;
+            } else {
+                Toast.makeText(this, R.string.error_no_data_to_wiki, Toast.LENGTH_LONG).show();
             }
-            case R.id.action_send_to_maps: {
-                if(mInfo != null) {
-                    // To the map!
-                    Intent i = new Intent();
-                    i.setAction(Intent.ACTION_VIEW);
 
-                    // Assemble the location.  This is a simple latitude,longitude
-                    // setup.
-                    String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
+            return true;
+        } else if(itemId == R.id.action_preferences) {
+            // We've got preferences, so we've got an Activity.
+            Intent i = new Intent(this, PreferencesScreen.class);
+            startActivity(i);
+            return true;
+        } else if(itemId == R.id.action_send_to_maps) {
+            if(mInfo != null) {
+                // To the map!
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
 
-                    // Then, toss the location out the door and hope whatever map
-                    // we're using is paying attention.
-                    i.setData(Uri.parse("geo:0,0?q=loc:"
-                            + location
-                            + "("
-                            + this.getString(
-                            R.string.send_to_maps_point_name,
-                            DateFormat.getDateInstance(DateFormat.LONG).format(
-                                    mInfo.getCalendar().getTime())) + ")&z=15"));
-                    startActivity(i);
-                } else {
-                    Toast.makeText(this, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
-                }
+                // Assemble the location.  This is a simple latitude,longitude
+                // setup.
+                String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
 
-                return true;
+                // Then, toss the location out the door and hope whatever map
+                // we're using is paying attention.
+                i.setData(Uri.parse("geo:0,0?q=loc:"
+                        + location
+                        + "("
+                        + this.getString(
+                        R.string.send_to_maps_point_name,
+                        DateFormat.getDateInstance(DateFormat.LONG).format(
+                                mInfo.getCalendar().getTime())) + ")&z=15"));
+                startActivity(i);
+            } else {
+                Toast.makeText(this, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
             }
-            case R.id.action_send_to_radar: {
-                if(mInfo != null) {
-                    Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
-                    i.putExtra("latitude", (float) mInfo.getLatitude());
-                    i.putExtra("longitude", (float) mInfo.getLongitude());
-                    startActivity(i);
-                } else {
-                    Toast.makeText(this, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
-                }
 
-                return true;
+            return true;
+        } else if(itemId == R.id.action_send_to_radar) {
+            if(mInfo != null) {
+                Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
+                i.putExtra("latitude", (float) mInfo.getLatitude());
+                i.putExtra("longitude", (float) mInfo.getLongitude());
+                startActivity(i);
+            } else {
+                Toast.makeText(this, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
             }
+
+            return true;
         }
 
         return false;

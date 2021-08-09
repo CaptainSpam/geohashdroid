@@ -10,14 +10,15 @@ package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
 
 import net.exclaimindustries.geohashdroid.R;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * Because I couldn't find a good iconic way to put the map type selection on
@@ -61,6 +62,7 @@ public class MapTypeDialogFragment extends DialogFragment {
         mCallback = callback;
     }
 
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         return new AlertDialog.Builder(getActivity())

@@ -575,6 +575,7 @@ public class CentralMap
             mProgress.animate().translationY(-mProgressHeight).alpha(0.0f);
 
             Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            assert bun != null;
             bun.setClassLoader(getClassLoader());
 
             // A stock result arrives!  Let's get data!  That oughta tell us
@@ -690,7 +691,9 @@ public class CentralMap
         } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
-            mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
+            Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            assert bun != null;
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, bun.getParcelable(StockService.EXTRA_INFO));
             mSelectAGraticule = false;
         }
 
@@ -756,7 +759,9 @@ public class CentralMap
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        View mapView = mapFrag.getView();
+        assert mapView != null;
+        mapView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             // Got a height!  Hopefully.
             if(!mAlreadyLaidOut) {
                 mAlreadyLaidOut = true;
@@ -868,6 +873,8 @@ public class CentralMap
 
     @Override
     protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
         // An Intent just came in!  That's telling us to go off to a new
         // Graticule.  Since onNewIntent is only called if the Activity's
         // already going, it just means we need to tell ExpeditionMode that it
@@ -930,55 +937,49 @@ public class CentralMap
     public boolean onMenuItemClick(MenuItem item) {
         // CentralMap should just cover the items that can always be selected no
         // matter what mode we're in.
-        switch(item.getItemId()) {
-            case R.id.action_map_type: {
-                // The map type can be changed at any time, so it has to be
-                // common.  To the alert dialog!
-                MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
-                frag.show(getFragmentManager(), MAP_TYPE_DIALOG);
+        int itemId = item.getItemId();
+        if(itemId == R.id.action_map_type) {
+            // The map type can be changed at any time, so it has to be common.
+            // To the alert dialog!
+            MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
+            frag.show(getSupportFragmentManager(), MAP_TYPE_DIALOG);
 
-                return true;
-            }
-            case R.id.action_about: {
-                // About is just a dialog with a view.
-                AboutDialogFragment frag = AboutDialogFragment.newInstance();
-                frag.show(getFragmentManager(), ABOUT_DIALOG);
+            return true;
+        } else if(itemId == R.id.action_about) {
+            // About is just a dialog with a view.
+            AboutDialogFragment frag = AboutDialogFragment.newInstance();
+            frag.show(getSupportFragmentManager(), ABOUT_DIALOG);
 
-                return true;
+            return true;
+        } else if(itemId == R.id.action_date) {
+            // The date picker is common to all modes and is best handled by the
+            // Activity itself.
+            if(mLastCalendar == null) {
+                // Of course, we need a date to fill in.
+                mLastCalendar = Calendar.getInstance();
             }
-            case R.id.action_date: {
-                // The date picker is common to all modes and is best handled by
-                // the Activity itself.
-                if(mLastCalendar == null) {
-                    // Of course, we need a date to fill in.
-                    mLastCalendar = Calendar.getInstance();
-                }
 
-                GHDDatePickerDialogFragment frag = GHDDatePickerDialogFragment.newInstance(mLastCalendar);
-                frag.setCallback(this);
-                frag.show(getFragmentManager(), DATE_PICKER_DIALOG);
+            GHDDatePickerDialogFragment frag = GHDDatePickerDialogFragment.newInstance(mLastCalendar);
+            frag.setCallback(this);
+            frag.show(getSupportFragmentManager(), DATE_PICKER_DIALOG);
 
-                return true;
-            }
-            case R.id.action_whatisthis: {
-                // The everfamous and much-beloved "What's Geohashing?" button,
-                // because honestly, this IS sort of confusing if you're
-                // expecting something for geocaching.
-                Intent i = new Intent();
-                i.setAction(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
-                startActivity(i);
-                return true;
-            }
-            case R.id.action_preferences: {
-                // Preferences!  To the Preferencemobile!
-                Intent i = new Intent(this, PreferencesScreen.class);
-                startActivity(i);
-                return true;
-            }
-            default:
-                return mCurrentMode.onOptionsItemSelected(item);
+            return true;
+        } else if(itemId == R.id.action_whatisthis) {
+            // The everfamous and much-beloved "What's Geohashing?" button,
+            // because honestly, this IS sort of confusing if you're expecting
+            // something for geocaching.
+            Intent i = new Intent();
+            i.setAction(Intent.ACTION_VIEW);
+            i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
+            startActivity(i);
+            return true;
+        } else if(itemId == R.id.action_preferences) {
+            // Preferences!  To the Preferencemobile!
+            Intent i = new Intent(this, PreferencesScreen.class);
+            startActivity(i);
+            return true;
         }
+        return mCurrentMode.onOptionsItemSelected(item);
     }
 
     @SuppressLint("CommitPrefEdits")
@@ -1027,15 +1028,15 @@ public class CentralMap
         // These prefs either don't exist any more or we found better ways to
         // deal with them.
         edit.remove("DefaultLatitude")
-                .remove("DefaultLongitude")
-                .remove("GlobalhashMode")
-                .remove("RememberGraticule")
-                .remove("ClosestOn")
-                .remove("AlwaysToday")
-                .remove("ClosenessReported");
+            .remove("DefaultLongitude")
+            .remove("GlobalhashMode")
+            .remove("RememberGraticule")
+            .remove("ClosestOn")
+            .remove("AlwaysToday")
+            .remove("ClosenessReported");
 
-        // Anything edit-worthy we just did needs to be committed.
-        edit.commit();
+        // Anything edit-worthy we just did needs to be applied right away.
+        edit.apply();
 
         // We still have that prefs object.  Let's see if we've got a newer
         // version than what we last saw.
@@ -1067,7 +1068,7 @@ public class CentralMap
                 Log.d(DEBUG_TAG, "Newest version with an entry is " + entries.get(0).versionCode);
                 if(entries.get(0).versionCode > lastVersion) {
                     VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(entries);
-                    frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+                    frag.show(getSupportFragmentManager(), VERSION_HISTORY_DIALOG);
                 }
             }
         }
@@ -1310,6 +1311,7 @@ public class CentralMap
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
 
@@ -1322,7 +1324,7 @@ public class CentralMap
 
             PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
             frag.setArguments(args);
-            frag.show(getFragmentManager(), "PermissionDeniedDialog");
+            frag.show(getSupportFragmentManager(), "PermissionDeniedDialog");
 
             mPermissionsDenied = true;
         } else {
@@ -1333,7 +1335,8 @@ public class CentralMap
             mPermissionsDenied = false;
         }
 
-        if(mCurrentMode != null) mCurrentMode.permissionsDenied(mPermissionsDenied);
+        if(mCurrentMode != null)
+            mCurrentMode.permissionsDenied(mPermissionsDenied);
     }
 
     private void updateLastGraticule(@NonNull Info info) {
