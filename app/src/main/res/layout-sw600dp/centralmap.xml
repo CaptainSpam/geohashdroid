@@ -13,8 +13,7 @@
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
         android:minHeight="?attr/actionBarSize"
-        android:theme="?attr/actionBarTheme"
-        app:logo="@mipmap/ic_launcher_new" />
+        android:theme="?attr/actionBarTheme"/>
 
     <RelativeLayout
         android:id="@+id/map_content"
@@ -70,6 +69,7 @@
             android:background="?android:attr/colorBackground"
             android:elevation="@dimen/elevation_extra_fragment"
             android:visibility="gone"
-            tools:ignore="InconsistentLayout" />
+            tools:ignore="InconsistentLayout"
+            android:layout_alignParentEnd="true" />
     </RelativeLayout>
 </LinearLayout>
