@@ -722,10 +722,7 @@ public class CentralMap
         // active theme directly in the resource files in Lollipop or later, but
         // anything beforehand, we need to fake it.
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            if(isNightMode())
-                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background_dark));
-            else
-                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
+            mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
         }
 
         // The progress-o-matic needs to be off-screen.  And, we need to know

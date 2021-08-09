@@ -99,10 +99,9 @@
     <string name="menu_item_radar">Radar</string>
     <string name="menu_item_tomorrow">Try Tomorrow</string>
 
-    <string name="menu_item_map_type_street">Street (day)</string>
+    <string name="menu_item_map_type_street">Street</string>
     <string name="menu_item_map_type_sat">Satellite</string>
     <string name="menu_item_map_type_terrain">Terrain</string>
-    <string name="menu_item_map_type_night">Street (night)</string>
 
     <string name="infobox_accuracy_low">(Accuracy low)</string>
     <string name="infobox_accuracy_really_low">(Accuracy really low)</string>

@@ -33,8 +33,6 @@ public abstract class BaseMapActivity
         implements MapTypeDialogFragment.MapTypeCallback {
     private static final String DEBUG_TAG = "BaseMapActivity";
 
-//    protected GoogleApiClient mGoogleClient;
-
     // Bool to track whether the app is already resolving an error.
     protected boolean mResolvingError = false;
     // Bool to track whether or not the user's refused permissions.
@@ -91,34 +89,34 @@ public abstract class BaseMapActivity
         return checkLocationPermissions(requestCode, false);
     }
 
-
     @Override
     public void mapTypeSelected(int type) {
-        // 1 is night, -1 is day.
-        short becomesNight = 0;
+        // Do this first to force any custom styles to be cleared.
+        mMap.setMapStyle(null);
 
         // Map type!
         if(mMap != null) {
             switch(type) {
-                case GoogleMap.MAP_TYPE_NORMAL:
-                    mMap.setMapStyle(null);
-                    becomesNight = -1;
-                    // Let's abuse a fallthrough!
                 case GoogleMap.MAP_TYPE_HYBRID:
                 case GoogleMap.MAP_TYPE_TERRAIN:
                     mMap.setMapType(type);
                     break;
-                case MapTypeDialogFragment.MAP_STYLE_NIGHT:
-                    // Whoops, this one isn't a type.  It's a style.  First, the
-                    // type has to be normal for this to work.
+                case GoogleMap.MAP_TYPE_NORMAL:
+                default:
+                    // The default case is to just go to normal.  This allows us
+                    // to not have to worry about the old hacked-together night
+                    // mode the app used to have.
                     mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-                    // Then, load up the night style.
-                    if(!mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_night)))
-                        Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
-
-                    becomesNight = 1;
-                    break;
+                    // Is it night?  Only you can decide!
+                    if(isNightMode()) {
+                        // Night technically isn't a type.  It's a style.
+                        if(!mMap.setMapStyle(
+                                MapStyleOptions.loadRawResourceStyle(
+                                        this,
+                                        R.raw.map_night)))
+                            Log.e(DEBUG_TAG, "Couldn't parse the map style JSON!");
+                    }
             }
         }
 
@@ -129,9 +127,5 @@ public abstract class BaseMapActivity
 
         BackupManager bm = new BackupManager(this);
         bm.dataChanged();
-
-        // Set the night only if it's changed at all.
-        if(becomesNight == 1) setNightMode(true);
-        else if(becomesNight == -1) setNightMode(false);
     }
 }
