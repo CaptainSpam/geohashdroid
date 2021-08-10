@@ -8,7 +8,6 @@
     <color name="link_color">#44c</color>
     <color name="details_in_range">#006a00</color>
     <color name="version_history_leader">#555555</color>
-    <color name="version_history_bullet">#c3c3c3</color>
     <color name="about_background">#272727</color>
 
     <color name="error_banner_normal">#222</color>
@@ -17,7 +16,7 @@
     <color name="error_banner_victory">#006a00</color>
 
     <!-- Used in pre-v21 circumstances where we don't have access to
-         attr/textColorPrimary. -->
+         attr/textColorSecondary. -->
     <color name="common_icon">#ccc</color>
     <color name="common_background">#222</color>
 </resources>
