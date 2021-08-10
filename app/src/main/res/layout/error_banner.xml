@@ -22,7 +22,7 @@
         android:id="@+id/close"
         android:layout_gravity="center_vertical"
         style="@style/GeohashDroid.Button.Borderless"
-        app:srcCompat="@drawable/ic_baseline_close"
+        app:srcCompat="@drawable/close_button"
         android:contentDescription="@string/close_label"
         android:visibility="gone"/>
 </LinearLayout>

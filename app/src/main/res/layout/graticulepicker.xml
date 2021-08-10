@@ -79,6 +79,6 @@
         android:layout_alignRight="@+id/buttonrow"
         android:layout_alignTop="@+id/latlonrow"
         android:contentDescription="@string/close_label"
-        app:srcCompat="@drawable/ic_baseline_close"
+        app:srcCompat="@drawable/close_button"
         android:layout_alignEnd="@+id/buttonrow" />
 </merge>
