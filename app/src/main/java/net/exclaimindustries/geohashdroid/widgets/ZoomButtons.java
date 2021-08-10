@@ -14,35 +14,30 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
 
-import androidx.annotation.NonNull;
-
 /**
- * The <code>MenuButtons</code> container handles the buttons in the lower-right
- * of CentralMap.  It pops out when tapped, revealing more buttons that, sadly,
- * do not make even more buttons appear.
+ * The <code>ZoomButtons</code> container handles the button in the lower-left
+ * of CentralMap.  It pops out when tapped, revealing more buttons to center and
+ * re-zoom the view as need be.  No, this isn't related to the zoom buttons on
+ * the old API v1 maps.
  */
-public class MenuButtons extends RelativeLayout {
+public class ZoomButtons extends RelativeLayout {
     private static final String DEBUG_TAG = "ZoomButtons";
 
+    private final ImageButton mZoomMenu;
     private final ImageButton mCancelMenu;
     private final ImageButton mZoomFitBoth;
     private final ImageButton mZoomUser;
     private final ImageButton mZoomDestination;
 
-    private final LinearLayout mTopLevelContainer;
-    private final LinearLayout mZoomContainer;
-
     private boolean mAlreadyLaidOut = false;
 
-    // Keep these here so we don't have to keep recalculating them every time we
-    // need them.
-    private float mTopLevelContainerWidth = 0.0f;
-    private float mZoomContainerWidth = 0.0f;
+    // So we don't have to keep recalculating it for five buttons and their
+    // margins, that's why.
+    private float mButtonWidth = 0.0f;
 
     /** An enum of whatever button was just pressed. */
     public enum ButtonPressed {
@@ -54,15 +49,11 @@ public class MenuButtons extends RelativeLayout {
         ZOOM_DESTINATION,
     }
 
-    private enum MenuType {
-        ZOOM,
-    }
-
     /**
      * This should be implemented by anything that's waiting to respond to the
      * zoom buttons.  So, ExpeditionMode, really.
      */
-    public interface MenuButtonListener {
+    public interface ZoomButtonListener {
         /**
          * Called when a zoom button is pressed.  Not, mind you, when either the
          * menu button itself or the cancel button are pressed.
@@ -73,49 +64,46 @@ public class MenuButtons extends RelativeLayout {
         void zoomButtonPressed(View container, ButtonPressed which);
     }
 
-    private MenuButtonListener mListener;
+    private ZoomButtonListener mListener;
 
-    public MenuButtons(Context c) {
+    public ZoomButtons(Context c) {
         this(c, null);
     }
 
-    public MenuButtons(Context c, AttributeSet attrs) {
+    public ZoomButtons(Context c, AttributeSet attrs) {
         super(c, attrs);
 
         inflate(c, R.layout.zoom_buttons, this);
 
         // Gather up all our sub-buttons...
-        ImageButton mZoomMenu = findViewById(R.id.zoom_button_menu);
+        mZoomMenu = findViewById(R.id.zoom_button_menu);
         mCancelMenu = findViewById(R.id.zoom_button_cancel);
         mZoomFitBoth = findViewById(R.id.zoom_button_fit_both);
         mZoomUser = findViewById(R.id.zoom_button_you);
         mZoomDestination = findViewById(R.id.zoom_button_destination);
 
-        mZoomContainer = findViewById(R.id.group_zoom);
-        mTopLevelContainer = findViewById(R.id.group_toplevel);
-
         // ...and make them do something.
         mZoomFitBoth.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_FIT_BOTH);
-            hideMenus();
+                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_FIT_BOTH);
+            showMenu(false);
         });
 
         mZoomUser.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_USER);
-            hideMenus();
+                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_USER);
+            showMenu(false);
         });
 
         mZoomDestination.setOnClickListener(v -> {
             if(mListener != null)
-                mListener.zoomButtonPressed(MenuButtons.this, ButtonPressed.ZOOM_DESTINATION);
-            hideMenus();
+                mListener.zoomButtonPressed(ZoomButtons.this, ButtonPressed.ZOOM_DESTINATION);
+            showMenu(false);
         });
 
-        mZoomMenu.setOnClickListener(v -> showMenu(MenuType.ZOOM));
+        mZoomMenu.setOnClickListener(v -> showMenu(true));
 
-        mCancelMenu.setOnClickListener(v -> hideMenus());
+        mCancelMenu.setOnClickListener(v -> showMenu(false));
 
         // Wait for layout, as usual...
         getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -123,59 +111,47 @@ public class MenuButtons extends RelativeLayout {
                 mAlreadyLaidOut = true;
                 // Get hold of the basic widths of everything.  We'll just
                 // re-use that a lot.
-                float padding = 2 * getResources()
-                        .getDimension(R.dimen.margin_zoom_button);
-
-                mTopLevelContainerWidth = mCancelMenu.getWidth() + padding;
-                mZoomContainerWidth = mZoomContainer.getWidth() + padding;
+                mButtonWidth = mCancelMenu.getWidth() + (2 * getResources().getDimension(R.dimen.margin_zoom_button));
 
                 // First layout, make all the buttons be off-screen.  The
                 // right mode will be set back on as need be.
-                mTopLevelContainer.setTranslationX(mTopLevelContainerWidth);
-                mZoomContainer.setTranslationX(mZoomContainerWidth);
+                mZoomMenu.setTranslationX(-mButtonWidth);
+                mCancelMenu.setTranslationX(-mButtonWidth);
+                mZoomFitBoth.setTranslationX(-mButtonWidth);
+                mZoomUser.setTranslationX(-mButtonWidth);
+                mZoomDestination.setTranslationX(-mButtonWidth);
 
-                hideMenus();
+                showMenu(false);
             }
         });
     }
 
-    /** Resets MenuButtons back to its initial state. */
-    public void reset() {
-        hideMenus();
-
-        for(ButtonPressed b : ButtonPressed.values()) {
-            setButtonEnabled(b, true);
-        }
-    }
-
-    private void showMenu(@NonNull MenuType menu) {
+    /**
+     * Sets whether the menu is showing (the three options and cancel are up) or
+     * not (the button that triggers the menu is up).
+     *
+     * @param show true to show, false to hide
+     */
+    public void showMenu(boolean show) {
         if(mAlreadyLaidOut) {
             // Only do this if we're laid out.  Otherwise, this'll go haywire
-            // with the widget sizes if mButtonWidth isn't defined.  Same with
-            // hideMenus, really.
-            mTopLevelContainer.animate().translationX(mTopLevelContainerWidth);
-
-            hideSubMenus();
-
-            switch(menu) {
-                case ZOOM:
-                    mZoomContainer.animate().translationX(0.0f);
-                    break;
+            // with the widget sizes if mButtonWidth isn't defined.
+            if(show) {
+                // Menu in!  Button out!
+                mZoomMenu.animate().translationX(-mButtonWidth);
+                mCancelMenu.animate().translationX(0.0f);
+                mZoomFitBoth.animate().translationX(0.0f);
+                mZoomUser.animate().translationX(0.0f);
+                mZoomDestination.animate().translationX(0.0f);
+            } else {
+                // Menu out!  Button in!
+                mZoomMenu.animate().translationX(0.0f);
+                mCancelMenu.animate().translationX(-mButtonWidth);
+                mZoomFitBoth.animate().translationX(-mButtonWidth);
+                mZoomUser.animate().translationX(-mButtonWidth);
+                mZoomDestination.animate().translationX(-mButtonWidth);
             }
         }
-    }
-
-    private void hideMenus() {
-        if(mAlreadyLaidOut) {
-            // Submenus out!  Top-level buttons in!
-            hideSubMenus();
-
-            mTopLevelContainer.animate().translationX(0.0f);
-        }
-    }
-
-    private void hideSubMenus() {
-        mZoomContainer.animate().translationX(mZoomContainerWidth);
     }
 
     /**
@@ -183,7 +159,7 @@ public class MenuButtons extends RelativeLayout {
      *
      * @param listener said listener
      */
-    public void setListener(MenuButtonListener listener) {
+    public void setListener(ZoomButtonListener listener) {
         mListener = listener;
     }
 

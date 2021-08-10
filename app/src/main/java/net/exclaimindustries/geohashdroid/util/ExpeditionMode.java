@@ -45,7 +45,7 @@ import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragmen
 import net.exclaimindustries.geohashdroid.services.StockService;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
-import net.exclaimindustries.geohashdroid.widgets.MenuButtons;
+import net.exclaimindustries.geohashdroid.widgets.ZoomButtons;
 import net.exclaimindustries.tools.AndroidUtil;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
@@ -70,7 +70,7 @@ public class ExpeditionMode
                    GoogleMap.OnCameraMoveListener,
                    NearbyGraticuleDialogFragment.NearbyGraticuleClickedCallback,
                    CentralMapExtraFragment.CloseListener,
-                   MenuButtons.MenuButtonListener {
+                   ZoomButtons.ZoomButtonListener {
     private static final String DEBUG_TAG = "ExpeditionMode";
 
     private static final String NEARBY_DIALOG = "nearbyDialog";
@@ -104,7 +104,7 @@ public class ExpeditionMode
 
     private InfoBox mInfoBox;
     private CentralMapExtraFragment mExtraFragment;
-    private MenuButtons mMenuButtons;
+    private ZoomButtons mZoomButtons;
 
     // These booleans tell us that the location handler is waiting to act on a
     // result in some manner other than the victory listener or updating the
@@ -213,15 +213,15 @@ public class ExpeditionMode
         }
 
         // The zoom buttons also need to go in.
-        mMenuButtons = new MenuButtons(mCentralMap);
+        mZoomButtons = new ZoomButtons(mCentralMap);
         params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mMenuButtons, params);
-        mMenuButtons.setListener(this);
-        mMenuButtons.reset();
-        mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_DESTINATION, false);
-        mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_FIT_BOTH, false);
+        ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
+        mZoomButtons.setListener(this);
+        mZoomButtons.showMenu(false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_DESTINATION, false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_FIT_BOTH, false);
 
         // Inflate us a MENU!
         populateMenu();
@@ -256,8 +256,8 @@ public class ExpeditionMode
 
         // Zoom buttons, you go away, too.  In this case, we animate the entire
         // block away ourselves and remove it when done with a callback.
-        if(mMenuButtons != null) {
-            mMenuButtons.animate().translationX(-mMenuButtons.getWidth()).withEndAction(() -> ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mMenuButtons));
+        if(mZoomButtons != null) {
+            mZoomButtons.animate().translationX(-mZoomButtons.getWidth()).withEndAction(() -> ((ViewGroup) mCentralMap.findViewById(R.id.map_content)).removeView(mZoomButtons));
         }
     }
 
@@ -994,7 +994,7 @@ public class ExpeditionMode
     }
 
     @Override
-    public void zoomButtonPressed(View container, MenuButtons.ButtonPressed which) {
+    public void zoomButtonPressed(View container, ZoomButtons.ButtonPressed which) {
         // BEEP.
         switch(which) {
             case ZOOM_FIT_BOTH:
@@ -1130,14 +1130,14 @@ public class ExpeditionMode
 
     private void setZoomButtonsEnabled() {
         // Zoom to user is always on if permissions aren't denied.
-        mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_USER, !arePermissionsDenied());
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_USER, !arePermissionsDenied());
 
         // Zoom to destination is only on if we have a valid info.
-        mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_DESTINATION, mCurrentInfo != null);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_DESTINATION, mCurrentInfo != null);
 
         // Zoom to both is only on if we have a valid info AND permissions
         // aren't denied.
-        mMenuButtons.setButtonEnabled(MenuButtons.ButtonPressed.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
     }
 
     @Nullable
