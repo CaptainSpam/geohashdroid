@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="horizontal"
-              android:layout_width="match_parent"
-              android:layout_height="@dimen/error_banner_height"
-              android:clickable="true"
-              android:focusable="true">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/error_banner_height"
+    android:clickable="true"
+    android:focusable="true">
 
     <TextView
         android:layout_width="0dp"
@@ -15,13 +16,13 @@
         android:layout_margin="@dimen/standard_padding"
         android:textSize="16sp"/>
 
-    <ImageButton
+    <androidx.appcompat.widget.AppCompatImageButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/close"
         android:layout_gravity="center_vertical"
         style="@style/GeohashDroid.Button.Borderless"
-        android:src="@drawable/cancel_button"
+        app:srcCompat="@drawable/ic_baseline_close"
         android:contentDescription="@string/close_label"
         android:visibility="gone"/>
 </LinearLayout>
