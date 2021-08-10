@@ -692,7 +692,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_title))
                 .setContentText("")
-                .setSmallIcon(R.drawable.ic_stat_file_file_upload);
+                .setSmallIcon(R.drawable.notification_icon_upload);
 
         mNotificationManager.notify(R.id.wiki_working_notification, builder.build());
     }
@@ -713,7 +713,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(false)
                 .setContentTitle(getString(R.string.wiki_notification_image_error_title))
                 .setContentText(getString(R.string.wiki_notification_image_error_content))
-                .setSmallIcon(R.drawable.ic_stat_alert_warning);
+                .setSmallIcon(R.drawable.notification_icon_warning);
 
         mNotificationManager.notify(R.id.wiki_image_error_notification, builder.build());
     }
@@ -723,7 +723,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
                 .setContentText(getString(R.string.wiki_notification_waiting_for_connection_content))
-                .setSmallIcon(R.drawable.ic_stat_navigation_more_horiz)
+                .setSmallIcon(R.drawable.notification_icon_dots_horiz)
                 .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
@@ -758,7 +758,7 @@ public class WikiService extends PlainSQLiteQueueService {
         NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setContentTitle(getString(R.string.wiki_notification_error_title))
                 .setContentText(reason)
-                .setSmallIcon(R.drawable.ic_stat_alert_error);
+                .setSmallIcon(R.drawable.notification_icon_error);
 
         if (actions.length >= 1 && actions[0] != null) {
             builder.setContentIntent(actions[0].actionIntent);
@@ -784,7 +784,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setContentTitle(getString(R.string.wiki_notification_throttle_title))
                 .setContentText(getString(R.string.wiki_notification_throttle_content))
                 .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME))
-                .setSmallIcon(R.drawable.ic_stat_av_av_timer);
+                .setSmallIcon(R.drawable.notification_icon_timer);
 
         mNotificationManager.notify(R.id.wiki_throttle_notification, builder.build());
 

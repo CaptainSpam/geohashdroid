@@ -457,7 +457,7 @@ public class AlarmService extends JobIntentService {
         mNotificationBuilder = new NotificationCompat.Builder(
                 this,
                 GHDConstants.CHANNEL_STOCK_PREFETCHER)
-            .setSmallIcon(R.drawable.ic_stat_file_file_download)
+            .setSmallIcon(R.drawable.notification_icon_download)
             .setContentTitle(getString(R.string.notification_title))
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
@@ -720,7 +720,7 @@ public class AlarmService extends JobIntentService {
             NotificationCompat.Builder groupBuilder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_NEARBY_POINTS)
                     .setGroupSummary(true)
                     .setGroup(NOTIFICATION_GROUP_LOCAL)
-                    .setSmallIcon(R.drawable.ic_stat_av_new_releases)
+                    .setSmallIcon(R.drawable.notification_icon_nearby_point)
                     .setAutoCancel(true)
                     .setOngoing(false)
                     .setLights(Color.WHITE, 500, 2000)
@@ -883,7 +883,7 @@ public class AlarmService extends JobIntentService {
         String summaryText = getResources().getQuantityString(R.plurals.known_locations_alarm_more, data.size() - 1, data.size() - 1);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, GHDConstants.CHANNEL_NEARBY_POINTS)
-                .setSmallIcon(R.drawable.ic_stat_av_new_releases)
+                .setSmallIcon(R.drawable.notification_icon_nearby_point)
                 .setAutoCancel(true)
                 .setOngoing(false)
                 .setLights(Color.WHITE, 500, 2000)
