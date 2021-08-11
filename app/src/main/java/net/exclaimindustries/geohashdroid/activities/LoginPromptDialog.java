@@ -36,7 +36,7 @@ public class LoginPromptDialog extends Activity {
     private EditText mUsername;
     private EditText mPassword;
 
-    private TextWatcher mWatcher = new TextWatcher() {
+    private final TextWatcher mWatcher = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             // Nothing.

@@ -109,9 +109,9 @@ public class HashBuilder {
          */
         public static final int ERROR_SERVER = 4;
 
-        private Context mContext;
-        private Calendar mCal;
-        private Graticule mGrat;
+        private final Context mContext;
+        private final Calendar mCal;
+        private final Graticule mGrat;
         private HttpGet mRequest;
         private int mStatus;
         private Info mLastObject;
