@@ -165,11 +165,8 @@ public class WikiUtils {
                 localMajor = Integer.parseInt(Objects.requireNonNull(match.group(3)));
                 localMinor = Integer.parseInt(Objects.requireNonNull(match.group(4)));
                 localRevision = Integer.parseInt(Objects.requireNonNull(match.group(5)));
-            } catch (NumberFormatException nfe) {
-                // Those BETTER be ints.
-                localValid = false;
-            } catch (NullPointerException npe) {
-                // There BETTER be enough groups.
+            } catch (NumberFormatException | NullPointerException nfe) {
+                // Those BETTER be ints, and enough groups.
                 localValid = false;
             }
 

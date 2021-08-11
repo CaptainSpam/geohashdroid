@@ -263,7 +263,7 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    public void onMapClick(LatLng latLng) {
+    public void onMapClick(@NonNull LatLng latLng) {
         // Okay, so now we've got a Graticule.  Well, we will right here:
         Graticule g = new Graticule(latLng);
         removeDestinationPoint();
@@ -386,7 +386,7 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         if(mWaitingOnFindClosest) {
             mWaitingOnFindClosest = false;
             if(!isCleanedUp()) {
