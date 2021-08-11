@@ -60,6 +60,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 
@@ -409,7 +410,7 @@ public class CentralMap
             // uses, but we're not concerned with the default icon, now, are we?
             mDestination = mMap.addMarker(new MarkerOptions()
                     .position(info.getFinalDestinationLatLng())
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
+                    .icon(BitmapTools.bitmapDescriptorFromVector(mCentralMap, R.drawable.final_destination))
                     .anchor(0.5f, 1.0f)
                     .title(title)
                     .snippet(snippet));

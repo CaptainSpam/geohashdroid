@@ -10,11 +10,20 @@ package net.exclaimindustries.tools;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.util.Log;
 
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
+
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 
 /**
  * BitmapTools are, as you probably guessed, tools for Bitmap manipulation.
@@ -243,5 +252,40 @@ public class BitmapTools {
         // If the original is more wide than tall but the second isn't, we can
         // reverse it.  Same with the other way around.
         return (inWidth < inHeight && outWidth > outHeight) || (inWidth > inHeight && outWidth < outHeight);
+    }
+
+    /**
+     * Converts a vector drawable into a BitmapDescriptor.  This is needed for
+     * things that MUST have a bitmap for whatever reason and can't take a
+     * vector drawable resource.  Looking at YOU, Maps API v2.
+     *
+     * @param context a Context from which a resource can be resolved
+     * @param vectorDrawableResourceId a resource to resolve
+     * @return a BitmapDescriptor
+     * @throws IllegalArgumentException the vector resource couldn't be resolved
+     */
+    public static BitmapDescriptor bitmapDescriptorFromVector(
+            @NonNull Context context,
+            @DrawableRes int vectorDrawableResourceId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(
+                context,
+                vectorDrawableResourceId);
+
+        if(vectorDrawable == null) {
+            throw new IllegalArgumentException("Couldn't resolve resource ID " + vectorDrawableResourceId);
+        }
+
+        vectorDrawable.setBounds(
+                0,
+                0,
+                vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(
+                vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }

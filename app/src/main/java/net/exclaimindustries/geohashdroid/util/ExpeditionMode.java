@@ -47,6 +47,7 @@ import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 import net.exclaimindustries.geohashdroid.widgets.ZoomButtons;
 import net.exclaimindustries.tools.AndroidUtil;
+import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 
@@ -500,7 +501,8 @@ public class ExpeditionMode
 
             Marker nearby = mMap.addMarker(new MarkerOptions()
                     .position(info.getFinalDestinationLatLng())
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination_disabled))
+                    .icon(BitmapTools.bitmapDescriptorFromVector(mCentralMap, R.drawable.final_destination_disabled))
+                    .alpha(0.5f)
                     .anchor(0.5f, 1.0f)
                     .title(title)
                     .snippet(snippet));

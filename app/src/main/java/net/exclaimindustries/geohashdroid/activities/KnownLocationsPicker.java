@@ -59,6 +59,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.KnownLocationPinData;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.tools.BitmapTools;
 
 import org.opensextant.geodesy.Angle;
 import org.opensextant.geodesy.Geodetic2DArc;
@@ -778,7 +779,7 @@ public class KnownLocationsPicker
         return new MarkerOptions()
                 .position(latLng)
                 .flat(true)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.known_location_tap_marker))
+                .icon(BitmapTools.bitmapDescriptorFromVector(this, R.drawable.known_location_tap_marker))
                 .anchor(0.5f, 0.5f)
                 .title(UnitConverter.makeFullCoordinateString(this, latLng, false, UnitConverter.OUTPUT_SHORT))
                 .snippet(getString(R.string.known_locations_tap_to_add));

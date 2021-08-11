@@ -1,0 +1,53 @@
+<vector android:height="25dp" android:viewportHeight="100"
+    android:viewportWidth="100" android:width="25dp"
+    xmlns:aapt="http://schemas.android.com/aapt" xmlns:android="http://schemas.android.com/apk/res/android">
+    <path android:fillColor="#0f0c57" android:fillType="evenOdd"
+        android:pathData="M9.165,12.032L41.81,30.477L35.904,44.028L4.169,26.315L9.165,12.032z"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillColor="#0f0c57" android:fillType="evenOdd"
+        android:pathData="M65.468,43.297L98.113,61.741L92.207,75.293L60.472,57.58L65.468,43.297z"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillColor="#636363"
+        android:pathData="M74.777,29.996A10.253,10.253 0,1 1,54.27 29.996A10.253,10.253 0,1 1,74.777 29.996z"
+        android:strokeColor="#000000" android:strokeLineCap="round"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillColor="#dad800" android:fillType="evenOdd"
+        android:pathData="M49.851,23.809L34.825,30.173L32.88,52.977L50.558,61.286L64.347,57.043L65.938,31.941L49.851,23.809z"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillAlpha="0.75" android:fillColor="#00000000"
+        android:fillType="evenOdd"
+        android:pathData="M34.648,29.996L50.558,36.714L65.938,32.471"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillAlpha="0.75" android:fillColor="#00000000"
+        android:fillType="evenOdd"
+        android:pathData="M50.205,61.463L50.558,36.537"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillColor="#dadada" android:fillType="evenOdd"
+        android:pathData="M32.173,46.967L39.244,42.194C39.244,42.194 40.97,40.893 43.487,43.122C46.047,45.39 45.078,47.939 45.078,47.939L37.565,53.685"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillColor="#b5fefd"
+        android:pathData="m39.333,50.105a4.287,4.287 0,0 1,-4.287 4.287,4.287 4.287,0 0,1 -4.287,-4.287 4.287,4.287 0,0 1,4.287 -4.287,4.287 4.287,0 0,1 4.287,4.287z"
+        android:strokeColor="#000000" android:strokeLineCap="round"
+        android:strokeLineJoin="miter" android:strokeWidth="1"/>
+    <path android:fillAlpha="0.7389706" android:fillColor="#1f70f5"
+        android:fillType="evenOdd"
+        android:pathData="M13.258,46.967C13.258,46.967 20.551,59.431 33.057,67.12C45.507,74.773 73.009,75.958 73.009,75.958C73.009,75.958 45.151,81.587 30.052,73.307C15.049,65.079 13.258,46.967 13.258,46.967z"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="0.5"/>
+    <path android:fillAlpha="0.7389706" android:fillColor="#1f70f5"
+        android:fillType="evenOdd"
+        android:pathData="M10.894,64.048C10.894,64.048 16.261,73.221 25.465,78.88C34.627,84.512 54.867,85.384 54.867,85.384C54.867,85.384 34.365,89.526 23.253,83.433C12.212,77.378 10.894,64.048 10.894,64.048z"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="0.36796874"/>
+    <path android:fillAlpha="0.7389706" android:fillColor="#1f70f5"
+        android:fillType="evenOdd"
+        android:pathData="M9.231,79.886C9.231,79.886 12.501,85.475 18.109,88.923C23.692,92.355 36.024,92.886 36.024,92.886C36.024,92.886 23.532,95.41 16.762,91.697C10.034,88.008 9.231,79.886 9.231,79.886z"
+        android:strokeColor="#000000" android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" android:strokeWidth="0.2242014"/>
+</vector>
