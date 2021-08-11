@@ -5,7 +5,7 @@ android {
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        minSdkVersion 16
+        minSdkVersion 23
         targetSdkVersion 30
         vectorDrawables.useSupportLibrary = true
     }

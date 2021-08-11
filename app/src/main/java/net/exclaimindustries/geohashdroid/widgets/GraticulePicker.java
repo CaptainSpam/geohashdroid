@@ -9,7 +9,6 @@
 package net.exclaimindustries.geohashdroid.widgets;
 
 import android.content.Context;
-import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -93,10 +92,8 @@ public class GraticulePicker extends RelativeLayout {
         setClickable(true);
 
         // Who wants a neat-looking shadow effect as if this were some sort of
-        // material hovering a few dp above the map?  You do, assuming you're
-        // using Lollipop!
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            setElevation(getResources().getDimension(R.dimen.elevation_graticule_picker));
+        // material hovering a few dp above the map?  You might!
+        setElevation(getResources().getDimension(R.dimen.elevation_graticule_picker));
 
         // Now then, let's get inflated.
         inflate(c, R.layout.graticulepicker, this);

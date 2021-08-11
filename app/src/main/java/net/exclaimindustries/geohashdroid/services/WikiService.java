@@ -854,7 +854,8 @@ public class WikiService extends PlainSQLiteQueueService {
                     PendingIntent.getActivity(this,
                             0,
                             new Intent(this, LoginPromptDialog.class),
-                            PendingIntent.FLAG_UPDATE_CURRENT),
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                                    | PendingIntent.FLAG_IMMUTABLE),
                     getString(R.string.wiki_notification_action_update_login)
             );
 
@@ -875,8 +876,9 @@ public class WikiService extends PlainSQLiteQueueService {
         // This will just call back to the service with the given command.
         return PendingIntent.getService(this,
                 command,
-                new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, command),
-                0);
+                new Intent(this, WikiService.class)
+                        .putExtra(QueueService.COMMAND_EXTRA, command),
+                PendingIntent.FLAG_IMMUTABLE);
     }
 
     private NotificationAction getBasicNotificationAction(int command) {

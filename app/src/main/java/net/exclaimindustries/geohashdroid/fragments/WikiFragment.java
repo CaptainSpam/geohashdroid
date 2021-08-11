@@ -13,7 +13,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -123,16 +122,9 @@ public class WikiFragment extends CentralMapExtraFragment {
         // The gallery button needs to fire off to the gallery.  Or Files.  Or
         // whatever else might be listening for this intent.
         mGalleryButton.setOnClickListener(v -> {
-            Intent i;
-
-            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-                i = new Intent(Intent.ACTION_GET_CONTENT);
-            } else {
-                i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            }
-
-            i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("image/*");
+            Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("image/*");
 
             startActivityForResult(i, GET_PICTURE);
         });

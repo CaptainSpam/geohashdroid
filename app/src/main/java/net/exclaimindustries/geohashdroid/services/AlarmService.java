@@ -342,7 +342,11 @@ public class AlarmService extends JobIntentService {
         AlarmManagerCompat.setAndAllowWhileIdle(mAlarmManager,
                 AlarmManager.RTC_WAKEUP,
                 cal.getTimeInMillis(),
-                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+                PendingIntent.getBroadcast(
+                        this,
+                        0,
+                        alarmIntent,
+                        PendingIntent.FLAG_IMMUTABLE));
     }
 
     /**
@@ -393,7 +397,10 @@ public class AlarmService extends JobIntentService {
         AlarmManagerCompat.setAndAllowWhileIdle(mAlarmManager,
                 AlarmManager.RTC_WAKEUP,
                 alarmTime.getTimeInMillis(),
-                PendingIntent.getBroadcast(this, 0, alarmIntent, 0));
+                PendingIntent.getBroadcast(this,
+                        0,
+                        alarmIntent,
+                        PendingIntent.FLAG_IMMUTABLE));
     }
     
     private void sendRequest(@NonNull Graticule g) {
@@ -480,7 +487,7 @@ public class AlarmService extends JobIntentService {
                                 .setClass(
                                         this,
                                         StockAlarmReceiver.class),
-                        0));
+                        PendingIntent.FLAG_IMMUTABLE));
                 mAlarmManager.cancel(PendingIntent.getBroadcast(
                         this,
                         0,
@@ -488,7 +495,7 @@ public class AlarmService extends JobIntentService {
                                 .setClass(
                                         this,
                                         StockAlarmReceiver.class),
-                        0));
+                        PendingIntent.FLAG_IMMUTABLE));
                 stopWaitingForNetwork();
                 clearNotification();
                 break;
@@ -535,7 +542,7 @@ public class AlarmService extends JobIntentService {
                         new Intent(STOCK_ALARM_RETRY)
                                 .setClass(this,
                                         StockAlarmReceiver.class),
-                        0));
+                        PendingIntent.FLAG_IMMUTABLE));
 
                 // StockService takes care of all the network connectivity
                 // checks and other things that the alarm-checking StockService
@@ -869,7 +876,12 @@ public class AlarmService extends JobIntentService {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(StockService.EXTRA_STUFF, bun);
 
-        builder.setContentIntent(PendingIntent.getActivity(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT));
+        builder.setContentIntent(PendingIntent.getActivity(
+                this,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+                        | PendingIntent.FLAG_IMMUTABLE));
 
         mNotificationManager.notify(notificationId, builder.build());
     }

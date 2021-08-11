@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
             android:layout_height="match_parent">
     <LinearLayout
         android:layout_width="match_parent"
@@ -34,11 +35,11 @@
                 android:layout_height="0dp"
                 android:layout_gravity="center"
                 android:layout_weight="1"
-                android:drawableLeft="@drawable/final_destination"
                 android:gravity="center"
                 android:padding="@dimen/details_text_padding"
                 android:text="@string/details_finish"
-                android:textSize="@dimen/details_subtitle_fontsize"/>
+                android:textSize="@dimen/details_subtitle_fontsize"
+                app:drawableLeftCompat="@drawable/final_destination" />
 
             <TextView
                 android:id="@+id/dest_lat"
@@ -70,11 +71,11 @@
                 android:layout_height="0dp"
                 android:layout_gravity="center"
                 android:layout_weight="1"
-                android:drawableLeft="@drawable/current_location"
                 android:gravity="center"
                 android:padding="@dimen/details_text_padding"
                 android:text="@string/details_you"
-                android:textSize="@dimen/details_subtitle_fontsize"/>
+                android:textSize="@dimen/details_subtitle_fontsize"
+                app:drawableLeftCompat="@drawable/current_location" />
 
             <TextView
                 android:id="@+id/you_lat"

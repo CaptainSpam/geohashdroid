@@ -38,7 +38,6 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.UiSettings;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -80,7 +79,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 
 /**
  * CentralMap replaces MainMap as the map display.  Unlike MainMap, it also
@@ -543,7 +541,7 @@ public class CentralMap
 
         // This allows us to NOT blast out responses if the current mode didn't
         // request it.
-        private Set<Long> mWaitingList;
+        private final Set<Long> mWaitingList;
 
         public StockReceiver() {
             mWaitingList = new HashSet<>();
@@ -657,9 +655,9 @@ public class CentralMap
         }
     }
 
-    private StockReceiver mStockReceiver = new StockReceiver();
+    private final StockReceiver mStockReceiver = new StockReceiver();
 
-    private LocationCallback mLocationCallback = new LocationCallback() {
+    private final LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             // New location!
@@ -720,14 +718,6 @@ public class CentralMap
             mToolbarBottom.setOnMenuItemClickListener(this);
         }
         mToolbarTop.setOnMenuItemClickListener(this);
-
-        // Apply nighttime mode to the progress background!  Only do that if
-        // this is less than Lollipop, though.  We can apply the color of the
-        // active theme directly in the resource files in Lollipop or later, but
-        // anything beforehand, we need to fake it.
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
-        }
 
         // The progress-o-matic needs to be off-screen.  And, we need to know
         // how much it should shift down to become back on-screen.
