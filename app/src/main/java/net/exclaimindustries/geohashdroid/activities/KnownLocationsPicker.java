@@ -276,10 +276,10 @@ public class KnownLocationsPicker
         }
 
         private List<Address> mAddresses;
-        private VisibleRegion mVis;
-        private float mBearing;
-        private Geocoder mGeocoder;
-        private Message mMessage;
+        private final VisibleRegion mVis;
+        private final float mBearing;
+        private final Geocoder mGeocoder;
+        private final Message mMessage;
 
         public LocationSearchTask(Message message, Geocoder geocoder, VisibleRegion vis, float bearing) {
             super();
@@ -707,7 +707,7 @@ public class KnownLocationsPicker
     }
 
     @Override
-    public void onMapLongClick(LatLng latLng) {
+    public void onMapLongClick(@NonNull LatLng latLng) {
         // If there's already a marker, clear it out.
         if(mMapClickMarker != null) {
             mMapClickMarker.remove();
@@ -726,7 +726,7 @@ public class KnownLocationsPicker
     }
 
     @Override
-    public void onInfoWindowClick(Marker marker) {
+    public void onInfoWindowClick(@NonNull Marker marker) {
         // Is this marker associated with a KnownLocation or Address?  If so, we
         // can init the data with that, AND keep track of it.
         String name = "";
@@ -766,7 +766,7 @@ public class KnownLocationsPicker
     }
 
     @Override
-    public boolean onMarkerClick(Marker marker) {
+    public boolean onMarkerClick(@NonNull Marker marker) {
         return false;
     }
 
