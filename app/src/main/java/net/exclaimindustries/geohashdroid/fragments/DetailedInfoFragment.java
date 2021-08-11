@@ -13,11 +13,9 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
-
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.TextAppearanceSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +29,10 @@ import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 
 import java.text.DateFormat;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentActivity;
 
 /**
  * The DetailedInfoFragment shows us some detailed info.  It's Javadocs like
@@ -46,8 +48,6 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
     private TextView mAccuracy;
     private View mYouBlock;
     private View mDistanceBlock;
-
-    private int mDefaultTextColor;
 
     private Location mLastLocation;
 
@@ -127,9 +127,6 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
         mDestLat.setOnLongClickListener(mDestListener);
         mDestLon.setOnLongClickListener(mDestListener);
 
-        // A color!
-        mDefaultTextColor = ContextCompat.getColor(act, (isNightMode() ? android.R.color.secondary_text_dark : android.R.color.secondary_text_light));
-
         // Button!
         Button closeButton = layout.findViewById(R.id.close);
 
@@ -206,22 +203,35 @@ public class DetailedInfoFragment extends CentralMapExtraFragment {
                 }
 
                 // Distance!
+                SpannableStringBuilder ssb = new SpannableStringBuilder();
+                ssb.append(getString(R.string.details_dist)).append(" ");
+                int endOfLead = ssb.length();
+
                 if(mLastLocation == null || mInfo == null) {
-                    mDistance.setText(R.string.standby_title);
-                    mDistance.setTextColor(mDefaultTextColor);
+                    ssb.append(getString(R.string.standby_title));
                 } else {
                     float distance = mLastLocation.distanceTo(mInfo.getFinalLocation());
-                    mDistance.setText(UnitConverter.makeDistanceString(activity, GHDConstants.DIST_FORMAT, distance));
+                    String distanceText = UnitConverter.makeDistanceString(
+                            activity,
+                            GHDConstants.DIST_FORMAT,
+                            distance);
+                    ssb.append(distanceText);
 
                     // Plus, if we're close enough AND accurate enough, make the
                     // text be green.  We COULD do this with geofencing
                     // callbacks and all, but, I mean, we're already HERE,
                     // aren't we?
-                    if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy)
-                        mDistance.setTextColor(ContextCompat.getColor(activity, R.color.details_in_range));
-                    else
-                        mDistance.setTextColor(mDefaultTextColor);
+                    if(accuracy < GHDConstants.LOW_ACCURACY_THRESHOLD && distance <= accuracy) {
+                        ssb.setSpan(
+                                new TextAppearanceSpan(
+                                    activity,
+                                    R.style.DistanceInRange),
+                                endOfLead,
+                                endOfLead + distanceText.length(),
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
 
+                    mDistance.setText(ssb);
                 }
             });
         }

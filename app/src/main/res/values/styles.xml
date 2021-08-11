@@ -38,4 +38,8 @@
         <item name="android:layout_marginTop">16dp</item>
         <item name="android:layout_marginBottom">16dp</item>
     </style>
+
+    <style name="DistanceInRange">
+        <item name="android:textColor">@color/details_in_range</item>
+    </style>
 </resources>
