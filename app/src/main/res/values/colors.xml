@@ -15,8 +15,5 @@
     <color name="error_banner_error">#c00</color>
     <color name="error_banner_victory">#0c0</color>
 
-    <!-- Used in pre-v21 circumstances where we don't have access to
-         attr/textColorSecondary. -->
-    <color name="common_icon">#222</color>
     <color name="common_background">#eee</color>
 </resources>
