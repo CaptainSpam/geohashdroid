@@ -125,6 +125,9 @@
     <string name="notification_title">Fetching stocks&#8230;</string>
     <string name="notification_detail">(now checking %1$s)</string>
 
+    <string name="notification_action_retry">Retry</string>
+    <string name="notification_action_resume">Resume</string>
+
     <string name="channel_wiki_title">Wiki-related</string>
     <string name="channel_wiki_description">Notifications regarding active wiki actions, if wiki posts are queued, wiki posting errors, etc.</string>
     <string name="channel_nearby_points_title">Nearby points</string>
