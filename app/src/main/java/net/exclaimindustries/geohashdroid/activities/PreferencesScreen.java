@@ -18,6 +18,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.InputType;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -34,6 +36,7 @@ import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+import androidx.preference.EditTextPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -303,18 +306,36 @@ public class PreferencesScreen extends AppCompatActivity
             // password (for obvious reasons), we can't even share the same
             // object between the two preferences.  Well, we CAN, but that won't
             // really buy us much in terms of efficiency.
-            Preference usernamePref = findPreference(GHDConstants.PREF_WIKI_USER);
-            usernamePref.setOnPreferenceChangeListener((preference, newValue) -> {
-                preference.setSummary(newValue.toString());
-                mHasChanged = true;
-                return true;
-            });
-            usernamePref.setSummary(PreferenceManager.getDefaultSharedPreferences(requireContext()).getString(GHDConstants.PREF_WIKI_USER, ""));
+            EditTextPreference usernamePref = findPreference(GHDConstants.PREF_WIKI_USER);
+            if(usernamePref != null) {
+                usernamePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    preference.setSummary(newValue.toString());
+                    mHasChanged = true;
+                    return true;
+                });
+                usernamePref.setSummary(
+                        PreferenceManager
+                                .getDefaultSharedPreferences(requireContext())
+                                .getString(GHDConstants.PREF_WIKI_USER, ""));
 
-            findPreference(GHDConstants.PREF_WIKI_PASS).setOnPreferenceChangeListener((preference, newValue) -> {
-                mHasChanged = true;
-                return true;
-            });
+                // Oh, also, we need to set settings on bind, as androidx
+                // doesn't let us do that in the XML anymore.
+                usernamePref.setOnBindEditTextListener(TextView::setSingleLine);
+            }
+
+            EditTextPreference passwordPref = findPreference(GHDConstants.PREF_WIKI_PASS);
+
+            if(passwordPref != null) {
+                passwordPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    mHasChanged = true;
+                    return true;
+                });
+
+                passwordPref.setOnBindEditTextListener(editText -> {
+                    editText.setSingleLine();
+                    editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                });
+            }
 
             // Releasing wiki posts doesn't need a reminder.
             mReleaseWikiQueue = findPreference("_releaseWikiQueue");
