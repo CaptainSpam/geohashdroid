@@ -165,43 +165,52 @@ public class PreferencesScreen extends AppCompatActivity
             // This one needs special handling due to its onPreferenceChange
             // being overridden elsewhere.
             Preference knownNotification = findPreference(GHDConstants.PREF_KNOWN_NOTIFICATION);
-            assert knownNotification != null;
-            updateSummary(knownNotification, prefs.getString(knownNotification.getKey(), GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE));
+            if(knownNotification != null) {
+                updateSummary(knownNotification,
+                        Objects.requireNonNull(
+                                prefs.getString(
+                                        knownNotification.getKey(),
+                                        GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE)));
+
+                // The known locations notification preference needs a quick
+                // reminder popup.
+                knownNotification.setOnPreferenceChangeListener((preference, newValue) -> {
+                    // First off, ignore this entirely if the user told us to
+                    // stop bugging them or if the new setting doesn't need a
+                    // warning.
+                    boolean stopBugging = prefs.getBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, false);
+
+                    // Maybe I should invest in shorter variable names.
+                    if(!stopBugging
+                            && (newValue.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE)
+                            || newValue.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION))) {
+                        // Notify!
+                        DialogFragment frag = new KnownNotificationLimitDialogFragment();
+                        Bundle args = new Bundle();
+                        args.putString(GHDConstants.PREF_KNOWN_NOTIFICATION, newValue.toString());
+                        frag.setArguments(args);
+                        frag.show(getParentFragmentManager(), KNOWN_NOTIFICATION_REMINDER_DIALOG);
+                    }
+
+                    // We're also doing the summary update ourselves, as this
+                    // takes over the onPreferenceChange part that
+                    // bindPreferenceSummaryToValue needs to function.
+                    updateSummary(preference, newValue);
+
+                    return true;
+                });
+            }
 
             // The known locations manager is just another Activity.
-            findPreference("_knownLocations").setOnPreferenceClickListener(preference -> {
-                Intent i = new Intent(getActivity(), KnownLocationsPicker.class);
-                startActivity(i);
-                return true;
-            });
+            Preference pref = findPreference("_knownLocations");
 
-            // The known locations notification preference needs a quick
-            // reminder popup.
-            knownNotification.setOnPreferenceChangeListener((preference, newValue) -> {
-                // First off, ignore this entirely if the user told us to
-                // stop bugging them or if the new setting doesn't need a
-                // warning.
-                boolean stopBugging = prefs.getBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, false);
-
-                // Maybe I should invest in shorter variable names.
-                if(!stopBugging
-                        && (newValue.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_GRATICULE)
-                        || newValue.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION))) {
-                    // Notify!
-                    DialogFragment frag = new KnownNotificationLimitDialogFragment();
-                    Bundle args = new Bundle();
-                    args.putString(GHDConstants.PREF_KNOWN_NOTIFICATION, newValue.toString());
-                    frag.setArguments(args);
-                    frag.show(getParentFragmentManager(), KNOWN_NOTIFICATION_REMINDER_DIALOG);
-                }
-
-                // We're also doing the summary update ourselves, as this
-                // takes over the onPreferenceChange part that
-                // bindPreferenceSummaryToValue needs to function.
-                updateSummary(preference, newValue);
-
-                return true;
-            });
+            if(pref != null) {
+                pref.setOnPreferenceClickListener(preference -> {
+                    Intent i = new Intent(getActivity(), KnownLocationsPicker.class);
+                    startActivity(i);
+                    return true;
+                });
+            }
         }
 
         /**
@@ -214,6 +223,7 @@ public class PreferencesScreen extends AppCompatActivity
             @NonNull
             public Dialog onCreateDialog(Bundle savedInstanceState) {
                 assert getArguments() != null;
+
                 String setting = getArguments().getString(GHDConstants.PREF_KNOWN_NOTIFICATION, "");
 
                 @StringRes int dialogText;
@@ -339,25 +349,28 @@ public class PreferencesScreen extends AppCompatActivity
 
             // Releasing wiki posts doesn't need a reminder.
             mReleaseWikiQueue = findPreference("_releaseWikiQueue");
-            mReleaseWikiQueue.setOnPreferenceClickListener(preference -> {
-                resumeWikiQueue();
-                Toast.makeText(
-                        getActivity(),
-                        R.string.toast_releasing_wiki_queue,
-                        Toast.LENGTH_SHORT).show();
-                return true;
-            });
+
+            if(mReleaseWikiQueue != null) {
+                mReleaseWikiQueue.setOnPreferenceClickListener(preference -> {
+                    resumeWikiQueue();
+                    Toast.makeText(
+                            getActivity(),
+                            R.string.toast_releasing_wiki_queue,
+                            Toast.LENGTH_SHORT).show();
+                    return true;
+                });
+            }
 
             // Get ready to receive updates for the wiki queue release!
             IntentFilter filt = new IntentFilter();
             filt.addAction(QueueService.ACTION_QUEUE_COUNT);
-            getActivity().registerReceiver(mReceiver, filt);
+            requireActivity().registerReceiver(mReceiver, filt);
 
             // And, fire off the first count request to initialize.
             Intent i = new Intent(getActivity(), WikiService.class)
                     .putExtra(QueueService.COMMAND_EXTRA, WikiService.COMMAND_QUEUE_COUNT);
 
-            getActivity().startService(i);
+            requireActivity().startService(i);
         }
 
         @Override
@@ -374,7 +387,7 @@ public class PreferencesScreen extends AppCompatActivity
             BackupManager bm = new BackupManager(getActivity());
             bm.dataChanged();
 
-            getActivity().unregisterReceiver(mReceiver);
+            requireActivity().unregisterReceiver(mReceiver);
 
             super.onStop();
         }
@@ -459,43 +472,54 @@ public class PreferencesScreen extends AppCompatActivity
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.pref_other, rootKey);
 
-            bindPreferenceSummaryToValue(findPreference(GHDConstants.PREF_STOCK_CACHE_SIZE));
+            bindPreferenceSummaryToValue(Objects.requireNonNull(findPreference(GHDConstants.PREF_STOCK_CACHE_SIZE)));
 
             // The stock alarm preference needs to enable/disable the alarm as
             // need be.
-            findPreference(GHDConstants.PREF_STOCK_ALARM).setOnPreferenceChangeListener((preference, newValue) -> {
-                if(newValue instanceof Boolean) {
-                    Boolean set = (Boolean) newValue;
+            Preference pref = findPreference(GHDConstants.PREF_STOCK_ALARM);
 
-                    Intent i = new Intent(getActivity(), AlarmService.class);
+            if(pref != null) {
+                pref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    if(newValue instanceof Boolean) {
+                        Boolean set = (Boolean) newValue;
 
-                    if(set) {
-                        // ON!  Start the service!
-                        i.setAction(AlarmService.STOCK_ALARM_ON);
-                    } else {
-                        // OFF!  Stop the service and cancel all alarms!
-                        i.setAction(AlarmService.STOCK_ALARM_OFF);
+                        Intent i = new Intent(getActivity(), AlarmService.class);
+
+                        if(set) {
+                            // ON!  Start the service!
+                            i.setAction(AlarmService.STOCK_ALARM_ON);
+                        } else {
+                            // OFF!  Stop the service and cancel all alarms!
+                            i.setAction(AlarmService.STOCK_ALARM_OFF);
+                        }
+
+                        AlarmService.enqueueWork(getActivity(), i);
                     }
 
-                    AlarmService.enqueueWork(getActivity(), i);
-                }
-
-                return true;
-            });
+                    return true;
+                });
+            }
 
             // Cache wiping is more a button than a preference, per se.
-            findPreference("_stockWipe").setOnPreferenceClickListener(preference -> {
-                DialogFragment frag = new WipeCacheDialogFragment();
-                frag.show(getParentFragmentManager(), WIPE_DIALOG);
-                return true;
-            });
+            pref = findPreference("_stockWipe");
+
+            if(pref != null) {
+                pref.setOnPreferenceClickListener(preference -> {
+                    DialogFragment frag = new WipeCacheDialogFragment();
+                    frag.show(getParentFragmentManager(), WIPE_DIALOG);
+                    return true;
+                });
+            }
 
             // As is the reminder unremindening.
-            findPreference("_resetBuggingMe").setOnPreferenceClickListener(preference -> {
-                DialogFragment frag = new ResetBuggingMeDialogFragment();
-                frag.show(getParentFragmentManager(), RESET_BUGGING_ME_DIALOG);
-                return true;
-            });
+            pref = findPreference("_resetBuggingMe");
+            if(pref != null) {
+                pref.setOnPreferenceClickListener(preference -> {
+                    DialogFragment frag = new ResetBuggingMeDialogFragment();
+                    frag.show(getParentFragmentManager(), RESET_BUGGING_ME_DIALOG);
+                    return true;
+                });
+            }
         }
 
         @Override
