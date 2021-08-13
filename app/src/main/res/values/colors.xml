@@ -15,6 +15,7 @@
     <color name="error_banner_error">#c00</color>
     <color name="error_banner_victory">#0c0</color>
 
+    <color name="common_icon">#222</color>
     <color name="common_background">#eee</color>
 
     <color name="launcher_background">#FFFFFF</color>
