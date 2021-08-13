@@ -4,34 +4,34 @@
     android:layout_width="wrap_content"
               android:layout_height="wrap_content">
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/standby_title"
         android:id="@+id/infobox_hashpoint"
         app:drawableStartCompat="@drawable/final_destination_infobox"
         app:drawableLeftCompat="@drawable/final_destination_infobox" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/standby_title"
         android:id="@+id/infobox_you"
         app:drawableStartCompat="@drawable/current_location_infobox"
         app:drawableLeftCompat="@drawable/current_location_infobox" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/standby_title"
         android:id="@+id/infobox_distance"
         app:drawableStartCompat="@drawable/distance_infobox"
         app:drawableLeftCompat="@drawable/distance_infobox" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/infobox_accuracy_low"
         android:id="@+id/infobox_accuracy_low"
         android:visibility="gone"/>
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/infobox_accuracy_really_low"
         android:id="@+id/infobox_accuracy_really_low"
