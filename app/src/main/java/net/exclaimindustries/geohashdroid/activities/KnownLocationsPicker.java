@@ -9,7 +9,6 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.backup.BackupManager;
 import android.content.Context;
@@ -74,6 +73,7 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
 /**
@@ -496,6 +496,7 @@ public class KnownLocationsPicker
             if(mMapClickMarkerOptions != null) {
                 // Well, then put the marker back on the map!
                 mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
+                assert(mMapClickMarker != null);
                 mActiveMarker = mMapClickMarker;
                 mMapClickMarker.showInfoWindow();
             }
@@ -536,28 +537,36 @@ public class KnownLocationsPicker
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if(!prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)
                 && !prefs.getBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, false)) {
+
             // Dialog!
-            new AlertDialog.Builder(this)
-                    .setMessage(R.string.known_locations_prefetch_is_off)
-                    .setNegativeButton(R.string.stop_reminding_me_label, (dialog, which) -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+            View extraView = getLayoutInflater().inflate(R.layout.known_locations_needs_prefetch_dialog, null);
+
+            CheckBox check = (CheckBox)extraView.findViewById(R.id.stop_reminding_me_checkbox);
+
+            builder.setMessage(R.string.known_locations_prefetch_is_off)
+                    .setNegativeButton(R.string.go_to_preference, (dialog, which) -> {
                         dialog.dismiss();
 
-                        SharedPreferences.Editor editor = prefs.edit();
-                        editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
-                        editor.apply();
-
-                        BackupManager bm = new BackupManager(KnownLocationsPicker.this);
-                        bm.dataChanged();
-                    })
-                    .setNeutralButton(R.string.go_to_preference, (dialog, which) -> {
-                        dialog.dismiss();
-
-                        Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class);
-                        intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, PreferencesScreen.OtherPreferenceFragment.class.getName());
-                        intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                        Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class)
+                                .putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT,
+                                        PreferencesScreen.OtherPreferenceFragment.class.getName())
+                                .putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
                         startActivity(intent);
                     })
                     .setPositiveButton(R.string.gotcha_label, (dialog, which) -> dialog.dismiss())
+                    .setView(extraView)
+                    .setOnDismissListener(dialog -> {
+                        if(check.isChecked()) {
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
+                            editor.apply();
+
+                            BackupManager bm = new BackupManager(KnownLocationsPicker.this);
+                            bm.dataChanged();
+                        }
+                    })
                     .show();
         }
 
@@ -722,6 +731,7 @@ public class KnownLocationsPicker
         mMapClickMarkerOptions = createMarker(latLng);
 
         mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
+        assert(mMapClickMarker != null);
         mMapClickMarker.showInfoWindow();
     }
 
