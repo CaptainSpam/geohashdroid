@@ -47,6 +47,7 @@ import java.util.regex.Pattern;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.work.Constraints;
 import androidx.work.ListenableWorker;
 import androidx.work.NetworkType;
@@ -545,6 +546,8 @@ public class WikiService extends PlainSQLiteQueueService {
                     imageInfoObj.put("location", locationObj);
                 }
 
+                imageInfoObj.put("orientation", imageInfo.orientation);
+
                 toReturn.put("imageInfo", imageInfoObj);
             }
 
@@ -650,6 +653,9 @@ public class WikiService extends PlainSQLiteQueueService {
                 try {
                     Uri uri = Uri.parse(imageInfoObj.getString("uri"));
                     long imageTimestamp = imageInfoObj.getLong("timestamp");
+                    // This is an optInt in case someone came into this between
+                    // when I added the orientation field.
+                    int orientation = imageInfoObj.optInt("orientation", ExifInterface.ORIENTATION_NORMAL);
 
                     Location imageLocation = null;
                     JSONObject locationObj = incoming.optJSONObject("location");
@@ -660,7 +666,7 @@ public class WikiService extends PlainSQLiteQueueService {
                     }
 
                     toReturn.putExtra(EXTRA_IMAGE_INFO,
-                            new WikiImageUtils.ImageInfo(uri, imageLocation, imageTimestamp));
+                            new WikiImageUtils.ImageInfo(uri, imageLocation, orientation, imageTimestamp));
                 } catch(JSONException je) {
                     Log.w(DEBUG_TAG, "Couldn't parse something from the ImageInfo object, giving up and ignoring...", je);
                 }

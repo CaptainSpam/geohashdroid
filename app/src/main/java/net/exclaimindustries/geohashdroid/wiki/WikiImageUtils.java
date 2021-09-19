@@ -87,6 +87,13 @@ public class WikiImageUtils {
          */
         public final long timestamp;
 
+        /**
+         * The image's orientation, as given by EXIF data, if possible.  Will be
+         * in the form of an {@link ExifInterface} const, defaulting to
+         * {@link ExifInterface#ORIENTATION_NORMAL}.
+         */
+        public final int orientation;
+
         public static final Parcelable.Creator<ImageInfo> CREATOR = new Parcelable.Creator<ImageInfo>() {
             public ImageInfo createFromParcel(Parcel in) {return new ImageInfo(in); }
             public ImageInfo[] newArray(int size) { return new ImageInfo[size]; }
@@ -97,13 +104,16 @@ public class WikiImageUtils {
          *
          * @param uri the image URI
          * @param location the image location if known, or null if not
+         * @param orientation the image's orientation, as an {@link ExifInterface} const
          * @param timestamp the image's timestamp if known, or -1 if not
          */
         public ImageInfo(@NonNull Uri uri,
                          @Nullable Location location,
+                         int orientation,
                          long timestamp) {
             this.uri = uri;
             this.location = location;
+            this.orientation = orientation;
 
             // Ignore the timestamp field for now and just use the time at the
             // moment this object was created; from bug reports and personal
@@ -134,6 +144,7 @@ public class WikiImageUtils {
             } else {
                 this.location = null;
             }
+            this.orientation = in.readInt();
         }
 
         @Override
@@ -153,6 +164,7 @@ public class WikiImageUtils {
                 dest.writeDouble(location.getLatitude());
                 dest.writeDouble(location.getLongitude());
             }
+            dest.writeInt(orientation);
         }
     }
 
@@ -206,6 +218,7 @@ public class WikiImageUtils {
             // If there's any problem, just fall back to the supplied defaults.
             return new ImageInfo(uri,
                     locationIfNoneSet,
+                    ExifInterface.ORIENTATION_NORMAL,
                     timeIfNoneSet.getTimeInMillis());
         }
 
@@ -226,6 +239,8 @@ public class WikiImageUtils {
 
         return new ImageInfo(uri,
                 loc,
+                exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL),
                 timestamp != null
                         ? timestamp
                         : timeIfNoneSet.getTimeInMillis());
