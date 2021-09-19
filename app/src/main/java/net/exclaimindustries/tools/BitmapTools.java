@@ -10,11 +10,14 @@ package net.exclaimindustries.tools;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
+
+import androidx.annotation.NonNull;
 
 /**
  * BitmapTools are, as you probably guessed, tools for Bitmap manipulation.
@@ -24,7 +27,7 @@ import java.io.InputStream;
  */
 public class BitmapTools {
     private static final String DEBUG_TAG = "BitmapTools";
-    
+
     /**
      * Creates a new Bitmap that's a scaled version of the given Bitmap, but
      * with the aspect ratio preserved.  Note that this will only scale down; if
@@ -234,6 +237,21 @@ public class BitmapTools {
             // Aaaaaand something went wrong, so we return null.
             return null;
         }
+    }
+
+    /**
+     * Creates a new Bitmap that is a rotated version of the input Bitmap.
+     * Remember to recycle the input Bitmap afterward if you don't need it!
+     *
+     * @param source the input Bitmap
+     * @param angle the angle to rotate
+     * @return a new, rotated Bitmap
+     */
+    @NonNull
+    public static Bitmap createRotatedBitmap(@NonNull Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
     private static boolean shouldBeReversed(int inWidth, int inHeight, int outWidth, int outHeight) {
