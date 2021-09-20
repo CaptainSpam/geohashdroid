@@ -64,8 +64,7 @@ import java.util.Calendar;
 public class WikiFragment extends CentralMapExtraFragment {
     private static final String PICTURE_URI = "pictureUri";
     private static final String IMAGE_ROTATION = "imageRotation";
-    private static final String IMAGE_FLIP_X = "imageFlipX";
-    private static final String IMAGE_FLIP_Y = "imageFlipY";
+    private static final String IMAGE_FLIP = "imageFlipX";
 
     private static final int GET_PICTURE = 1;
 
@@ -92,7 +91,7 @@ public class WikiFragment extends CentralMapExtraFragment {
     private Bitmap mThumbnail = null;
 
     private final BitmapTools.ImageEdits mImageEdits =
-            new BitmapTools.ImageEdits(BitmapTools.ImageRotation.ROTATE_0, false, false);
+            new BitmapTools.ImageEdits(BitmapTools.ImageRotation.ROTATE_0, false);
 
     private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
         // Huh, we register for ALL changes, not just for a few prefs.  May
@@ -184,8 +183,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         // If we had a leftover Uri, apply that as well.
         if(savedInstanceState != null) {
             mImageEdits.rotation = BitmapTools.ImageRotation.values()[savedInstanceState.getInt(IMAGE_ROTATION, 0)];
-            mImageEdits.flipX = savedInstanceState.getBoolean(IMAGE_FLIP_X, false);
-            mImageEdits.flipY = savedInstanceState.getBoolean(IMAGE_FLIP_Y, false);
+            mImageEdits.flip = savedInstanceState.getBoolean(IMAGE_FLIP, false);
 
             Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
             if(pic != null) setImageUri(pic);
@@ -236,8 +234,7 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // And the current image edits.
         outState.putInt(IMAGE_ROTATION, mImageEdits.rotation.ordinal());
-        outState.putBoolean(IMAGE_FLIP_X, mImageEdits.flipX);
-        outState.putBoolean(IMAGE_FLIP_Y, mImageEdits.flipY);
+        outState.putBoolean(IMAGE_FLIP, mImageEdits.flip);
     }
 
     @Override
@@ -341,8 +338,7 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private void resetImageEdits() {
         mImageEdits.rotation = BitmapTools.ImageRotation.ROTATE_0;
-        mImageEdits.flipX = false;
-        mImageEdits.flipY = false;
+        mImageEdits.flip = false;
     }
 
     @Override
