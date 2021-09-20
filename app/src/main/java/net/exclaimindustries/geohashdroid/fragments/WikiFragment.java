@@ -22,6 +22,8 @@ import android.preference.PreferenceManager;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.exifinterface.media.ExifInterface;
+
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
@@ -49,6 +51,8 @@ import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.LocationUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.util.Calendar;
 
@@ -59,6 +63,9 @@ import java.util.Calendar;
  */
 public class WikiFragment extends CentralMapExtraFragment {
     private static final String PICTURE_URI = "pictureUri";
+    private static final String IMAGE_ROTATION = "imageRotation";
+    private static final String IMAGE_FLIP_X = "imageFlipX";
+    private static final String IMAGE_FLIP_Y = "imageFlipY";
 
     private static final int GET_PICTURE = 1;
 
@@ -82,6 +89,10 @@ public class WikiFragment extends CentralMapExtraFragment {
     private WikiImageUtils.ImageInfo mLastImageInfo = null;
 
     private Uri mPictureUri;
+    private Bitmap mThumbnail = null;
+
+    private final BitmapTools.ImageEdits mImageEdits =
+            new BitmapTools.ImageEdits(BitmapTools.ImageRotation.ROTATE_0, false, false);
 
     private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
         // Huh, we register for ALL changes, not just for a few prefs.  May
@@ -172,6 +183,10 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // If we had a leftover Uri, apply that as well.
         if(savedInstanceState != null) {
+            mImageEdits.rotation = BitmapTools.ImageRotation.values()[savedInstanceState.getInt(IMAGE_ROTATION, 0)];
+            mImageEdits.flipX = savedInstanceState.getBoolean(IMAGE_FLIP_X, false);
+            mImageEdits.flipY = savedInstanceState.getBoolean(IMAGE_FLIP_Y, false);
+
             Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
             if(pic != null) setImageUri(pic);
         } else {
@@ -218,6 +233,11 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // We've also got a picture URI to deal with.
         outState.putParcelable(PICTURE_URI, mPictureUri);
+
+        // And the current image edits.
+        outState.putInt(IMAGE_ROTATION, mImageEdits.rotation.ordinal());
+        outState.putBoolean(IMAGE_FLIP_X, mImageEdits.flipX);
+        outState.putBoolean(IMAGE_FLIP_Y, mImageEdits.flipY);
     }
 
     @Override
@@ -231,16 +251,18 @@ public class WikiFragment extends CentralMapExtraFragment {
                 if(uri == null)
                     return;
 
+                resetImageEdits();
                 setImageUri(uri);
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void setImageUri(@NonNull Uri uri) {
+    @Nullable
+    private Bitmap createThumbnail(@NonNull Uri uri) {
         Activity a = getActivity();
 
-        // Grab a new Bitmap.  We'll toss this into the button.
+        // Grab a new Bitmap.
         int dimen = getResources().getDimensionPixelSize(R.dimen.wiki_nominal_icon_size);
         final Bitmap thumbnail = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromUri(
@@ -251,19 +273,55 @@ public class WikiFragment extends CentralMapExtraFragment {
                         true
                 );
 
-        // Good!  Was it null?
         if(thumbnail == null) {
-            // NO!  WRONG!  BAD!
-            Toast.makeText(a, R.string.wiki_generic_image_error, Toast.LENGTH_LONG).show();
-            return;
+            return null;
         }
 
-        // With bitmap in hand...
-        a.runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
+        // Rotate as need be.
+        ExifInterface exif = null;
+        try {
+            InputStream input = a.getContentResolver().openInputStream(uri);
+            if(input != null) {
+                exif = new ExifInterface(input);
+            }
+        } catch(IOException ioe) {
+            // This can happen, the error is handled right up next.
+        }
 
-        // Plus, we want vital info for later.  If there's no location, just
-        // give back an ImageInfo with a null in it.  We'll know what to do with
-        // it when the time comes.
+        if(exif == null) {
+            // If there's no EXIF data for whatever reason, just accept the
+            // plain thumbnail, unchanged.
+            return thumbnail;
+        }
+
+        Bitmap toReturn = BitmapTools.createReorientedBitmap(
+                thumbnail,
+                exif.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL));
+        thumbnail.recycle();
+        return toReturn;
+    }
+
+    private void updateThumbnailIcon() {
+        Activity a = getActivity();
+
+        // The plain mThumbnail will remain as the original image (with EXIF
+        // orientation changes applied).  We just apply edits to it as need be.
+        a.runOnUiThread(() -> mGalleryButton
+                .setImageBitmap(BitmapTools.createEditedBitmap(mThumbnail, mImageEdits)));
+    }
+
+    private void setImageUri(@NonNull Uri uri) {
+        Activity a = getActivity();
+
+        // Make us a thumbnail!
+        mThumbnail = createThumbnail(uri);
+        updateThumbnailIcon();
+
+        // We want vital info for later.  If there's no location, just give back
+        // an ImageInfo with a null in it.  We'll know what to do with it when
+        // the time comes.
         mLastImageInfo = WikiImageUtils.readImageInfo(a,
                 uri,
                 null,
@@ -279,6 +337,12 @@ public class WikiFragment extends CentralMapExtraFragment {
         mLocationTypeGroup.clearCheck();
         resolveLocationTypeSelection();
         resolvePictureLocationText();
+    }
+
+    private void resetImageEdits() {
+        mImageEdits.rotation = BitmapTools.ImageRotation.ROTATE_0;
+        mImageEdits.flipX = false;
+        mImageEdits.flipY = false;
     }
 
     @Override
@@ -557,9 +621,10 @@ public class WikiFragment extends CentralMapExtraFragment {
             byte[] pictureData = WikiImageUtils.createWikiImage(
                     c,
                     mInfo,
-                    mLastImageInfo.uri,
+                    mLastImageInfo,
                     loc,
-                    includeLocation);
+                    includeLocation,
+                    mImageEdits);
 
             i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri)
                     .putExtra(WikiService.EXTRA_IMAGE_INFO, mLastImageInfo)

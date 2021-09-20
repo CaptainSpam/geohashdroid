@@ -11,6 +11,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import androidx.exifinterface.media.ExifInterface;
 import android.net.Uri;
 import android.util.Log;
 
@@ -27,6 +28,29 @@ import androidx.annotation.NonNull;
  */
 public class BitmapTools {
     private static final String DEBUG_TAG = "BitmapTools";
+
+    /** Rotation enums.  Does not include mirroring the image. */
+    public enum ImageRotation {
+        ROTATE_0,
+        ROTATE_90,
+        ROTATE_180,
+        ROTATE_270,
+    }
+
+    /** A convenient data class of simple image edits. */
+    public static class ImageEdits {
+        public ImageRotation rotation;
+        public boolean flipX;
+        public boolean flipY;
+
+        public ImageEdits(ImageRotation rotation,
+                          boolean flipX,
+                          boolean flipY) {
+            this.rotation = rotation;
+            this.flipX = flipX;
+            this.flipY = flipY;
+        }
+    }
 
     /**
      * Creates a new Bitmap that's a scaled version of the given Bitmap, but
@@ -239,9 +263,99 @@ public class BitmapTools {
         }
     }
 
+    private static boolean shouldBeReversed(int inWidth, int inHeight, int outWidth, int outHeight) {
+        // If this ratio is 1.0, we never need to reverse it.
+        if(inWidth == inHeight) return false;
+
+        // If the original is more wide than tall but the second isn't, we can
+        // reverse it.  Same with the other way around.
+        return (inWidth < inHeight && outWidth > outHeight) || (inWidth > inHeight && outWidth < outHeight);
+    }
+
+    /**
+     * Creates a new Bitmap that is a reoriented version of the input Bitmap,
+     * according to the {@link ExifInterface} orientation constant given.
+     *
+     * @param source the input Bitmap
+     * @param orientation an {@link ExifInterface} orientation constant
+     * @return a new, reoriented Bitmap
+     */
+    @NonNull
+    public static Bitmap createReorientedBitmap(@NonNull Bitmap source, int orientation) {
+        switch(orientation) {
+            case ExifInterface.ORIENTATION_NORMAL:
+            case ExifInterface.ORIENTATION_UNDEFINED:
+                // Nothing happens, return an immutable copy of the original.
+                return source.copy(source.getConfig(), false);
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                return createRotatedBitmap(source, 90f);
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                return createRotatedBitmap(source, 180f);
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                return createRotatedBitmap(source, 270f);
+            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                return createFlippedBitmap(source, true, false);
+            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                return createFlippedBitmap(source, false, true);
+            case ExifInterface.ORIENTATION_TRANSPOSE: {
+                // I suppose I COULD just make a convoluted fallthrough to force
+                // this into the 270 option, but let's keep things simple.
+                Bitmap flipped = createFlippedBitmap(source, true, false);
+                Bitmap toReturn = createRotatedBitmap(flipped, 270f);
+                flipped.recycle();
+                return toReturn;
+            }
+            case ExifInterface.ORIENTATION_TRANSVERSE: {
+                Bitmap flipped = createFlippedBitmap(source, true, false);
+                Bitmap toReturn = createRotatedBitmap(flipped, 90f);
+                flipped.recycle();
+                return toReturn;
+            }
+            default:
+                // None of the constants match, throw an exception.
+                throw new IllegalArgumentException("The integer " + orientation + " isn't an ExifInterface orientation constant!");
+        }
+    }
+
+    /**
+     * Creates a new Bitmap that is a version of the input Bitmap with the given
+     * {@link ImageEdits} applied.
+     *
+     * @param source the input Bitmap
+     * @param imageEdits the edits in question
+     * @return a new, edited Bitmap
+     */
+    public static Bitmap createEditedBitmap(@NonNull Bitmap source, @NonNull ImageEdits imageEdits) {
+        Bitmap flippedBitmap = createFlippedBitmap(source, imageEdits.flipX, imageEdits.flipY);
+        if(imageEdits.rotation != ImageRotation.ROTATE_0)
+            return createRotatedBitmap(
+                    flippedBitmap,
+                    imageEdits.rotation == ImageRotation.ROTATE_90
+                            ? 90f
+                            : imageEdits.rotation == ImageRotation.ROTATE_180
+                                ? 180f
+                                : 270f);
+        else
+            return flippedBitmap;
+    }
+
+    /**
+     * Creates a new Bitmap that is version of the input Bitmap flipped along at
+     * least one axis.
+     *
+     * @param source the input Bitmap
+     * @param horizontal horizontal flip
+     * @param vertical vertical flip
+     * @return a new, flipped Bitmap
+     */
+    public static Bitmap createFlippedBitmap(@NonNull Bitmap source, boolean horizontal, boolean vertical) {
+        Matrix flipper = new Matrix();
+        flipper.postScale(horizontal ? -1 : 1, vertical ? -1 : 1, (float)(source.getWidth() / 2), (float)(source.getHeight() / 2));
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), flipper, false);
+    }
+
     /**
      * Creates a new Bitmap that is a rotated version of the input Bitmap.
-     * Remember to recycle the input Bitmap afterward if you don't need it!
      *
      * @param source the input Bitmap
      * @param angle the angle to rotate
@@ -251,15 +365,104 @@ public class BitmapTools {
     public static Bitmap createRotatedBitmap(@NonNull Bitmap source, float angle) {
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, false);
     }
 
-    private static boolean shouldBeReversed(int inWidth, int inHeight, int outWidth, int outHeight) {
-        // If this ratio is 1.0, we never need to reverse it.
-        if(inWidth == inHeight) return false;
+    /**
+     * Merge an ImageEdits with the int value from ExifInterface's orientation
+     * options.
+     *
+     * @param imageEdits source ImageEdits
+     * @param exifOrientation source ExifInterface options
+     * @return a new, merged ImageEdits
+     */
+    public static ImageEdits mergeWithExif(ImageEdits imageEdits,
+                                           int exifOrientation) {
+        ImageEdits exifEdits = new ImageEdits(ImageRotation.ROTATE_0, false, false);
 
-        // If the original is more wide than tall but the second isn't, we can
-        // reverse it.  Same with the other way around.
-        return (inWidth < inHeight && outWidth > outHeight) || (inWidth > inHeight && outWidth < outHeight);
+        // First, decompose the EXIF orientation to an ImageEdits.  That sounds
+        // trivial until you get into the Transpose and Transverse options.
+        switch(exifOrientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                exifEdits.rotation = ImageRotation.ROTATE_90;
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                exifEdits.rotation = ImageRotation.ROTATE_180;
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                exifEdits.rotation = ImageRotation.ROTATE_270;
+                break;
+            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                exifEdits.flipX = true;
+                break;
+            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                exifEdits.flipY = true;
+                break;
+            case ExifInterface.ORIENTATION_TRANSVERSE:
+                exifEdits.flipX = true;
+                exifEdits.rotation = ImageRotation.ROTATE_90;
+                break;
+            case ExifInterface.ORIENTATION_TRANSPOSE:
+                exifEdits.flipX = true;
+                exifEdits.rotation = ImageRotation.ROTATE_270;
+                break;
+            // No default case; anything else has no effect on the output.
+        }
+
+        // Resolve the rotation.
+        switch(exifEdits.rotation) {
+            case ROTATE_0:
+                exifEdits.rotation = imageEdits.rotation;
+                break;
+            case ROTATE_90:
+                switch(imageEdits.rotation) {
+                    case ROTATE_90:
+                        exifEdits.rotation = ImageRotation.ROTATE_180;
+                        break;
+                    case ROTATE_180:
+                        exifEdits.rotation = ImageRotation.ROTATE_270;
+                        break;
+                    case ROTATE_270:
+                        exifEdits.rotation = ImageRotation.ROTATE_0;
+                        break;
+                    // ROTATE_0 doesn't affect things.
+                }
+                break;
+            case ROTATE_180:
+                switch(imageEdits.rotation) {
+                    case ROTATE_90:
+                        exifEdits.rotation = ImageRotation.ROTATE_270;
+                        break;
+                    case ROTATE_180:
+                        exifEdits.rotation = ImageRotation.ROTATE_0;
+                        break;
+                    case ROTATE_270:
+                        exifEdits.rotation = ImageRotation.ROTATE_90;
+                        break;
+                    // ROTATE_0 doesn't affect things.
+                }
+                break;
+            case ROTATE_270:
+                switch(imageEdits.rotation) {
+                    case ROTATE_90:
+                        exifEdits.rotation = ImageRotation.ROTATE_0;
+                        break;
+                    case ROTATE_180:
+                        exifEdits.rotation = ImageRotation.ROTATE_90;
+                        break;
+                    case ROTATE_270:
+                        exifEdits.rotation = ImageRotation.ROTATE_180;
+                        break;
+                    // ROTATE_0 doesn't affect things.
+                }
+                break;
+        }
+
+        // Finish off with the flips.
+        exifEdits.flipX = imageEdits.flipX != exifEdits.flipX;
+        exifEdits.flipY = imageEdits.flipY != exifEdits.flipY;
+
+        // exifEdits contains the final result.  Away it goes!
+        return exifEdits;
     }
 }

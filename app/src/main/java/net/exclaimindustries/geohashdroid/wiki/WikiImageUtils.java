@@ -252,28 +252,40 @@ public class WikiImageUtils {
      * this might get sort of big on memory use.
      *
      * @param context a Context for getting necessary paints and resources
-     * @param info an Info object for determining the distance to the destination
-     * @param uri the URI of the image
+     * @param info an Info object for determining the distance to the
+     *             destination
+     * @param imageInfo the image's ImageInfo
      * @param location a location for the image, for the infobox (can be null)
-     * @param drawInfobox true to draw the infobox, false to just shrink and compress
+     * @param drawInfobox true to draw the infobox, false to just shrink and
+     *                    compress
+     * @param imageEdits any last-second rotations or flips to be applied to the
+     *                   image, AFTER accounting for the EXIF orientation in the
+     *                   ImageInfo
      * @return a byte array of JPEG data, or null if something went wrong
      */
     @Nullable
     public static byte[] createWikiImage(@NonNull Context context,
                                          @NonNull Info info,
-                                         @NonNull Uri uri,
+                                         @NonNull ImageInfo imageInfo,
                                          @Nullable Location location,
-                                         boolean drawInfobox) {
+                                         boolean drawInfobox,
+                                         BitmapTools.ImageEdits imageEdits) {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
         // 150k, so scaling and compressing are the way to go.
         Bitmap bitmap = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromUri(
-                        context, uri, MAX_UPLOAD_WIDTH,
+                        context, imageInfo.uri, MAX_UPLOAD_WIDTH,
                         MAX_UPLOAD_HEIGHT, true);
 
         // If the Bitmap wound up null, we're in trouble.
         if(bitmap == null) return null;
+
+        // Get the edits we'll be needing.
+        BitmapTools.ImageEdits finalEdits = BitmapTools.mergeWithExif(imageEdits, imageInfo.orientation);
+
+        // Apply to affected area.
+        bitmap = BitmapTools.createEditedBitmap(bitmap, finalEdits);
 
         // Then, put the infobox up if that's what we're into.
         if(drawInfobox)
