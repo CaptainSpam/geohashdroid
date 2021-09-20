@@ -409,7 +409,9 @@ public class BitmapTools {
             // No default case; anything else has no effect on the output.
         }
 
-        // Resolve the rotation.
+        // Now, turn that into something new.  To the user, the EXIF version is
+        // "normal", so we have to apply our changes in relation to that.
+        // TODO: On second thought, I don't think this does that at all.
         switch(exifEdits.rotation) {
             case ROTATE_0:
                 exifEdits.rotation = imageEdits.rotation;
