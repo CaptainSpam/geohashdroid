@@ -35,7 +35,7 @@ bin/
 gen/
 out/
 #  Uncomment the following line in case you need and you don't have the release build type files in your app
-# release/
+release/
 
 # Gradle files
 .gradle/
@@ -64,6 +64,7 @@ captures/
 .idea/assetWizardSettings.xml
 .idea/dictionaries
 .idea/libraries
+.idea/jarRepositories.xml
 # Android Studio 3 in .gitignore file.
 .idea/caches
 .idea/modules.xml
@@ -104,5 +105,39 @@ lint/outputs/
 lint/tmp/
 # lint/reports/
 
-# Android Profiling
-*.hprof
+# Next up, the Linux stuff...
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+# And, some Vim stuff...
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+
