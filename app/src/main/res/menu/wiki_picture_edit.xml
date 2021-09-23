@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/edit_rotate_left"
+        android:icon="@drawable/edit_rotate_left"
+        android:title="@string/wiki_picture_edit_rotate_left" />
+    <item
+        android:id="@+id/edit_rotate_right"
+        android:icon="@drawable/edit_rotate_right"
+        android:title="@string/wiki_picture_edit_rotate_right" />
+    <item
+        android:id="@+id/edit_flip_horizontal"
+        android:icon="@drawable/edit_flip_horizontal"
+        android:title="@string/wiki_picture_edit_flip_horizontal" />
+    <item
+        android:id="@+id/edit_flip_vertical"
+        android:icon="@drawable/edit_flip_vertical"
+        android:title="@string/wiki_picture_edit_flip_vertical" />
+</menu>

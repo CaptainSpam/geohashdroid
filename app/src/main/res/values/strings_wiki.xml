@@ -70,4 +70,9 @@
     <string name="wiki_notification_action_skip">Skip</string>
     <string name="wiki_notification_action_abort">Abort</string>
     <string name="wiki_notification_action_update_login">Update</string>
+
+	<string name="wiki_picture_edit_rotate_left">Rotate 90° left</string>
+	<string name="wiki_picture_edit_rotate_right">Rotate 90° right</string>
+	<string name="wiki_picture_edit_flip_horizontal">Flip horizontally</string>
+	<string name="wiki_picture_edit_flip_vertical">Flip vertically</string>
 </resources>

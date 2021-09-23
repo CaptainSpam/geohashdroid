@@ -66,7 +66,17 @@
                     android:scaleType="centerInside"
                     android:src="@android:drawable/ic_menu_gallery"
                     android:contentDescription="@string/accessibility_wiki_thumbnail"/>
-
+                <ImageButton
+                    android:id="@+id/wiki_edit_picture"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="@dimen/gallery_button_padding"
+                    android:layout_marginLeft="@dimen/gallery_button_padding"
+                    android:layout_marginRight="@dimen/gallery_button_padding"
+                    android:src="@drawable/edit_picture"
+                    android:contentDescription="@string/accessibility_wiki_picture_edit"
+                    android:visibility="gone"/>
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

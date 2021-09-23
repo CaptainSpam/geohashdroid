@@ -2,4 +2,5 @@
 <resources>
     <string name="accessibility_version_bullet">Bulletpoint</string>
     <string name="accessibility_wiki_thumbnail">Wiki picture thumbnail</string>
+    <string name="accessibility_wiki_picture_edit">Edit picture</string>
 </resources>

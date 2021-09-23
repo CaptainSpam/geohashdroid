@@ -29,12 +29,14 @@ import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.text.style.UnderlineSpan;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -83,6 +85,7 @@ public class WikiFragment extends CentralMapExtraFragment {
     private RadioButton mUsePictureLocationButton;
     private RadioButton mUseDeviceLocationButton;
     private RadioButton mUseNoLocationButton;
+    private ImageButton mEditPictureButton;
 
     private Location mLastLocation = null;
     private WikiImageUtils.ImageInfo mLastImageInfo = null;
@@ -122,6 +125,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         mUsePictureLocationButton = layout.findViewById(R.id.wiki_use_picture_location);
         mUseDeviceLocationButton = layout.findViewById(R.id.wiki_use_device_location);
         mUseNoLocationButton = layout.findViewById(R.id.wiki_use_no_location);
+        mEditPictureButton = layout.findViewById(R.id.wiki_edit_picture);
 
         // The picture checkbox determines if the other boxes are visible or
         // not.
@@ -171,6 +175,27 @@ public class WikiFragment extends CentralMapExtraFragment {
                 i.setAction(Intent.ACTION_VIEW);
                 i.setData(Uri.parse(WikiUtils.getWikiBaseViewUrl() + WikiUtils.getWikiPageName(mInfo)));
                 startActivity(i);
+            }
+        });
+
+        // The edit button pops up a menu of sorts.
+        PopupMenu editPopup = new PopupMenu(getActivity(), mEditPictureButton);
+        MenuInflater editInflater = editPopup.getMenuInflater();
+        editInflater.inflate(R.menu.wiki_picture_edit, editPopup.getMenu());
+        mEditPictureButton.setOnClickListener(v -> editPopup.show());
+        editPopup.setOnMenuItemClickListener(item -> {
+            @IdRes int itemId = item.getItemId();
+            if(itemId == R.id.edit_rotate_left) {
+                return true;
+            } else if(itemId == R.id.edit_rotate_right) {
+                return true;
+            } else if(itemId == R.id.edit_flip_horizontal) {
+                return true;
+            } else if(itemId == R.id.edit_flip_vertical) {
+                return true;
+            } else {
+                // We have no idea what this option is.
+                return false;
             }
         });
 
@@ -334,6 +359,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         mLocationTypeGroup.clearCheck();
         resolveLocationTypeSelection();
         resolvePictureLocationText();
+        resolvePictureEditVisibility();
     }
 
     private void resetImageEdits() {
@@ -410,7 +436,19 @@ public class WikiFragment extends CentralMapExtraFragment {
 
             // And the visibility of the picture's location text.
             resolvePictureLocationText();
+
+            // AND the picture edit button.
+            resolvePictureEditVisibility();
         });
+    }
+
+    private void resolvePictureEditVisibility() {
+        getActivity().runOnUiThread(() ->
+            mEditPictureButton.setVisibility(
+                    mPictureCheckbox.isChecked() && mThumbnail != null
+                            ? View.VISIBLE
+                            : View.GONE)
+        );
     }
 
     private void resolveLocationTypeSelection() {

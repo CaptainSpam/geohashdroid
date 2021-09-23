@@ -374,13 +374,15 @@ public class BitmapTools {
 
     /**
      * Merge an ImageEdits with the int value from ExifInterface's orientation
-     * options.
+     * options, creating a new ImageEdits object.  The original ImageEdits will
+     * be unchanged.
      *
      * @param imageEdits source ImageEdits
      * @param exifOrientation source ExifInterface options
      * @return a new, merged ImageEdits
      */
-    public static ImageEdits mergeWithExif(ImageEdits imageEdits,
+    @NonNull
+    public static ImageEdits mergeWithExif(@NonNull ImageEdits imageEdits,
                                            int exifOrientation) {
         ImageEdits exifEdits = new ImageEdits(ImageRotation.ROTATE_0, false);
 
@@ -418,58 +420,74 @@ public class BitmapTools {
         }
 
         // Now, turn that into something new.  To the user, the EXIF version is
-        // "normal", so we have to apply our changes in relation to that.
-        // TODO: On second thought, I don't think this does that at all.
-        switch(exifEdits.rotation) {
-            case ROTATE_0:
-                exifEdits.rotation = imageEdits.rotation;
-                break;
-            case ROTATE_90:
-                switch(imageEdits.rotation) {
-                    case ROTATE_90:
-                        exifEdits.rotation = ImageRotation.ROTATE_180;
-                        break;
-                    case ROTATE_180:
-                        exifEdits.rotation = ImageRotation.ROTATE_270;
-                        break;
-                    case ROTATE_270:
-                        exifEdits.rotation = ImageRotation.ROTATE_0;
-                        break;
-                    // ROTATE_0 doesn't affect things.
-                }
-                break;
-            case ROTATE_180:
-                switch(imageEdits.rotation) {
-                    case ROTATE_90:
-                        exifEdits.rotation = ImageRotation.ROTATE_270;
-                        break;
-                    case ROTATE_180:
-                        exifEdits.rotation = ImageRotation.ROTATE_0;
-                        break;
-                    case ROTATE_270:
-                        exifEdits.rotation = ImageRotation.ROTATE_90;
-                        break;
-                    // ROTATE_0 doesn't affect things.
-                }
-                break;
-            case ROTATE_270:
-                switch(imageEdits.rotation) {
-                    case ROTATE_90:
-                        exifEdits.rotation = ImageRotation.ROTATE_0;
-                        break;
-                    case ROTATE_180:
-                        exifEdits.rotation = ImageRotation.ROTATE_90;
-                        break;
-                    case ROTATE_270:
-                        exifEdits.rotation = ImageRotation.ROTATE_180;
-                        break;
-                    // ROTATE_0 doesn't affect things.
-                }
-                break;
+        // "normal", so we have to apply our changes in relation to that.  By
+        // arbitrary choice, we've normalized the process to starting with flips
+        // and applying a rotation afterward.
+        if(imageEdits.flip) {
+            // If the user flipped the image, it means it's flipped from the
+            // EXIF perspective, too.
+            exifEdits.flip = !exifEdits.flip;
+
+            // If EXIF says it's 0 or 180 degrees, we don't need to alter the
+            // rotation further.  If it's 90 or 270, that means we're flipping
+            // an already-rotated image, and as such, must rotate to compensate.
+            if(exifEdits.rotation == ImageRotation.ROTATE_90)
+                exifEdits.rotation = ImageRotation.ROTATE_270;
+            else if(exifEdits.rotation == ImageRotation.ROTATE_270)
+                exifEdits.rotation = ImageRotation.ROTATE_90;
         }
 
-        // Finish off with the flip.
-        exifEdits.flip = imageEdits.flip != exifEdits.flip;
+        // Now, apply rotation.
+        if(exifEdits.rotation == ImageRotation.ROTATE_0) {
+            // If there's no rotation on exifEdits, we can simply inherit
+            // whatever imageEdits has.
+            exifEdits.rotation = imageEdits.rotation;
+        } else {
+            // Otherwise, we need to adapt exifEdits to whatever's on
+            // ImageEdits.
+            switch(imageEdits.rotation) {
+                // ROTATE_0 on imageEdits doesn't affect anything.
+                case ROTATE_90:
+                    switch(exifEdits.rotation) {
+                        case ROTATE_90:
+                            exifEdits.rotation = ImageRotation.ROTATE_180;
+                            break;
+                        case ROTATE_180:
+                            exifEdits.rotation = ImageRotation.ROTATE_270;
+                            break;
+                        case ROTATE_270:
+                            exifEdits.rotation = ImageRotation.ROTATE_0;
+                            break;
+                    }
+                    break;
+                case ROTATE_180:
+                    switch(exifEdits.rotation) {
+                        case ROTATE_90:
+                            exifEdits.rotation = ImageRotation.ROTATE_270;
+                            break;
+                        case ROTATE_180:
+                            exifEdits.rotation = ImageRotation.ROTATE_0;
+                            break;
+                        case ROTATE_270:
+                            exifEdits.rotation = ImageRotation.ROTATE_90;
+                            break;
+                    }
+                    break;
+                case ROTATE_270:
+                    switch(exifEdits.rotation) {
+                        case ROTATE_90:
+                            exifEdits.rotation = ImageRotation.ROTATE_0;
+                            break;
+                        case ROTATE_180:
+                            exifEdits.rotation = ImageRotation.ROTATE_90;
+                            break;
+                        case ROTATE_270:
+                            exifEdits.rotation = ImageRotation.ROTATE_180;
+                            break;
+                    }
+                    break;
+            }
+        }
 
         // exifEdits contains the final result.  Away it goes!
         return exifEdits;
