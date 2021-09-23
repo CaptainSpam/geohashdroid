@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5.5" version="932" date="2021-09-19">
+        <title>Duplicate Filenames And You</title>
+        <header>Here&apos;s a bug I thought I fixed before releasing the previous version.</header>
+        <bullets>
+            <bullet>The bug where wiki images for a given expedition from the same user all had the same filename (thus overwriting the old images on each new upload) should be fixed.</bullet>
+        </bullets>
+        <footer>I guess ExifInterface.getGpsDateTime() doesn&apos;t work the way I thought it would.</footer>
+    </version>
     <version name="0.9.5.4" version="931" date="2021-08-08">
         <title>Picture Locations From Picture Locations</title>
         <header>This one&apos;s bringing back an old feature that got disabled ages ago.</header>

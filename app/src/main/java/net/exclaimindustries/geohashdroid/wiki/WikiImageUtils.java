@@ -104,7 +104,12 @@ public class WikiImageUtils {
                          long timestamp) {
             this.uri = uri;
             this.location = location;
-            this.timestamp = timestamp;
+
+            // Ignore the timestamp field for now and just use the time at the
+            // moment this object was created; from bug reports and personal
+            // testing, I have this feeling something isn't giving me the data
+            // I want at that point.
+            this.timestamp = Calendar.getInstance().getTimeInMillis();
         }
 
         /**
