@@ -2,4 +2,9 @@
 <resources>
     <style name="Theme.GeohashDroid" parent="Theme.AppCompat.DayNight">
     </style>
+
+    <style name="Theme.GeohashDroid.NoActionBar" parent="Theme.GeohashDroid">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>
