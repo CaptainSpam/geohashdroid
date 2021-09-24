@@ -79,6 +79,18 @@
         <item>@string/known_locations_range_imperial_4</item>
     </string-array>
 
+    <string-array name="pref_daynight_entries">
+        <item>@string/pref_daynight_day</item>
+        <item>@string/pref_daynight_night</item>
+        <item>@string/pref_daynight_system</item>
+    </string-array>
+    <string-array name="pref_daynight_values">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>System</item>
+    </string-array>
+
+
     <!-- Remember, these are all in m. -->
     <integer-array name="known_locations_values">
         <item>2000</item>

@@ -34,6 +34,7 @@ import java.util.Objects;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.preference.EditTextPreference;
@@ -161,6 +162,53 @@ public class PreferencesScreen extends AppCompatActivity
             bindPreferenceSummaryToValue(Objects.requireNonNull(findPreference(GHDConstants.PREF_DIST_UNITS)));
             bindPreferenceSummaryToValue(Objects.requireNonNull(findPreference(GHDConstants.PREF_COORD_UNITS)));
             bindPreferenceSummaryToValue(Objects.requireNonNull(findPreference(GHDConstants.PREF_STARTUP_BEHAVIOR)));
+
+            // Day/Night mode isn't REALLY a setting per se, it's more an
+            // interface to the day/night control, so we lose out on things like
+            // bindPreferenceSummaryToValue.
+            Preference dayNight = findPreference(GHDConstants.PREF_DAYNIGHT);
+            if(dayNight != null) {
+                // Update the summary to whatever the system thinks it is.
+                int defaultNightMode = AppCompatDelegate.getDefaultNightMode();
+                if(defaultNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                    dayNight.setSummary(R.string.pref_daynight_night);
+                } else if(defaultNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
+                    dayNight.setSummary(R.string.pref_daynight_day);
+                } else {
+                    dayNight.setSummary(R.string.pref_daynight_system);
+                }
+
+                // On change, do the thing!
+                dayNight.setOnPreferenceChangeListener((preference, newValue) -> {
+                    // Changing day/night mode is a config change, so if the
+                    // change did anything, the pref Activity will die right
+                    // after setDefaultNightMode is called.  If it makes it to
+                    // the next line, it clearly didn't, which means, for
+                    // instance, it was in follow-the-system mode during daytime
+                    // and the user changed it to light mode, or vice versa.  In
+                    // those cases, we need to manually update the summary to
+                    // maintain the cheap facade that this is a proper setting.
+                    switch(newValue.toString()) {
+                        case GHDConstants.PREFVAL_DAYNIGHT_DARK:
+                            AppCompatDelegate.setDefaultNightMode(
+                                    AppCompatDelegate.MODE_NIGHT_YES);
+                            dayNight.setSummary(R.string.pref_daynight_night);
+                            break;
+                        case GHDConstants.PREFVAL_DAYNIGHT_LIGHT:
+                            AppCompatDelegate.setDefaultNightMode(
+                                    AppCompatDelegate.MODE_NIGHT_NO);
+                            dayNight.setSummary(R.string.pref_daynight_day);
+                            break;
+                        case GHDConstants.PREFVAL_DAYNIGHT_SYSTEM:
+                            AppCompatDelegate.setDefaultNightMode(
+                                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                            dayNight.setSummary(R.string.pref_daynight_system);
+                            break;
+                    }
+
+                    return true;
+                });
+            }
 
             // This one needs special handling due to its onPreferenceChange
             // being overridden elsewhere.
