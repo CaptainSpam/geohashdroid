@@ -13,11 +13,11 @@ import android.content.res.Configuration;
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
- * A <code>BaseGHDThemeActivity</code> sets up the theme (day or night) during
- * onCreate, as well as offer methods to switch between the themes.
+ * A <code>BaseGHDThemeActivity</code> used to do a lot involving setting up the
+ * day/night mode stuff, but since all that got moved into the OS, there's not
+ * much left in here.
  */
-public abstract class BaseGHDThemeActivity
-        extends AppCompatActivity {
+public abstract class BaseGHDThemeActivity extends AppCompatActivity {
     /**
      * Returns whether or not the app is in night mode, as a convenience method.
      * Note that this only returns if it's actively night mode, and does not
