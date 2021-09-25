@@ -62,10 +62,13 @@ public class PreferencesScreen extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.prefs);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(android.R.id.content, new MainPreferenceFragment())
-                .commit();
+
+        if(getSupportFragmentManager().getBackStackEntryCount() == 0) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(android.R.id.content, new MainPreferenceFragment())
+                    .commit();
+        }
     }
 
     @Override
