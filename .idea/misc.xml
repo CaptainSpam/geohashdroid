@@ -1,11 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="app/src/main/res/drawable-night/ic_launcher_foreground.xml" value="0.20601851851851852" />
+        <entry key="app/src/main/res/drawable/close_button.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/current_location.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/gallery.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/ic_launcher_foreground.xml" value="0.20601851851851852" />
+        <entry key="app/src/main/res/drawable/known_location_tap_marker.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_dots_horiz.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_download.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_error.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_nearby_point.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_refresh.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_timer.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_upload.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/notification_icon_warning.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/progress_background.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/refresh.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/search.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/shortcut_closest_foreground.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/shortcut_last_used_foreground.xml" value="0.20601851851851852" />
+        <entry key="app/src/main/res/drawable/version_history_bullet_image.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/zoom_button.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/zoom_button_bg.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/zoom_button_bg_disabled.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/zoom_button_bg_normal.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/drawable/zoom_button_bg_press.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/layout-sw600dp/centralmap.xml" value="0.1" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/shortcut_picker.xml" value="0.27685185185185185" />
+        <entry key="app/src/main/res/xml/pref_main.xml" value="0.14945652173913043" />
+        <entry key="app/src/main/res/xml/pref_map.xml" value="0.14945652173913043" />
+      </map>
+    </option>
+  </component>
   <component name="NullableNotNullManager">
     <option name="myDefaultNullable" value="org.jetbrains.annotations.Nullable" />
     <option name="myDefaultNotNull" value="androidx.annotation.NonNull" />
     <option name="myNullables">
       <value>
-        <list size="12">
+        <list size="15">
           <item index="0" class="java.lang.String" itemvalue="org.jetbrains.annotations.Nullable" />
           <item index="1" class="java.lang.String" itemvalue="javax.annotation.Nullable" />
           <item index="2" class="java.lang.String" itemvalue="edu.umd.cs.findbugs.annotations.Nullable" />
@@ -18,12 +54,15 @@
           <item index="9" class="java.lang.String" itemvalue="org.checkerframework.checker.nullness.compatqual.NullableType" />
           <item index="10" class="java.lang.String" itemvalue="android.annotation.Nullable" />
           <item index="11" class="java.lang.String" itemvalue="com.android.annotations.Nullable" />
+          <item index="12" class="java.lang.String" itemvalue="org.eclipse.jdt.annotation.Nullable" />
+          <item index="13" class="java.lang.String" itemvalue="io.reactivex.annotations.Nullable" />
+          <item index="14" class="java.lang.String" itemvalue="io.reactivex.rxjava3.annotations.Nullable" />
         </list>
       </value>
     </option>
     <option name="myNotNulls">
       <value>
-        <list size="11">
+        <list size="15">
           <item index="0" class="java.lang.String" itemvalue="org.jetbrains.annotations.NotNull" />
           <item index="1" class="java.lang.String" itemvalue="javax.annotation.Nonnull" />
           <item index="2" class="java.lang.String" itemvalue="edu.umd.cs.findbugs.annotations.NonNull" />
@@ -35,6 +74,10 @@
           <item index="8" class="java.lang.String" itemvalue="org.checkerframework.checker.nullness.compatqual.NonNullType" />
           <item index="9" class="java.lang.String" itemvalue="android.annotation.NonNull" />
           <item index="10" class="java.lang.String" itemvalue="com.android.annotations.NonNull" />
+          <item index="11" class="java.lang.String" itemvalue="org.eclipse.jdt.annotation.NonNull" />
+          <item index="12" class="java.lang.String" itemvalue="io.reactivex.annotations.NonNull" />
+          <item index="13" class="java.lang.String" itemvalue="io.reactivex.rxjava3.annotations.NonNull" />
+          <item index="14" class="java.lang.String" itemvalue="lombok.NonNull" />
         </list>
       </value>
     </option>
