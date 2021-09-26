@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6-pre1" version="933" date="2021-09-26">
+        <title>Android v16 Was A Really Long Time Ago, Seriously</title>
+        <header>This update&apos;s been a long time coming: It&apos;s time to update to a newer Android version!  A lot&apos;s changed here, and hopefully for the better.</header>
+        <bullets>
+            <bullet>Effectively all libraries and calls and such have been updated to AndroidX.  This cleans up a LOT of code and means things will try to take advantage of newer Androidy ways of doing stuff, which should make things go smoother.</bullet>
+            <bullet>Also, do note that the minimum Android API has been bumped up to v23 (Android 7.1.1, Marshmallow, released in 2015).  I really hope there aren&apos;t people still on Jelly Bean devices using this.</bullet>
+            <bullet>There&apos;s a proper dark mode now!  It reacts to Android&apos;s internal system dark mode setting if need be and available!  There&apos;s even a setting in Preferences that can force it to light/dark mode!  New colors!  (some) New icons!  Everything uses it!</bullet>
+            <bullet>Well, everything except satellite and terrain maps.  I still don&apos;t have dark versions of those.</bullet>
+            <bullet>The Street map will now become light or dark depending on what state the app is in.  This may mean your map setting might be wrong at first; if you change it a bit, it should fix itself.</bullet>
+            <bullet>As a part of this, the overall app theme has been updated to something more modern, as the old theme didn&apos;t support Android&apos;s night mode mechanisms.  Everything should still be there, but might look a bit different.  The toolbar on the main map interface, for instance.  That may get another pass later.</bullet>
+            <bullet>Vector icons!  Vector icons all OVER the place!  I mean, the originals have always been vectoriffic on my side, but now I don&apos;t need to rasterize them at like six different sizes.</bullet>
+        </bullets>
+        <footer>This particular version is a pre-release.  I hope someone picks it up and lets me know what&apos;s up.  Since this IS a pre-release, please let me know if something&apos;s amiss, moreso than usual.</footer>
+    </version>
     <version name="0.9.5.5" version="932" date="2021-09-19">
         <title>Duplicate Filenames And You</title>
         <header>Here&apos;s a bug I thought I fixed before releasing the previous version.</header>
@@ -21,7 +35,7 @@
         <title>A Fun Game Of Find-The-Version-History</title>
         <header>But wait, there&apos;s more!</header>
         <bullets>
-            <bullet>Thanks to what I think is an anonymous contributor (at least I&apos;m assuming that's what Github meant), when a wiki post is made, links to OSM should be better, in that they&apos;ll put a marker on the map and use the default layer options.</bullet>
+            <bullet>Thanks to what I think is an anonymous contributor (at least I&apos;m assuming that&apos;s what Github meant), when a wiki post is made, links to OSM should be better, in that they&apos;ll put a marker on the map and use the default layer options.</bullet>
             <bullet>I&apos;m pretty sure I removed the last references to the v1 Maps API.  I&apos;m not using v1 anyway, so I&apos;m not sure why the publishing console keeps insisting I am.  Hopefully that&apos;s taken care of now.  You probably won&apos;t notice anything.</bullet>
             <bullet>Version History (that is, this dialog) has moved to a button within About.  I felt that popup menu was getting cluttered, and Version History didn&apos;t seem to belong in the top-level menu anyway.  Note that it will still pop up on a new version regardless, which is most likely why you&apos;re reading this now.</bullet>
         </bullets>
@@ -50,7 +64,7 @@
         <title>Excuse the Queues</title>
         <header>It&apos;s been a rough year for all, but there&apos;s finally an update!</header>
         <bullets>
-            <bullet>Completely overhauled how the wiki posting queue works.  This is a background thing that stores wiki posts for later if anything goes wrong (i.e. there&apos;s no internet connection).  Or rather, it SHOULD have been doing that, but the way I implemented it didn&apos;t work the way I planned it.  I've gone back over it and hopefully made it far more bulletproof, so it should actually queue up anything you send if it can&apos;t get them posted for some reason.  Should be handy for those trips way away from data coverage.</bullet>
+            <bullet>Completely overhauled how the wiki posting queue works.  This is a background thing that stores wiki posts for later if anything goes wrong (i.e. there&apos;s no internet connection).  Or rather, it SHOULD have been doing that, but the way I implemented it didn&apos;t work the way I planned it.  I&apos;ve gone back over it and hopefully made it far more bulletproof, so it should actually queue up anything you send if it can&apos;t get them posted for some reason.  Should be handy for those trips way away from data coverage.</bullet>
             <bullet>This also adds a new preference in the wiki section of the preferences screen to manually release any posts queued up (or at least try to).  If there was no internet connection when you tried sending the posts, Geohash Droid will automatically try to re-send everything once it detects one, unless Android decided to shut it down in the meantime.  However, in that case the posts should still be persisted in the app, so you can use this button to release anything currently on standby.</bullet>
         </bullets>
         <footer>Do let me know on the GitHub page if anything went wrong.  I&apos;ve got more on the way, including more wiki options, slightly more night-mode support, and an overall UI refresh to bring things more up-to-date with modern Android sensibilities.  More to come, is all.</footer>
