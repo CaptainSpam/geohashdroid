@@ -22,6 +22,7 @@ import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 /**
  * This is the base class from which the two extra Fragments {@link net.exclaimindustries.geohashdroid.activities.CentralMap}
@@ -29,7 +30,7 @@ import androidx.annotation.Nullable;
  * {@link net.exclaimindustries.geohashdroid.util.ExpeditionMode}.
  */
 public abstract class CentralMapExtraFragment
-        extends BaseGHDThemeFragment
+        extends Fragment
         implements LocationListener, PermissionsDeniedListener {
     /**
      * The various types of CentralMapExtraFragment that can exist.  It's either
