@@ -224,29 +224,6 @@ public class Info implements Parcelable {
     }
 
     /**
-     * Gets the distance, in meters, from the given LatLng and the final
-     * destination.
-     *
-     * @param latLng LatLng to compare
-     * @return the distance, in meters, to the final destination
-     */
-    public float getDistanceInMeters(@NonNull LatLng latLng) {
-        return locationFromLatLng(latLng).distanceTo(getFinalLocation());
-    }
-    
-    /**
-     * Returns a calendar representing the date from which the stock price was
-     * pulled.  That is, back a day for the 30W Rule and rewinding to Friday if
-     * it falls on a weekend.
-     * 
-     * @return a new adjusted Calendar
-     */
-    @NonNull
-    public Calendar getStockCalendar() {
-        return makeAdjustedCalendar(mDate, mGraticule);
-    }
-    
-    /**
      * Returns a calendar representing the date from which the stock price was
      * pulled from a given date/graticule pair.  That is, back a day for the 30W
      * Rule or globalhashes and rewinding to Friday if it falls on a weekend.
@@ -286,16 +263,6 @@ public class Info implements Parcelable {
         return cal;
     }
 
-    @NonNull
-    private static Location locationFromLatLng(@NonNull LatLng latLng) {
-        Location loc = new Location("");
-
-        loc.setLatitude(latLng.latitude);
-        loc.setLongitude(latLng.longitude);
-
-        return loc;
-    }
-    
     /**
      * Determines if this Info represents a point whose date follows the 30W
      * Rule.  Note that globalhashes always follow the 30W Rule.
