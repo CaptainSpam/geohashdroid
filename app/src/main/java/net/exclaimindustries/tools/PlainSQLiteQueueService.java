@@ -92,7 +92,9 @@ public abstract class PlainSQLiteQueueService
                 cursor.moveToFirst();
 
                 while(!cursor.isAfterLast()) {
-                    String data = cursor.getString(cursor.getColumnIndex(KEY_QUEUE_DATA));
+                    int columnIndex = cursor.getColumnIndex(KEY_QUEUE_DATA);
+                    assert(columnIndex >= 0);
+                    String data = cursor.getString(columnIndex);
                     if(data != null) {
                         Intent intent = deserializeIntent(data);
                         if(intent != null) mQueue.add(intent);

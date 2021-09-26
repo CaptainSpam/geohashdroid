@@ -666,6 +666,7 @@ public class AlarmService extends JobIntentService {
         String notifyPref = PreferenceManager.getDefaultSharedPreferences(this).getString(GHDConstants.PREF_KNOWN_NOTIFICATION, GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE);
 
         // If the user doesn't want notifications, we can skip the rest of this.
+        assert notifyPref != null;
         if(notifyPref.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_NEVER)) return;
 
         List<KnownLocation> locations = KnownLocation.getAllKnownLocations(this);

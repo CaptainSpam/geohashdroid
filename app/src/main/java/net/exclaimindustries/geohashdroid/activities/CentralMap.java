@@ -1010,6 +1010,10 @@ public class CentralMap
                     size = "Off";
                 }
 
+                if(size == null) {
+                    size = "None";
+                }
+
                 edit.putBoolean(GHDConstants.PREF_INFOBOX, size.equals("None"));
             }
 
