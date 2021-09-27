@@ -282,7 +282,7 @@ public class StockService extends JobIntentService {
             Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_RESPOND_TO is not null and isn't a Class!");
             return;
         }
-        Class respondTo = (Class)s;
+        Class<?> respondTo = (Class<?>)s;
         
         // First, ask the stock cache if we've got an Info we can throw back.
         Info info = HashBuilder.getStoredInfo(this, cal, graticule);
@@ -334,7 +334,7 @@ public class StockService extends JobIntentService {
         }
     }
     
-    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby, @Nullable Class respondTo) {
+    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby, @Nullable Class<?> respondTo) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
 
