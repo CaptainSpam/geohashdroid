@@ -272,7 +272,7 @@ public class StockWorker extends Worker {
             Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_RESPOND_TO is not null and isn't a Class!");
             return;
         }
-        String respondTo = s != null ? ((Class<?>)s).getSimpleName() : null;
+        String respondTo = s != null ? ((Class<?>)s).getName() : null;
 
         WorkManager.getInstance(context).enqueue(new OneTimeWorkRequest.Builder(StockWorker.class)
                 .setInputData(new Data.Builder()
