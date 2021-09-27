@@ -8,9 +8,6 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
@@ -18,15 +15,11 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,7 +30,6 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -48,11 +40,12 @@ import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
 import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
-import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 import net.exclaimindustries.geohashdroid.widgets.ZoomButtons;
 import net.exclaimindustries.tools.AndroidUtil;
+import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 
@@ -60,6 +53,11 @@ import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 /**
  * <code>ExpeditionMode</code> is the "main" mode, where it follows one point,
@@ -117,13 +115,13 @@ public class ExpeditionMode
     // Then there's this one empty start boolean.
     private boolean mWaitingOnEmptyStartInfo = false;
 
-    private Rect mMarkerDimens = new Rect();
-    private Rect mInfoBoxDimens = new Rect();
+    private final Rect mMarkerDimens = new Rect();
+    private final Rect mInfoBoxDimens = new Rect();
 
     private int mMarkerWidth = -1;
     private int mMarkerHeight = -1;
 
-    private View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
+    private final View.OnClickListener mInfoBoxClicker = v -> launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
 
     @Override
     public void setCentralMap(@NonNull CentralMap centralMap) {
@@ -149,6 +147,7 @@ public class ExpeditionMode
 
         // Set a title to begin with.  We'll get a new one soon, hopefully.
         setTitle(R.string.app_name);
+        setSubtitle("");
 
         // Do we have a Bundle to un-Bundlify?
         if(bundle != null) {
@@ -158,7 +157,7 @@ public class ExpeditionMode
                 // Info!  Yay!  We can request a stock based on that!  Okay,
                 // technically the Info should already have the stock we need,
                 // but this also lets us get the nearby points if need be.
-                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
             } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
                 // We've got a request to make!  Chances are, StockService will
                 // have this in cache.
@@ -169,7 +168,7 @@ public class ExpeditionMode
                 // We only go through with this if we have a Calendar and
                 // either a globalhash or a Graticule.
                 if(cal != null && (mStartingGlobalHash || mStartingGraticule != null)) {
-                    requestStock((mStartingGlobalHash ? null : mStartingGraticule), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                    requestStock((mStartingGlobalHash ? null : mStartingGraticule), cal, StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 }
             } else if(bundle.getBoolean(DO_INITIAL_START, false) && !arePermissionsDenied()) {
                 // If we didn't get an Info, well, maybe there's an initial
@@ -182,8 +181,7 @@ public class ExpeditionMode
         mInfoBox = new InfoBox(mCentralMap);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
-            params.addRule(RelativeLayout.ALIGN_PARENT_END);
+        params.addRule(RelativeLayout.ALIGN_PARENT_END);
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mInfoBox, params);
 
@@ -204,7 +202,7 @@ public class ExpeditionMode
         if(fragmentContainer != null) {
             // Plus, if the detailed info fragment's already there, make its
             // container go visible, too.
-            FragmentManager manager = mCentralMap.getFragmentManager();
+            FragmentManager manager = mCentralMap.getSupportFragmentManager();
             mExtraFragment = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
             if(mExtraFragment != null) {
                 fragmentContainer.setVisibility(View.VISIBLE);
@@ -220,8 +218,11 @@ public class ExpeditionMode
         ((RelativeLayout)mCentralMap.findViewById(R.id.map_content)).addView(mZoomButtons, params);
         mZoomButtons.setListener(this);
         mZoomButtons.showMenu(false);
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, false);
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_DESTINATION, false);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_FIT_BOTH, false);
+
+        // Inflate us a MENU!
+        populateMenu();
 
         permissionsDenied(arePermissionsDenied());
 
@@ -292,11 +293,7 @@ public class ExpeditionMode
         if(mWaitingOnEmptyStart)
             doEmptyStart();
 
-        if(showInfoBox()) {
-            mInfoBox.animateInfoBoxVisible(true);
-        } else {
-            mInfoBox.animateInfoBoxVisible(false);
-        }
+        mInfoBox.animateInfoBoxVisible(showInfoBox());
 
         // Re-check the nearby points pref.  If that changed, we need to either
         // remove or add the points.  Actually, to keep it simple, just wipe
@@ -312,26 +309,32 @@ public class ExpeditionMode
                 // Hey, let's use the little-used FLAG_AUTO_INITIATED!  That'll
                 // do as a flag that tells us we're ONLY waiting on nearby
                 // points!
-                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_INCLUDE_NEARBY_POINTS | StockService.FLAG_AUTO_INITIATED);
+                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockWorker.FLAG_INCLUDE_NEARBY_POINTS | StockWorker.FLAG_AUTO_INITIATED);
             }
         }
 
         permissionsDenied(arePermissionsDenied());
     }
 
-    @Override
-    public void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu) {
-        inflater.inflate(R.menu.centralmap_expedition, menu);
+    private void populateMenu() {
+        // The "bottom" toolbar is what we want.  I say that in quotes because
+        // it might be the top toolbar if we're in a screen big enough to handle
+        // everything in one, but the mToolbarBottom reference points to the
+        // right thing.
+        Menu menu = mToolbarBottom.getMenu();
+        menu.clear();
+
+        mToolbarBottom.inflateMenu(R.menu.centralmap_expedition);
 
         // Maps?  You there?
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
-        if(!AndroidUtil.isIntentAvailable(c, i))
+        if(!AndroidUtil.isIntentAvailable(mCentralMap, i))
             menu.removeItem(R.id.action_send_to_maps);
 
         // Make sure radar is removed if there's no radar to radar our radar.
         // Radar radar radar radar radar.
-        if(!AndroidUtil.isIntentAvailable(c, GHDConstants.ACTION_SHOW_RADAR))
+        if(!AndroidUtil.isIntentAvailable(mCentralMap, GHDConstants.ACTION_SHOW_RADAR))
             menu.removeItem(R.id.action_send_to_radar);
 
         // If we don't have any Info yet, we can't have things that depend on
@@ -347,70 +350,64 @@ public class ExpeditionMode
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_selectagraticule: {
-                // It's Select-A-Graticule Mode!  At long last!
-                mCentralMap.enterSelectAGraticuleMode();
-                return true;
-            }
-            case R.id.action_details: {
-                // Here, the user's pressed the menu item for details, probably
-                // either because they don't have the infobox visible on the
-                // main display or they were poking every option and wanted to
-                // see what this would do.  Here's what it do:
-                launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
-                return true;
-            }
-            case R.id.action_wiki: {
-                // Same as with details, but with the wiki instead.
-                launchExtraFragment(CentralMapExtraFragment.FragmentType.WIKI);
-                return true;
-            }
-            case R.id.action_send_to_maps: {
-                // Juuuuuuust like in DetailedInfoActivity...
-                if(mCurrentInfo != null) {
-                    // To the map!
-                    Intent i = new Intent();
-                    i.setAction(Intent.ACTION_VIEW);
+        int itemId = item.getItemId();
+        if(itemId == R.id.action_selectagraticule) {
+            // It's Select-A-Graticule Mode!  At long last!
+            mCentralMap.enterSelectAGraticuleMode();
+            return true;
+        } else if(itemId == R.id.action_details) {
+            // Here, the user's pressed the menu item for details, probably
+            // either because they don't have the infobox visible on the
+            // main display or they were poking every option and wanted to
+            // see what this would do.  Here's what it do:
+            launchExtraFragment(CentralMapExtraFragment.FragmentType.DETAILS);
+            return true;
+        } else if(itemId == R.id.action_wiki) {
+            // Same as with details, but with the wiki instead.
+            launchExtraFragment(CentralMapExtraFragment.FragmentType.WIKI);
+            return true;
+        } else if(itemId == R.id.action_send_to_maps) {
+            // Juuuuuuust like in DetailedInfoActivity...
+            if(mCurrentInfo != null) {
+                // To the map!
+                Intent i = new Intent();
+                i.setAction(Intent.ACTION_VIEW);
 
-                    String location = mCurrentInfo.getLatitude() + "," + mCurrentInfo.getLongitude();
+                String location = mCurrentInfo.getLatitude() + "," + mCurrentInfo.getLongitude();
 
-                    i.setData(Uri.parse("geo:0,0?q=loc:"
-                            + location
-                            + "("
-                            + mCentralMap.getString(
-                            R.string.send_to_maps_point_name,
-                            DateFormat.getDateInstance(DateFormat.LONG).format(
-                                    mCurrentInfo.getCalendar().getTime())) + ")&z=15"));
-                    mCentralMap.startActivity(i);
-                } else {
-                    Toast.makeText(mCentralMap, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
-                }
-
-                return true;
+                i.setData(Uri.parse("geo:0,0?q=loc:"
+                        + location
+                        + "("
+                        + mCentralMap.getString(
+                        R.string.send_to_maps_point_name,
+                        DateFormat.getDateInstance(DateFormat.LONG).format(
+                                mCurrentInfo.getCalendar().getTime())) + ")&z=15"));
+                mCentralMap.startActivity(i);
+            } else {
+                Toast.makeText(mCentralMap, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
             }
-            case R.id.action_send_to_radar: {
-                // Someone actually picked radar!  How 'bout that?
-                if(mCurrentInfo != null) {
-                    Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
-                    i.putExtra("latitude", (float) mCurrentInfo.getLatitude());
-                    i.putExtra("longitude", (float) mCurrentInfo.getLongitude());
-                    mCentralMap.startActivity(i);
-                } else {
-                    Toast.makeText(mCentralMap, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
-                }
 
-                return true;
+            return true;
+        } else if(itemId == R.id.action_send_to_radar) {
+            // Someone actually picked radar!  How 'bout that?
+            if(mCurrentInfo != null) {
+                Intent i = new Intent(GHDConstants.ACTION_SHOW_RADAR);
+                i.putExtra("latitude", (float) mCurrentInfo.getLatitude());
+                i.putExtra("longitude", (float) mCurrentInfo.getLongitude());
+                mCentralMap.startActivity(i);
+            } else {
+                Toast.makeText(mCentralMap, R.string.error_no_data_to_radar, Toast.LENGTH_LONG).show();
             }
-            case R.id.action_try_tomorrow: {
-                // Trying tomorrow is easy: Just get today, make it tomorrow,
-                // and try it.  What's more, we've already got the mechanisms in
-                // place to handle what happens if tomorrow doesn't exist yet.
-                if(mCurrentInfo != null) {
-                    Calendar cal = (Calendar)mCurrentInfo.getCalendar().clone();
-                    cal.add(Calendar.DATE, 1);
-                    changeCalendar(cal);
-                }
+
+            return true;
+        } else if(itemId == R.id.action_try_tomorrow) {
+            // Trying tomorrow is easy: Just get today, make it tomorrow, and
+            // try it.  What's more, we've already got the mechanisms in place
+            // to handle what happens if tomorrow doesn't exist yet.
+            if(mCurrentInfo != null) {
+                Calendar cal = (Calendar) mCurrentInfo.getCalendar().clone();
+                cal.add(Calendar.DATE, 1);
+                changeCalendar(cal);
             }
         }
 
@@ -428,7 +425,7 @@ public class ExpeditionMode
                 // let's just try inserting it into the usual flow, minus the
                 // point where we check for the closest Info...
                 if(!info.isGlobalHash())
-                    requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                    requestStock(info.getGraticule(), info.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 else {
                     setInfo(info);
                     doNearbyPoints(null);
@@ -443,9 +440,9 @@ public class ExpeditionMode
                 // sure we've got all the nearbys set properly, ask StockService
                 // for the data again, this time using the best one.  We'll get
                 // it back in the else field quickly, as it's cached now.
-                requestStock(inf.getGraticule(), inf.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                requestStock(inf.getGraticule(), inf.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
             } else {
-                if((flags & StockService.FLAG_AUTO_INITIATED) == 0) {
+                if((flags & StockWorker.FLAG_AUTO_INITIATED) == 0) {
                     setInfo(info);
                 }
 
@@ -501,7 +498,8 @@ public class ExpeditionMode
 
             Marker nearby = mMap.addMarker(new MarkerOptions()
                     .position(info.getFinalDestinationLatLng())
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination_disabled))
+                    .icon(BitmapTools.bitmapDescriptorFromVector(mCentralMap, R.drawable.final_destination_disabled))
+                    .alpha(0.5f)
                     .anchor(0.5f, 1.0f)
                     .title(title)
                     .snippet(snippet));
@@ -609,14 +607,10 @@ public class ExpeditionMode
         mVictoryReported = false;
 
         // Redraw the menu as need be, too.
-        mCentralMap.invalidateOptionsMenu();
+        populateMenu();
 
         // Set the infobox in motion as well.
-        if(showInfoBox()) {
-            mInfoBox.animateInfoBoxVisible(true);
-        } else {
-            mInfoBox.animateInfoBoxVisible(false);
-        }
+        mInfoBox.animateInfoBoxVisible(showInfoBox());
 
         if(!mInitComplete) return;
 
@@ -640,16 +634,14 @@ public class ExpeditionMode
                 addDestinationPoint(info);
 
                 // With an Info in hand, we can also change the title.
-                StringBuilder newTitle = new StringBuilder();
                 Graticule g = mCurrentInfo.getGraticule();
                 if(g == null)
-                    newTitle.append(mCentralMap.getString(R.string.title_part_globalhash));
+                    setTitle(mCentralMap.getString(R.string.title_part_globalhash));
                 else {
-                    newTitle.append(g.getTitleString(false));
+                    setTitle(g.getTitleString(false));
                 }
-                newTitle.append(", ");
-                newTitle.append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate()));
-                setTitle(newTitle.toString());
+                setSubtitle(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mCurrentInfo.getDate())
+                        + (mCurrentInfo.isRetroHash() ? ' ' + mCentralMap.getString(R.string.subtitle_part_retrohash) : ""));
 
                 // Now, the Mercator projection that the map uses clips at
                 // around 85 degrees north and south.  If that's where the
@@ -676,6 +668,7 @@ public class ExpeditionMode
         } else {
             // Otherwise, make sure the title's back to normal.
             setTitle(R.string.app_name);
+            setSubtitle("");
         }
     }
 
@@ -789,7 +782,7 @@ public class ExpeditionMode
             mInitialCheckLocation = loc;
             mWaitingOnEmptyStartInfo = true;
             zoomToInitialCurrentLocation(loc);
-            requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+            requestStock(new Graticule(loc), Calendar.getInstance(), StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_FIND_CLOSEST);
         } else {
             // Otherwise, it's off to the races.
             ErrorBanner banner = mCentralMap.getErrorBanner();
@@ -803,18 +796,19 @@ public class ExpeditionMode
     }
 
     @Override
-    public void onInfoWindowClick(Marker marker) {
+    public void onInfoWindowClick(@NonNull Marker marker) {
         // If a nearby marker's info window was clicked, that means we can
         // switch to another point.
         if(mNearbyPoints.containsKey(marker)) {
             final Info newInfo = mNearbyPoints.get(marker);
+            assert newInfo != null;
 
             // Get the last-known location (if possible) and prompt the user
             // with a distance.  Then, we've got a fragment that'll do this sort
             // of work for us.
             NearbyGraticuleDialogFragment frag = NearbyGraticuleDialogFragment.newInstance(newInfo, getLastKnownLocation());
             frag.setCallback(this);
-            frag.show(mCentralMap.getFragmentManager(), NEARBY_DIALOG);
+            frag.show(mCentralMap.getSupportFragmentManager(), NEARBY_DIALOG);
         }
     }
 
@@ -834,7 +828,7 @@ public class ExpeditionMode
     @Override
     public void nearbyGraticuleClicked(Info info) {
         // Info!
-        requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+        requestStock(info.getGraticule(), info.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     @Override
@@ -878,7 +872,7 @@ public class ExpeditionMode
         // are currently waiting for an initial location (or for the user to
         // switch to SelectAGraticuleMode instead).
         if(g != null || isGlobalHash)
-            requestStock(g, newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+            requestStock(g, newDate, StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     private boolean needsNearbyPoints() {
@@ -906,7 +900,7 @@ public class ExpeditionMode
             mCentralMap.startActivity(i);
         } else {
             // Check to see if the fragment's already there.
-            FragmentManager manager = mCentralMap.getFragmentManager();
+            FragmentManager manager = mCentralMap.getSupportFragmentManager();
             CentralMapExtraFragment f;
             try {
                 f = (CentralMapExtraFragment) manager.findFragmentById(R.id.extra_fragment_container);
@@ -961,7 +955,7 @@ public class ExpeditionMode
 
     private void clearExtraFragment() {
         // This simply clears out the extra fragment.
-        FragmentManager manager = mCentralMap.getFragmentManager();
+        FragmentManager manager = mCentralMap.getSupportFragmentManager();
         try {
             manager.popBackStack(EXTRA_FRAGMENT_BACK_STACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         } catch(IllegalStateException ise) {
@@ -999,13 +993,13 @@ public class ExpeditionMode
     }
 
     @Override
-    public void zoomButtonPressed(View container, int which) {
+    public void zoomButtonPressed(View container, ZoomButtons.ButtonPressed which) {
         // BEEP.
         switch(which) {
-            case ZoomButtons.ZOOM_FIT_BOTH:
+            case ZOOM_FIT_BOTH:
                 doInitialZoom();
                 break;
-            case ZoomButtons.ZOOM_DESTINATION:
+            case ZOOM_DESTINATION:
                 // Assuming we already have the destination...
                 if(mCurrentInfo == null) {
                     Log.e(DEBUG_TAG, "Tried to zoom to the destination when there is no destination set!");
@@ -1013,7 +1007,7 @@ public class ExpeditionMode
                     zoomToPoint(mCurrentInfo.getFinalLocation());
                 }
                 break;
-            case ZoomButtons.ZOOM_USER:
+            case ZOOM_USER:
                 // Hopefully the user's already got a valid location.  Else...
                 Location loc = getLastKnownLocation();
                 if(LocationUtil.isLocationNewEnough(loc)) {
@@ -1035,7 +1029,7 @@ public class ExpeditionMode
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         // This listener handles all listening duties.  We've got a few
         // booleans that tell us what's waiting to be done.
         if(mWaitingOnInitialZoom) {
@@ -1061,7 +1055,7 @@ public class ExpeditionMode
 
                 // Second, ask for a stock using that location.
                 if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
-                requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+                requestStock(new Graticule(location), mInitialCalendar, StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_FIND_CLOSEST);
             }
         }
 
@@ -1135,14 +1129,14 @@ public class ExpeditionMode
 
     private void setZoomButtonsEnabled() {
         // Zoom to user is always on if permissions aren't denied.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_USER, !arePermissionsDenied());
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_USER, !arePermissionsDenied());
 
         // Zoom to destination is only on if we have a valid info.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_DESTINATION, mCurrentInfo != null);
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_DESTINATION, mCurrentInfo != null);
 
         // Zoom to both is only on if we have a valid info AND permissions
         // aren't denied.
-        mZoomButtons.setButtonEnabled(ZoomButtons.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
+        mZoomButtons.setButtonEnabled(ZoomButtons.ButtonPressed.ZOOM_FIT_BOTH, mCurrentInfo != null && !arePermissionsDenied());
     }
 
     @Nullable

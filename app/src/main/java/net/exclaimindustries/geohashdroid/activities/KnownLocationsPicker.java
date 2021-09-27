@@ -9,9 +9,7 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.Intent;
@@ -29,8 +27,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -62,6 +58,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.KnownLocationPinData;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.tools.BitmapTools;
 
 import org.opensextant.geodesy.Angle;
 import org.opensextant.geodesy.Geodetic2DArc;
@@ -73,6 +70,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * KnownLocationsPicker is another map-containing Activity.  This one allows the
@@ -140,6 +142,7 @@ public class KnownLocationsPicker
         private KnownLocation mExisting;
         private Address mAddress;
 
+        @NonNull
         @Override
         @SuppressLint("InflateParams")
         public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -159,6 +162,7 @@ public class KnownLocationsPicker
             // Time to inflate!
             LayoutInflater inflater = ((LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE));
 
+            assert inflater != null;
             View dialogView = inflater.inflate(R.layout.edit_known_location_dialog, null);
 
             String name;
@@ -272,10 +276,10 @@ public class KnownLocationsPicker
         }
 
         private List<Address> mAddresses;
-        private VisibleRegion mVis;
-        private float mBearing;
-        private Geocoder mGeocoder;
-        private Message mMessage;
+        private final VisibleRegion mVis;
+        private final float mBearing;
+        private final Geocoder mGeocoder;
+        private final Message mMessage;
 
         public LocationSearchTask(Message message, Geocoder geocoder, VisibleRegion vis, float bearing) {
             super();
@@ -492,6 +496,7 @@ public class KnownLocationsPicker
             if(mMapClickMarkerOptions != null) {
                 // Well, then put the marker back on the map!
                 mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
+                assert(mMapClickMarker != null);
                 mActiveMarker = mMapClickMarker;
                 mMapClickMarker.showInfoWindow();
             }
@@ -514,7 +519,9 @@ public class KnownLocationsPicker
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        View mapView = mapFrag.getView();
+        assert mapView != null;
+        mapView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             // Got a height!  Hopefully.
             if(!mAlreadyLaidOut) {
                 mAlreadyLaidOut = true;
@@ -530,28 +537,36 @@ public class KnownLocationsPicker
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if(!prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)
                 && !prefs.getBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, false)) {
+
             // Dialog!
-            new AlertDialog.Builder(this)
-                    .setMessage(R.string.known_locations_prefetch_is_off)
-                    .setNegativeButton(R.string.stop_reminding_me_label, (dialog, which) -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+            View extraView = getLayoutInflater().inflate(R.layout.known_locations_needs_prefetch_dialog, null);
+
+            CheckBox check = (CheckBox)extraView.findViewById(R.id.stop_reminding_me_checkbox);
+
+            builder.setMessage(R.string.known_locations_prefetch_is_off)
+                    .setNegativeButton(R.string.go_to_preference, (dialog, which) -> {
                         dialog.dismiss();
 
-                        SharedPreferences.Editor editor = prefs.edit();
-                        editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
-                        editor.apply();
-
-                        BackupManager bm = new BackupManager(KnownLocationsPicker.this);
-                        bm.dataChanged();
-                    })
-                    .setNeutralButton(R.string.go_to_preference, (dialog, which) -> {
-                        dialog.dismiss();
-
-                        Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class);
-                        intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, PreferencesScreen.OtherPreferenceFragment.class.getName());
-                        intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                        Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class)
+                                .putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT,
+                                        PreferencesScreen.OtherPreferenceFragment.class.getName())
+                                .putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
                         startActivity(intent);
                     })
                     .setPositiveButton(R.string.gotcha_label, (dialog, which) -> dialog.dismiss())
+                    .setView(extraView)
+                    .setOnDismissListener(dialog -> {
+                        if(check.isChecked()) {
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_PREFETCH_WARNING, true);
+                            editor.apply();
+
+                            BackupManager bm = new BackupManager(KnownLocationsPicker.this);
+                            bm.dataChanged();
+                        }
+                    })
                     .show();
         }
 
@@ -613,6 +628,7 @@ public class KnownLocationsPicker
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
 
@@ -700,7 +716,7 @@ public class KnownLocationsPicker
     }
 
     @Override
-    public void onMapLongClick(LatLng latLng) {
+    public void onMapLongClick(@NonNull LatLng latLng) {
         // If there's already a marker, clear it out.
         if(mMapClickMarker != null) {
             mMapClickMarker.remove();
@@ -712,14 +728,15 @@ public class KnownLocationsPicker
         // the user the option to add that as a known location.  We want to keep
         // track of the MarkerOptions object because that's Parcelable, allowing
         // us to stash it away if we need to save the activity's bundle state.
-        mMapClickMarkerOptions = createMarker(latLng, null);
+        mMapClickMarkerOptions = createMarker(latLng);
 
         mMapClickMarker = mMap.addMarker(mMapClickMarkerOptions);
+        assert(mMapClickMarker != null);
         mMapClickMarker.showInfoWindow();
     }
 
     @Override
-    public void onInfoWindowClick(Marker marker) {
+    public void onInfoWindowClick(@NonNull Marker marker) {
         // Is this marker associated with a KnownLocation or Address?  If so, we
         // can init the data with that, AND keep track of it.
         String name = "";
@@ -731,12 +748,14 @@ public class KnownLocationsPicker
         if(mMarkerMap.containsKey(marker)) {
             // Got it!
             loc = mMarkerMap.get(marker);
+            assert loc != null;
             name = loc.getName();
             range = loc.getRange();
             restrict = loc.isRestrictedGraticule();
         } else if(mActiveAddressMap.containsKey(marker)) {
             // An address!
             address = mActiveAddressMap.get(marker);
+            assert address != null;
             name = address.getFeatureName();
         }
 
@@ -753,29 +772,26 @@ public class KnownLocationsPicker
 
         EditKnownLocationDialog dialog = new EditKnownLocationDialog();
         dialog.setArguments(args);
-        dialog.show(getFragmentManager(), EDIT_DIALOG);
+        dialog.show(getSupportFragmentManager(), EDIT_DIALOG);
     }
 
     @Override
-    public boolean onMarkerClick(Marker marker) {
+    public boolean onMarkerClick(@NonNull Marker marker) {
         return false;
     }
 
     @NonNull
-    private MarkerOptions createMarker(@NonNull LatLng latLng, @Nullable String title) {
+    private MarkerOptions createMarker(@NonNull LatLng latLng) {
         // This builds up the basic marker for a potential KnownLocation.  By
         // "potential", I mean something that isn't stored yet as a
         // KnownLocation, such as search results or map taps.  KnownLocation
         // ITSELF has a makeMarker method.
-        if(title == null || title.isEmpty())
-            title = UnitConverter.makeFullCoordinateString(this, latLng, false, UnitConverter.OUTPUT_SHORT);
-
         return new MarkerOptions()
                 .position(latLng)
                 .flat(true)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.known_location_tap_marker))
+                .icon(BitmapTools.bitmapDescriptorFromVector(this, R.drawable.known_location_tap_marker))
                 .anchor(0.5f, 0.5f)
-                .title(title)
+                .title(UnitConverter.makeFullCoordinateString(this, latLng, false, UnitConverter.OUTPUT_SHORT))
                 .snippet(getString(R.string.known_locations_tap_to_add));
     }
 
@@ -822,7 +838,11 @@ public class KnownLocationsPicker
         mLocations.add(newLoc);
 
         // And what's more, it's guaranteed to have an old version on the map!
-        mActiveAddressMap.inverse().remove(address).remove();
+        // But, since defensive paranoia is usually good in code, let's assert
+        // anyway.
+        Marker mark = mActiveAddressMap.inverse().remove(address);
+        assert mark != null;
+        mark.remove();
 
         // Then, replace it with the new one.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
@@ -856,8 +876,12 @@ public class KnownLocationsPicker
 
             // Since this is an existing KnownLocation, the marker should be in
             // that map, ripe for removal.
-            mMarkerMap.inverse().remove(existing).remove();
-            mCircleMap.inverse().remove(existing).remove();
+            Marker mark = mMarkerMap.inverse().remove(existing);
+            Circle circle = mCircleMap.inverse().remove(existing);
+            assert mark != null;
+            assert circle != null;
+            mark.remove();
+            circle.remove();
         } else {
             // Brand new!
             mLocations.add(newLoc);
@@ -871,7 +895,6 @@ public class KnownLocationsPicker
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // And remove the marker from the map.  The visual one this time.
-        // TODO: Null-checking shouldn't be necessary here.
         if(mActiveMarker != null) mActiveMarker.remove();
 
         // And end the active parts.
@@ -884,9 +907,13 @@ public class KnownLocationsPicker
 
         // Clear it from the map and from the marker list.
         Marker marker = mMarkerMap.inverse().get(existing);
+        assert marker != null;
         marker.remove();
         mMarkerMap.remove(marker);
-        mCircleMap.inverse().remove(existing).remove();
+
+        Circle circle = mCircleMap.inverse().remove(existing);
+        assert circle != null;
+        circle.remove();
 
         // Then, remove it from the location list and push that back to the
         // preferences.

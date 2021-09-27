@@ -10,14 +10,15 @@ package net.exclaimindustries.geohashdroid.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
 
 import net.exclaimindustries.geohashdroid.R;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
 
 /**
  * Because I couldn't find a good iconic way to put the map type selection on
@@ -25,8 +26,6 @@ import net.exclaimindustries.geohashdroid.R;
  */
 public class MapTypeDialogFragment extends DialogFragment {
     private static final String DEBUG_TAG = "MapTypeDialogFragment";
-
-    public final static int MAP_STYLE_NIGHT = 0x104;
 
     /**
      * INTERFACE!  INTERFACE INTERFACE INTERFACE INTERFACE!
@@ -63,6 +62,7 @@ public class MapTypeDialogFragment extends DialogFragment {
         mCallback = callback;
     }
 
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         return new AlertDialog.Builder(getActivity())
@@ -81,12 +81,9 @@ public class MapTypeDialogFragment extends DialogFragment {
                             mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_NORMAL);
                             break;
                         case 1:
-                            mCallback.mapTypeSelected(MAP_STYLE_NIGHT);
-                            break;
-                        case 2:
                             mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_HYBRID);
                             break;
-                        case 3:
+                        case 2:
                             mCallback.mapTypeSelected(GoogleMap.MAP_TYPE_TERRAIN);
                     }
                 })

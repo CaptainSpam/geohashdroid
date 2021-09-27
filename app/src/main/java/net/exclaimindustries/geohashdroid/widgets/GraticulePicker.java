@@ -9,11 +9,6 @@
 package net.exclaimindustries.geohashdroid.widgets;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.os.Build;
-import android.preference.PreferenceManager;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -26,8 +21,10 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
+
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 /**
  * This is the box of graticule-picking goodness that appears on the bottom of
@@ -35,10 +32,10 @@ import net.exclaimindustries.geohashdroid.util.Graticule;
  */
 public class GraticulePicker extends RelativeLayout {
 
-    private EditText mLat;
-    private EditText mLon;
-    private CheckBox mGlobal;
-    private Button mClosest;
+    private final EditText mLat;
+    private final EditText mLon;
+    private final CheckBox mGlobal;
+    private final Button mClosest;
 
     private boolean mExternalUpdate;
     private boolean mAlreadyLaidOut = false;
@@ -87,12 +84,7 @@ public class GraticulePicker extends RelativeLayout {
         super(c, attrs);
 
         // Deal out a little bit of setup justice...
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-        boolean night = prefs.getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
-        if(night)
-            setBackgroundColor(ContextCompat.getColor(c, android.R.color.black));
-        else
-            setBackgroundColor(ContextCompat.getColor(c, android.R.color.white));
+        setBackgroundColor(ContextCompat.getColor(c, R.color.common_background));
 
         int padding = getResources().getDimensionPixelSize(R.dimen.standard_padding);
         setPadding(padding, padding, padding, padding);
@@ -100,10 +92,8 @@ public class GraticulePicker extends RelativeLayout {
         setClickable(true);
 
         // Who wants a neat-looking shadow effect as if this were some sort of
-        // material hovering a few dp above the map?  You do, assuming you're
-        // using Lollipop!
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            setElevation(getResources().getDimension(R.dimen.elevation_graticule_picker));
+        // material hovering a few dp above the map?  You might!
+        setElevation(getResources().getDimension(R.dimen.elevation_graticule_picker));
 
         // Now then, let's get inflated.
         inflate(c, R.layout.graticulepicker, this);
@@ -168,10 +158,6 @@ public class GraticulePicker extends RelativeLayout {
             if(mListener != null)
                 mListener.graticulePickerClosing();
         });
-
-        // Plus, the close button needs updating if it's night.  That grey is
-        // just a weeeeee bit too dark for the black background.
-        if(night) close.setImageDrawable(ContextCompat.getDrawable(c, R.drawable.cancel_button_dark));
 
         // And then there's this again.  Huh.  You'd think I should make a
         // parent class to handle this.

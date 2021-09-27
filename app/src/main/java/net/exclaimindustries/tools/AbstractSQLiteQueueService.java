@@ -205,7 +205,9 @@ public abstract class AbstractSQLiteQueueService extends QueueService {
 
             // Otherwise, we have us our row ID.
             cursor.moveToFirst();
-            long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
+            int columnIndex = cursor.getColumnIndex(KEY_QUEUE_ROWID);
+            assert(columnIndex >= 0);
+            long rowId = cursor.getLong(columnIndex);
             cursor.close();
 
             database.delete(TABLE_QUEUE, KEY_QUEUE_ROWID + "=" + rowId, null);
@@ -252,8 +254,13 @@ public abstract class AbstractSQLiteQueueService extends QueueService {
 
             while(toReturn == null && !cursor.isAfterLast()) {
                 // Data!  Now!
-                long rowId = cursor.getLong(cursor.getColumnIndex(KEY_QUEUE_ROWID));
-                String data = cursor.getString(cursor.getColumnIndex(KEY_QUEUE_DATA));
+                int columnIndexRow = cursor.getColumnIndex(KEY_QUEUE_ROWID);
+                int columnIndexData = cursor.getColumnIndex(KEY_QUEUE_ROWID);
+                assert(columnIndexRow >= 0);
+                assert(columnIndexData >= 0);
+
+                long rowId = cursor.getLong(columnIndexRow);
+                String data = cursor.getString(columnIndexData);
 
                 // Now, try to deserialize.  This'll be null if it should be
                 // ignored.

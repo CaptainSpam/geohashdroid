@@ -1,0 +1,19 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Preference
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$MapPreferenceFragment"
+        android:title="@string/pref_cat_map"/>
+
+    <Preference
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$WikiPreferenceFragment"
+        android:title="@string/pref_cat_wiki"/>
+
+    <Preference
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$OtherPreferenceFragment"
+        android:title="@string/pref_cat_other"/>
+
+    <Preference
+        android:fragment="net.exclaimindustries.geohashdroid.activities.PreferencesScreen$DebugFragment"
+        android:title="@string/pref_cat_debug"/>
+
+</PreferenceScreen>

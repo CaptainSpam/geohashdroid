@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="pref_cat_map">Map options</string>
+    <string name="pref_cat_map">Map and display options</string>
     <string name="pref_cat_other">Other options</string>
     <string name="pref_cat_wiki">Wiki options</string>
 
@@ -50,10 +50,6 @@
     <string name="pref_wikipassword_dialogtitle">Enter your password</string>
     <string name="pref_wikipassword_hint">Password</string>
 
-    <string name="pref_wikiphonetime_title">Post with phone\'s time</string>
-    <string name="pref_wikiphonetime_on">Use the time on the phone instead of the wiki\'s time for wiki posts</string>
-    <string name="pref_wikiphonetime_off">Use the standard wiki time signature for wiki posts</string>
-
     <string name="pref_wikireleasequeue_title">Release pending wiki posts</string>
     <string name="pref_wikireleasequeue_summary">If any wiki posts didn\'t get sent, try to send them</string>
 
@@ -95,9 +91,15 @@
     <string name="pref_knownnotification_onceperlocation">Notify once per known location</string>
     <string name="pref_knownnotification_never">Don\'t notify at all</string>
 
-    <string name="pref_knownnotification_reminder_title">Because I\'m not a monster, that\'s why</string>
+    <string name="pref_knownnotification_reminder_title">Remember…</string>
     <string name="pref_knownnotification_pergraticule_reminder">Even with this option set, a maximum of ten notifications will be displayed (graticules with closer matching known locations will take precedence).</string>
     <string name="pref_knownnotification_perlocation_reminder">Even with this option set, a maximum of ten notifications will be displayed (the closest matching known locations will take precedence).</string>
     <!-- This one should never been seen. -->
     <string name="pref_knownnotification_fallback_reminder">Even with this option set, a maximum of ten notifications will be displayed.</string>
+
+    <string name="pref_daynight_title">Light/dark theme</string>
+    <string name="pref_daynight_dialogtitle">Select theme</string>
+    <string name="pref_daynight_day">Light</string>
+    <string name="pref_daynight_night">Dark</string>
+    <string name="pref_daynight_system">Whatever the system thinks is cool right now</string>
 </resources>

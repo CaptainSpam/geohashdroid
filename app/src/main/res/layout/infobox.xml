@@ -1,36 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
               android:layout_height="wrap_content">
 
-    <TextView
-        style="@style/InfoboxText"
-        android:drawableLeft="@drawable/final_destination_infobox"
-        android:drawableStart="@drawable/final_destination_infobox"
-        android:text="@string/standby_title"
-        android:id="@+id/infobox_hashpoint"/>
-
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/standby_title"
-        android:drawableLeft="@drawable/current_location_infobox"
-        android:drawableStart="@drawable/current_location_infobox"
-        android:id="@+id/infobox_you"/>
+        android:id="@+id/infobox_hashpoint"
+        app:drawableStartCompat="@drawable/final_destination_infobox"
+        app:drawableLeftCompat="@drawable/final_destination_infobox" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/standby_title"
-        android:drawableLeft="@drawable/distance_infobox"
-        android:drawableStart="@drawable/distance_infobox"
-        android:id="@+id/infobox_distance"/>
+        android:id="@+id/infobox_you"
+        app:drawableStartCompat="@drawable/current_location_infobox"
+        app:drawableLeftCompat="@drawable/current_location_infobox" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
+        style="@style/InfoboxText"
+        android:text="@string/standby_title"
+        android:id="@+id/infobox_distance"
+        app:drawableStartCompat="@drawable/distance_infobox"
+        app:drawableLeftCompat="@drawable/distance_infobox" />
+
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/infobox_accuracy_low"
         android:id="@+id/infobox_accuracy_low"
         android:visibility="gone"/>
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatTextView
         style="@style/InfoboxText"
         android:text="@string/infobox_accuracy_really_low"
         android:id="@+id/infobox_accuracy_really_low"

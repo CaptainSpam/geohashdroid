@@ -15,7 +15,6 @@
         <item name="android:padding">@dimen/dialog_padding</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:background">@drawable/geohashing_logo_background</item>
     </style>
 
     <!-- The basic infobox text. -->
@@ -37,5 +36,9 @@
         <item name="android:gravity">center_horizontal</item>
         <item name="android:layout_marginTop">16dp</item>
         <item name="android:layout_marginBottom">16dp</item>
+    </style>
+
+    <style name="DistanceInRange">
+        <item name="android:textColor">@color/details_in_range</item>
     </style>
 </resources>

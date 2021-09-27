@@ -51,6 +51,8 @@ public final class GHDConstants {
     public static final String PREF_STARTUP_BEHAVIOR = "StartupBehavior";
     /** Prefs key specifying how known location notifications are handled. */
     public static final String PREF_KNOWN_NOTIFICATION = "KnownNotification";
+    /** Prefs key specifying which of a light or dark theme the user wants. */
+    public static final String PREF_DAYNIGHT = "DayNight";
     /**
      * Prefs key indicating the most recent version the user's seen in the
      * VersionHistoryDialog activity.  If this is lower than the current one
@@ -138,6 +140,16 @@ public final class GHDConstants {
     public static final String PREFVAL_KNOWN_NOTIFICATION_PER_LOCATION = "OncePerLocation";
     /** Prefs value to never show any notifications for known locations. */
     public static final String PREFVAL_KNOWN_NOTIFICATION_NEVER = "Never";
+
+    /** Prefs value to use a light theme. */
+    public static final String PREFVAL_DAYNIGHT_LIGHT = "Light";
+    /** Prefs value to use a dark theme. */
+    public static final String PREFVAL_DAYNIGHT_DARK = "Dark";
+    /**
+     * Prefs value to use the system default theme, which might mean it changes
+     * depending on the time of day.
+     */
+    public static final String PREFVAL_DAYNIGHT_SYSTEM = "System";
     
     /** Threshold for the "Accuracy Low" warning (currently 64m). **/
     public static final int LOW_ACCURACY_THRESHOLD = 64;

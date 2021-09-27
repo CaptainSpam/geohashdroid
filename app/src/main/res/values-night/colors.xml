@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="infobox_background">#99000000</color>
+    <color name="infobox_text">#bbb</color>
+    <color name="infobox_in_range">#006a00</color>
+    <color name="graticule_fill">#10bb2222</color>
+    <color name="graticule_stroke">#b22</color>
+    <color name="link_color">#77c</color>
+    <color name="details_in_range">#006a00</color>
+    <color name="version_history_leader">#555555</color>
+    <color name="about_background">#272727</color>
+
+    <color name="error_banner_normal">#222</color>
+    <color name="error_banner_warning">#6a6a00</color>
+    <color name="error_banner_error">#6a0000</color>
+    <color name="error_banner_victory">#006a00</color>
+
+    <color name="common_background">#222</color>
+
+    <color name="launcher_background">#222</color>
+</resources>

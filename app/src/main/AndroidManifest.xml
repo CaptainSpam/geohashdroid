@@ -3,16 +3,14 @@
           package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="930"
-          android:versionName="0.9.5.3">
+          android:versionCode="933"
+          android:versionName="0.9.6-pre1">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="22"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="22"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
 
@@ -33,7 +31,6 @@
         android:allowClearUserData="true"
         android:description="@string/app_description"
         android:icon="@mipmap/ic_launcher_debug"
-        android:roundIcon="@mipmap/ic_launcher_debug_round"
         android:label="@string/app_name"
         android:theme="@style/Theme.GeohashDroid"
         android:backupAgent=".util.GHDBackupAgent"
@@ -43,7 +40,9 @@
             android:name=".activities.CentralMap"
             android:label="@string/app_name"
             android:uiOptions="splitActionBarWhenNarrow"
-            android:windowSoftInputMode="stateHidden">
+            android:windowSoftInputMode="stateHidden"
+            android:exported="true"
+            android:theme="@style/Theme.GeohashDroid.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -91,18 +90,6 @@
             android:name="com.google.android.backup.api_key"
             android:value="AEdPqrEAAAAIiLB2kd_jpNzDrXCqYyq_4zXLg4Nw3bAwNRVtzA" />
 
-        <service
-            android:name=".services.StockService"
-            android:label="@string/title_stockservice"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="true">
-        </service>
-        <service
-            android:name=".services.AlarmService"
-            android:label="@string/title_alarmservice"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="true">
-        </service>
         <service
             android:name=".services.WikiService"
             android:label="@string/title_wikiservice"

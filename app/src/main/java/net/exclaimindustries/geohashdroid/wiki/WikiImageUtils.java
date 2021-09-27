@@ -17,9 +17,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.location.Location;
 import android.net.Uri;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Info;
@@ -27,8 +26,15 @@ import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.BitmapTools;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.Calendar;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.exifinterface.media.ExifInterface;
 
 /**
  * <code>WikiImageUtils</code> contains static methods that do stuff to
@@ -60,22 +66,94 @@ public class WikiImageUtils {
 
     private static Paint mBackgroundPaint;
     private static Paint mTextPaint;
-    private static DecimalFormat mDistFormat = new DecimalFormat("###.######");
+    private static final DecimalFormat DIST_FORMAT =
+            new DecimalFormat("###.######");
 
     /**
      * This is just a convenient holder for the various info related to an
      * image.  It's used when making image calls.
      */
-    public static class ImageInfo {
+    public static class ImageInfo implements Parcelable {
         /** The image's URI.  Should not be null. */
-        public Uri uri;
+        @NonNull public final Uri uri;
         /**
          * The location of either the image or the user, depending on if the
          * geodata from the image could be read.  May be null.
          */
-        public Location location;
-        /** The timestamp of the image, if possible.  Defaults to -1. */
-        public long timestamp = -1L;
+        @Nullable public final Location location;
+        /**
+         * The timestamp of the image, if possible.  Should be -1 if that's not
+         * possible.
+         */
+        public final long timestamp;
+
+        public static final Parcelable.Creator<ImageInfo> CREATOR = new Parcelable.Creator<ImageInfo>() {
+            public ImageInfo createFromParcel(Parcel in) {return new ImageInfo(in); }
+            public ImageInfo[] newArray(int size) { return new ImageInfo[size]; }
+        };
+
+        /**
+         * Constructs an ImageInfo.  It's a basic immutable data object, really.
+         *
+         * @param uri the image URI
+         * @param location the image location if known, or null if not
+         * @param timestamp the image's timestamp if known, or -1 if not
+         */
+        public ImageInfo(@NonNull Uri uri,
+                         @Nullable Location location,
+                         long timestamp) {
+            this.uri = uri;
+            this.location = location;
+
+            // Ignore the timestamp field for now and just use the time at the
+            // moment this object was created; from bug reports and personal
+            // testing, I have this feeling something isn't giving me the data
+            // I want at that point.
+            this.timestamp = Calendar.getInstance().getTimeInMillis();
+        }
+
+        /**
+         * Deparcelizes an ImageInfo object.  Because we need to go the other
+         * way around, too.
+         *
+         * @param in the parcel to deparcelize
+         */
+        private ImageInfo(Parcel in) {
+            Uri uri = in.readParcelable(Uri.class.getClassLoader());
+
+            if(uri == null) {
+                throw new IllegalArgumentException("Error deparcelizing ImageInfo: uri was somehow null?");
+            }
+            this.uri = uri;
+            this.timestamp = in.readLong();
+            // Read and consume the flag!
+            if(in.readInt() > 0) {
+                this.location = new Location("");
+                this.location.setLatitude(in.readDouble());
+                this.location.setLongitude(in.readDouble());
+            } else {
+                this.location = null;
+            }
+        }
+
+        @Override
+        public int describeContents() {
+            // This really isn't special; the Location is the only thing
+            // stopping this from being a plain ol' Serializable, really.
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeParcelable(uri, 0);
+            dest.writeLong(timestamp);
+            // This is a flag that indicates if there's a location.
+            dest.writeInt(location != null ? 1 : 0);
+            if(location != null) {
+                dest.writeDouble(location.getLatitude());
+                dest.writeDouble(location.getLongitude());
+            }
+        }
     }
 
     /**
@@ -84,41 +162,73 @@ public class WikiImageUtils {
      * same timestamp.  So don't do that.
      *
      * @param info Info object containing expedition data
-     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Uri, Location, Calendar)}
+     * @param imageInfo ImageInfo object, previously made by {@link #readImageInfo(Context, Uri, Location, Calendar)}
      * @param username current username (must not be null)
      * @return the name of the image on the wiki
      */
-    public static String getImageWikiName(Info info, ImageInfo imageInfo, String username) {
+    public static String getImageWikiName(@NonNull Info info,
+                                          @NonNull ImageInfo imageInfo,
+                                          @NonNull String username) {
         // Just to be clear, this is the wiki page name (expedition and all),
         // the username, and the image's timestamp (as millis past the epoch).
-        return WikiUtils.getWikiPageName(info) + "_" + username + "_" + imageInfo.timestamp + ".jpg";
+        return WikiUtils.getWikiPageName(info) + "_" + username + "_"
+                + imageInfo.timestamp + ".jpg";
     }
 
     /**
      * <p>
-     * Creates an {@link ImageInfo} object from the given Uri.  Note that as far
-     * as Android goes for the time being, locationIfNoneSet and timeIfNoneSet
-     * will ALWAYS be what's used, ever since the changes that require me to use
-     * the document opening interface as opposed to the old MediaStore method.
-     * This will change if I can ever get reasonable metadata out of the
-     * document provider's methods.
+     * Creates an {@link ImageInfo} object from the given Uri.  This depends
+     * heavily on being able to read EXIF data from the given Uri.
      * </p>
      *
      * @param uri the URI of the image
-     * @param locationIfNoneSet location to use if the image has no location metadata stored in it (it won't)
-     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it (it won't)
+     * @param locationIfNoneSet location to use if the image has no location metadata stored in it
+     * @param timeIfNoneSet Calendar containing a timestamp to use if the image has no time metadata stored in it
      * @return a brand new ImageInfo
      */
     @NonNull
-    public static ImageInfo readImageInfo(@NonNull Uri uri, @Nullable Location locationIfNoneSet, @NonNull Calendar timeIfNoneSet) {
-        // This got a lot simpler, but sadly much less robust, after the Android
-        // change that broke permissions on MediaStore...
-        ImageInfo toReturn = new ImageInfo();
-        toReturn.uri = uri;
-        toReturn.location = locationIfNoneSet;
-        toReturn.timestamp = timeIfNoneSet.getTimeInMillis();
+    public static ImageInfo readImageInfo(@NonNull Context context,
+                                          @NonNull Uri uri,
+                                          @Nullable Location locationIfNoneSet,
+                                          @NonNull Calendar timeIfNoneSet) {
+        ExifInterface exif = null;
 
-        return toReturn;
+        try {
+            InputStream input = context.getContentResolver().openInputStream(uri);
+            if(input != null) {
+                exif = new ExifInterface(input);
+            }
+        } catch(IOException ioe) {
+            // This can happen, the error is handled right up next.
+        }
+
+        if(exif == null) {
+            // If there's any problem, just fall back to the supplied defaults.
+            return new ImageInfo(uri,
+                    locationIfNoneSet,
+                    timeIfNoneSet.getTimeInMillis());
+        }
+
+        // Grab location data.
+        double[] latLon = exif.getLatLong();
+        Location loc;
+        if(latLon == null) {
+            // If there is none, fall back to the default, if given.
+            loc = locationIfNoneSet;
+        } else {
+            loc = new Location("");
+            loc.setLatitude(latLon[0]);
+            loc.setLongitude(latLon[1]);
+        }
+
+        // Timestamp data, too.  That's also useful.
+        Long timestamp = exif.getGpsDateTime();
+
+        return new ImageInfo(uri,
+                loc,
+                timestamp != null
+                        ? timestamp
+                        : timeIfNoneSet.getTimeInMillis());
     }
 
     /**
@@ -128,18 +238,23 @@ public class WikiImageUtils {
      *
      * @param context a Context for getting necessary paints and resources
      * @param info an Info object for determining the distance to the destination
-     * @param imageInfo ImageInfo containing image stuff to retrieve
+     * @param uri the URI of the image
+     * @param location a location for the image, for the infobox (can be null)
      * @param drawInfobox true to draw the infobox, false to just shrink and compress
      * @return a byte array of JPEG data, or null if something went wrong
      */
     @Nullable
-    public static byte[] createWikiImage(@NonNull Context context, @NonNull Info info, @NonNull ImageInfo imageInfo, boolean drawInfobox) {
+    public static byte[] createWikiImage(@NonNull Context context,
+                                         @NonNull Info info,
+                                         @NonNull Uri uri,
+                                         @Nullable Location location,
+                                         boolean drawInfobox) {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
         // 150k, so scaling and compressing are the way to go.
         Bitmap bitmap = BitmapTools
                 .createRatioPreservedDownscaledBitmapFromUri(
-                        context, imageInfo.uri, MAX_UPLOAD_WIDTH,
+                        context, uri, MAX_UPLOAD_WIDTH,
                         MAX_UPLOAD_HEIGHT, true);
 
         // If the Bitmap wound up null, we're in trouble.
@@ -147,7 +262,7 @@ public class WikiImageUtils {
 
         // Then, put the infobox up if that's what we're into.
         if(drawInfobox)
-            drawInfobox(context, info, imageInfo, bitmap);
+            drawInfobox(context, info, location, bitmap);
 
         // Finally, compress it and away it goes!
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -162,11 +277,14 @@ public class WikiImageUtils {
      *
      * @param context a Context, for resources
      * @param info an Info object for the current expedition
-     * @param imageInfo some ImageInfo
+     * @param location the location to stamp onto the infobox (can be null)
      * @param bitmap the Bitmap (must be read/write, will be edited)
      * @throws java.lang.IllegalArgumentException if you tried to pass an immutable Bitmap
      */
-    public static void drawInfobox(@NonNull Context context, @NonNull Info info, @NonNull ImageInfo imageInfo, @NonNull Bitmap bitmap) {
+    public static void drawInfobox(@NonNull Context context,
+                                   @NonNull Info info,
+                                   @Nullable Location location,
+                                   @NonNull Bitmap bitmap) {
         if (!bitmap.isMutable())
             throw new IllegalArgumentException("The Bitmap has to be mutable in order to draw an infobox on it!");
 
@@ -181,14 +299,22 @@ public class WikiImageUtils {
 
         // I'm sure this could have less redundant code if I wasn't thinking too
         // hard about it...
-        if (imageInfo.location != null) {
+        if (location != null) {
             // Assemble all our data.  Our three strings will be the final
             // destination, our current location, and the distance.
             strings = new String[3];
 
-            strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
-            strings[1] = UnitConverter.makeFullCoordinateString(context, imageInfo.location, false, UnitConverter.OUTPUT_LONG);
-            strings[2] = UnitConverter.makeDistanceString(context, mDistFormat, info.getDistanceInMeters(imageInfo.location));
+            strings[0] = UnitConverter.makeFullCoordinateString(context,
+                    info.getFinalLocation(),
+                    false,
+                    UnitConverter.OUTPUT_LONG);
+            strings[1] = UnitConverter.makeFullCoordinateString(context,
+                    location,
+                    false,
+                    UnitConverter.OUTPUT_LONG);
+            strings[2] = UnitConverter.makeDistanceString(context,
+                    DIST_FORMAT,
+                    info.getDistanceInMeters(location));
 
             // Then, to the render method!
             icons = new int[3];
@@ -199,7 +325,10 @@ public class WikiImageUtils {
             // Otherwise, just throw up an unknown.  Location's still there,
             // though.
             strings = new String[2];
-            strings[0] = UnitConverter.makeFullCoordinateString(context, info.getFinalLocation(), false, UnitConverter.OUTPUT_LONG);
+            strings[0] = UnitConverter.makeFullCoordinateString(context,
+                    info.getFinalLocation(),
+                    false,
+                    UnitConverter.OUTPUT_LONG);
             strings[1] = context.getString(R.string.location_unknown);
 
             icons = new int[2];
@@ -210,7 +339,7 @@ public class WikiImageUtils {
         drawStrings(context.getResources(), strings, icons, c, mTextPaint, mBackgroundPaint);
     }
 
-    private static void makePaints(Context context) {
+    private static void makePaints(@NonNull Context context) {
         // These are for efficiency's sake so we don't rebuild paints uselessly.
         if(mBackgroundPaint == null) {
             mBackgroundPaint = new Paint();
@@ -226,7 +355,12 @@ public class WikiImageUtils {
         }
     }
 
-    private static void drawStrings(Resources resources, String[] strings, int[] icons, Canvas c, Paint textPaint, Paint backgroundPaint) {
+    private static void drawStrings(@NonNull Resources resources,
+                                    @NonNull String[] strings,
+                                    @NonNull int[] icons,
+                                    @NonNull Canvas c,
+                                    @NonNull Paint textPaint,
+                                    @NonNull Paint backgroundPaint) {
         // All we do here is prepare the Bitmaps before tossing them to the
         // OTHER method.  Hence the need for a Resources.
         Bitmap[] bitmaps = new Bitmap[icons.length];
@@ -240,7 +374,11 @@ public class WikiImageUtils {
         drawStrings(strings, bitmaps, c, textPaint, backgroundPaint);
     }
 
-    private static void drawStrings(String[] strings, Bitmap[] bitmaps, Canvas c, Paint textPaint, Paint backgroundPaint) {
+    private static void drawStrings(@NonNull String[] strings,
+                                    @Nullable Bitmap[] bitmaps,
+                                    @NonNull Canvas c,
+                                    @NonNull Paint textPaint,
+                                    @NonNull Paint backgroundPaint) {
         // The default paint should do, right?
         Paint paint = new Paint();
 
@@ -367,7 +505,9 @@ public class WikiImageUtils {
      * @return a prefix tag
      */
     @NonNull
-    public static String getImagePrefixTag(Context context, ImageInfo imageInfo, Info info) {
+    public static String getImagePrefixTag(@NonNull Context context,
+                                           @NonNull ImageInfo imageInfo,
+                                           @NonNull Info info) {
         if(info.isRetroHash()) {
             return context.getText(R.string.wiki_post_picture_summary_retro).toString();
         } else if(System.currentTimeMillis() - imageInfo.timestamp < LIVE_TIMEOUT) {

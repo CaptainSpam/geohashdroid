@@ -1,7 +1,7 @@
 /*
  * CentralMap.java
  * Copyright (C)2015 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENSE file at the toplevel.
  */
@@ -24,14 +24,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-import androidx.annotation.StringRes;
-import androidx.core.content.ContextCompat;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -45,7 +38,6 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.UiSettings;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -56,7 +48,7 @@ import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.PermissionDeniedDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.VersionHistoryDialogFragment;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
-import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -67,6 +59,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
 import net.exclaimindustries.tools.LogcatDumper;
@@ -82,6 +75,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
+import androidx.appcompat.widget.Toolbar;
+
 /**
  * CentralMap replaces MainMap as the map display.  Unlike MainMap, it also
  * serves as the entry point for the entire app.  These comments are going to
@@ -90,7 +89,8 @@ import java.util.Set;
  */
 public class CentralMap
         extends BaseMapActivity
-        implements GHDDatePickerDialogFragment.GHDDatePickerCallback {
+        implements GHDDatePickerDialogFragment.GHDDatePickerCallback,
+                   Toolbar.OnMenuItemClickListener {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -144,6 +144,8 @@ public class CentralMap
     private View mProgress;
     private Bundle mLastModeBundle;
     private CentralMapMode mCurrentMode;
+    private Toolbar mToolbarTop;
+    private Toolbar mToolbarBottom;
 
     private float mProgressHeight = 0.0f;
 
@@ -199,6 +201,14 @@ public class CentralMap
         /** The current destination Marker. */
         protected Marker mDestination;
 
+        /** The toolbar on the top of the screen. */
+        protected Toolbar mToolbarTop;
+        /**
+         * The toolbar on the bottom of the screen, if it exists.  If not, this
+         * will be the same as mToolbarTop.
+         */
+        protected Toolbar mToolbarBottom;
+
         /**
          * Sets the {@link GoogleMap} this mode deals with.  When implementing
          * this, make sure to actually do something with it like subscribe to
@@ -221,6 +231,24 @@ public class CentralMap
         }
 
         /**
+         * Sets the two {@link Toolbar}s used in this mode.
+         *
+         * @param toolbarTop the Toolbar on the top of the screen
+         * @param toolbarBottom the Toolbar on the bottom of the screen; if
+         *                      null, the bottom toolbar will be the same
+         *                      reference as the top
+         */
+        public void setToolbars(@NonNull Toolbar toolbarTop,
+                                @Nullable Toolbar toolbarBottom) {
+            mToolbarTop = toolbarTop;
+            if(toolbarBottom == null) {
+                mToolbarBottom = mToolbarTop;
+            } else {
+                mToolbarBottom = toolbarBottom;
+            }
+        }
+
+        /**
          * <p>
          * Does whatever init tomfoolery is needed for this class, using the
          * given Bundle of stuff.  You're probably best calling this AFTER
@@ -234,8 +262,8 @@ public class CentralMap
 
         /**
          * Does whatever cleanup rigmarole is needed for this class, such as
-         * unsubscribing to all those subscriptions you set up in {@link #setMap(GoogleMap)}
-         * or {@link #init(Bundle)}.
+         * unsubscribing to all those subscriptions you set up in
+         * {@link #setMap(GoogleMap)} or {@link #init(Bundle)}.
          */
         public void cleanUp() {
             // The marker always goes away, at the very least.
@@ -277,7 +305,7 @@ public class CentralMap
          *
          * @param g the Graticule (can be null for globalhashes)
          * @param c the Calendar
-         * @param flags the {@link StockService} flags
+         * @param flags the {@link StockWorker} flags
          */
         protected void requestStock(@Nullable Graticule g, @NonNull Calendar c, int flags) {
             mCentralMap.getErrorBanner().animateBanner(false);
@@ -297,18 +325,9 @@ public class CentralMap
          * Called when a stock lookup fails for some reason.
          *
          * @param reqFlags the flags used in the request
-         * @param responseCode the response code (won't be {@link StockService#RESPONSE_OKAY}, for obvious reasons)
+         * @param responseCode the response code (won't be {@link StockWorker#RESPONSE_OKAY}, for obvious reasons)
          */
         public abstract void handleLookupFailure(int reqFlags, int responseCode);
-
-        /**
-         * Called when the menu needs to be built.
-         *
-         * @param c the current Context (the mode may not be fully up by the time this is needed, and thus may not have mCentralMap)
-         * @param inflater a MenuInflater, for convenience
-         * @param menu the Menu that needs inflating.
-         */
-        public abstract void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu);
 
         /**
          * Called when a menu item is selected but CentralMap didn't handle it
@@ -390,7 +409,7 @@ public class CentralMap
             // uses, but we're not concerned with the default icon, now, are we?
             mDestination = mMap.addMarker(new MarkerOptions()
                     .position(info.getFinalDestinationLatLng())
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.final_destination))
+                    .icon(BitmapTools.bitmapDescriptorFromVector(mCentralMap, R.drawable.final_destination))
                     .anchor(0.5f, 1.0f)
                     .title(title)
                     .snippet(snippet));
@@ -407,21 +426,39 @@ public class CentralMap
         }
 
         /**
-         * Sets the title of the map Activity using a String.
+         * Sets the title of the top toolbar using a String.
          *
          * @param title the new title
          */
         protected final void setTitle(String title) {
-            mCentralMap.setTitle(title);
+            mToolbarTop.setTitle(title);
         }
 
         /**
-         * Sets the title of the map Activity using a resource ID.
+         * Sets the title of the top toolbar using a resource ID.
          *
          * @param resid the new title's resource ID
          */
         protected final void setTitle(@StringRes int resid) {
-            mCentralMap.setTitle(resid);
+            mToolbarTop.setTitle(resid);
+        }
+
+        /**
+         * Sets the subtitle of the top toolbar using a String.
+         *
+         * @param title the new title
+         */
+        protected final void setSubtitle(String title) {
+            mToolbarTop.setSubtitle(title);
+        }
+
+        /**
+         * Sets the subtitle of the top toolbar using a resource ID.
+         *
+         * @param resid the new title's resource ID
+         */
+        protected final void setSubtitle(@StringRes int resid) {
+            mToolbarTop.setSubtitle(resid);
         }
 
         /**
@@ -505,7 +542,7 @@ public class CentralMap
 
         // This allows us to NOT blast out responses if the current mode didn't
         // request it.
-        private Set<Long> mWaitingList;
+        private final Set<Long> mWaitingList;
 
         public StockReceiver() {
             mWaitingList = new HashSet<>();
@@ -537,36 +574,37 @@ public class CentralMap
             // Progress goes away!
             mProgress.animate().translationY(-mProgressHeight).alpha(0.0f);
 
-            Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
+            assert bun != null;
             bun.setClassLoader(getClassLoader());
 
             // A stock result arrives!  Let's get data!  That oughta tell us
             // whether or not we're even going to bother with it.
-            int reqFlags = bun.getInt(StockService.EXTRA_REQUEST_FLAGS, 0);
-            long reqId = bun.getLong(StockService.EXTRA_REQUEST_ID, -1);
-            Calendar cal = (Calendar)bun.getSerializable(StockService.EXTRA_DATE);
+            int reqFlags = bun.getInt(StockWorker.EXTRA_REQUEST_FLAGS, 0);
+            long reqId = bun.getLong(StockWorker.EXTRA_REQUEST_ID, -1);
+            Calendar cal = (Calendar)bun.getSerializable(StockWorker.EXTRA_DATE);
 
             // Now, if the flags state this was from the alarm or somewhere else
             // we weren't expecting, give up now.  We don't want it.
-            if((reqFlags & StockService.FLAG_ALARM) != 0) return;
+            if((reqFlags & StockWorker.FLAG_ALARM) != 0) return;
 
             // Well, it's what we're looking for.  What was the result?  The
             // default is RESPONSE_NETWORK_ERROR, as not getting a response code
             // is a Bad Thing(tm).
-            int responseCode = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
+            int responseCode = bun.getInt(StockWorker.EXTRA_RESPONSE_CODE, StockWorker.RESPONSE_NETWORK_ERROR);
 
             // Since the mode switchers wipe all requests from a given mode, all
             // we need for a mode match is whether or not the item exists in the
             // waiting list.
             boolean modeMatches = mWaitingList.remove(reqId);
 
-            if(responseCode == StockService.RESPONSE_OKAY) {
+            if(responseCode == StockWorker.RESPONSE_OKAY) {
                 // Hey, would you look at that, it actually worked!  So, get
                 // the Info out of it and fire it away to the corresponding
                 // CentralMapMode, if applicable.
                 if(modeMatches) {
-                    Info received = bun.getParcelable(StockService.EXTRA_INFO);
-                    Parcelable[] pArr = bun.getParcelableArray(StockService.EXTRA_NEARBY_POINTS);
+                    Info received = bun.getParcelable(StockWorker.EXTRA_INFO);
+                    Parcelable[] pArr = bun.getParcelableArray(StockWorker.EXTRA_NEARBY_POINTS);
 
                     Info[] nearby = null;
                     if(pArr != null)
@@ -583,11 +621,11 @@ public class CentralMap
                 if(modeMatches)
                     mCurrentMode.handleLookupFailure(reqFlags, responseCode);
 
-                if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
+                if((reqFlags & StockWorker.FLAG_USER_INITIATED) != 0) {
                     // ONLY notify the user of an error if they specifically
                     // requested this stock.
                     switch(responseCode) {
-                        case StockService.RESPONSE_NOT_POSTED_YET:
+                        case StockWorker.RESPONSE_NOT_POSTED_YET:
                             // Just in case, change the text if it's today's
                             // date that was requested.  That's a bit clearer.
                             Calendar today = Calendar.getInstance();
@@ -600,12 +638,12 @@ public class CentralMap
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
                             break;
-                        case StockService.RESPONSE_NO_CONNECTION:
+                        case StockWorker.RESPONSE_NO_CONNECTION:
                             mBanner.setText(getString(R.string.error_no_connection));
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
                             break;
-                        case StockService.RESPONSE_NETWORK_ERROR:
+                        case StockWorker.RESPONSE_NETWORK_ERROR:
                             mBanner.setText(getString(R.string.error_server_failure));
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
@@ -618,9 +656,9 @@ public class CentralMap
         }
     }
 
-    private StockReceiver mStockReceiver = new StockReceiver();
+    private final StockReceiver mStockReceiver = new StockReceiver();
 
-    private LocationCallback mLocationCallback = new LocationCallback() {
+    private final LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             // New location!
@@ -653,7 +691,9 @@ public class CentralMap
         } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
-            mLastModeBundle.putParcelable(CentralMapMode.INFO, intent.getBundleExtra(StockService.EXTRA_STUFF).getParcelable(StockService.EXTRA_INFO));
+            Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
+            assert bun != null;
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, bun.getParcelable(StockWorker.EXTRA_INFO));
             mSelectAGraticule = false;
         }
 
@@ -667,16 +707,18 @@ public class CentralMap
         mBanner = findViewById(R.id.error_banner);
         mProgress = findViewById(R.id.progress_container);
 
-        // Apply nighttime mode to the progress background!  Only do that if
-        // this is less than Lollipop, though.  We can apply the color of the
-        // active theme directly in the resource files in Lollipop or later, but
-        // anything beforehand, we need to fake it.
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            if(isNightMode())
-                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background_dark));
-            else
-                mProgress.setBackground(ContextCompat.getDrawable(this, R.drawable.progress_background));
+        mToolbarTop = findViewById(R.id.toolbar_top);
+        mToolbarBottom = findViewById(R.id.toolbar_bottom);
+        if(mToolbarBottom == null) {
+            // If this layout lacks a bottom toolbar, it's one of the wide
+            // versions where the menu is placed in the top bar.  Since neither
+            // use conflicts with each other, we can just make them the same
+            // reference.
+            mToolbarBottom = mToolbarTop;
+        } else {
+            mToolbarBottom.setOnMenuItemClickListener(this);
         }
+        mToolbarTop.setOnMenuItemClickListener(this);
 
         // The progress-o-matic needs to be off-screen.  And, we need to know
         // how much it should shift down to become back on-screen.
@@ -709,7 +751,9 @@ public class CentralMap
         });
 
         // The map also needs to be laid out before we act on it.
-        mapFrag.getView().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        View mapView = mapFrag.getView();
+        assert mapView != null;
+        mapView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             // Got a height!  Hopefully.
             if(!mAlreadyLaidOut) {
                 mAlreadyLaidOut = true;
@@ -797,7 +841,7 @@ public class CentralMap
         // before onResume has a chance to kick in.  This might actually be
         // obsolete with the change away from GoogleApiClient.
         IntentFilter filt = new IntentFilter();
-        filt.addAction(StockService.ACTION_STOCK_RESULT);
+        filt.addAction(StockWorker.ACTION_STOCK_RESULT);
         registerReceiver(mStockReceiver, filt);
     }
 
@@ -821,14 +865,16 @@ public class CentralMap
 
     @Override
     protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
         // An Intent just came in!  That's telling us to go off to a new
         // Graticule.  Since onNewIntent is only called if the Activity's
         // already going, it just means we need to tell ExpeditionMode that it
         // has a new Info (or tell SelectAGraticuleMode to leave first).
-        Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+        Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
         if(bun == null) return;
 
-        Info info = bun.getParcelable(StockService.EXTRA_INFO);
+        Info info = bun.getParcelable(StockWorker.EXTRA_INFO);
         if(info == null) return;
 
         // Presumably, we're ready.  If the user can somehow be in this Activity
@@ -880,73 +926,56 @@ public class CentralMap
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-
-        // Just hand it off to the current mode, it'll know what to do.
-        mCurrentMode.onCreateOptionsMenu(this, inflater, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onMenuItemClick(MenuItem item) {
         // CentralMap should just cover the items that can always be selected no
         // matter what mode we're in.
-        switch(item.getItemId()) {
-            case R.id.action_map_type: {
-                // The map type can be changed at any time, so it has to be
-                // common.  To the alert dialog!
-                MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
-                frag.show(getFragmentManager(), MAP_TYPE_DIALOG);
+        int itemId = item.getItemId();
+        if(itemId == R.id.action_map_type) {
+            // The map type can be changed at any time, so it has to be common.
+            // To the alert dialog!
+            MapTypeDialogFragment frag = MapTypeDialogFragment.newInstance(this);
+            frag.show(getSupportFragmentManager(), MAP_TYPE_DIALOG);
 
-                return true;
-            }
-            case R.id.action_about: {
-                // About is just a dialog with a view.
-                AboutDialogFragment frag = AboutDialogFragment.newInstance();
-                frag.show(getFragmentManager(), ABOUT_DIALOG);
+            return true;
+        } else if(itemId == R.id.action_about) {
+            // About is just a dialog with a view.
+            AboutDialogFragment frag = AboutDialogFragment.newInstance();
+            frag.show(getSupportFragmentManager(), ABOUT_DIALOG);
 
-                return true;
+            return true;
+        } else if(itemId == R.id.action_date) {
+            // The date picker is common to all modes and is best handled by the
+            // Activity itself.
+            if(mLastCalendar == null) {
+                // Of course, we need a date to fill in.
+                mLastCalendar = Calendar.getInstance();
             }
-            case R.id.action_date: {
-                // The date picker is common to all modes and is best handled by
-                // the Activity itself.
-                if(mLastCalendar == null) {
-                    // Of course, we need a date to fill in.
-                    mLastCalendar = Calendar.getInstance();
-                }
 
-                GHDDatePickerDialogFragment frag = GHDDatePickerDialogFragment.newInstance(mLastCalendar);
-                frag.setCallback(this);
-                frag.show(getFragmentManager(), DATE_PICKER_DIALOG);
+            GHDDatePickerDialogFragment frag = GHDDatePickerDialogFragment.newInstance(mLastCalendar);
+            frag.setCallback(this);
+            frag.show(getSupportFragmentManager(), DATE_PICKER_DIALOG);
 
-                return true;
-            }
-            case R.id.action_whatisthis: {
-                // The everfamous and much-beloved "What's Geohashing?" button,
-                // because honestly, this IS sort of confusing if you're
-                // expecting something for geocaching.
-                Intent i = new Intent();
-                i.setAction(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
-                startActivity(i);
-                return true;
-            }
-            case R.id.action_preferences: {
-                // Preferences!  To the Preferencemobile!
-                Intent i = new Intent(this, PreferencesScreen.class);
-                startActivity(i);
-                return true;
-            }
-            case R.id.action_logcat: {
-                LogcatDumper.shareLogcat(this);
+            return true;
+        } else if(itemId == R.id.action_whatisthis) {
+            // The everfamous and much-beloved "What's Geohashing?" button,
+            // because honestly, this IS sort of confusing if you're expecting
+            // something for geocaching.
+            Intent i = new Intent();
+            i.setAction(Intent.ACTION_VIEW);
+            i.setData(Uri.parse("https://geohashing.site/geohashing/How_it_works"));
+            startActivity(i);
+            return true;
+        } else if(itemId == R.id.action_preferences) {
+            // Preferences!  To the Preferencemobile!
+            Intent i = new Intent(this, PreferencesScreen.class);
+            startActivity(i);
+            return true;
+        } else if(itemId == R.id.action_logcat) {
+            LogcatDumper.shareLogcat(this);
 
-                return true;
-            }
-            default:
-                return mCurrentMode.onOptionsItemSelected(item);
+            return true;
         }
+        return mCurrentMode.onOptionsItemSelected(item);
     }
 
     @SuppressLint("CommitPrefEdits")
@@ -986,6 +1015,10 @@ public class CentralMap
                     size = "Off";
                 }
 
+                if(size == null) {
+                    size = "None";
+                }
+
                 edit.putBoolean(GHDConstants.PREF_INFOBOX, size.equals("None"));
             }
 
@@ -995,15 +1028,15 @@ public class CentralMap
         // These prefs either don't exist any more or we found better ways to
         // deal with them.
         edit.remove("DefaultLatitude")
-                .remove("DefaultLongitude")
-                .remove("GlobalhashMode")
-                .remove("RememberGraticule")
-                .remove("ClosestOn")
-                .remove("AlwaysToday")
-                .remove("ClosenessReported");
+            .remove("DefaultLongitude")
+            .remove("GlobalhashMode")
+            .remove("RememberGraticule")
+            .remove("ClosestOn")
+            .remove("AlwaysToday")
+            .remove("ClosenessReported");
 
-        // Anything edit-worthy we just did needs to be committed.
-        edit.commit();
+        // Anything edit-worthy we just did needs to be applied right away.
+        edit.apply();
 
         // We still have that prefs object.  Let's see if we've got a newer
         // version than what we last saw.
@@ -1035,7 +1068,7 @@ public class CentralMap
                 Log.d(DEBUG_TAG, "Newest version with an entry is " + entries.get(0).versionCode);
                 if(entries.get(0).versionCode > lastVersion) {
                     VersionHistoryDialogFragment frag = VersionHistoryDialogFragment.newInstance(entries);
-                    frag.show(getFragmentManager(), VERSION_HISTORY_DIALOG);
+                    frag.show(getSupportFragmentManager(), VERSION_HISTORY_DIALOG);
                 }
             }
         }
@@ -1095,7 +1128,7 @@ public class CentralMap
      *
      * @param g the Graticule (can be null for globalhashes)
      * @param cal the date
-     * @param flags the {@link StockService} flags
+     * @param flags the {@link StockWorker} flags
      */
     private void requestStock(@Nullable Graticule g, @NonNull Calendar cal, int flags) {
         // Progress shows up!
@@ -1104,15 +1137,15 @@ public class CentralMap
         // As a request ID, we'll use the current date, because why not?
         long date = cal.getTimeInMillis();
 
-        Intent i = new Intent(this, StockService.class)
-                .putExtra(StockService.EXTRA_DATE, cal)
-                .putExtra(StockService.EXTRA_GRATICULE, g)
-                .putExtra(StockService.EXTRA_REQUEST_ID, date)
-                .putExtra(StockService.EXTRA_REQUEST_FLAGS, flags);
+        Intent i = new Intent(this, StockWorker.class)
+                .putExtra(StockWorker.EXTRA_DATE, cal)
+                .putExtra(StockWorker.EXTRA_GRATICULE, g)
+                .putExtra(StockWorker.EXTRA_REQUEST_ID, date)
+                .putExtra(StockWorker.EXTRA_REQUEST_FLAGS, flags);
 
         mStockReceiver.addToWaitingList(date);
 
-        StockService.enqueueWork(this, i);
+        StockWorker.enqueueWork(this, i);
     }
 
     /**
@@ -1180,6 +1213,7 @@ public class CentralMap
             } else {
                 mCurrentMode.setMap(mMap);
                 mCurrentMode.setCentralMap(this);
+                mCurrentMode.setToolbars(mToolbarTop, mToolbarBottom);
                 mCurrentMode.init(mLastModeBundle);
             }
 
@@ -1277,6 +1311,7 @@ public class CentralMap
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if(permissions.length <= 0 || grantResults.length <= 0)
             return;
 
@@ -1289,7 +1324,7 @@ public class CentralMap
 
             PermissionDeniedDialogFragment frag = new PermissionDeniedDialogFragment();
             frag.setArguments(args);
-            frag.show(getFragmentManager(), "PermissionDeniedDialog");
+            frag.show(getSupportFragmentManager(), "PermissionDeniedDialog");
 
             mPermissionsDenied = true;
         } else {
@@ -1300,7 +1335,8 @@ public class CentralMap
             mPermissionsDenied = false;
         }
 
-        if(mCurrentMode != null) mCurrentMode.permissionsDenied(mPermissionsDenied);
+        if(mCurrentMode != null)
+            mCurrentMode.permissionsDenied(mPermissionsDenied);
     }
 
     private void updateLastGraticule(@NonNull Info info) {

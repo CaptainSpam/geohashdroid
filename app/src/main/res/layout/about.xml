@@ -11,13 +11,14 @@
         android:background="@color/about_background"
         android:orientation="horizontal">
 
+        <!-- TODO: Make a dedicated About icon, rather than just reuse the launcher? -->
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_margin="@dimen/standard_padding"
             android:contentDescription="@string/about_icon_description"
-            android:src="@mipmap/ic_launcher_new"/>
+            android:src="@mipmap/ic_launcher"/>
 
         <LinearLayout
             android:layout_width="0dp"

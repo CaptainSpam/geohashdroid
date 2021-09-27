@@ -89,15 +89,6 @@ public class KnownLocationPinData {
     }
 
     /**
-     * Gets the pin's hue.
-     *
-     * @return the hue
-     */
-    public int getHue() {
-        return mHue;
-    }
-
-    /**
      * Gets the actual pin color.
      *
      * @return the color

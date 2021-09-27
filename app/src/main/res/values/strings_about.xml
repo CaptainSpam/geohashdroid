@@ -11,4 +11,6 @@
 
     <string name="url_geohash">http://xkcd.com</string>
     <string name="url_project">https://github.com/CaptainSpam/geohashdroid</string>
+
+    <string name="version_title_wrapper">\"%1$s\"</string>
 </resources>

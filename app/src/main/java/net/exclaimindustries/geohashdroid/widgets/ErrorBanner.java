@@ -10,18 +10,16 @@ package net.exclaimindustries.geohashdroid.widgets;
 
 import android.app.Activity;
 import android.content.Context;
-import android.preference.PreferenceManager;
 import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.GHDConstants;
 
 /**
  * <p>
@@ -36,11 +34,10 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
  * </p>
  */
 public class ErrorBanner extends LinearLayout {
-    private TextView mMessage;
-    private ImageButton mClose;
+    private final TextView mMessage;
+    private final AppCompatImageButton mClose;
 
     private boolean mAlreadyLaidOut = false;
-    private boolean mIsNightMode;
 
     /**
      * Use these in {@link #setErrorStatus(Status)} to set a premade
@@ -74,13 +71,6 @@ public class ErrorBanner extends LinearLayout {
             // Away it goes!
             animateBanner(false);
         });
-
-        // Night?  Maybe?
-        mIsNightMode = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(GHDConstants.PREF_NIGHT_MODE, false);
-
-        // Set the close button as need be.
-        if(mIsNightMode)
-            mClose.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.cancel_button_dark));
 
         // On startup, we want to make sure the view is off-screen until we're
         // told different.
@@ -154,16 +144,16 @@ public class ErrorBanner extends LinearLayout {
 
         switch(b) {
             case NORMAL:
-                color = (mIsNightMode ? R.color.error_banner_normal_dark : R.color.error_banner_normal);
+                color = R.color.error_banner_normal;
                 break;
             case WARNING:
-                color = (mIsNightMode ? R.color.error_banner_warning_dark : R.color.error_banner_warning);
+                color = R.color.error_banner_warning;
                 break;
             case ERROR:
-                color = (mIsNightMode ? R.color.error_banner_error_dark : R.color.error_banner_error);
+                color = R.color.error_banner_error;
                 break;
             case VICTORY:
-                color = (mIsNightMode ? R.color.error_banner_victory_dark : R.color.error_banner_victory);
+                color = R.color.error_banner_victory;
         }
 
         setBackgroundErrorColor(color);

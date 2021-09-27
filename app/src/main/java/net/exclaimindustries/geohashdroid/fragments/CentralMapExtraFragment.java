@@ -11,8 +11,6 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.view.View;
 
 import com.google.android.gms.location.LocationListener;
@@ -22,13 +20,17 @@ import net.exclaimindustries.geohashdroid.activities.WikiActivity;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.PermissionsDeniedListener;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
 /**
  * This is the base class from which the two extra Fragments {@link net.exclaimindustries.geohashdroid.activities.CentralMap}
  * can use derive.  It simply allows better communication between them and
  * {@link net.exclaimindustries.geohashdroid.util.ExpeditionMode}.
  */
 public abstract class CentralMapExtraFragment
-        extends BaseGHDThemeFragment
+        extends Fragment
         implements LocationListener, PermissionsDeniedListener {
     /**
      * The various types of CentralMapExtraFragment that can exist.  It's either
@@ -119,7 +121,7 @@ public abstract class CentralMapExtraFragment
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
         // Remember that last info.  Owing to how ExpeditionMode works, it might

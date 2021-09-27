@@ -6,7 +6,6 @@
 
     <!-- api_map_key should be defined elsewhere and not uploaded to Git -->
 
-    <string name="title_stockservice">GHD Stock Checking Service</string>
     <string name="title_alarmservice">GHD Stock Alarm Service</string>
     <string name="title_wikiservice">GHD Wiki Service</string>
     <string name="title_logindialog">Update Wiki Login</string>
@@ -17,10 +16,11 @@
     <string name="title_known_locations">Known Locations Manager</string>
 
     <string name="title_part_globalhash">Globalhash</string>
+    <string name="subtitle_part_retrohash">(retrohash)</string>
 
     <string name="graticule_label">Graticule</string>
     <string name="exit_graticule_label">Use This</string>
-    <string name="date_label">Date</string>
+    <string name="date_label">Change Date</string>
     <string name="wiki_label">Wiki</string>
     <string name="what_label">What\'s Geohashing?</string>
 
@@ -98,10 +98,9 @@
     <string name="menu_item_radar">Radar</string>
     <string name="menu_item_tomorrow">Try Tomorrow</string>
 
-    <string name="menu_item_map_type_street">Street (day)</string>
+    <string name="menu_item_map_type_street">Street</string>
     <string name="menu_item_map_type_sat">Satellite</string>
     <string name="menu_item_map_type_terrain">Terrain</string>
-    <string name="menu_item_map_type_night">Street (night)</string>
 
     <string name="infobox_accuracy_low">(Accuracy low)</string>
     <string name="infobox_accuracy_really_low">(Accuracy really low)</string>
@@ -124,6 +123,9 @@
 
     <string name="notification_title">Fetching stocks&#8230;</string>
     <string name="notification_detail">(now checking %1$s)</string>
+
+    <string name="notification_action_retry">Retry</string>
+    <string name="notification_action_resume">Resume</string>
 
     <string name="channel_wiki_title">Wiki-related</string>
     <string name="channel_wiki_description">Notifications regarding active wiki actions, if wiki posts are queued, wiki posting errors, etc.</string>

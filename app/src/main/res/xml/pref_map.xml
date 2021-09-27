@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <ListPreference
+        android:defaultValue="System"
+        android:dialogTitle="@string/pref_daynight_dialogtitle"
+        android:entries="@array/pref_daynight_entries"
+        android:entryValues="@array/pref_daynight_values"
+        android:key="DayNight"
+        android:title="@string/pref_daynight_title" />
+    <ListPreference
         android:defaultValue="UseClosest"
         android:dialogTitle="@string/pref_startup_dialogtitle"
         android:entries="@array/pref_startup_entries"

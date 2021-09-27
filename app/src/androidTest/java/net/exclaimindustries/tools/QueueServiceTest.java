@@ -6,14 +6,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.rule.ServiceTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import android.util.Log;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +27,6 @@ import static org.junit.Assert.*;
  * etc.  This does not do anything that involves serialization or storage; that
  * will be covered in their own tests with the specific implementations.
  */
-@RunWith(AndroidJUnit4.class)
 public class QueueServiceTest {
     @Rule
     public final ServiceTestRule mServiceRule = new ServiceTestRule();

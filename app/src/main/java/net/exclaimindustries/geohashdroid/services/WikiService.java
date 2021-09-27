@@ -92,7 +92,7 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static class ConnectivityWorker extends Worker {
         public ConnectivityWorker(@NonNull Context context,
-                           @NonNull WorkerParameters workerParams) {
+                                  @NonNull WorkerParameters workerParams) {
             super(context, workerParams);
         }
 
@@ -165,6 +165,14 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static final String EXTRA_IMAGE_DATA = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_DATA";
 
+    /**
+     * The {@link net.exclaimindustries.geohashdroid.wiki.WikiImageUtils.ImageInfo}
+     * object associated with an image to be uploaded.  This gets generated in
+     * WikiFragment due to the same security exception reasons as
+     * {@link #EXTRA_IMAGE_DATA}.
+     */
+    public static final String EXTRA_IMAGE_INFO = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_INFO";
+
     /** 
      * The user's current geographic coordinates.  Should be a {@link Location}.
      * If not given, will assume the user's location is/was unknown.  If posting
@@ -218,6 +226,7 @@ public class WikiService extends PlainSQLiteQueueService {
         Calendar timestamp;
         Uri imageLocation;
         byte[] imageData;
+        WikiImageUtils.ImageInfo imageInfo;
         boolean includeLocation;
 
         try {
@@ -227,6 +236,7 @@ public class WikiService extends PlainSQLiteQueueService {
             timestamp = (Calendar) i.getSerializableExtra(EXTRA_TIMESTAMP);
             imageLocation = i.getParcelableExtra(EXTRA_IMAGE);
             imageData = i.getByteArrayExtra(EXTRA_IMAGE_DATA);
+            imageInfo = i.getParcelableExtra(EXTRA_IMAGE_INFO);
             includeLocation = i.getBooleanExtra(EXTRA_INCLUDE_LOCATION, true);
         } catch(ClassCastException cce) {
             // If any of those threw a CCE, bail out.
@@ -289,13 +299,15 @@ public class WikiService extends PlainSQLiteQueueService {
             // ten or so arguments.  If anyone else has a better idea, feel free
             // to suggest.
             if(imageLocation != null) {
-                // Let's say there's an image specified.  So, we try to look it
-                // up via readImageInfo.
-                WikiImageUtils.ImageInfo imageInfo;
-                imageInfo = WikiImageUtils.readImageInfo(imageLocation, loc, timestamp);
+                // If there's an image location, the image info better be
+                // defined.
+                if(imageInfo == null) {
+                    throw new IllegalArgumentException("There's an image location, but there's no image info?");
+                }
 
-                // Get the image's filename, too.  Well, that is, the name it'll
-                // have on the wiki.
+                // Let's say there's an image specified.  Get the image's
+                // filename, too.  Well, that is, the name it'll have on the
+                // wiki.
                 String wikiName = WikiImageUtils.getImageWikiName(info, imageInfo, username);
 
                 // Make sure the image doesn't already exist.  If it does, we
@@ -517,6 +529,25 @@ public class WikiService extends PlainSQLiteQueueService {
                 toReturn.put("info", infoObj);
             }
 
+            // IMAGE info time!
+            WikiImageUtils.ImageInfo imageInfo = i.getParcelableExtra(EXTRA_IMAGE_INFO);
+            if(imageInfo != null) {
+                JSONObject imageInfoObj = new JSONObject();
+                imageInfoObj.put("uri", imageInfo.uri.toString());
+                imageInfoObj.put("timestamp", imageInfo.timestamp);
+
+                Location imageLocation = imageInfo.location;
+                if(imageLocation != null) {
+                    JSONObject locationObj = new JSONObject();
+                    locationObj.put("latitude", imageLocation.getLatitude());
+                    locationObj.put("longitude", imageLocation.getLongitude());
+
+                    imageInfoObj.put("location", locationObj);
+                }
+
+                toReturn.put("imageInfo", imageInfoObj);
+            }
+
             // Finally, the message.
             String message = i.getStringExtra(EXTRA_MESSAGE);
             if(message != null) {
@@ -613,6 +644,28 @@ public class WikiService extends PlainSQLiteQueueService {
                 }
             }
 
+            // Image info, as a mess of not quite so many things.
+            JSONObject imageInfoObj = incoming.optJSONObject("imageInfo");
+            if(imageInfoObj != null) {
+                try {
+                    Uri uri = Uri.parse(imageInfoObj.getString("uri"));
+                    long imageTimestamp = imageInfoObj.getLong("timestamp");
+
+                    Location imageLocation = null;
+                    JSONObject locationObj = incoming.optJSONObject("location");
+                    if(locationObj != null) {
+                        imageLocation = new Location("");
+                        imageLocation.setLatitude(locationObj.getDouble("latitude"));
+                        imageLocation.setLongitude(locationObj.getDouble("longitude"));
+                    }
+
+                    toReturn.putExtra(EXTRA_IMAGE_INFO,
+                            new WikiImageUtils.ImageInfo(uri, imageLocation, imageTimestamp));
+                } catch(JSONException je) {
+                    Log.w(DEBUG_TAG, "Couldn't parse something from the ImageInfo object, giving up and ignoring...", je);
+                }
+            }
+
             // Finally, the message.
             String message = incoming.optString("message");
             if(!message.isEmpty()) {
@@ -639,7 +692,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_title))
                 .setContentText("")
-                .setSmallIcon(R.drawable.ic_stat_file_file_upload);
+                .setSmallIcon(R.drawable.notification_icon_upload);
 
         mNotificationManager.notify(R.id.wiki_working_notification, builder.build());
     }
@@ -660,7 +713,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(false)
                 .setContentTitle(getString(R.string.wiki_notification_image_error_title))
                 .setContentText(getString(R.string.wiki_notification_image_error_content))
-                .setSmallIcon(R.drawable.ic_stat_alert_warning);
+                .setSmallIcon(R.drawable.notification_icon_warning);
 
         mNotificationManager.notify(R.id.wiki_image_error_notification, builder.build());
     }
@@ -670,8 +723,10 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
                 .setContentText(getString(R.string.wiki_notification_waiting_for_connection_content))
-                .setSmallIcon(R.drawable.ic_stat_navigation_more_horiz)
-                .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME));
+                .setSmallIcon(R.drawable.notification_icon_dots_horiz)
+                .addAction(R.drawable.notification_icon_refresh,
+                        getString(R.string.notification_action_resume),
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
         mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
 
@@ -705,7 +760,7 @@ public class WikiService extends PlainSQLiteQueueService {
         NotificationCompat.Builder builder = getFreshNotificationBuilder()
                 .setContentTitle(getString(R.string.wiki_notification_error_title))
                 .setContentText(reason)
-                .setSmallIcon(R.drawable.ic_stat_alert_error);
+                .setSmallIcon(R.drawable.notification_icon_error);
 
         if (actions.length >= 1 && actions[0] != null) {
             builder.setContentIntent(actions[0].actionIntent);
@@ -730,8 +785,10 @@ public class WikiService extends PlainSQLiteQueueService {
                 .setOngoing(true)
                 .setContentTitle(getString(R.string.wiki_notification_throttle_title))
                 .setContentText(getString(R.string.wiki_notification_throttle_content))
-                .setContentIntent(getBasicCommandIntent(QueueService.COMMAND_RESUME))
-                .setSmallIcon(R.drawable.ic_stat_av_av_timer);
+                .setSmallIcon(R.drawable.notification_icon_timer)
+                .addAction(R.drawable.notification_icon_refresh,
+                        getString(R.string.notification_action_retry),
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
         mNotificationManager.notify(R.id.wiki_throttle_notification, builder.build());
 
@@ -791,30 +848,29 @@ public class WikiService extends PlainSQLiteQueueService {
             id = we.getErrorTextId();
 
         NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
-        switch(id) {
-            case R.string.wiki_conn_anon_pic_error:
-            case R.string.wiki_error_bad_password:
-            case R.string.wiki_error_bad_username:
-            case R.string.wiki_error_username_nonexistant:
-            case R.string.wiki_error_bad_login:
-                toReturn[0] = new NotificationAction(
-                        0,
-                        PendingIntent.getActivity(this,
-                                0,
-                                new Intent(this, LoginPromptDialog.class),
-                                PendingIntent.FLAG_UPDATE_CURRENT),
-                        getString(R.string.wiki_notification_action_update_login)
-                );
+        if(id == R.string.wiki_conn_anon_pic_error
+                || id == R.string.wiki_error_bad_password
+                || id == R.string.wiki_error_bad_username
+                || id == R.string.wiki_error_username_nonexistant
+                || id == R.string.wiki_error_bad_login) {
+            toReturn[0] = new NotificationAction(
+                    0,
+                    PendingIntent.getActivity(this,
+                            0,
+                            new Intent(this, LoginPromptDialog.class),
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                                    | PendingIntent.FLAG_IMMUTABLE),
+                    getString(R.string.wiki_notification_action_update_login)
+            );
 
-                toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
-                break;
-            default:
-                // As a general case (or if a null was passed in), we just use
-                // the standard retry, skip, or abort choices.  This works for a
-                // surprising amount of cases, it turns out.  Simplicity wins!
-                toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
-                toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
-                toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
+            toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
+        } else {
+            // As a general case (or if a null was passed in), we just use the
+            // standard retry, skip, or abort choices.  This works for a
+            // surprising amount of cases, it turns out.  Simplicity wins!
+            toReturn[0] = getBasicNotificationAction(COMMAND_RESUME);
+            toReturn[1] = getBasicNotificationAction(COMMAND_RESUME_SKIP_FIRST);
+            toReturn[2] = getBasicNotificationAction(COMMAND_ABORT);
         }
 
         return toReturn;
@@ -824,8 +880,9 @@ public class WikiService extends PlainSQLiteQueueService {
         // This will just call back to the service with the given command.
         return PendingIntent.getService(this,
                 command,
-                new Intent(this, WikiService.class).putExtra(QueueService.COMMAND_EXTRA, command),
-                0);
+                new Intent(this, WikiService.class)
+                        .putExtra(QueueService.COMMAND_EXTRA, command),
+                PendingIntent.FLAG_IMMUTABLE);
     }
 
     private NotificationAction getBasicNotificationAction(int command) {

@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 /**
  * Contains a static method for parsing a hex string as if it were the
- * fractional part of a number and returning its fractional float value.
+ * fractional part of a number and returning its fractional double value.
  * 
  * @author Nicholas Killewald
  */
@@ -20,11 +20,9 @@ public class HexFraction {
      * Converts a string, presumably the fractional part of a hex number, into
      * its fractional decimal counterpart. Don't feed it a negative.
      * 
-     * @param s
-     *            the hex string to convert
-     * @return a float value of the hex string
-     * @throws NumberFormatException
-     *             parsing error with the string
+     * @param s the hex string to convert
+     * @return a double value of the hex string
+     * @throws NumberFormatException parsing error with the string
      */
     public static double calculate(String s) throws NumberFormatException {
         // We're dealing with values to the precision of 1/(16^16). I think
@@ -42,6 +40,9 @@ public class HexFraction {
             BigDecimal d1 = new BigDecimal(part);
             BigDecimal d2 = new BigDecimal(16);
             d2 = d2.pow(i + 1);
+            // The version of BigDecimal.divide without a rounding method
+            // auto-adjusts for scale, which is why it's used here.
+            //noinspection BigDecimalMethodWithoutRoundingCalled
             curvalue = curvalue.add(d1.divide(d2));
             // Then repeat for the entire string.
         }

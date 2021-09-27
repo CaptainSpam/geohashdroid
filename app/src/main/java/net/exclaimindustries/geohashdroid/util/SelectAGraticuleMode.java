@@ -8,15 +8,9 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
-import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -30,12 +24,16 @@ import com.google.android.gms.maps.model.PolygonOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
-import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.GraticulePicker;
 import net.exclaimindustries.tools.LocationUtil;
 
 import java.util.Calendar;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 /**
  * <code>SelectAGraticuleMode</code> encompasses the user selecting a Graticule
@@ -142,7 +140,11 @@ public class SelectAGraticuleMode
         mPicker.setClosestHidden(arePermissionsDenied());
         mPicker.setListener(this);
 
+        // Menu time!
+        populateMenu();
+
         setTitle(R.string.title_graticule_picker);
+        setSubtitle("");
 
         mInitComplete = true;
     }
@@ -204,19 +206,17 @@ public class SelectAGraticuleMode
         permissionsDenied(arePermissionsDenied());
     }
 
-    @Override
-    public void onCreateOptionsMenu(Context c, MenuInflater inflater, Menu menu) {
-        inflater.inflate(R.menu.centralmap_selectagraticule, menu);
+    private void populateMenu() {
+        mToolbarBottom.getMenu().clear();
+        mToolbarBottom.inflateMenu(R.menu.centralmap_selectagraticule);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_exitgraticule: {
-                // We've left Select-A-Graticule for whatever reason.
-                mCentralMap.exitSelectAGraticuleMode();
-                return true;
-            }
+        if(item.getItemId() == R.id.action_exitgraticule) {
+            // We've left Select-A-Graticule for whatever reason.
+            mCentralMap.exitSelectAGraticuleMode();
+            return true;
         }
 
         return false;
@@ -225,7 +225,7 @@ public class SelectAGraticuleMode
     @Override
     public void handleInfo(Info info, Info[] nearby, int flags) {
         if(mInitComplete) {
-            if((flags & StockService.FLAG_FIND_CLOSEST) == StockService.FLAG_FIND_CLOSEST) {
+            if((flags & StockWorker.FLAG_FIND_CLOSEST) == StockWorker.FLAG_FIND_CLOSEST) {
                 mCentralMap.getErrorBanner().animateBanner(false);
 
                 // This is a result from Find Closest.  To the findermatron!
@@ -257,13 +257,13 @@ public class SelectAGraticuleMode
     public void handleLookupFailure(int reqFlags, int responseCode) {
         // If this was a Find Closest lookup, we need to make sure the button on
         // the fragment is re-enabled.
-        if((reqFlags & StockService.FLAG_FIND_CLOSEST) == StockService.FLAG_FIND_CLOSEST) {
+        if((reqFlags & StockWorker.FLAG_FIND_CLOSEST) == StockWorker.FLAG_FIND_CLOSEST) {
             clearFindClosest();
         }
     }
 
     @Override
-    public void onMapClick(LatLng latLng) {
+    public void onMapClick(@NonNull LatLng latLng) {
         // Okay, so now we've got a Graticule.  Well, we will right here:
         Graticule g = new Graticule(latLng);
         removeDestinationPoint();
@@ -281,7 +281,7 @@ public class SelectAGraticuleMode
         removeDestinationPoint();
 
         // Fetch the stock, too.
-        requestStock(g, mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_SELECT_A_GRATICULE);
+        requestStock(g, mCalendar, StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_SELECT_A_GRATICULE);
     }
 
     @Override
@@ -323,7 +323,7 @@ public class SelectAGraticuleMode
         banner.animateBanner(true);
 
         mLastLocation = loc;
-        requestStock(new Graticule(loc), mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+        requestStock(new Graticule(loc), mCalendar, StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_FIND_CLOSEST);
     }
 
     private void outlineGraticule(Graticule g) {
@@ -386,7 +386,7 @@ public class SelectAGraticuleMode
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(@NonNull Location location) {
         if(mWaitingOnFindClosest) {
             mWaitingOnFindClosest = false;
             if(!isCleanedUp()) {

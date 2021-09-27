@@ -38,6 +38,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This represents a single known location.  It's got a LatLng and a name, as
@@ -499,9 +500,9 @@ public class KnownLocation implements Parcelable {
         // we're expecting them to be identical.
         final KnownLocation other = (KnownLocation)o;
 
-        return (mName == null ? other.mName == null : mName.equals(other.mName))
+        return (Objects.equals(mName, other.mName))
                 && mRange == other.mRange
-                && (mLocation == null ? other.mLocation == null : mLocation.equals(other.mLocation));
+                && (Objects.equals(mLocation, other.mLocation));
     }
 
     @Override

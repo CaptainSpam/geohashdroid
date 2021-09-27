@@ -84,140 +84,107 @@ public class WikiUtils {
      * This presumes the version will always come in the form of, for instance,
      * "MediaWiki 1.26.2-extrainfo".
      */
-    @SuppressWarnings("unused")
     public static class WikiVersionData {
-        private final String mRawResult;
-        private String mGeneratorName = "";
-        private String mRawVersion = "";
-        private int mMajor;
-        private int mMinor;
-        private int mRevision;
-        private String mAdditional = "";
-        private boolean mValid = true;
+        /**
+         * Whether or not this object is valid.  It will be invalid if the
+         * string given as input doesn't match the standard version format (i.e.
+         * "MediaWiki 1.26.2-extrainfo").  If this is false, assume nothing else
+         * in this object can be trusted.
+         */
+        public final boolean valid;
+        /**
+         * The raw output from the "generator" part of SiteInfo.  That is, this
+         * is the unparsed result, i.e. "MediaWiki 1.26.2-extrainfo".
+         */
+        public final String rawResult;
+        /**
+         * The generator name (the name of the software itself).  In most cases,
+         * this will be "MediaWiki".
+         */
+        public final String generatorName;
+        /**
+         * The raw version string.  That is, anything past the generator name,
+         * i.e. "1.26.2-extrainfo".
+         */
+        public final String rawVersion;
+        /**
+         * The major version number.  This will probably be 1, unless the
+         * MediaWiki team surprises us with MediaWiki 2 all of a sudden.  If
+         * they do THAT, chances are this will break anyway.
+         */
+        public final int majorVersion;
+        /**
+         * The minor version number.  For example, if the version string is
+         * "1.26.2-extrainfo", this will return 26.
+         */
+        public final int minorVersion;
+        /**
+         * The revision version number.  For example, if the version string is
+         * "1.26.2-extrainfo", this will return 2.
+         */
+        public final int revision;
+        /**
+         * Anything after the revision version number.  For example, if the
+         * version string is "1.26.2-extrainfo", this will return "extrainfo".
+         * Note that this WILL chop off the leading hyphen, if one exists.  This
+         * can be blank.
+         */
+        public final String additional;
 
         private static final Pattern RE_VERSION = Pattern.compile("(.*)\\s+((\\d+)\\.(\\d+)\\.(\\d+)(.*)?)");
 
         public WikiVersionData(@NonNull String input) {
             // Let's get parsing!
-            mRawResult = input;
+            rawResult = input;
 
             Matcher match = RE_VERSION.matcher(input);
 
             // If it didn't match, it's invalid.
             if(!match.matches()) {
-                mValid = false;
+                valid = false;
+                generatorName = "";
+                rawVersion = "";
+                majorVersion = -1;
+                minorVersion = -1;
+                revision = -1;
+                additional = "";
                 return;
             }
+
+            boolean localValid = true;
 
             // Now, assuming these regexes worked...
-            mGeneratorName = match.group(1);
-            mRawVersion = match.group(2);
+            generatorName = match.group(1);
+            rawVersion = match.group(2);
+
+            int localMajor = -1;
+            int localMinor = -1;
+            int localRevision = -1;
 
             try {
-                mMajor = Integer.parseInt(Objects.requireNonNull(match.group(3)));
-                mMinor = Integer.parseInt(Objects.requireNonNull(match.group(4)));
-                mRevision = Integer.parseInt(Objects.requireNonNull(match.group(5)));
-            } catch (NumberFormatException nfe) {
-                // Those BETTER be ints.
-                mValid = false;
-                return;
+                localMajor = Integer.parseInt(Objects.requireNonNull(match.group(3)));
+                localMinor = Integer.parseInt(Objects.requireNonNull(match.group(4)));
+                localRevision = Integer.parseInt(Objects.requireNonNull(match.group(5)));
+            } catch (NumberFormatException | NullPointerException nfe) {
+                // Those BETTER be ints, and enough groups.
+                localValid = false;
             }
 
-            mAdditional = match.group(6);
+            majorVersion = localMajor;
+            minorVersion = localMinor;
+            revision = localRevision;
+
+            String localAdditional = match.group(6);
             // The additional part doesn't need to exist.
-            if(mAdditional == null)
-                mAdditional = "";
+            if(localAdditional == null)
+                localAdditional = "";
 
             // For convenience, if there's a dash at the start, chop it off.
-            if(mAdditional.startsWith("-"))
-                mAdditional = mAdditional.substring(1);
-        }
+            if(localAdditional.startsWith("-"))
+                localAdditional = localAdditional.substring(1);
 
-        /**
-         * Returns whether or not this object is valid.  It will be invalid if
-         * the string given as input doesn't match the standard version format
-         * (i.e. "MediaWiki 1.26.2-extrainfo").
-         *
-         * @return true if valid, false if not
-         */
-        public boolean isValid() {
-            return mValid;
-        }
-
-        /**
-         * Gets the raw output from the "generator" part of SiteInfo.  That is,
-         * this is the unparsed result, i.e. "MediaWiki 1.26.2-extrainfo".
-         *
-         * @return the raw version output
-         */
-        @NonNull
-        public String getRawResult() {
-            return mRawResult;
-        }
-
-        /**
-         * Gets the generator name (the name of the software itself).  In most
-         * cases, this will be "MediaWiki".
-         *
-         * @return the generator name
-         */
-        @NonNull
-        public String getGeneratorName() {
-            return mGeneratorName;
-        }
-
-        /**
-         * Gets the raw version string.  That is, anything past the generator
-         * name, i.e. "1.26.2-extrainfo".
-         *
-         * @return the raw version string
-         */
-        @NonNull
-        public String getRawVersion() {
-            return mRawVersion;
-        }
-
-        /**
-         * Gets the major version number.  This will probably be 1, unless the
-         * MediaWiki team surprises us with MediaWiki 2 all of a sudden.  If
-         * they do THAT, chances are this will break anyway.
-         *
-         * @return the major version number
-         */
-        public int getMajorVersion() {
-            return mMajor;
-        }
-
-        /**
-         * Gets the minor version number.  For example, if the version string is
-         * "1.26.2-extrainfo", this will return 26.
-         *
-         * @return the minor version number
-         */
-        public int getMinorVersion() {
-            return mMinor;
-        }
-
-        /**
-         * Gets the revision version number.  For example, if the version string
-         * is "1.26.2-extrainfo", this will return 2.
-         *
-         * @return the revision version number
-         */
-        public int getRevision() {
-            return mRevision;
-        }
-
-        /**
-         * Gets anything after the revision version number.  For example, if the
-         * version string is "1.26.2-extrainfo", this will return "extrainfo".
-         * Note that this WILL chop off the leading hyphen, if one exists.
-         *
-         * @return whatever extra junk is after the revision number (could be blank)
-         */
-        @NonNull
-        public String getAdditional() {
-            return mAdditional;
+            additional = localAdditional;
+            valid = localValid;
         }
     }
 
@@ -227,8 +194,6 @@ public class WikiUtils {
     private static class WikiResponse {
         Document document;
         Element rootElem;
-        boolean hasError = false;
-        int errorTextId;
     }
 
     /**
@@ -290,9 +255,7 @@ public class WikiUtils {
 
         toReturn.rootElem = toReturn.document.getDocumentElement();
         if(doesResponseHaveError(toReturn.rootElem)) {
-            toReturn.hasError = true;
-            toReturn.errorTextId = getErrorTextId(findErrorCode(toReturn.rootElem));
-            throw new WikiException(toReturn.errorTextId);
+            throw new WikiException(getErrorTextId(findErrorCode(toReturn.rootElem)));
         }
 
         return toReturn;
@@ -546,11 +509,11 @@ public class WikiUtils {
         // has upgraded, this will probably go away.
         WikiVersionData version = getWikiVersion(httpclient);
 
-        if(!version.isValid()) {
+        if(!version.valid) {
             throw new WikiException(R.string.wiki_error_unknown);
         }
 
-        if(version.getMinorVersion() >= 27) {
+        if(version.minorVersion >= 27) {
             // The new style.  This one requires the clientLogin action.  I'm
             // really hoping I won't have to implement a CAPTCHA or 2FA
             // interface for this, else we're going to have some serious issues.
