@@ -60,7 +60,7 @@ import androidx.work.WorkerParameters;
  * <code>AlarmService</code> is a background service that retrieves the current stock
  * value around 9:30am ET (that is, a reasonable time after the opening of the
  * New York Stock Exchange, at which time the DJIA opening value is known).
- * It makes requests to {@link StockService}, which then stores the result away
+ * It makes requests to {@link StockWorker}, which then stores the result away
  * in the cache so that later instances of hashing will have that data available
  * right away.
  * </p>
@@ -197,13 +197,13 @@ public class AlarmService extends JobIntentService {
         public void onReceive(Context context, Intent intent) {
             // Check the Intent for the alarm flag.  We'll just straight give up
             // if it's not an alarm, since we don't really care.
-            Bundle stuff = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            Bundle stuff = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
             int flags = 0;
             if(stuff != null) {
-                flags = stuff.getInt(StockService.EXTRA_REQUEST_FLAGS, 0);
+                flags = stuff.getInt(StockWorker.EXTRA_REQUEST_FLAGS, 0);
             }
 
-            if((flags & StockService.FLAG_ALARM) != 0)
+            if((flags & StockWorker.FLAG_ALARM) != 0)
             {
                 Log.d(DEBUG_TAG, "StockService returned with an alarming response!");
                 
@@ -416,13 +416,13 @@ public class AlarmService extends JobIntentService {
         if(g.uses30WRule()) cal.add(Calendar.DATE, 1);
         cal = getMostRecentStockDate(cal);
 
-        Intent request = new Intent(this, StockService.class);
-        request.setAction(StockService.ACTION_STOCK_REQUEST)
-            .putExtra(StockService.EXTRA_GRATICULE, g)
-            .putExtra(StockService.EXTRA_DATE, cal)
-            .putExtra(StockService.EXTRA_REQUEST_ID, cal.getTimeInMillis() / 1000)
-            .putExtra(StockService.EXTRA_REQUEST_FLAGS, StockService.FLAG_ALARM)
-            .putExtra(StockService.EXTRA_RESPOND_TO, StockReceiver.class);
+        Intent request = new Intent(this, StockWorker.class);
+        request.setAction(StockWorker.ACTION_STOCK_REQUEST)
+            .putExtra(StockWorker.EXTRA_GRATICULE, g)
+            .putExtra(StockWorker.EXTRA_DATE, cal)
+            .putExtra(StockWorker.EXTRA_REQUEST_ID, cal.getTimeInMillis() / 1000)
+            .putExtra(StockWorker.EXTRA_REQUEST_FLAGS, StockWorker.FLAG_ALARM)
+            .putExtra(StockWorker.EXTRA_RESPOND_TO, StockReceiver.class);
         
         // The notification goes up first, if need be.
         if(HashBuilder.getStoredStock(this, cal) != null) {
@@ -439,7 +439,7 @@ public class AlarmService extends JobIntentService {
         }
         
         // THEN we send the request.
-        StockService.enqueueWork(this, request);
+        StockWorker.enqueueWork(this, request);
     }
 
     /**
@@ -511,7 +511,7 @@ public class AlarmService extends JobIntentService {
             case STOCK_ALARM:
             case STOCK_ALARM_RETRY:
             case STOCK_ALARM_NETWORK_BACK:
-            case StockService.ACTION_STOCK_RESULT:
+            case StockWorker.ACTION_STOCK_RESULT:
                 // Aha!  NOW we've got something!
                 Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
 
@@ -549,19 +549,19 @@ public class AlarmService extends JobIntentService {
                 // used to take care of.  It'll also tell us if the stock hasn't
                 // been posted just yet.  So, we can count on that for error
                 // checking.
-                if(intent.getAction().equals(StockService.ACTION_STOCK_RESULT)) {
+                if(intent.getAction().equals(StockWorker.ACTION_STOCK_RESULT)) {
                     Log.d(DEBUG_TAG, "Just got a stock result!");
 
-                    Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+                    Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
 
                     assert bun != null;
                     bun.setClassLoader(getClassLoader());
 
-                    int result = bun.getInt(StockService.EXTRA_RESPONSE_CODE,
-                            StockService.RESPONSE_NOT_POSTED_YET);
-                    Graticule g = bun.getParcelable(StockService.EXTRA_GRATICULE);
+                    int result = bun.getInt(StockWorker.EXTRA_RESPONSE_CODE,
+                            StockWorker.RESPONSE_NOT_POSTED_YET);
+                    Graticule g = bun.getParcelable(StockWorker.EXTRA_GRATICULE);
 
-                    if(result == StockService.RESPONSE_NO_CONNECTION) {
+                    if(result == StockWorker.RESPONSE_NO_CONNECTION) {
                         // No connection means we just set up the receiver and
                         // wait.  And wait.  And wait.
                         Log.d(DEBUG_TAG, "No network connection available, waiting until we get one...");
@@ -572,7 +572,7 @@ public class AlarmService extends JobIntentService {
                         return;
                     }
 
-                    if(result == StockService.RESPONSE_NOT_POSTED_YET) {
+                    if(result == StockWorker.RESPONSE_NOT_POSTED_YET) {
                         // Not posted yet means we hit the snooze and try again
                         // in a half hour or so.  Good night!
                         Log.d(DEBUG_TAG, "Stock wasn't posted yet, snoozing for a half hour...");
@@ -581,7 +581,7 @@ public class AlarmService extends JobIntentService {
                         return;
                     }
 
-                    if(result == StockService.RESPONSE_NETWORK_ERROR) {
+                    if(result == StockWorker.RESPONSE_NETWORK_ERROR) {
                         // A network error that ISN'T "no connection" is usually
                         // really bad.  But, with Doze in effect, that might
                         // mean something weird with how it denies us network
@@ -592,7 +592,7 @@ public class AlarmService extends JobIntentService {
                         return;
                     }
 
-                    if(result == StockService.RESPONSE_OKAY) {
+                    if(result == StockWorker.RESPONSE_OKAY) {
                         // An okay response means the Graticule IS good.  If
                         // not, fix StockService.
                         if(g == null) {
@@ -870,12 +870,12 @@ public class AlarmService extends JobIntentService {
             builder.setGroup(NOTIFICATION_GROUP_LOCAL);
 
         Bundle bun = new Bundle();
-        bun.putParcelable(StockService.EXTRA_INFO, matched.get(0).bestInfo);
+        bun.putParcelable(StockWorker.EXTRA_INFO, matched.get(0).bestInfo);
 
         Intent intent = new Intent(this, CentralMap.class)
                 .setAction(action)
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra(StockService.EXTRA_STUFF, bun);
+                .putExtra(StockWorker.EXTRA_STUFF, bun);
 
         builder.setContentIntent(PendingIntent.getActivity(
                 this,

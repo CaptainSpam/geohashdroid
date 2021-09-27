@@ -40,7 +40,7 @@ import net.exclaimindustries.geohashdroid.activities.CentralMap;
 import net.exclaimindustries.geohashdroid.activities.DetailedInfoActivity;
 import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
 import net.exclaimindustries.geohashdroid.fragments.NearbyGraticuleDialogFragment;
-import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.InfoBox;
 import net.exclaimindustries.geohashdroid.widgets.ZoomButtons;
@@ -157,7 +157,7 @@ public class ExpeditionMode
                 // Info!  Yay!  We can request a stock based on that!  Okay,
                 // technically the Info should already have the stock we need,
                 // but this also lets us get the nearby points if need be.
-                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
             } else if((bundle.containsKey(GRATICULE) || bundle.containsKey(GLOBALHASH)) && bundle.containsKey(CALENDAR)) {
                 // We've got a request to make!  Chances are, StockService will
                 // have this in cache.
@@ -168,7 +168,7 @@ public class ExpeditionMode
                 // We only go through with this if we have a Calendar and
                 // either a globalhash or a Graticule.
                 if(cal != null && (mStartingGlobalHash || mStartingGraticule != null)) {
-                    requestStock((mStartingGlobalHash ? null : mStartingGraticule), cal, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                    requestStock((mStartingGlobalHash ? null : mStartingGraticule), cal, StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 }
             } else if(bundle.getBoolean(DO_INITIAL_START, false) && !arePermissionsDenied()) {
                 // If we didn't get an Info, well, maybe there's an initial
@@ -309,7 +309,7 @@ public class ExpeditionMode
                 // Hey, let's use the little-used FLAG_AUTO_INITIATED!  That'll
                 // do as a flag that tells us we're ONLY waiting on nearby
                 // points!
-                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockService.FLAG_INCLUDE_NEARBY_POINTS | StockService.FLAG_AUTO_INITIATED);
+                requestStock(mCurrentInfo.getGraticule(), mCurrentInfo.getCalendar(), StockWorker.FLAG_INCLUDE_NEARBY_POINTS | StockWorker.FLAG_AUTO_INITIATED);
             }
         }
 
@@ -425,7 +425,7 @@ public class ExpeditionMode
                 // let's just try inserting it into the usual flow, minus the
                 // point where we check for the closest Info...
                 if(!info.isGlobalHash())
-                    requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                    requestStock(info.getGraticule(), info.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
                 else {
                     setInfo(info);
                     doNearbyPoints(null);
@@ -440,9 +440,9 @@ public class ExpeditionMode
                 // sure we've got all the nearbys set properly, ask StockService
                 // for the data again, this time using the best one.  We'll get
                 // it back in the else field quickly, as it's cached now.
-                requestStock(inf.getGraticule(), inf.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+                requestStock(inf.getGraticule(), inf.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
             } else {
-                if((flags & StockService.FLAG_AUTO_INITIATED) == 0) {
+                if((flags & StockWorker.FLAG_AUTO_INITIATED) == 0) {
                     setInfo(info);
                 }
 
@@ -782,7 +782,7 @@ public class ExpeditionMode
             mInitialCheckLocation = loc;
             mWaitingOnEmptyStartInfo = true;
             zoomToInitialCurrentLocation(loc);
-            requestStock(new Graticule(loc), Calendar.getInstance(), StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+            requestStock(new Graticule(loc), Calendar.getInstance(), StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_FIND_CLOSEST);
         } else {
             // Otherwise, it's off to the races.
             ErrorBanner banner = mCentralMap.getErrorBanner();
@@ -828,7 +828,7 @@ public class ExpeditionMode
     @Override
     public void nearbyGraticuleClicked(Info info) {
         // Info!
-        requestStock(info.getGraticule(), info.getCalendar(), StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+        requestStock(info.getGraticule(), info.getCalendar(), StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     @Override
@@ -872,7 +872,7 @@ public class ExpeditionMode
         // are currently waiting for an initial location (or for the user to
         // switch to SelectAGraticuleMode instead).
         if(g != null || isGlobalHash)
-            requestStock(g, newDate, StockService.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockService.FLAG_INCLUDE_NEARBY_POINTS : 0));
+            requestStock(g, newDate, StockWorker.FLAG_USER_INITIATED | (needsNearbyPoints() ? StockWorker.FLAG_INCLUDE_NEARBY_POINTS : 0));
     }
 
     private boolean needsNearbyPoints() {
@@ -1055,7 +1055,7 @@ public class ExpeditionMode
 
                 // Second, ask for a stock using that location.
                 if(mInitialCalendar == null) mInitialCalendar = Calendar.getInstance();
-                requestStock(new Graticule(location), mInitialCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+                requestStock(new Graticule(location), mInitialCalendar, StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_FIND_CLOSEST);
             }
         }
 

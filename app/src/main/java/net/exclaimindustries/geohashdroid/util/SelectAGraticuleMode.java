@@ -24,7 +24,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.CentralMap;
-import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
 import net.exclaimindustries.geohashdroid.widgets.GraticulePicker;
 import net.exclaimindustries.tools.LocationUtil;
@@ -225,7 +225,7 @@ public class SelectAGraticuleMode
     @Override
     public void handleInfo(Info info, Info[] nearby, int flags) {
         if(mInitComplete) {
-            if((flags & StockService.FLAG_FIND_CLOSEST) == StockService.FLAG_FIND_CLOSEST) {
+            if((flags & StockWorker.FLAG_FIND_CLOSEST) == StockWorker.FLAG_FIND_CLOSEST) {
                 mCentralMap.getErrorBanner().animateBanner(false);
 
                 // This is a result from Find Closest.  To the findermatron!
@@ -257,7 +257,7 @@ public class SelectAGraticuleMode
     public void handleLookupFailure(int reqFlags, int responseCode) {
         // If this was a Find Closest lookup, we need to make sure the button on
         // the fragment is re-enabled.
-        if((reqFlags & StockService.FLAG_FIND_CLOSEST) == StockService.FLAG_FIND_CLOSEST) {
+        if((reqFlags & StockWorker.FLAG_FIND_CLOSEST) == StockWorker.FLAG_FIND_CLOSEST) {
             clearFindClosest();
         }
     }
@@ -281,7 +281,7 @@ public class SelectAGraticuleMode
         removeDestinationPoint();
 
         // Fetch the stock, too.
-        requestStock(g, mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_SELECT_A_GRATICULE);
+        requestStock(g, mCalendar, StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_SELECT_A_GRATICULE);
     }
 
     @Override
@@ -323,7 +323,7 @@ public class SelectAGraticuleMode
         banner.animateBanner(true);
 
         mLastLocation = loc;
-        requestStock(new Graticule(loc), mCalendar, StockService.FLAG_USER_INITIATED | StockService.FLAG_FIND_CLOSEST);
+        requestStock(new Graticule(loc), mCalendar, StockWorker.FLAG_USER_INITIATED | StockWorker.FLAG_FIND_CLOSEST);
     }
 
     private void outlineGraticule(Graticule g) {

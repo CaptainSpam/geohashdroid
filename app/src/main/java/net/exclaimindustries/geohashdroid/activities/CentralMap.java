@@ -48,7 +48,7 @@ import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.PermissionDeniedDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.VersionHistoryDialogFragment;
 import net.exclaimindustries.geohashdroid.services.AlarmService;
-import net.exclaimindustries.geohashdroid.services.StockService;
+import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -304,7 +304,7 @@ public class CentralMap
          *
          * @param g the Graticule (can be null for globalhashes)
          * @param c the Calendar
-         * @param flags the {@link StockService} flags
+         * @param flags the {@link StockWorker} flags
          */
         protected void requestStock(@Nullable Graticule g, @NonNull Calendar c, int flags) {
             mCentralMap.getErrorBanner().animateBanner(false);
@@ -324,7 +324,7 @@ public class CentralMap
          * Called when a stock lookup fails for some reason.
          *
          * @param reqFlags the flags used in the request
-         * @param responseCode the response code (won't be {@link StockService#RESPONSE_OKAY}, for obvious reasons)
+         * @param responseCode the response code (won't be {@link StockWorker#RESPONSE_OKAY}, for obvious reasons)
          */
         public abstract void handleLookupFailure(int reqFlags, int responseCode);
 
@@ -573,37 +573,37 @@ public class CentralMap
             // Progress goes away!
             mProgress.animate().translationY(-mProgressHeight).alpha(0.0f);
 
-            Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
             assert bun != null;
             bun.setClassLoader(getClassLoader());
 
             // A stock result arrives!  Let's get data!  That oughta tell us
             // whether or not we're even going to bother with it.
-            int reqFlags = bun.getInt(StockService.EXTRA_REQUEST_FLAGS, 0);
-            long reqId = bun.getLong(StockService.EXTRA_REQUEST_ID, -1);
-            Calendar cal = (Calendar)bun.getSerializable(StockService.EXTRA_DATE);
+            int reqFlags = bun.getInt(StockWorker.EXTRA_REQUEST_FLAGS, 0);
+            long reqId = bun.getLong(StockWorker.EXTRA_REQUEST_ID, -1);
+            Calendar cal = (Calendar)bun.getSerializable(StockWorker.EXTRA_DATE);
 
             // Now, if the flags state this was from the alarm or somewhere else
             // we weren't expecting, give up now.  We don't want it.
-            if((reqFlags & StockService.FLAG_ALARM) != 0) return;
+            if((reqFlags & StockWorker.FLAG_ALARM) != 0) return;
 
             // Well, it's what we're looking for.  What was the result?  The
             // default is RESPONSE_NETWORK_ERROR, as not getting a response code
             // is a Bad Thing(tm).
-            int responseCode = bun.getInt(StockService.EXTRA_RESPONSE_CODE, StockService.RESPONSE_NETWORK_ERROR);
+            int responseCode = bun.getInt(StockWorker.EXTRA_RESPONSE_CODE, StockWorker.RESPONSE_NETWORK_ERROR);
 
             // Since the mode switchers wipe all requests from a given mode, all
             // we need for a mode match is whether or not the item exists in the
             // waiting list.
             boolean modeMatches = mWaitingList.remove(reqId);
 
-            if(responseCode == StockService.RESPONSE_OKAY) {
+            if(responseCode == StockWorker.RESPONSE_OKAY) {
                 // Hey, would you look at that, it actually worked!  So, get
                 // the Info out of it and fire it away to the corresponding
                 // CentralMapMode, if applicable.
                 if(modeMatches) {
-                    Info received = bun.getParcelable(StockService.EXTRA_INFO);
-                    Parcelable[] pArr = bun.getParcelableArray(StockService.EXTRA_NEARBY_POINTS);
+                    Info received = bun.getParcelable(StockWorker.EXTRA_INFO);
+                    Parcelable[] pArr = bun.getParcelableArray(StockWorker.EXTRA_NEARBY_POINTS);
 
                     Info[] nearby = null;
                     if(pArr != null)
@@ -620,11 +620,11 @@ public class CentralMap
                 if(modeMatches)
                     mCurrentMode.handleLookupFailure(reqFlags, responseCode);
 
-                if((reqFlags & StockService.FLAG_USER_INITIATED) != 0) {
+                if((reqFlags & StockWorker.FLAG_USER_INITIATED) != 0) {
                     // ONLY notify the user of an error if they specifically
                     // requested this stock.
                     switch(responseCode) {
-                        case StockService.RESPONSE_NOT_POSTED_YET:
+                        case StockWorker.RESPONSE_NOT_POSTED_YET:
                             // Just in case, change the text if it's today's
                             // date that was requested.  That's a bit clearer.
                             Calendar today = Calendar.getInstance();
@@ -637,12 +637,12 @@ public class CentralMap
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
                             break;
-                        case StockService.RESPONSE_NO_CONNECTION:
+                        case StockWorker.RESPONSE_NO_CONNECTION:
                             mBanner.setText(getString(R.string.error_no_connection));
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
                             break;
-                        case StockService.RESPONSE_NETWORK_ERROR:
+                        case StockWorker.RESPONSE_NETWORK_ERROR:
                             mBanner.setText(getString(R.string.error_server_failure));
                             mBanner.setErrorStatus(ErrorBanner.Status.ERROR);
                             mBanner.animateBanner(true);
@@ -690,9 +690,9 @@ public class CentralMap
         } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
-            Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+            Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
             assert bun != null;
-            mLastModeBundle.putParcelable(CentralMapMode.INFO, bun.getParcelable(StockService.EXTRA_INFO));
+            mLastModeBundle.putParcelable(CentralMapMode.INFO, bun.getParcelable(StockWorker.EXTRA_INFO));
             mSelectAGraticule = false;
         }
 
@@ -840,7 +840,7 @@ public class CentralMap
         // before onResume has a chance to kick in.  This might actually be
         // obsolete with the change away from GoogleApiClient.
         IntentFilter filt = new IntentFilter();
-        filt.addAction(StockService.ACTION_STOCK_RESULT);
+        filt.addAction(StockWorker.ACTION_STOCK_RESULT);
         registerReceiver(mStockReceiver, filt);
     }
 
@@ -870,10 +870,10 @@ public class CentralMap
         // Graticule.  Since onNewIntent is only called if the Activity's
         // already going, it just means we need to tell ExpeditionMode that it
         // has a new Info (or tell SelectAGraticuleMode to leave first).
-        Bundle bun = intent.getBundleExtra(StockService.EXTRA_STUFF);
+        Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
         if(bun == null) return;
 
-        Info info = bun.getParcelable(StockService.EXTRA_INFO);
+        Info info = bun.getParcelable(StockWorker.EXTRA_INFO);
         if(info == null) return;
 
         // Presumably, we're ready.  If the user can somehow be in this Activity
@@ -1123,7 +1123,7 @@ public class CentralMap
      *
      * @param g the Graticule (can be null for globalhashes)
      * @param cal the date
-     * @param flags the {@link StockService} flags
+     * @param flags the {@link StockWorker} flags
      */
     private void requestStock(@Nullable Graticule g, @NonNull Calendar cal, int flags) {
         // Progress shows up!
@@ -1132,15 +1132,15 @@ public class CentralMap
         // As a request ID, we'll use the current date, because why not?
         long date = cal.getTimeInMillis();
 
-        Intent i = new Intent(this, StockService.class)
-                .putExtra(StockService.EXTRA_DATE, cal)
-                .putExtra(StockService.EXTRA_GRATICULE, g)
-                .putExtra(StockService.EXTRA_REQUEST_ID, date)
-                .putExtra(StockService.EXTRA_REQUEST_FLAGS, flags);
+        Intent i = new Intent(this, StockWorker.class)
+                .putExtra(StockWorker.EXTRA_DATE, cal)
+                .putExtra(StockWorker.EXTRA_GRATICULE, g)
+                .putExtra(StockWorker.EXTRA_REQUEST_ID, date)
+                .putExtra(StockWorker.EXTRA_REQUEST_FLAGS, flags);
 
         mStockReceiver.addToWaitingList(date);
 
-        StockService.enqueueWork(this, i);
+        StockWorker.enqueueWork(this, i);
     }
 
     /**

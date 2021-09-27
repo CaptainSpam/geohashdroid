@@ -1,5 +1,5 @@
 /*
- * StockService.java
+ * StockWorker.java
  * Copyright (C)2014 Nicholas Killewald
  * 
  * This file is distributed under the terms of the BSD license.
@@ -13,9 +13,11 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.JobIntentService;
 import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 
 import android.util.Log;
 
@@ -32,24 +34,21 @@ import java.util.List;
 
 /**
  * <p>
- * StockService handles all stock retrieval duties.  You ask it for a stock,
+ * StockWorker handles all stock retrieval duties.  You ask it for a stock,
  * it'll later broadcast an Intent either with that stock or some error.
  * </p>
  * 
  * <p>
- * This is going to be similar to the old StockService of ages past, but just
- * the business end of it.  The alarm is handled elsewhere, as well as all
- * involved reschedule-if-not-connected tomfoolery.  We'll report errors back,
- * of course, so that any callers know what's going on, but otherwise we'll just
- * try to get the stock and convert it to a hash (either to the web or just from
- * the stock cache).
+ * This is now the THIRD generation of something resembling StockService.  Only,
+ * it's a Worker now.  Still, {@link #enqueueWork(Context, Intent)} functions
+ * the way the second generation did, so it takes the same Intent as before and
+ * converts it into Worker-related stuff.  Still broadcasts at the end, though.
  * </p>
  * 
  * @author Nicholas Killewald
  */
-public class StockService extends Worker {
-
-    private static final String DEBUG_TAG = "StockService";
+public class StockWorker extends Worker {
+    private static final String DEBUG_TAG = "StockWorker";
 
     /**
      * <p>
@@ -63,14 +62,14 @@ public class StockService extends Worker {
      * 
      * <p>
      * If the date is null or isn't a Calendar, or if the Graticule extra exists
-     * but isn't a Graticule object (null counts as a Graticule), StockService
+     * but isn't a Graticule object (null counts as a Graticule), StockWorker
      * will ignore and discard the request, even if a request ID was sent.
      * </p>
      */
     public static final String ACTION_STOCK_REQUEST = "net.exclaimindustries.geohashdroid.STOCK_REQUEST";
     
     /**
-     * Action that gets broadcast whenever StockService is returning a stock
+     * Action that gets broadcast whenever StockWorker is returning a stock
      * result.  The intent will have a motley assortment of extras with it, each
      * of which are mentioned in this class, most of which were supplied with
      * the {@link #ACTION_STOCK_REQUEST} that started this.
@@ -80,7 +79,7 @@ public class StockService extends Worker {
     /**
      * <p>
      * Key for the extra stuff Bundle.  This Bundle will contain all the needed
-     * Extras to put StockService together.  This is needed because not all
+     * Extras to put StockWorker together.  This is needed because not all
      * devices seem to apply the correct ClassLoader when dealing with Intents
      * being sent across remote services (i.e. broadcasts), resulting in
      * problems when custom Parcelables are used (i.e. Graticule and Info).  A
@@ -91,7 +90,7 @@ public class StockService extends Worker {
      * <p>
      * Note that this also implies you should call {@link Bundle#setClassLoader(ClassLoader)}
      * on this Bundle with whatever the current ClassLoader is any time you deal
-     * with data from StockService.
+     * with data from StockWorker.
      * </p>
      */
     public static final String EXTRA_STUFF = "net.exclaimindustries.geohashdroid.EXTRA_STUFF";
@@ -152,7 +151,7 @@ public class StockService extends Worker {
      * exact, we can't define BroadcastReceivers with <i>implicit</i> Intents
      * and expect them to go through), which causes problems when talking back
      * to, say, AlarmService's StockReceiver.  The presence of this Extra (and
-     * it being not null) will tell StockService to explicitly send the intent
+     * it being not null) will tell StockWorker to explicitly send the intent
      * to that class.  As such, it must be a class object (like, say,
      * AlarmService.StockReceiver.class), and should preferably be something
      * that can receive an Intent.  There's no telling what might happen if it
@@ -172,6 +171,12 @@ public class StockService extends Worker {
      * </p>
      */
     public static final String EXTRA_RESPOND_TO = "net.exclaimindustries.geohashdroid.EXTRA_RESPOND_TO";
+
+    // These are graticule-related things only related to the Intent-to-Data
+    // conversion process.
+    private static final String EXTRA_GRATICULE_GLOBALHASH = "isGlobalhash";
+    private static final String EXTRA_GRATICULE_LATITUDE = "graticuleLatitude";
+    private static final String EXTRA_GRATICULE_LONGITUDE = "graticuleLongitude";
 
     /**
      * Flag meaning this request came from the stock alarm around 9:30am EST.
@@ -227,16 +232,12 @@ public class StockService extends Worker {
     /** Error response if there was some network error involved. */
     public static final int RESPONSE_NETWORK_ERROR = -3;
 
-    private static final int SERVICE_JOB_ID = 1001;
-
     /**
      * Convenience method for enqueuing work in to this Worker.  This is largely
      * to keep me from having to re-write everything from when this was
      * StockService.
      */
-    public static void enqueueWork(Context context, Intent work) {
-        enqueueWork(context, StockService.class, SERVICE_JOB_ID, work);
-
+    public static void enqueueWork(@NonNull Context context, @NonNull Intent work) {
         // Remake the Intent into a Data.  I guess we're doing type checks here
         // now!
         Parcelable p = work.getParcelableExtra(EXTRA_GRATICULE);
@@ -248,88 +249,116 @@ public class StockService extends Worker {
         }
         Graticule graticule = (Graticule)p;
 
+        // Unfortunately, we need to decompose the Graticule into simpler things
+        // that a Data object can understand.
+        boolean isGlobalhash = graticule == null;
+        String graticuleLatitude = !isGlobalhash ? graticule.getLatitudeString(true) : null;
+        String graticuleLongitude = !isGlobalhash ? graticule.getLongitudeString(true) : null;
+
         // The date can be serialized out to a Long.
+        Serializable s = work.getSerializableExtra(EXTRA_DATE);
 
-
-        Data data = new Data.Builder()
-                .putLong(EXTRA_REQUEST_ID, work.getLongExtra(EXTRA_REQUEST_ID, -1L))
-                .putInt(EXTRA_REQUEST_FLAGS, work.getIntExtra(EXTRA_REQUEST_FLAGS, 0))
-                .build();
-    }
-
-    @NonNull
-    @Override
-    public Result doWork() {
-        return null;
-    }
-
-    @Override
-    protected void onHandleWork(@NonNull Intent intent) {
-        // Gee, thanks, JobIntentService, for covering all that confusing
-        // WakeLock stuff!  You're even off the main thread, too, so I don't
-        // have to spawn a new thread to not screw up the UI!  So let's get that
-        // data right in hand, shall we?
-        if(!intent.hasExtra(EXTRA_DATE)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: There's no date!");
-            return;
-        }
-        
-        // Maybe we have a request ID!
-        long requestId = intent.getLongExtra(EXTRA_REQUEST_ID, -1L);
-
-        // Maybe we have flags!
-        int flags = intent.getIntExtra(EXTRA_REQUEST_FLAGS, 0);
-
-        // Maybe we'll respond with flags!
-        int respFlags = 0;
-        
-        // Oh, man, can we ever parcelize a Graticule!
-        Parcelable p = intent.getParcelableExtra(EXTRA_GRATICULE);
-
-        // Remember, the Graticule MIGHT be null if it's a globalhash.
-        if(p != null && !(p instanceof Graticule)) {
-            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_GRATICULE is not null and isn't a Graticule!");
-            return;
-        }
-        Graticule graticule = (Graticule)p;
-        
-        // Calendar, well, we can't parcelize that, but we CAN serialize it,
-        // which is almost as good!
-        Serializable s = intent.getSerializableExtra(EXTRA_DATE);
-        
         if(!(s instanceof Calendar)) {
             Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_DATE is null or not a Calendar!");
             return;
         }
-        Calendar cal = (Calendar)s;
+        long date = ((Calendar)s).getTimeInMillis();
 
-        // Do we have an explicit respond-to point?  It CAN be null!
-        s = intent.getSerializableExtra(EXTRA_RESPOND_TO);
+        // The respond-to class is a tricky one.  I think we can make that into
+        // a String?
+        s = work.getSerializableExtra(EXTRA_RESPOND_TO);
 
         if(s != null && !(s instanceof Class)) {
             Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_RESPOND_TO is not null and isn't a Class!");
             return;
         }
-        Class<?> respondTo = (Class<?>)s;
-        
+        String respondTo = s != null ? ((Class<?>)s).getSimpleName() : null;
+
+        WorkManager.getInstance(context).enqueue(new OneTimeWorkRequest.Builder(StockWorker.class)
+                .setInputData(new Data.Builder()
+                        .putLong(EXTRA_REQUEST_ID, work.getLongExtra(EXTRA_REQUEST_ID, -1L))
+                        .putInt(EXTRA_REQUEST_FLAGS, work.getIntExtra(EXTRA_REQUEST_FLAGS, 0))
+                        .putLong(EXTRA_DATE, date)
+                        .putString(EXTRA_RESPOND_TO, respondTo)
+                        .putBoolean(EXTRA_GRATICULE_GLOBALHASH, isGlobalhash)
+                        .putString(EXTRA_GRATICULE_LATITUDE, graticuleLatitude)
+                        .putString(EXTRA_GRATICULE_LONGITUDE, graticuleLongitude)
+                        .build())
+                .build());
+    }
+
+    public StockWorker(Context appContext, WorkerParameters workerParams) {
+        super(appContext, workerParams);
+    }
+
+    @NonNull
+    @Override
+    public Result doWork() {
+        // Unroll all the input data into something that fits the old
+        // StockService code, as that's kinda simpler.
+        Data data = getInputData();
+
+        long timestamp = data.getLong(EXTRA_DATE, -1L);
+        if(timestamp == -1) {
+            Log.e(DEBUG_TAG, "BAILING OUT: There's no date!");
+            return Result.failure();
+        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(timestamp);
+
+        long requestId = data.getLong(EXTRA_REQUEST_ID, -1L);
+        int flags = data.getInt(EXTRA_REQUEST_FLAGS, 0);
+
+        // Reconstruct the Graticule.
+        Graticule graticule = null;
+
+        if(!data.getBoolean(EXTRA_GRATICULE_GLOBALHASH, false)) {
+            String lat = data.getString(EXTRA_GRATICULE_LATITUDE);
+            String lon = data.getString(EXTRA_GRATICULE_LONGITUDE);
+
+            if(lat == null || lon == null) {
+                Log.e(DEBUG_TAG, "BAILING OUT: Invalid graticule data!  lat: " + lat + "; lon: " + lon);
+                return Result.failure();
+            }
+
+            graticule = new Graticule(lat, lon);
+        }
+
+        // Try to dig up a respondTo class.
+        Class<?> respondTo = null;
+        String className = data.getString(EXTRA_RESPOND_TO);
+        if(className != null && className.length() > 0) {
+            try {
+                respondTo = Class.forName(className);
+            } catch(ClassNotFoundException cnfe) {
+                Log.e(DEBUG_TAG, "BAILING OUT: Couldn't load a class named '" + className + "'!");
+                return Result.failure();
+            }
+        }
+
+        // Maybe we'll respond with flags!
+        int respFlags = 0;
+
+        Context context = getApplicationContext();
+
         // First, ask the stock cache if we've got an Info we can throw back.
-        Info info = HashBuilder.getStoredInfo(this, cal, graticule);
-        
+        Info info = HashBuilder.getStoredInfo(context, cal, graticule);
+
         // If we got something, great!  Broadcast it right on out!
         if(info != null) {
             respFlags |= FLAG_CACHED;
             Info[] nearby = null;
             if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
-                nearby = getNearbyPoints(cal, graticule);
-            dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info, nearby, respondTo);
+                nearby = getNearbyPoints(context, cal, graticule);
+            dispatchIntent(context, RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, info, nearby, respondTo);
         } else {
             // Otherwise, we need to go to the web.
-            if(!AndroidUtil.isConnected(this)) {
+            if(!AndroidUtil.isConnected(context)) {
                 // ...if we CAN go to the web, that is.
                 Log.i(DEBUG_TAG, "We're not connected, stopping now.");
-                dispatchIntent(RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
+                dispatchIntent(context, RESPONSE_NO_CONNECTION, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
             } else {
-                StockRunner runner = HashBuilder.requestStockRunner(this, cal, graticule);
+                StockRunner runner = HashBuilder.requestStockRunner(context, cal, graticule);
                 runner.runStock();
 
                 // And the results are in!
@@ -341,13 +370,13 @@ public class StockService extends Worker {
                         Log.d(DEBUG_TAG, "Stock's good!  Away it goes!");
                         Info[] nearby = null;
                         if((flags & FLAG_INCLUDE_NEARBY_POINTS) != 0)
-                            nearby = getNearbyPoints(cal, graticule);
-                        dispatchIntent(RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject(), nearby, respondTo);
+                            nearby = getNearbyPoints(context, cal, graticule);
+                        dispatchIntent(context, RESPONSE_OKAY, requestId, flags, respFlags, cal, graticule, runner.getLastResultObject(), nearby, respondTo);
                         break;
                     case HashBuilder.StockRunner.ERROR_NOT_POSTED:
                         // Aw.  It's not posted yet.
                         Log.d(DEBUG_TAG, "Stock isn't posted yet.");
-                        dispatchIntent(RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
+                        dispatchIntent(context, RESPONSE_NOT_POSTED_YET, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
                         break;
                     default:
                         // In all other cases, just assume it's a network error.
@@ -356,28 +385,33 @@ public class StockService extends Worker {
                         // sense in this context, which means something went
                         // horribly, horribly wrong.
                         Log.e(DEBUG_TAG, "Network error!");
-                        dispatchIntent(RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
+                        dispatchIntent(context, RESPONSE_NETWORK_ERROR, requestId, flags, respFlags, cal, graticule, null, null, respondTo);
                 }
             }
         }
+
+        // If we got here, then all the inputs were valid, per se.  That's what
+        // I call a success.
+        return Result.success();
     }
-    
-    private void dispatchIntent(int responseCode,
-                                long requestId,
-                                int flags,
-                                int respFlags,
-                                Calendar date,
-                                Graticule graticule,
-                                Info info,
-                                Info[] nearby,
-                                @Nullable Class<?> respondTo) {
+
+    private static void dispatchIntent(Context context,
+                                       int responseCode,
+                                       long requestId,
+                                       int flags,
+                                       int respFlags,
+                                       Calendar date,
+                                       Graticule graticule,
+                                       Info info,
+                                       Info[] nearby,
+                                       @Nullable Class<?> respondTo) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
 
         // Make sure the Intent goes to the right place if a return address was
         // explicitly defined.
         if(respondTo != null)
-            intent.setClass(this, respondTo);
+            intent.setClass(context, respondTo);
 
         // Stuff all the extras into a Bundle.  There's ClassLoader issues on
         // some devices that require us to do it this way (see comments on
@@ -398,10 +432,10 @@ public class StockService extends Worker {
         
         // And away it goes!
         Log.d(DEBUG_TAG, "Dispatching intent...");
-        sendBroadcast(intent);
+        context.sendBroadcast(intent);
     }
 
-    private Info[] getNearbyPoints(Calendar cal, Graticule g) {
+    private static Info[] getNearbyPoints(Context context, Calendar cal, Graticule g) {
         if(g == null) return new Info[0];
 
         List<Info> infos = new LinkedList<>();
@@ -428,10 +462,10 @@ public class StockService extends Worker {
                 Graticule offset = Graticule.createOffsetFrom(g, i, j);
 
                 // ...then do the request.  Check the cache first!
-                Info info = HashBuilder.getStoredInfo(this, cal, offset);
+                Info info = HashBuilder.getStoredInfo(context, cal, offset);
                 if(info == null) {
                     // It's not in the cache.  Try to make it be in the cache.
-                    StockRunner runner = HashBuilder.requestStockRunner(this, cal, offset);
+                    StockRunner runner = HashBuilder.requestStockRunner(context, cal, offset);
                     runner.runStock();
 
                     if(runner.getStatus() == HashBuilder.StockRunner.ALL_OKAY) {

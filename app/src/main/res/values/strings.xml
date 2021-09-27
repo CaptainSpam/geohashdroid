@@ -6,7 +6,6 @@
 
     <!-- api_map_key should be defined elsewhere and not uploaded to Git -->
 
-    <string name="title_stockservice">GHD Stock Checking Service</string>
     <string name="title_alarmservice">GHD Stock Alarm Service</string>
     <string name="title_wikiservice">GHD Wiki Service</string>
     <string name="title_logindialog">Update Wiki Login</string>
