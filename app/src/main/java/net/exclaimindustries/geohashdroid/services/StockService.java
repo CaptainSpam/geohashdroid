@@ -14,6 +14,9 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.JobIntentService;
+import androidx.work.Data;
+import androidx.work.Worker;
+
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -44,7 +47,7 @@ import java.util.List;
  * 
  * @author Nicholas Killewald
  */
-public class StockService extends JobIntentService {
+public class StockService extends Worker {
 
     private static final String DEBUG_TAG = "StockService";
 
@@ -165,9 +168,7 @@ public class StockService extends JobIntentService {
      * </p>
      *
      * <p>
-     *     <i>
-     *         TODO: Look into whether or not JobScheduler can fix this mess.
-     *     </i>
+     * <i>TODO: Look into whether or not JobScheduler can fix this mess.</i>
      * </p>
      */
     public static final String EXTRA_RESPOND_TO = "net.exclaimindustries.geohashdroid.EXTRA_RESPOND_TO";
@@ -229,10 +230,37 @@ public class StockService extends JobIntentService {
     private static final int SERVICE_JOB_ID = 1001;
 
     /**
-     * Convenience method for enqueuing work in to this service.
+     * Convenience method for enqueuing work in to this Worker.  This is largely
+     * to keep me from having to re-write everything from when this was
+     * StockService.
      */
     public static void enqueueWork(Context context, Intent work) {
         enqueueWork(context, StockService.class, SERVICE_JOB_ID, work);
+
+        // Remake the Intent into a Data.  I guess we're doing type checks here
+        // now!
+        Parcelable p = work.getParcelableExtra(EXTRA_GRATICULE);
+
+        // Remember, the Graticule MIGHT be null if it's a globalhash.
+        if(p != null && !(p instanceof Graticule)) {
+            Log.e(DEBUG_TAG, "BAILING OUT: EXTRA_GRATICULE is not null and isn't a Graticule!");
+            return;
+        }
+        Graticule graticule = (Graticule)p;
+
+        // The date can be serialized out to a Long.
+
+
+        Data data = new Data.Builder()
+                .putLong(EXTRA_REQUEST_ID, work.getLongExtra(EXTRA_REQUEST_ID, -1L))
+                .putInt(EXTRA_REQUEST_FLAGS, work.getIntExtra(EXTRA_REQUEST_FLAGS, 0))
+                .build();
+    }
+
+    @NonNull
+    @Override
+    public Result doWork() {
+        return null;
     }
 
     @Override
@@ -334,7 +362,15 @@ public class StockService extends JobIntentService {
         }
     }
     
-    private void dispatchIntent(int responseCode, long requestId, int flags, int respFlags, Calendar date, Graticule graticule, Info info, Info[] nearby, @Nullable Class<?> respondTo) {
+    private void dispatchIntent(int responseCode,
+                                long requestId,
+                                int flags,
+                                int respFlags,
+                                Calendar date,
+                                Graticule graticule,
+                                Info info,
+                                Info[] nearby,
+                                @Nullable Class<?> respondTo) {
         // Welcome to central Intent dispatch.  How may I help you?
         Intent intent = new Intent(ACTION_STOCK_RESULT);
 
