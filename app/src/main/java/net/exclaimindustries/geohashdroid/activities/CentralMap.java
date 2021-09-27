@@ -47,7 +47,7 @@ import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.MapTypeDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.PermissionDeniedDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.VersionHistoryDialogFragment;
-import net.exclaimindustries.geohashdroid.services.AlarmService;
+import net.exclaimindustries.geohashdroid.services.AlarmWorker;
 import net.exclaimindustries.geohashdroid.services.StockWorker;
 import net.exclaimindustries.geohashdroid.util.ExpeditionMode;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
@@ -687,7 +687,7 @@ public class CentralMap
 
             // This will just get dropped right back into the mode wholesale.
             mLastModeBundle = savedInstanceState.getBundle(STATE_LAST_MODE_BUNDLE);
-        } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmService.START_INFO) || intent.getAction().equals(AlarmService.START_INFO_GLOBAL))) {
+        } else if(intent != null && intent.getAction() != null && (intent.getAction().equals(AlarmWorker.START_INFO) || intent.getAction().equals(AlarmWorker.START_INFO_GLOBAL))) {
             // savedInstanceState should override the Intent.
             mLastModeBundle = new Bundle();
             Bundle bun = intent.getBundleExtra(StockWorker.EXTRA_STUFF);
@@ -984,17 +984,17 @@ public class CentralMap
         SharedPreferences.Editor edit = prefs.edit();
 
         // Let's start with the stock alarm service.
-        Intent i = new Intent(this, AlarmService.class);
+        Intent i = new Intent(this, AlarmWorker.class);
 
         if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
             // Alarm gets set!  Fire it up!
-            i.setAction(AlarmService.STOCK_ALARM_ON);
+            i.setAction(AlarmWorker.STOCK_ALARM_ON);
         } else {
             // No alarm!  Off it goes!
-            i.setAction(AlarmService.STOCK_ALARM_OFF);
+            i.setAction(AlarmWorker.STOCK_ALARM_OFF);
         }
 
-        AlarmService.enqueueWork(this, i);
+        AlarmWorker.enqueueWork(this, i);
 
         // Now for preference cleanup.  Unfortunately, this section will only
         // get bigger with time, as I can't guarantee what version the user

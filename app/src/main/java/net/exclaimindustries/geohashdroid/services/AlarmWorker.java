@@ -1,5 +1,5 @@
 /*
- * AlarmService.java
+ * AlarmWorker.java
  * Copyright (C)2015 Nicholas Killewald
  *
  * This file is distributed under the terms of the BSD license.
@@ -58,7 +58,7 @@ import androidx.work.WorkerParameters;
 
 /**
  * <p>
- * <code>AlarmService</code> is a background service that retrieves the current
+ * <code>AlarmWorker</code> is a background service that retrieves the current
  * stock value around 9:30am ET (that is, a reasonable time after the opening of
  * the New York Stock Exchange, at which time the DJIA opening value is known).
  * It makes requests to {@link StockWorker}, which then stores the result away
@@ -72,9 +72,8 @@ import androidx.work.WorkerParameters;
  *
  * @author Nicholas Killewald
  */
-public class AlarmService extends Worker {
-
-    private static final String DEBUG_TAG = "AlarmService";
+public class AlarmWorker extends Worker {
+    private static final String DEBUG_TAG = "AlarmWorker";
 
     /**
      * Broadcast intent for the alarm that tells StockService that it's time to
@@ -155,9 +154,9 @@ public class AlarmService extends Worker {
         public Result doWork() {
             // Since we should only get this when we have a network connection,
             // send out the Intent that says we're back.
-            Intent i = new Intent(getApplicationContext(), AlarmService.class);
+            Intent i = new Intent(getApplicationContext(), AlarmWorker.class);
             i.setAction(STOCK_ALARM_NETWORK_BACK);
-            AlarmService.enqueueWork(getApplicationContext(), i);
+            AlarmWorker.enqueueWork(getApplicationContext(), i);
 
             // Aaaaand success.
             return ListenableWorker.Result.success();
@@ -174,7 +173,7 @@ public class AlarmService extends Worker {
 
             // Fire off the Intent to start up the service.  That'll handle all
             // of whatever we need handled.
-            Intent i = new Intent(context, AlarmService.class);
+            Intent i = new Intent(context, AlarmWorker.class);
             i.setAction(intent.getAction());
             enqueueWork(context, i);
         }
@@ -199,14 +198,14 @@ public class AlarmService extends Worker {
                 Log.d(DEBUG_TAG, "StockService returned with an alarming response!");
 
                 // It's ours!  Send it to the wakeful part!
-                intent.setClass(context, AlarmService.class);
+                intent.setClass(context, AlarmWorker.class);
                 enqueueWork(context, intent);
             }
         }
     }
 
     /**
-     * When bootup happens, this makes sure AlarmService is ready to go if the
+     * When bootup happens, this makes sure AlarmWorker is ready to go if the
      * user's got that set up.
      */
     public static class BootReceiver extends BroadcastReceiver {
@@ -223,8 +222,8 @@ public class AlarmService extends Worker {
                 if(prefs.getBoolean(GHDConstants.PREF_STOCK_ALARM, false)) {
                     // Set the alarm!
                     Log.i(DEBUG_TAG, "The stock alarm is now being started...");
-                    Intent i = new Intent(context, AlarmService.class);
-                    i.setAction(AlarmService.STOCK_ALARM_ON);
+                    Intent i = new Intent(context, AlarmWorker.class);
+                    i.setAction(AlarmWorker.STOCK_ALARM_ON);
                     enqueueWork(context, i);
                 } else {
                     Log.i(DEBUG_TAG, "The stock alarm is off, nothing's being started.");
@@ -443,7 +442,7 @@ public class AlarmService extends Worker {
         StockWorker.enqueueWork(context, request);
     }
 
-    public AlarmService(Context appContext, WorkerParameters workerParams) {
+    public AlarmWorker(Context appContext, WorkerParameters workerParams) {
         super(appContext, workerParams);
     }
 
@@ -469,7 +468,7 @@ public class AlarmService extends Worker {
         }
 
         WorkManager.getInstance(context).enqueue(
-                new OneTimeWorkRequest.Builder(AlarmService.class)
+                new OneTimeWorkRequest.Builder(AlarmWorker.class)
                         .setInputData(new Data.Builder()
                                 .putString(ALARM_ACTION, work.getAction())
                                 .putBoolean(ALARM_IS_30W, is30w)
@@ -531,7 +530,7 @@ public class AlarmService extends Worker {
             case STOCK_ALARM_NETWORK_BACK:
             case StockWorker.ACTION_STOCK_RESULT:
                 // Aha!  NOW we've got something!
-                Log.d(DEBUG_TAG, "AlarmService has business to attend to!");
+                Log.d(DEBUG_TAG, "AlarmWorker has business to attend to!");
 
                 // If we've been told the network just came back, we can shut
                 // off the network receiver.  If we're still in trouble

@@ -23,7 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.services.AlarmService;
+import net.exclaimindustries.geohashdroid.services.AlarmWorker;
 import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
@@ -534,17 +534,17 @@ public class PreferencesScreen extends AppCompatActivity
                     if(newValue instanceof Boolean) {
                         Boolean set = (Boolean) newValue;
 
-                        Intent i = new Intent(getActivity(), AlarmService.class);
+                        Intent i = new Intent(getActivity(), AlarmWorker.class);
 
                         if(set) {
                             // ON!  Start the service!
-                            i.setAction(AlarmService.STOCK_ALARM_ON);
+                            i.setAction(AlarmWorker.STOCK_ALARM_ON);
                         } else {
                             // OFF!  Stop the service and cancel all alarms!
-                            i.setAction(AlarmService.STOCK_ALARM_OFF);
+                            i.setAction(AlarmWorker.STOCK_ALARM_OFF);
                         }
 
-                        AlarmService.enqueueWork(getActivity(), i);
+                        AlarmWorker.enqueueWork(getActivity(), i);
                     }
 
                     return true;

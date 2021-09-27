@@ -150,10 +150,10 @@ public class StockWorker extends Worker {
      * we can't define BroadcastReceivers in the manifest anymore (or, to be
      * exact, we can't define BroadcastReceivers with <i>implicit</i> Intents
      * and expect them to go through), which causes problems when talking back
-     * to, say, AlarmService's StockReceiver.  The presence of this Extra (and
+     * to, say, AlarmWorker's StockReceiver.  The presence of this Extra (and
      * it being not null) will tell StockWorker to explicitly send the intent
      * to that class.  As such, it must be a class object (like, say,
-     * AlarmService.StockReceiver.class), and should preferably be something
+     * AlarmWorker.StockReceiver.class), and should preferably be something
      * that can receive an Intent.  There's no telling what might happen if it
      * can't.
      * </p>
@@ -163,7 +163,7 @@ public class StockWorker extends Worker {
      * defined in the manifest, this doesn't affect when you're explicitly
      * registering the receiver on an as-needed basis, like what CentralMap
      * does.  In other words, this is likely only to be used in the Services,
-     * and because of that, is probably only going to matter to AlarmService.
+     * and because of that, is probably only going to matter to AlarmWorker.
      * </p>
      *
      * <p>

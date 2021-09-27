@@ -79,7 +79,7 @@ public final class GHDConstants {
 
     /**
      * Prefs key specifying if the background StockAlarm should be used.  Yes,
-     * the name's from an older time when AlarmService was called StockService.
+     * the name's from an older time when AlarmWorker was called StockService.
      */
     public static final String PREF_STOCK_ALARM = "UseStockService";
     /**
