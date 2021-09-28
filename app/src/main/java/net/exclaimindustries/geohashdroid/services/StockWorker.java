@@ -172,11 +172,23 @@ public class StockWorker extends Worker {
      */
     public static final String EXTRA_RESPOND_TO = "net.exclaimindustries.geohashdroid.EXTRA_RESPOND_TO";
 
-    // These are graticule-related things only related to the Intent-to-Data
-    // conversion process.
-    private static final String EXTRA_GRATICULE_GLOBALHASH = "isGlobalhash";
-    private static final String EXTRA_GRATICULE_LATITUDE = "graticuleLatitude";
-    private static final String EXTRA_GRATICULE_LONGITUDE = "graticuleLongitude";
+    /**
+     * Data key for whether or not this request is for a Globalhash and thus
+     * won't have a Graticule latitude or longitude.
+     */
+    private static final String DATA_GRATICULE_GLOBALHASH = "isGlobalhash";
+    /**
+     * Data key for the Graticule's latitude in string form, with negative
+     * values being southern and positive values being northern (with the
+     * possibility of a -0 value for 0° to 1°S).
+     */
+    private static final String DATA_GRATICULE_LATITUDE = "graticuleLatitude";
+    /**
+     * Data key for the Graticule's longitude in string form, with negative
+     * values being western and positive values being eastern (with the
+     * possibility of a -0 value for 0° to 1°W).
+     */
+    private static final String DATA_GRATICULE_LONGITUDE = "graticuleLongitude";
 
     /**
      * Flag meaning this request came from the stock alarm around 9:30am EST.
@@ -280,9 +292,9 @@ public class StockWorker extends Worker {
                         .putInt(EXTRA_REQUEST_FLAGS, work.getIntExtra(EXTRA_REQUEST_FLAGS, 0))
                         .putLong(EXTRA_DATE, date)
                         .putString(EXTRA_RESPOND_TO, respondTo)
-                        .putBoolean(EXTRA_GRATICULE_GLOBALHASH, isGlobalhash)
-                        .putString(EXTRA_GRATICULE_LATITUDE, graticuleLatitude)
-                        .putString(EXTRA_GRATICULE_LONGITUDE, graticuleLongitude)
+                        .putBoolean(DATA_GRATICULE_GLOBALHASH, isGlobalhash)
+                        .putString(DATA_GRATICULE_LATITUDE, graticuleLatitude)
+                        .putString(DATA_GRATICULE_LONGITUDE, graticuleLongitude)
                         .build())
                 .build());
     }
@@ -312,9 +324,9 @@ public class StockWorker extends Worker {
         // Reconstruct the Graticule.
         Graticule graticule = null;
 
-        if(!data.getBoolean(EXTRA_GRATICULE_GLOBALHASH, false)) {
-            String lat = data.getString(EXTRA_GRATICULE_LATITUDE);
-            String lon = data.getString(EXTRA_GRATICULE_LONGITUDE);
+        if(!data.getBoolean(DATA_GRATICULE_GLOBALHASH, false)) {
+            String lat = data.getString(DATA_GRATICULE_LATITUDE);
+            String lon = data.getString(DATA_GRATICULE_LONGITUDE);
 
             if(lat == null || lon == null) {
                 Log.e(DEBUG_TAG, "BAILING OUT: Invalid graticule data!  lat: " + lat + "; lon: " + lon);

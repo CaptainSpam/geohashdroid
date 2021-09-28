@@ -126,9 +126,22 @@ public class AlarmWorker extends Worker {
      */
     public static final String START_INFO_GLOBAL = "net.exclaimindustries.geohashdroid.START_INFO_GLOBAL";
 
-    private static final String ALARM_ACTION = "alarmAction";
-    private static final String ALARM_STOCK_RESPONSE = "stockResponse";
-    private static final String ALARM_IS_30W = "is30w";
+    /**
+     * Data key for the action this alarm should be taking.  Will generally map
+     * out to the action in the Intent that came into
+     * {@link #enqueueWork(Context, Intent)}.
+     */
+    private static final String DATA_ACTION = "alarmAction";
+    /**
+     * Data key for the response from StockWorker, if appropriate.
+     */
+    private static final String DATA_STOCK_RESPONSE = "stockResponse";
+    /**
+     * Data key for whether or not the Graticule that came in from a response
+     * from StockWorker is a 30W Graticule (which, in turn, tells whether or not
+     * AlarmWorker needs to do make another request).
+     */
+    private static final String DATA_IS_30W = "is30w";
 
     /**
      * Notification group for all non-globalhash notifications, if the user has
@@ -470,9 +483,9 @@ public class AlarmWorker extends Worker {
         WorkManager.getInstance(context).enqueue(
                 new OneTimeWorkRequest.Builder(AlarmWorker.class)
                         .setInputData(new Data.Builder()
-                                .putString(ALARM_ACTION, work.getAction())
-                                .putBoolean(ALARM_IS_30W, is30w)
-                                .putInt(ALARM_STOCK_RESPONSE, response)
+                                .putString(DATA_ACTION, work.getAction())
+                                .putBoolean(DATA_IS_30W, is30w)
+                                .putInt(DATA_STOCK_RESPONSE, response)
                                 .build())
                         .build());
     }
@@ -483,7 +496,7 @@ public class AlarmWorker extends Worker {
         Data data = getInputData();
 
         // ACTION!
-        String action = data.getString(ALARM_ACTION);
+        String action = data.getString(DATA_ACTION);
         if(action == null) {
             Log.e(DEBUG_TAG, "BAILING OUT: Action was null?");
             return Result.failure();
@@ -567,9 +580,9 @@ public class AlarmWorker extends Worker {
                 if(action.equals(StockWorker.ACTION_STOCK_RESULT)) {
                     Log.d(DEBUG_TAG, "Just got a stock result!");
 
-                    int result = data.getInt(ALARM_STOCK_RESPONSE,
+                    int result = data.getInt(DATA_STOCK_RESPONSE,
                             StockWorker.RESPONSE_NOT_POSTED_YET);
-                    boolean is30w = data.getBoolean(ALARM_IS_30W, false);
+                    boolean is30w = data.getBoolean(DATA_IS_30W, false);
 
                     if(result == StockWorker.RESPONSE_NO_CONNECTION) {
                         // No connection means we just set up the receiver and
