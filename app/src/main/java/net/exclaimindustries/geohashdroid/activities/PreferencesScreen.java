@@ -13,12 +13,15 @@ import android.app.Dialog;
 import android.app.backup.BackupManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.InputType;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -270,6 +273,8 @@ public class PreferencesScreen extends AppCompatActivity
          * really have that many known locations.
          */
         public static class KnownNotificationLimitDialogFragment extends DialogFragment {
+            private CheckBox check = null;
+
             @Override
             @NonNull
             public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -293,22 +298,35 @@ public class PreferencesScreen extends AppCompatActivity
                         break;
                 }
 
-                return new AlertDialog.Builder(getActivity()).setMessage(dialogText)
+                // Make a dialog.  The Stop Reminding Me checkbox is baked into
+                // the extra view.
+                AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+
+                View extraView = getLayoutInflater().inflate(R.layout.stop_reminding_me_dialog_extra_view, null);
+
+                check = extraView.findViewById(R.id.stop_reminding_me_checkbox);
+
+                return builder
                         .setTitle(R.string.pref_knownnotification_reminder_title)
-                        .setNegativeButton(R.string.stop_reminding_me_label, (dialog, which) -> {
-                            dismiss();
-
-                            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-
-                            SharedPreferences.Editor editor = prefs.edit();
-                            editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, true);
-                            editor.apply();
-
-                            BackupManager bm = new BackupManager(getActivity());
-                            bm.dataChanged();
-                        })
+                        .setMessage(dialogText)
                         .setPositiveButton(R.string.gotcha_label, (dialog, which) -> dismiss())
+                        .setView(extraView)
                         .create();
+            }
+
+            @Override
+            public void onDismiss(@NonNull DialogInterface dialog) {
+                super.onDismiss(dialog);
+
+                if(check != null && check.isChecked()) {
+                    SharedPreferences.Editor editor =
+                            PreferenceManager.getDefaultSharedPreferences(requireContext()).edit();
+                    editor.putBoolean(GHDConstants.PREF_STOP_BUGGING_ME_KNOWN_NOTIFICATION_LIMIT, true);
+                    editor.apply();
+
+                    BackupManager bm = new BackupManager(requireContext());
+                    bm.dataChanged();
+                }
             }
         }
 

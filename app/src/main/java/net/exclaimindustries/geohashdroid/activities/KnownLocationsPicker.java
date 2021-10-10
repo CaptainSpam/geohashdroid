@@ -541,9 +541,9 @@ public class KnownLocationsPicker
             // Dialog!
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-            View extraView = getLayoutInflater().inflate(R.layout.known_locations_needs_prefetch_dialog, null);
+            View extraView = getLayoutInflater().inflate(R.layout.stop_reminding_me_dialog_extra_view, null);
 
-            CheckBox check = (CheckBox)extraView.findViewById(R.id.stop_reminding_me_checkbox);
+            CheckBox check = extraView.findViewById(R.id.stop_reminding_me_checkbox);
 
             builder.setMessage(R.string.known_locations_prefetch_is_off)
                     .setNegativeButton(R.string.go_to_preference, (dialog, which) -> {
