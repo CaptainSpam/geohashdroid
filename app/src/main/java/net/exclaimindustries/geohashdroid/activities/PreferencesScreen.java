@@ -103,7 +103,8 @@ public class PreferencesScreen extends AppCompatActivity
                 return true;
             };
 
-    private static void updateSummary(Preference preference, Object newValue) {
+    private static void updateSummary(@NonNull Preference preference,
+                                      @NonNull Object newValue) {
         // The basic stringy version of the value.
         String stringValue = newValue.toString();
 
@@ -128,7 +129,7 @@ public class PreferencesScreen extends AppCompatActivity
      * Also from Android Studio, this attaches a preference to the summary
      * updater.
      */
-    private static void bindPreferenceSummaryToValue(Preference preference) {
+    private static void bindPreferenceSummaryToValue(@NonNull Preference preference) {
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(mSummaryUpdater);
 
@@ -140,7 +141,7 @@ public class PreferencesScreen extends AppCompatActivity
     }
 
     /**
-     *
+     * The top level PreferenceFragment(Compat).  Everything starts here.
      */
     public static class MainPreferenceFragment
             extends PreferenceFragmentCompat {
