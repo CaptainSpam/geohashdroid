@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6-pre2" version="934" date="2021-10-10">
+        <title>Working Hard</title>
+        <header>Most of this update is a lot of behind-the-scenes stuff.</header>
+        <bullets>
+            <bullet>StockService and AlarmService (that which fetches stock values and that which wakes up the stock value fetcher at 9:30am ET, respectively) now use the AndroidX Worker structure, rather than JobIntentService, which may make them more reliable overall.  WikiService (that which posts wiki updates) is still my own ridiculous creation, though.</bullet>
+            <bullet>All dialogs with a &quot;Stop Reminding Me&quot; option now have that as a checkbox instead of one of the dialog buttons, which makes a lot more design sense when you think about it.</bullet>
+            <bullet>More general code cleanup that doesn&apos;t really do much but make things spiffier and shinier if you happen to write said code.</bullet>
+        </bullets>
+        <footer>If you follow the actual Git repo, you may note that this is in the master branch now, meaning I think it&apos;s almost ready for proper release...</footer>
+    </version>
     <version name="0.9.6-pre1" version="933" date="2021-09-26">
         <title>Android v16 Was A Really Long Time Ago, Seriously</title>
         <header>This update&apos;s been a long time coming: It&apos;s time to update to a newer Android version!  A lot&apos;s changed here, and hopefully for the better.</header>
