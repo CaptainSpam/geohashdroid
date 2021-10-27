@@ -50,8 +50,6 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
-import com.google.android.gms.maps.MapsInitializer;
-import com.google.android.gms.maps.OnMapsSdkInitializedCallback;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
@@ -90,8 +88,7 @@ public class KnownLocationsPicker
         implements GoogleMap.OnMapLongClickListener,
                    GoogleMap.OnMarkerClickListener,
                    GoogleMap.OnInfoWindowClickListener,
-                   Handler.Callback,
-                   OnMapsSdkInitializedCallback {
+                   Handler.Callback {
     private static final String DEBUG_TAG = "KnownLocationsPicker";
 
     // These get passed into the dialog.
@@ -476,9 +473,6 @@ public class KnownLocationsPicker
         }
 
         // Our friend the map needs to get ready, too.
-        MapsInitializer.initialize(getApplicationContext(),
-                MapsInitializer.Renderer.LATEST,
-                this);
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
         mapFrag.getMapAsync(googleMap -> {
             mMap = googleMap;
@@ -647,19 +641,6 @@ public class KnownLocationsPicker
             // Permissions... HO!!!!
             permissionsGranted();
             mPermissionsDenied = false;
-        }
-    }
-
-    @Override
-    public void onMapsSdkInitialized(@NonNull MapsInitializer.Renderer renderer) {
-        // Same with CentralMap, this MAY be useful for debugging.
-        switch(renderer) {
-            case LATEST:
-                Log.i(DEBUG_TAG, "Initialized with the latest map renderer.");
-                break;
-            case LEGACY:
-                Log.i(DEBUG_TAG, "Initialized with the legacy map renderer.");
-                break;
         }
     }
 

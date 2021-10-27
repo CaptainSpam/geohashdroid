@@ -37,8 +37,6 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.MapsInitializer;
-import com.google.android.gms.maps.OnMapsSdkInitializedCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -91,7 +89,7 @@ import androidx.appcompat.widget.Toolbar;
 public class CentralMap
         extends BaseMapActivity
         implements GHDDatePickerDialogFragment.GHDDatePickerCallback,
-                   Toolbar.OnMenuItemClickListener, OnMapsSdkInitializedCallback {
+                   Toolbar.OnMenuItemClickListener {
     private static final String DEBUG_TAG = "CentralMap";
 
     private static final String DATE_PICKER_DIALOG = "datePicker";
@@ -727,11 +725,6 @@ public class CentralMap
         mProgress.setTranslationY(-mProgressHeight);
         mProgress.setAlpha(0.0f);
 
-        // Init the new renderer.
-        MapsInitializer.initialize(getApplicationContext(),
-                MapsInitializer.Renderer.LATEST,
-                this);
-
         // Get a map ready.  We'll know when we've got it.  Oh, we'll know.
         MapFragment mapFrag = (MapFragment)getFragmentManager().findFragmentById(R.id.map);
         mapFrag.getMapAsync(googleMap -> {
@@ -976,20 +969,6 @@ public class CentralMap
             return true;
         }
         return mCurrentMode.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onMapsSdkInitialized(@NonNull MapsInitializer.Renderer renderer) {
-        // I don't think I need to do anything special here, but this could be
-        // useful for debuggery purposes.
-        switch(renderer) {
-            case LATEST:
-                Log.i(DEBUG_TAG, "Initialized with the latest map renderer.");
-                break;
-            case LEGACY:
-                Log.i(DEBUG_TAG, "Initialized with the legacy map renderer.");
-                break;
-        }
     }
 
     @SuppressLint("CommitPrefEdits")

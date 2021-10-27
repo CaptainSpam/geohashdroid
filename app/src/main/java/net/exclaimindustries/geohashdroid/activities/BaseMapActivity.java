@@ -12,11 +12,17 @@ import android.Manifest;
 import android.app.backup.BackupManager;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapsInitializer;
+import com.google.android.gms.maps.OnMapsSdkInitializedCallback;
 import com.google.android.gms.maps.model.MapStyleOptions;
 
 import net.exclaimindustries.geohashdroid.R;
@@ -30,7 +36,8 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
  */
 public abstract class BaseMapActivity
         extends BaseGHDThemeActivity
-        implements MapTypeDialogFragment.MapTypeCallback {
+        implements MapTypeDialogFragment.MapTypeCallback,
+                   OnMapsSdkInitializedCallback {
     private static final String DEBUG_TAG = "BaseMapActivity";
 
     // Bool to track whether the app is already resolving an error.
@@ -39,6 +46,32 @@ public abstract class BaseMapActivity
     protected boolean mPermissionsDenied = false;
 
     protected GoogleMap mMap;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Do the Maps init stuff here before anything else has a chance to mess
+        // around with stuff.
+        // Init the new renderer.
+        MapsInitializer.initialize(getApplicationContext(),
+                MapsInitializer.Renderer.LATEST,
+                this);
+    }
+
+    @Override
+    public void onMapsSdkInitialized(@NonNull MapsInitializer.Renderer renderer) {
+        // I don't think I need to do anything special here, but this could be
+        // useful for debuggery purposes.
+        switch(renderer) {
+            case LATEST:
+                Log.i(DEBUG_TAG, "Initialized with the latest map renderer.");
+                break;
+            case LEGACY:
+                Log.i(DEBUG_TAG, "Initialized with the legacy map renderer.");
+                break;
+        }
+    }
 
     /**
      * <p>
