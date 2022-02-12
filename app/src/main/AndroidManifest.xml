@@ -3,7 +3,7 @@
           package="net.exclaimindustries.geohashdroid"
           xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="932"
+          android:versionCode="935"
           android:versionName="0.9.5.5">
 
     <uses-permission android:name="android.permission.INTERNET"/>

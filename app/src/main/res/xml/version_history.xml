@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.5.6" version="935" date="2022-02-11">
+        <title>We All ❤ Unicode</title>
+        <header>A quick fix for Unicode users:</header>
+        <bullets>
+            <bullet>The wiki file uploader should now correctly upload files with UTF-8 names (i.e. if your username has non-ASCII characters) and descriptions with UTF-8 characters.</bullet>
+        </bullets>
+        <footer>I didn&apos;t realize the enum I was using didn&apos;t set UTF-8 mode on the Content-Type.  Thanks to f20210727 for this fix!</footer>
+    </version>
     <version name="0.9.5.5" version="932" date="2021-09-19">
         <title>Duplicate Filenames And You</title>
         <header>Here&apos;s a bug I thought I fixed before releasing the previous version.</header>
