@@ -476,8 +476,8 @@ public class WikiUtils {
         // TOKEN GET!  Now we've got us enough to get our upload on!
         MultipartEntityBuilder builder = MultipartEntityBuilder.create()
                 .addPart("action", new StringBody("upload", ContentType.TEXT_PLAIN))
-                .addPart("filename", new StringBody(filename, ContentType.TEXT_PLAIN))
-                .addPart("comment", new StringBody(description, ContentType.TEXT_PLAIN))
+                .addPart("filename", new StringBody(filename, ContentType.create("text/plain", "utf-8")))
+                .addPart("comment", new StringBody(description, ContentType.create("text/plain", "utf-8")))
                 .addPart("watch", new StringBody("true", ContentType.TEXT_PLAIN))
                 .addPart("ignorewarnings", new StringBody("true", ContentType.TEXT_PLAIN))
                 .addPart("token", new StringBody(token, ContentType.TEXT_PLAIN))
