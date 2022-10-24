@@ -2,7 +2,7 @@
 <manifest xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android"
           android:installLocation="auto"
-          android:versionCode="936"
+          android:versionCode="937"
           android:versionName="0.9.6">
 
     <uses-permission android:name="android.permission.INTERNET"/>
