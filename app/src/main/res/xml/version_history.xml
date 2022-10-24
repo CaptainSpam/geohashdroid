@@ -1,28 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
-    <version name="0.9.6-pre2" version="934" date="2021-10-10">
-        <title>Working Hard</title>
-        <header>Most of this update is a lot of behind-the-scenes stuff.</header>
-        <bullets>
-            <bullet>StockService and AlarmService (that which fetches stock values and that which wakes up the stock value fetcher at 9:30am ET, respectively) now use the AndroidX Worker structure, rather than JobIntentService, which may make them more reliable overall.  WikiService (that which posts wiki updates) is still my own ridiculous creation, though.</bullet>
-            <bullet>All dialogs with a &quot;Stop Reminding Me&quot; option now have that as a checkbox instead of one of the dialog buttons, which makes a lot more design sense when you think about it.</bullet>
-            <bullet>More general code cleanup that doesn&apos;t really do much but make things spiffier and shinier if you happen to write said code.</bullet>
-        </bullets>
-        <footer>If you follow the actual Git repo, you may note that this is in the master branch now, meaning I think it&apos;s almost ready for proper release...</footer>
-    </version>
-    <version name="0.9.6-pre1" version="933" date="2021-09-26">
-        <title>Android v16 Was A Really Long Time Ago, Seriously</title>
-        <header>This update&apos;s been a long time coming: It&apos;s time to update to a newer Android version!  A lot&apos;s changed here, and hopefully for the better.</header>
+    <version name="0.9.6" version="936" date="2022-10-24">
+        <title>At Long Last, Night Falls</title>
+        <header>Hoo boy, it&apos;s been quite a while.  There&apos;s been some changes!  Most of this will look familiar if you grabbed the pre-release versions.  In fact, I think all of it will.</header>
         <bullets>
             <bullet>Effectively all libraries and calls and such have been updated to AndroidX.  This cleans up a LOT of code and means things will try to take advantage of newer Androidy ways of doing stuff, which should make things go smoother.</bullet>
-            <bullet>Also, do note that the minimum Android API has been bumped up to v23 (Android 7.1.1, Marshmallow, released in 2015).  I really hope there aren&apos;t people still on Jelly Bean devices using this.</bullet>
+            <bullet>Oh, also, the minimum Android API has been bumped up to v23 (Android 7.1.1, Marshmallow).  I really hope that&apos;s not leaving anybody out; it seriously didn&apos;t look like anyone was using this on anything older.</bullet>
             <bullet>There&apos;s a proper dark mode now!  It reacts to Android&apos;s internal system dark mode setting if need be and available!  There&apos;s even a setting in Preferences that can force it to light/dark mode!  New colors!  (some) New icons!  Everything uses it!</bullet>
             <bullet>Well, everything except satellite and terrain maps.  I still don&apos;t have dark versions of those.</bullet>
             <bullet>The Street map will now become light or dark depending on what state the app is in.  This may mean your map setting might be wrong at first; if you change it a bit, it should fix itself.</bullet>
             <bullet>As a part of this, the overall app theme has been updated to something more modern, as the old theme didn&apos;t support Android&apos;s night mode mechanisms.  Everything should still be there, but might look a bit different.  The toolbar on the main map interface, for instance.  That may get another pass later.</bullet>
             <bullet>Vector icons!  Vector icons all OVER the place!  I mean, the originals have always been vectoriffic on my side, but now I don&apos;t need to rasterize them at like six different sizes.</bullet>
+            <bullet>StockService and AlarmService (that which fetches stock values and that which wakes up the stock value fetcher at 9:30am ET, respectively) now use the AndroidX Worker structure, rather than JobIntentService, which should make them more reliable overall.  WikiService (that which posts wiki updates) is still my own ridiculous creation, though.</bullet>
+            <bullet>All dialogs with a &quot;Stop Reminding Me&quot; option now have that as a checkbox instead of one of the dialog buttons, which makes a lot more design sense when you think about it.</bullet>
+            <bullet>More general code cleanup that doesn&apos;t really do much but make things spiffier and shinier if you happen to write said code.</bullet>
         </bullets>
-        <footer>This particular version is a pre-release.  I hope someone picks it up and lets me know what&apos;s up.  Since this IS a pre-release, please let me know if something&apos;s amiss, moreso than usual.</footer>
+        <footer>Sorry about the huge delay, I&apos;ve been a bit busy.  I&apos;ve got more plans on the way, don&apos;t worry.</footer>
     </version>
     <version name="0.9.5.6" version="935" date="2022-02-11">
         <title>We All ❤ Unicode</title>
