@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
@@ -596,7 +597,7 @@ public class WikiService extends PlainSQLiteQueueService {
                     toReturn.putExtra(EXTRA_LOCATION, loc);
                 } catch(JSONException je) {
                     Log.w(DEBUG_TAG, "Couldn't parse location from " +
-                            location.toString() + ", ignoring...", je);
+                            location + ", ignoring...", je);
                 }
             }
 
@@ -859,7 +860,7 @@ public class WikiService extends PlainSQLiteQueueService {
                             0,
                             new Intent(this, LoginPromptDialog.class),
                             PendingIntent.FLAG_UPDATE_CURRENT
-                                    | PendingIntent.FLAG_IMMUTABLE),
+                                    | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)),
                     getString(R.string.wiki_notification_action_update_login)
             );
 
@@ -882,7 +883,7 @@ public class WikiService extends PlainSQLiteQueueService {
                 command,
                 new Intent(this, WikiService.class)
                         .putExtra(QueueService.COMMAND_EXTRA, command),
-                PendingIntent.FLAG_IMMUTABLE);
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
     }
 
     private NotificationAction getBasicNotificationAction(int command) {

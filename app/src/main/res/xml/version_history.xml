@@ -5,7 +5,7 @@
         <header>Hoo boy, it&apos;s been quite a while.  There&apos;s been some changes!  Most of this will look familiar if you grabbed the pre-release versions.  In fact, I think all of it will.</header>
         <bullets>
             <bullet>Effectively all libraries and calls and such have been updated to AndroidX.  This cleans up a LOT of code and means things will try to take advantage of newer Androidy ways of doing stuff, which should make things go smoother.</bullet>
-            <bullet>Oh, also, the minimum Android API has been bumped up to v23 (Android 7.1.1, Marshmallow).  I really hope that&apos;s not leaving anybody out; it seriously didn&apos;t look like anyone was using this on anything older.</bullet>
+            <bullet>Oh, also, the minimum Android API has been bumped up to v19 (Android 4.4, KitKat) due to library requirements.  I really hope that&apos;s not leaving anybody out; it seriously didn&apos;t look like anyone was using this on anything older.</bullet>
             <bullet>There&apos;s a proper dark mode now!  It reacts to Android&apos;s internal system dark mode setting if need be and available!  There&apos;s even a setting in Preferences that can force it to light/dark mode!  New colors!  (some) New icons!  Everything uses it!</bullet>
             <bullet>Well, everything except satellite and terrain maps.  I still don&apos;t have dark versions of those.</bullet>
             <bullet>The Street map will now become light or dark depending on what state the app is in.  This may mean your map setting might be wrong at first; if you change it a bit, it should fix itself.</bullet>

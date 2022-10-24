@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
@@ -355,7 +356,7 @@ public class AlarmWorker extends Worker {
                         context,
                         0,
                         alarmIntent,
-                        PendingIntent.FLAG_IMMUTABLE));
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
     }
 
     /**
@@ -402,7 +403,7 @@ public class AlarmWorker extends Worker {
         Intent alarmIntent = new Intent(STOCK_ALARM);
         alarmIntent.setClass(context, StockAlarmReceiver.class);
 
-        Log.d(DEBUG_TAG, "Setting a wakeup alarm for " + alarmTime.getTime().toString());
+        Log.d(DEBUG_TAG, "Setting a wakeup alarm for " + alarmTime.getTime());
 
         // Because there's no Doze-friendly version of setRepeating (grr), we
         // have to re-set an allow-idle alarm every time.
@@ -412,7 +413,7 @@ public class AlarmWorker extends Worker {
                 PendingIntent.getBroadcast(context,
                         0,
                         alarmIntent,
-                        PendingIntent.FLAG_IMMUTABLE));
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
     }
 
     private static void sendRequest(@NonNull Context context,
@@ -518,7 +519,7 @@ public class AlarmWorker extends Worker {
                                 .setClass(
                                         context,
                                         StockAlarmReceiver.class),
-                        PendingIntent.FLAG_IMMUTABLE));
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
                 alarmManager.cancel(PendingIntent.getBroadcast(
                         context,
                         0,
@@ -526,7 +527,7 @@ public class AlarmWorker extends Worker {
                                 .setClass(
                                         context,
                                         StockAlarmReceiver.class),
-                        PendingIntent.FLAG_IMMUTABLE));
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
                 clearNotification(context);
                 break;
             case STOCK_ALARM_ON:
@@ -570,7 +571,7 @@ public class AlarmWorker extends Worker {
                         0,
                         new Intent(STOCK_ALARM_RETRY)
                                 .setClass(context, StockAlarmReceiver.class),
-                        PendingIntent.FLAG_IMMUTABLE));
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
 
                 // StockService takes care of all the network connectivity
                 // checks and other things that the alarm-checking StockService
@@ -684,7 +685,6 @@ public class AlarmWorker extends Worker {
         String notifyPref = PreferenceManager.getDefaultSharedPreferences(context).getString(GHDConstants.PREF_KNOWN_NOTIFICATION, GHDConstants.PREFVAL_KNOWN_NOTIFICATION_ONLY_ONCE);
 
         // If the user doesn't want notifications, we can skip the rest of this.
-        assert notifyPref != null;
         if(notifyPref.equals(GHDConstants.PREFVAL_KNOWN_NOTIFICATION_NEVER))
             return;
 
@@ -903,7 +903,7 @@ public class AlarmWorker extends Worker {
                 requestCode,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT
-                        | PendingIntent.FLAG_IMMUTABLE));
+                        | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)));
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build());
     }

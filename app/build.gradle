@@ -5,8 +5,9 @@ android {
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        minSdkVersion 23
+        minSdkVersion 19
         targetSdkVersion 33
+        multiDexEnabled true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -23,7 +24,9 @@ repositories {
 dependencies {
     def appcompat_version = "1.7.0-alpha01"
     def work_version = "2.7.1"
+    def multidex_version = "2.0.1"
 
+    implementation "androidx.multidex:multidex:$multidex_version"
     implementation "androidx.appcompat:appcompat:$appcompat_version"
     implementation "androidx.appcompat:appcompat-resources:$appcompat_version"
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
