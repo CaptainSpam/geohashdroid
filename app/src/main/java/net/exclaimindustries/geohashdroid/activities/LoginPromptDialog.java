@@ -13,7 +13,6 @@ import android.app.backup.BackupManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.Button;
@@ -23,6 +22,8 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.tools.QueueService;
+
+import androidx.preference.PreferenceManager;
 
 /**
  * This is a simple dialog prompt that asks for a new username/password combo

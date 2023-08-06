@@ -6,19 +6,20 @@
  */
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.location.Location;
+import android.util.Log;
+
+import com.google.android.gms.maps.model.LatLng;
+
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.location.Location;
-import android.preference.PreferenceManager;
 import androidx.annotation.NonNull;
-import android.util.Log;
-
-import com.google.android.gms.maps.model.LatLng;
+import androidx.preference.PreferenceManager;
 
 /**
  * This is a simple utility class which converts a distance output (in meters)
