@@ -1,19 +1,21 @@
 /*
  * WikiService.java
  * Copyright (C)2015 Nicholas Killewald
- * 
+ *
  * This file is distributed under the terms of the BSD license.
  * The source package should have a LICENCE file at the toplevel.
  */
 
 package net.exclaimindustries.geohashdroid.services;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -45,6 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.preference.PreferenceManager;
@@ -67,7 +70,8 @@ import cz.msebera.android.httpclient.impl.client.HttpClients;
  *
  * @author Nicholas Killewald
  */
-public class WikiService extends PlainSQLiteQueueService {
+public class WikiService
+        extends PlainSQLiteQueueService {
     /**
      * This is only here because {@link NotificationCompat.Action} doesn't exist
      * in API 16, which is what I'm targeting.  Darn!  It works astonishingly
@@ -91,7 +95,8 @@ public class WikiService extends PlainSQLiteQueueService {
      * This Worker does little more than try to fire off a RESUME command once
      * the network returns.
      */
-    public static class ConnectivityWorker extends Worker {
+    public static class ConnectivityWorker
+            extends Worker {
         public ConnectivityWorker(@NonNull Context context,
                                   @NonNull WorkerParameters workerParams) {
             super(context, workerParams);
@@ -121,11 +126,11 @@ public class WikiService extends PlainSQLiteQueueService {
     private UUID mLastWikiConnectivityRequestId;
 
     /** Matches the gallery section. */
-    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$",Pattern.DOTALL);
+    private static final Pattern RE_GALLERY = Pattern.compile("^(.*<gallery[^>]*>)(.*?)(</gallery>.*)$", Pattern.DOTALL);
     /** Matches the gallery section header. */
-    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$",Pattern.DOTALL);
+    private static final Pattern RE_GALLERY_SECTION = Pattern.compile("^(.*== Photos ==)(.*)$", Pattern.DOTALL);
     /** Matches the expedition section. */
-    private static final Pattern RE_EXPEDITION  = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$",Pattern.DOTALL);
+    private static final Pattern RE_EXPEDITION = Pattern.compile("^(.*)(==+ ?Expedition ?==+.*?)(==+ ?.*? ?==+.*?)$", Pattern.DOTALL);
 
     /** How long we wait (in millis) before retrying a throttled edit. */
     private static final long THROTTLE_DELAY = 60000;
@@ -174,7 +179,7 @@ public class WikiService extends PlainSQLiteQueueService {
      */
     public static final String EXTRA_IMAGE_INFO = "net.exclaimindustries.geohashdroid.EXTRA_IMAGE_INFO";
 
-    /** 
+    /**
      * The user's current geographic coordinates.  Should be a {@link Location}.
      * If not given, will assume the user's location is/was unknown.  If posting
      * an image, any location metadata stored in that image will override this,
@@ -198,19 +203,19 @@ public class WikiService extends PlainSQLiteQueueService {
     @Override
     public void onCreate() {
         super.onCreate();
-        
+
         // WakeLock awaaaaaay!
-        PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         assert pm != null;
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "geohashdroid:WikiService");
-        
+
         // Also, get the NotificationManager on standby.
         mNotificationManager = NotificationManagerCompat.from(this);
 
         // How alarming.  We need the AlarmManager.
-        mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
     }
-    
+
     @Override
     protected ReturnCode handleIntent(Intent i) {
         // First and foremost, if there's no network connection, just give up
@@ -689,13 +694,15 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     private void showActiveNotification() {
-        NotificationCompat.Builder builder = getFreshNotificationBuilder()
-                .setOngoing(true)
-                .setContentTitle(getString(R.string.wiki_notification_title))
-                .setContentText("")
-                .setSmallIcon(R.drawable.notification_icon_upload);
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            NotificationCompat.Builder builder = getFreshNotificationBuilder()
+                    .setOngoing(true)
+                    .setContentTitle(getString(R.string.wiki_notification_title))
+                    .setContentText("")
+                    .setSmallIcon(R.drawable.notification_icon_upload);
 
-        mNotificationManager.notify(R.id.wiki_working_notification, builder.build());
+            mNotificationManager.notify(R.id.wiki_working_notification, builder.build());
+        }
     }
 
     private void removeActiveNotification() {
@@ -703,39 +710,43 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     private void showImageErrorNotification() {
-        // This shouldn't happen, but a spare notification to explain that an
-        // image was canceled would be nice just in case it does.  It'll be an
-        // auto-cancel, too, so the user can just remove it as need be, as we're
-        // not going to touch it past this.  Also, the string says "one or more
-        // images", so that'll cover it if we somehow get LOTS of broken image
-        // URIs.
-        NotificationCompat.Builder builder = getFreshNotificationBuilder()
-                .setAutoCancel(true)
-                .setOngoing(false)
-                .setContentTitle(getString(R.string.wiki_notification_image_error_title))
-                .setContentText(getString(R.string.wiki_notification_image_error_content))
-                .setSmallIcon(R.drawable.notification_icon_warning);
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            // This shouldn't happen, but a spare notification to explain that
+            // an image was canceled would be nice just in case it does.  It'll
+            // be an auto-cancel, too, so the user can just remove it as need
+            // be, as we're not going to touch it past this.  Also, the string
+            // says "one or more images", so that'll cover it if we somehow get
+            // LOTS of broken image URIs.
+            NotificationCompat.Builder builder = getFreshNotificationBuilder()
+                    .setAutoCancel(true)
+                    .setOngoing(false)
+                    .setContentTitle(getString(R.string.wiki_notification_image_error_title))
+                    .setContentText(getString(R.string.wiki_notification_image_error_content))
+                    .setSmallIcon(R.drawable.notification_icon_warning);
 
-        mNotificationManager.notify(R.id.wiki_image_error_notification, builder.build());
+            mNotificationManager.notify(R.id.wiki_image_error_notification, builder.build());
+        }
     }
 
     private void showWaitingForConnectionNotification() {
-        NotificationCompat.Builder builder = getFreshNotificationBuilder()
-                .setOngoing(true)
-                .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
-                .setContentText(getString(R.string.wiki_notification_waiting_for_connection_content))
-                .setSmallIcon(R.drawable.notification_icon_dots_horiz)
-                .addAction(R.drawable.notification_icon_refresh,
-                        getString(R.string.notification_action_resume),
-                        getBasicCommandIntent(QueueService.COMMAND_RESUME));
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            NotificationCompat.Builder builder = getFreshNotificationBuilder()
+                    .setOngoing(true)
+                    .setContentTitle(getString(R.string.wiki_notification_waiting_for_connection_title))
+                    .setContentText(getString(R.string.wiki_notification_waiting_for_connection_content))
+                    .setSmallIcon(R.drawable.notification_icon_dots_horiz)
+                    .addAction(R.drawable.notification_icon_refresh,
+                            getString(R.string.notification_action_resume),
+                            getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
-        mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
+            mNotificationManager.notify(R.id.wiki_waiting_notification, builder.build());
+        }
 
         WorkRequest connectivityWorkRequest =
                 new OneTimeWorkRequest.Builder(ConnectivityWorker.class)
                         .setConstraints(new Constraints.Builder()
-                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                            .build())
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build())
                         .build();
 
         mLastWikiConnectivityRequestId = connectivityWorkRequest.getId();
@@ -756,22 +767,27 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     private void showPausingErrorNotification(String reason, NotificationAction[] actions) {
-        // This one (hopefully) gets its own PendingIntent (preferably something
-        // that'll help solve the problem, like a username prompt).
-        NotificationCompat.Builder builder = getFreshNotificationBuilder()
-                .setContentTitle(getString(R.string.wiki_notification_error_title))
-                .setContentText(reason)
-                .setSmallIcon(R.drawable.notification_icon_error);
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            // This one (hopefully) gets its own PendingIntent (preferably
+            // something that'll help solve the problem, like a username
+            // prompt).
+            NotificationCompat.Builder builder = getFreshNotificationBuilder()
+                    .setContentTitle(getString(R.string.wiki_notification_error_title))
+                    .setContentText(reason)
+                    .setSmallIcon(R.drawable.notification_icon_error);
 
-        if (actions.length >= 1 && actions[0] != null) {
-            builder.setContentIntent(actions[0].actionIntent);
-            builder.addAction(actions[0].icon, actions[0].title, actions[0].actionIntent);
+            if(actions.length >= 1 && actions[0] != null) {
+                builder.setContentIntent(actions[0].actionIntent);
+                builder.addAction(actions[0].icon, actions[0].title, actions[0].actionIntent);
+            }
+
+            if(actions.length >= 2 && actions[1] != null)
+                builder.addAction(actions[1].icon, actions[1].title, actions[1].actionIntent);
+            if(actions.length >= 3 && actions[2] != null)
+                builder.addAction(actions[2].icon, actions[2].title, actions[2].actionIntent);
+
+            mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
         }
-
-        if (actions.length >= 2 && actions[1] != null) builder.addAction(actions[1].icon, actions[1].title, actions[1].actionIntent);
-        if (actions.length >= 3 && actions[2] != null) builder.addAction(actions[2].icon, actions[2].title, actions[2].actionIntent);
-
-        mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
     }
 
     private void hidePausingErrorNotification() {
@@ -779,19 +795,21 @@ public class WikiService extends PlainSQLiteQueueService {
     }
 
     private void showThrottleNotification() {
-        // Throttling just means we wait a minute before we try again.  The user
-        // is free to force the issue, however.
-        NotificationCompat.Builder builder = getFreshNotificationBuilder()
-                .setAutoCancel(true)
-                .setOngoing(true)
-                .setContentTitle(getString(R.string.wiki_notification_throttle_title))
-                .setContentText(getString(R.string.wiki_notification_throttle_content))
-                .setSmallIcon(R.drawable.notification_icon_timer)
-                .addAction(R.drawable.notification_icon_refresh,
-                        getString(R.string.notification_action_retry),
-                        getBasicCommandIntent(QueueService.COMMAND_RESUME));
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            // Throttling just means we wait a minute before we try again.  The
+            // user is free to force the issue, however.
+            NotificationCompat.Builder builder = getFreshNotificationBuilder()
+                    .setAutoCancel(true)
+                    .setOngoing(true)
+                    .setContentTitle(getString(R.string.wiki_notification_throttle_title))
+                    .setContentText(getString(R.string.wiki_notification_throttle_content))
+                    .setSmallIcon(R.drawable.notification_icon_timer)
+                    .addAction(R.drawable.notification_icon_refresh,
+                            getString(R.string.notification_action_retry),
+                            getBasicCommandIntent(QueueService.COMMAND_RESUME));
 
-        mNotificationManager.notify(R.id.wiki_throttle_notification, builder.build());
+            mNotificationManager.notify(R.id.wiki_throttle_notification, builder.build());
+        }
 
         // Also, get the alarm ready.
         mAlarmManager.set(AlarmManager.RTC_WAKEUP,

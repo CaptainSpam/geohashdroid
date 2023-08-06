@@ -7,12 +7,14 @@
  */
 package net.exclaimindustries.geohashdroid.services;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
@@ -43,6 +45,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.AlarmManagerCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -73,7 +76,8 @@ import androidx.work.WorkerParameters;
  *
  * @author Nicholas Killewald
  */
-public class AlarmWorker extends Worker {
+public class AlarmWorker
+        extends Worker {
     private static final String DEBUG_TAG = "AlarmWorker";
 
     /**
@@ -157,7 +161,8 @@ public class AlarmWorker extends Worker {
      * This Worker wakes up the fetcher when the connection comes back.  That's
      * it.
      */
-    public static class ConnectivityWorker extends Worker {
+    public static class ConnectivityWorker
+            extends Worker {
         public ConnectivityWorker(@NonNull Context context,
                                   @NonNull WorkerParameters workerParams) {
             super(context, workerParams);
@@ -180,7 +185,8 @@ public class AlarmWorker extends Worker {
     /**
      * This wakes up the service when the party alarm starts.
      */
-    public static class StockAlarmReceiver extends BroadcastReceiver {
+    public static class StockAlarmReceiver
+            extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(DEBUG_TAG, "STOCK ALARM!!!  Action is " + intent.getAction());
@@ -197,7 +203,8 @@ public class AlarmWorker extends Worker {
      * This listens for any update from StockService, throwing out anything that
      * isn't related to the alarm.
      */
-    public static class StockReceiver extends BroadcastReceiver {
+    public static class StockReceiver
+            extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             // Check the Intent for the alarm flag.  We'll just straight give up
@@ -222,7 +229,8 @@ public class AlarmWorker extends Worker {
      * When bootup happens, this makes sure AlarmWorker is ready to go if the
      * user's got that set up.
      */
-    public static class BootReceiver extends BroadcastReceiver {
+    public static class BootReceiver
+            extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -321,18 +329,20 @@ public class AlarmWorker extends Worker {
         // network transaction going.  We don't need to bug the user that we're
         // waiting for a network connection, as chances are, the user's also
         // waiting for one, and doesn't need us reminding them of this fact.
-        NotificationManagerCompat.from(context).notify(R.id.alarm_notification, new NotificationCompat.Builder(
-                context,
-                GHDConstants.CHANNEL_STOCK_PREFETCHER)
-                .setSmallIcon(R.drawable.notification_icon_download)
-                .setContentTitle(context.getString(R.string.notification_title))
-                .setPriority(NotificationCompat.PRIORITY_MIN)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setContentText(
-                        context.getString(R.string.notification_detail,
-                                DateFormat
-                                        .getDateInstance(DateFormat.MEDIUM)
-                                        .format(date.getTime()))).build());
+        if(ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            NotificationManagerCompat.from(context).notify(R.id.alarm_notification, new NotificationCompat.Builder(
+                    context,
+                    GHDConstants.CHANNEL_STOCK_PREFETCHER)
+                    .setSmallIcon(R.drawable.notification_icon_download)
+                    .setContentTitle(context.getString(R.string.notification_title))
+                    .setPriority(NotificationCompat.PRIORITY_MIN)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setContentText(
+                            context.getString(R.string.notification_detail,
+                                    DateFormat
+                                            .getDateInstance(DateFormat.MEDIUM)
+                                            .format(date.getTime()))).build());
+        }
     }
 
     private static void clearNotification(@NonNull Context context) {
@@ -745,18 +755,20 @@ public class AlarmWorker extends Worker {
         Resources resources = context.getResources();
         if(!matched.isEmpty()) {
             // A match!  First, we need the group summary notification...
-            NotificationCompat.Builder groupBuilder = new NotificationCompat.Builder(context, GHDConstants.CHANNEL_NEARBY_POINTS)
-                    .setGroupSummary(true)
-                    .setGroup(NOTIFICATION_GROUP_LOCAL)
-                    .setSmallIcon(R.drawable.notification_icon_nearby_point)
-                    .setAutoCancel(true)
-                    .setOngoing(false)
-                    .setLights(Color.WHITE, 500, 2000)
-                    .setContentText(resources.getQuantityString(R.plurals.known_locations_alarm_group_text, matched.size(), matched.size()))
-                    .setContentTitle(resources.getQuantityString(R.plurals.known_locations_alarm_group_title, matched.size(), matched.size()))
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
-            notificationManager.notify(R.id.alarm_known_location_group, groupBuilder.build());
+            if(ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                NotificationCompat.Builder groupBuilder = new NotificationCompat.Builder(context, GHDConstants.CHANNEL_NEARBY_POINTS)
+                        .setGroupSummary(true)
+                        .setGroup(NOTIFICATION_GROUP_LOCAL)
+                        .setSmallIcon(R.drawable.notification_icon_nearby_point)
+                        .setAutoCancel(true)
+                        .setOngoing(false)
+                        .setLights(Color.WHITE, 500, 2000)
+                        .setContentText(resources.getQuantityString(R.plurals.known_locations_alarm_group_text, matched.size(), matched.size()))
+                        .setContentTitle(resources.getQuantityString(R.plurals.known_locations_alarm_group_title, matched.size(), matched.size()))
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+                notificationManager.notify(R.id.alarm_known_location_group, groupBuilder.build());
+            }
 
             // In any case, the matched selections need to be sorted out for
             // some reason.
@@ -882,30 +894,32 @@ public class AlarmWorker extends Worker {
                                            @IdRes int notificationId,
                                            @StringRes int titleId,
                                            int requestCode) {
-        // First one's the winner!  We know this because this is a private
-        // method so we all know matched WAS sorted ahead of time, right?
-        // RIGHT?  Seriously, do so.
-        NotificationCompat.Builder builder = getFreshNotificationBuilder(context, matched, titleId);
+        if(ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            // First one's the winner!  We know this because this is a private
+            // method so we all know matched WAS sorted ahead of time, right?
+            // RIGHT?  Seriously, do so.
+            NotificationCompat.Builder builder = getFreshNotificationBuilder(context, matched, titleId);
 
-        if(requestCode == LOCAL_NOTIFICATION)
-            builder.setGroup(NOTIFICATION_GROUP_LOCAL);
+            if(requestCode == LOCAL_NOTIFICATION)
+                builder.setGroup(NOTIFICATION_GROUP_LOCAL);
 
-        Bundle bun = new Bundle();
-        bun.putParcelable(StockWorker.EXTRA_INFO, matched.get(0).bestInfo);
+            Bundle bun = new Bundle();
+            bun.putParcelable(StockWorker.EXTRA_INFO, matched.get(0).bestInfo);
 
-        Intent intent = new Intent(context, CentralMap.class)
-                .setAction(action)
-                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra(StockWorker.EXTRA_STUFF, bun);
+            Intent intent = new Intent(context, CentralMap.class)
+                    .setAction(action)
+                    .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(StockWorker.EXTRA_STUFF, bun);
 
-        builder.setContentIntent(PendingIntent.getActivity(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-                        | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)));
+            builder.setContentIntent(PendingIntent.getActivity(
+                    context,
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                            | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)));
 
-        NotificationManagerCompat.from(context).notify(notificationId, builder.build());
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build());
+        }
     }
 
     private static NotificationCompat.Builder getFreshNotificationBuilder(@NonNull Context context,
