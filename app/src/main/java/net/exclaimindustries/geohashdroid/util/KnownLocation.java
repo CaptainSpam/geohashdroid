@@ -11,6 +11,7 @@ package net.exclaimindustries.geohashdroid.util;
 import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -22,8 +23,11 @@ import android.util.Log;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.Dash;
+import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PatternItem;
 
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.tools.LocationUtil;
@@ -47,9 +51,18 @@ import androidx.preference.PreferenceManager;
  * itself into a JSON chunk.
  */
 public class KnownLocation implements Parcelable {
+    private static final String JSON_NAME = "name";
+    private static final String JSON_LAT = "lat";
+    private static final String JSON_LON = "lon";
+    private static final String JSON_RANGE = "range";
+    private static final String JSON_GLOBALHASH_RANGE = "globalhashRange";
+    private static final String JSON_RESTRICT_GRATICULE = "restrictGraticule";
+
     private String mName;
     private LatLng mLocation;
     private double mRange;
+    private boolean mUseGlobalhashRange;
+    private double mGlobalhashRange;
     private boolean mRestrictGraticule = false;
 
     private static final String DEBUG_TAG = "KnownLocation";
@@ -72,10 +85,28 @@ public class KnownLocation implements Parcelable {
         mRange = range;
         mRestrictGraticule = restrictGraticule;
 
+        // This will get overwritten by the other constructor if need be.
+        mGlobalhashRange = 0.0;
+
         // The marker needs SOME title.
         if(mName.isEmpty()) mName = "?";
 
         mLocation = location;
+    }
+
+    /**
+     * Builds up a new KnownLocation with a separate globalhash range.
+     *
+     * @param name the name of this mLocation
+     * @param location a LatLng where it can be found
+     * @param range how close it has to be before it triggers a notification, in m
+     * @param globalhashRange how close it has to be before it triggers a notification specifically for globalhashes, in m
+     * @param restrictGraticule true to only consider the location's native graticule for range purposes, rather than find the closest one
+     */
+    public KnownLocation(@NonNull String name, @NonNull LatLng location, double range, double globalhashRange, boolean restrictGraticule) {
+        this(name, location, range, restrictGraticule);
+        mUseGlobalhashRange = true;
+        mGlobalhashRange = globalhashRange;
     }
 
     private KnownLocation(Parcel in) {
@@ -94,6 +125,8 @@ public class KnownLocation implements Parcelable {
         dest.writeParcelable(mLocation, 0);
         dest.writeDouble(mRange);
         dest.writeByte((byte)(mRestrictGraticule ? 0 : 1));
+        dest.writeByte((byte)(mUseGlobalhashRange ? 0 : 1));
+        dest.writeDouble(mGlobalhashRange);
     }
 
     public void readFromParcel(Parcel in) {
@@ -102,6 +135,8 @@ public class KnownLocation implements Parcelable {
         mLocation = in.readParcelable(KnownLocation.class.getClassLoader());
         mRange = in.readDouble();
         mRestrictGraticule = in.readByte() != 0;
+        mUseGlobalhashRange = in.readByte() != 0;
+        mGlobalhashRange = in.readDouble();
     }
 
     public static final Parcelable.Creator<KnownLocation> CREATOR = new Parcelable.Creator<KnownLocation>() {
@@ -127,13 +162,17 @@ public class KnownLocation implements Parcelable {
         KnownLocation toReturn = new KnownLocation();
 
         try {
-            toReturn.mName = obj.getString("name");
-            toReturn.mLocation = new LatLng(obj.getDouble("lat"), obj.getDouble("lon"));
-            toReturn.mRange = obj.getDouble("range");
+            toReturn.mName = obj.getString(JSON_NAME);
+            toReturn.mLocation = new LatLng(obj.getDouble(JSON_LAT), obj.getDouble(JSON_LON));
+            toReturn.mRange = obj.getDouble(JSON_RANGE);
             // Well, whoops.  Turns out I completely forgot to serialize this in
             // previous versions.  We don't want this throwing an exception if
             // it's not there, so we'll assume false if it doesn't exist.
-            toReturn.mRestrictGraticule = obj.optBoolean("restrictGraticule", false);
+            toReturn.mRestrictGraticule = obj.optBoolean(JSON_RESTRICT_GRATICULE, false);
+            if(obj.has(JSON_GLOBALHASH_RANGE)) {
+                toReturn.mUseGlobalhashRange = true;
+                toReturn.mGlobalhashRange = obj.getDouble(JSON_GLOBALHASH_RANGE);
+            }
             return toReturn;
         } catch(JSONException je) {
             Log.e(DEBUG_TAG, "Couldn't deserialize a KnownLocation for some reason!", je);
@@ -189,11 +228,18 @@ public class KnownLocation implements Parcelable {
         JSONObject toReturn = new JSONObject();
 
         try {
-            toReturn.put("name", mName);
-            toReturn.put("lat", mLocation.latitude);
-            toReturn.put("lon", mLocation.longitude);
-            toReturn.put("range", mRange);
-            toReturn.put("restrictGraticule", mRestrictGraticule);
+            toReturn.put(JSON_NAME, mName);
+            toReturn.put(JSON_LAT, mLocation.latitude);
+            toReturn.put(JSON_LON, mLocation.longitude);
+            toReturn.put(JSON_RANGE, mRange);
+            toReturn.put(JSON_RESTRICT_GRATICULE, mRestrictGraticule);
+
+            // For backward compatibility, only store a key for globalhash range
+            // if we're using it at all.  A lack of this key means we're not
+            // differentiating between normal hashes and globalhashes.
+            if(mUseGlobalhashRange) {
+                toReturn.put(JSON_GLOBALHASH_RANGE, mGlobalhashRange);
+            }
         } catch(JSONException je) {
             // This really, REALLY shouldn't happen.  Really.
             Log.e("KnownLocation", "JSONException trying to add data into the to-return object?  The hell?", je);
@@ -268,6 +314,18 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
+     * Gets the range (in m) required before this KnownLocation will trigger a
+     * notification specifically for globalhashes.  If this KnownLocation
+     * doesn't differentiate between normal hashes and globalhashes, this just
+     * returns the normal range.
+     *
+     * @return the range
+     */
+    public double getGlobalhashRange() {
+        return mUseGlobalhashRange ? mGlobalhashRange : mRange;
+    }
+
+    /**
      * <p>
      * Returns whether or not this KnownLocation is graticule-restricted.  That
      * is, if it should ONLY compare the location's native Graticule when
@@ -278,6 +336,18 @@ public class KnownLocation implements Parcelable {
      */
     public boolean isRestrictedGraticule() {
         return mRestrictGraticule;
+    }
+
+    /**
+     * Returns whether or not this KnownLocation uses a potentially different
+     * range for globalhashes.  This doesn't mean it actually DOES use a
+     * different range, mind, it just returns if the flag is true.
+     *
+     * @return true if using a globalhash-specific range, false if not
+     * @see #getGlobalhashRange()
+     */
+    public boolean usesGlobalhashRange() {
+        return mUseGlobalhashRange;
     }
 
     /**
@@ -312,9 +382,31 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
+     * Determines if this KnownLocation is close enough to the given globalhash
+     * coordinates to trigger a notification.  This will be the same result as
+     * isCloseEnough if this KnownLocation doesn't differentiate between normal
+     * hashes and globalhashes.  Note that if the range was specified as zero or
+     * less, this will always return false.
+     *
+     * @param to the LatLng to which this is being compared
+     * @return true if close enough, false if not
+     */
+    public boolean isCloseEnoughForGlobalhash(@NonNull LatLng to) {
+        if(!mUseGlobalhashRange) return isCloseEnough(to);
+
+        if(mGlobalhashRange <= 0.0) return false;
+
+        float[] dist = new float[1];
+
+        Location.distanceBetween(mLocation.latitude, mLocation.longitude, to.latitude, to.longitude, dist);
+
+        return dist[0] <= mGlobalhashRange;
+    }
+
+    /**
      * Determines the closest non-globalhash Info to this KnownLocation for the
      * given date.  That is, it will check all nine graticules around this
-     * KnownLocation and figures out which has the closest hashpoint.  Note that
+     * KnownLocation and figure out which has the closest hashpoint.  Note that
      * if graticule restriction is on for this KnownLocation, it will ALWAYS
      * return the Info for the graticule in which this location lives.
      *
@@ -428,18 +520,62 @@ public class KnownLocation implements Parcelable {
         KnownLocationPinData data = new KnownLocationPinData(c, mLocation);
         int baseColor = data.getColor();
 
+        Resources res = c.getResources();
+
         toReturn.center(mLocation)
                 .radius(mRange)
-                .strokeWidth(c.getResources().getDimension(R.dimen.known_location_circle_stroke_width))
+                .strokeWidth(res.getDimension(R.dimen.known_location_circle_stroke_width))
                 .strokeColor(
                         Color.argb(
-                                c.getResources().getInteger(R.integer.known_location_circle_stroke_alpha),
+                                res.getInteger(R.integer.known_location_circle_stroke_alpha),
                                 Color.red(baseColor),
                                 Color.green(baseColor),
                                 Color.blue(baseColor)))
                 .fillColor(
                         Color.argb(
-                                c.getResources().getInteger(R.integer.known_location_circle_alpha),
+                                res.getInteger(R.integer.known_location_circle_alpha),
+                                Color.red(baseColor),
+                                Color.green(baseColor),
+                                Color.blue(baseColor)));
+
+        return toReturn;
+    }
+
+    /**
+     * Makes a CircleOptions out of this KnownLocation for the globalhash range.
+     * This is used in KnownLocationsPicker to give the user a better idea of
+     * what the range looks like.  Note that you shouldn't do this if the normal
+     * hash and globalhash ranges are identical.
+     *
+     * @param c a Context
+     * @return a CircleOptions representing this KnownLocation's globalhash range
+     */
+    @NonNull
+    public CircleOptions makeGlobalhashCircle(@NonNull Context c) {
+        CircleOptions toReturn = new CircleOptions();
+
+        KnownLocationPinData data = new KnownLocationPinData(c, mLocation);
+        int baseColor = data.getColor();
+
+        Resources res = c.getResources();
+
+        List<PatternItem> pattern = new ArrayList<>();
+        pattern.add(new Dash(res.getDimension(R.dimen.known_location_globalhash_circle_stroke_dash_pattern)));
+        pattern.add(new Gap(res.getDimension(R.dimen.known_location_globalhash_circle_stroke_dash_pattern)));
+
+        toReturn.center(mLocation)
+                .radius(mGlobalhashRange)
+                .strokeWidth(res.getDimension(R.dimen.known_location_circle_stroke_width))
+                .strokePattern(pattern)
+                .strokeColor(
+                        Color.argb(
+                                res.getInteger(R.integer.known_location_globalhash_circle_stroke_alpha),
+                                Color.red(baseColor),
+                                Color.green(baseColor),
+                                Color.blue(baseColor)))
+                .fillColor(
+                        Color.argb(
+                                res.getInteger(R.integer.known_location_globalhash_circle_alpha),
                                 Color.red(baseColor),
                                 Color.green(baseColor),
                                 Color.blue(baseColor)));
@@ -503,15 +639,18 @@ public class KnownLocation implements Parcelable {
 
         return (Objects.equals(mName, other.mName))
                 && mRange == other.mRange
+                && mGlobalhashRange == other.mGlobalhashRange
                 && (Objects.equals(mLocation, other.mLocation));
     }
 
     @Override
     public int hashCode() {
-        // Good thing there's only three fields to hash up...
+        // Good thing there's only four fields to hash up...
         int toReturn = 17;
 
         long convert = Double.doubleToLongBits(mRange);
+        toReturn = 31 * toReturn + (int)(convert & (convert >>> 32));
+        convert = Double.doubleToLongBits(mGlobalhashRange);
         toReturn = 31 * toReturn + (int)(convert & (convert >>> 32));
         toReturn = 31 * toReturn + (mLocation == null ? 0 : mLocation.hashCode());
         toReturn = 31 * toReturn + (mName == null ? 0 : mName.hashCode());
