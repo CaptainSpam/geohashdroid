@@ -50,6 +50,20 @@
             android:layout_margin="@dimen/standard_padding"/>
 
         <CheckBox
+            android:id="@+id/use_globalhash_range"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/known_locations_add_use_globalhash_range"
+            android:layout_margin="@dimen/standard_padding" />
+
+        <Spinner
+            android:id="@+id/spinner_location_globalhash_range"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/standard_padding"
+            android:visibility="gone" />
+
+        <CheckBox
             android:id="@+id/restrict"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -98,6 +98,8 @@ public class KnownLocationsPicker
     private static final String RESTRICT = "restrict";
     private static final String EXISTING = "existing";
     private static final String ADDRESS = "address";
+    private static final String USE_GLOBALHASH_RANGE = "useGlobalhashRange";
+    private static final String GLOBALHASH_RANGE = "globalhashRange";
 
     // This is for restoring the map from an instance bundle.
     private static final String CLICKED_MARKER = "clickedMarker";
@@ -155,7 +157,7 @@ public class KnownLocationsPicker
 
             // The arguments MUST be defined, else we're not doing anything.
             Bundle args = getArguments();
-            if(args == null || !args.containsKey(RANGE) || !args.containsKey(LATLNG) || !args.containsKey(NAME)) {
+            if(args == null || !args.containsKey(RANGE) || !args.containsKey(LATLNG) || !args.containsKey(NAME) || !args.containsKey(GLOBALHASH_RANGE)) {
                 throw new IllegalArgumentException("Missing arguments to EditKnownLocationDialog!");
             }
 
@@ -167,12 +169,16 @@ public class KnownLocationsPicker
 
             String name;
             int range;
+            int globalhashRange;
             boolean restrict;
+            boolean useGlobalhashRange;
 
             // Right!  Go to the arguments first.
             name = args.getString(NAME);
             range = convertRangeToPosition(args.getDouble(RANGE));
+            globalhashRange = convertRangeToPosition(args.getDouble(GLOBALHASH_RANGE));
             restrict = args.getBoolean(RESTRICT);
+            useGlobalhashRange = args.getBoolean(USE_GLOBALHASH_RANGE);
             mExisting = args.getParcelable(EXISTING);
             mAddress = args.getParcelable(ADDRESS);
             mLocation = args.getParcelable(LATLNG);
@@ -183,7 +189,9 @@ public class KnownLocationsPicker
             if(savedInstanceState != null) {
                 name = savedInstanceState.getString(NAME);
                 range = savedInstanceState.getInt(RANGE);
+                globalhashRange = savedInstanceState.getInt(GLOBALHASH_RANGE);
                 restrict = savedInstanceState.getBoolean(RESTRICT);
+                useGlobalhashRange = savedInstanceState.getBoolean(USE_GLOBALHASH_RANGE);
             }
 
             // Now then!  Let's create this mess.  First, if this is a location
@@ -220,8 +228,20 @@ public class KnownLocationsPicker
             spinner.setAdapter(adapter);
             spinner.setSelection(range);
 
+            final Spinner globalhashSpinner = dialogView.findViewById(R.id.spinner_location_globalhash_range);
+            globalhashSpinner.setAdapter(adapter);
+            globalhashSpinner.setSelection(globalhashRange);
+            globalhashSpinner.setVisibility(useGlobalhashRange ? View.VISIBLE : View.GONE);
+
             final CheckBox restrictBox = dialogView.findViewById(R.id.restrict);
             restrictBox.setChecked(restrict);
+
+            final CheckBox useGlobalhashBox = dialogView.findViewById(R.id.use_globalhash_range);
+            useGlobalhashBox.setChecked(useGlobalhashRange);
+
+            useGlobalhashBox.setOnCheckedChangeListener((button, checked) ->
+                globalhashSpinner.setVisibility(checked ? View.VISIBLE : View.GONE)
+            );
 
             // There!  Now, let's make it a dialog.
             return new AlertDialog.Builder(pickerActivity)
@@ -234,14 +254,18 @@ public class KnownLocationsPicker
                                     nameInput.getText().toString(),
                                     mLocation,
                                     convertPositionToRange(spinner.getSelectedItemPosition()),
+                                    convertPositionToRange(globalhashSpinner.getSelectedItemPosition()),
                                     restrictBox.isChecked(),
+                                    useGlobalhashBox.isChecked(),
                                     mAddress);
                         else
                             pickerActivity.confirmKnownLocationFromDialog(
                                     nameInput.getText().toString(),
                                     mLocation,
                                     convertPositionToRange(spinner.getSelectedItemPosition()),
+                                    convertPositionToRange(globalhashSpinner.getSelectedItemPosition()),
                                     restrictBox.isChecked(),
+                                    useGlobalhashBox.isChecked(),
                                     mExisting);
                         dismiss();
                     })
@@ -420,7 +444,7 @@ public class KnownLocationsPicker
     private boolean mReloaded = false;
 
     private BiMap<Marker, KnownLocation> mMarkerMap;
-    private BiMap<Circle, KnownLocation> mCircleMap;
+    private BiMap<List<Circle>, KnownLocation> mCircleMap;
 
     private List<KnownLocation> mLocations;
     private Marker mMapClickMarker;
@@ -629,7 +653,7 @@ public class KnownLocationsPicker
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(permissions.length <= 0 || grantResults.length <= 0)
+        if(permissions.length == 0 || grantResults.length == 0)
             return;
 
         // CentralMap will generally be handling location permissions.  So...
@@ -741,7 +765,9 @@ public class KnownLocationsPicker
         // can init the data with that, AND keep track of it.
         String name = "";
         double range = 5.0;
+        double globalhashRange = 5.0;
         boolean restrict = false;
+        boolean useGlobalhashRange = false;
 
         KnownLocation loc = null;
         Address address = null;
@@ -752,6 +778,8 @@ public class KnownLocationsPicker
             name = loc.getName();
             range = loc.getRange();
             restrict = loc.isRestrictedGraticule();
+            globalhashRange = loc.getGlobalhashRange();
+            useGlobalhashRange = loc.usesGlobalhashRange();
         } else if(mActiveAddressMap.containsKey(marker)) {
             // An address!
             address = mActiveAddressMap.get(marker);
@@ -769,6 +797,8 @@ public class KnownLocationsPicker
         args.putParcelable(LATLNG, marker.getPosition());
         args.putDouble(RANGE, range);
         args.putBoolean(RESTRICT, restrict);
+        args.putBoolean(USE_GLOBALHASH_RANGE, useGlobalhashRange);
+        args.putDouble(GLOBALHASH_RANGE, globalhashRange);
 
         EditKnownLocationDialog dialog = new EditKnownLocationDialog();
         dialog.setArguments(args);
@@ -795,6 +825,19 @@ public class KnownLocationsPicker
                 .snippet(getString(R.string.known_locations_tap_to_add));
     }
 
+    @NonNull
+    private List<Circle> makeCircleList(@NonNull KnownLocation kl) {
+        List<Circle> circles = new ArrayList<>();
+        if(kl.getRange() != kl.getGlobalhashRange()) {
+            Circle globalhashCircle = mMap.addCircle(kl.makeGlobalhashCircle(this));
+            circles.add(globalhashCircle);
+        }
+        Circle newCircle = mMap.addCircle(kl.makeCircle(this));
+        circles.add(newCircle);
+
+        return circles;
+    }
+
     private void initKnownLocations() {
         if(mMarkerMap != null) {
             for(Marker m : mMarkerMap.keySet())
@@ -802,8 +845,9 @@ public class KnownLocationsPicker
         }
 
         if(mCircleMap != null) {
-            for(Circle c : mCircleMap.keySet())
-                c.remove();
+            for(List<Circle> cl : mCircleMap.keySet())
+                for(Circle c : cl)
+                    c.remove();
         }
 
         mMarkerMap = HashBiMap.create();
@@ -814,9 +858,10 @@ public class KnownLocationsPicker
                 // Each KnownLocation gives us a MarkerOptions we can use.
                 Log.d(DEBUG_TAG, "Making marker for KnownLocation " + kl.toString() + " at a range of " + kl.getRange() + "m");
                 Marker newMark = mMap.addMarker(makeExistingMarker(kl));
-                Circle newCircle = mMap.addCircle(kl.makeCircle(this));
+                List<Circle> circles = makeCircleList(kl);
+
                 mMarkerMap.put(newMark, kl);
-                mCircleMap.put(newCircle, kl);
+                mCircleMap.put(circles, kl);
             }
         }
     }
@@ -829,10 +874,14 @@ public class KnownLocationsPicker
     private void confirmKnownLocationFromDialog(@NonNull String name,
                                                 @NonNull LatLng location,
                                                 double range,
+                                                double globalhashRange,
                                                 boolean restrictGraticule,
+                                                boolean useGlobalhashRange,
                                                 @NonNull Address address) {
         // An address!  We know what to do with this, right?
-        KnownLocation newLoc = new KnownLocation(name, location, range, restrictGraticule);
+        KnownLocation newLoc = useGlobalhashRange
+                ? new KnownLocation(name, location, range, globalhashRange, restrictGraticule)
+                : new KnownLocation(name, location, range, restrictGraticule);
 
         // Of course we do!  It's guaranteed to be a new marker!
         mLocations.add(newLoc);
@@ -846,9 +895,10 @@ public class KnownLocationsPicker
 
         // Then, replace it with the new one.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
-        Circle newCircle = mMap.addCircle(newLoc.makeCircle(this));
+        List<Circle> circles = makeCircleList(newLoc);
+
         mMarkerMap.forcePut(newMark, newLoc);
-        mCircleMap.forcePut(newCircle, newLoc);
+        mCircleMap.forcePut(circles, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         mActiveAddresses.remove(address);
@@ -861,10 +911,14 @@ public class KnownLocationsPicker
     private void confirmKnownLocationFromDialog(@NonNull String name,
                                                 @NonNull LatLng location,
                                                 double range,
+                                                double globalhashRange,
                                                 boolean restrictGraticule,
+                                                boolean useGlobalhashRange,
                                                 @Nullable KnownLocation existing) {
         // Okay, we got location data in.  Make one!
-        KnownLocation newLoc = new KnownLocation(name, location, range, restrictGraticule);
+        KnownLocation newLoc = useGlobalhashRange
+                ? new KnownLocation(name, location, range, globalhashRange, restrictGraticule)
+                : new KnownLocation(name, location, range, restrictGraticule);
 
         // Is this new or a replacement?
         if(existing != null) {
@@ -877,11 +931,13 @@ public class KnownLocationsPicker
             // Since this is an existing KnownLocation, the marker should be in
             // that map, ripe for removal.
             Marker mark = mMarkerMap.inverse().remove(existing);
-            Circle circle = mCircleMap.inverse().remove(existing);
+            List<Circle> circles = mCircleMap.inverse().remove(existing);
             assert mark != null;
-            assert circle != null;
+            assert circles != null;
             mark.remove();
-            circle.remove();
+            for(Circle c : circles) {
+                c.remove();
+            }
         } else {
             // Brand new!
             mLocations.add(newLoc);
@@ -889,9 +945,9 @@ public class KnownLocationsPicker
 
         // In both cases, store the data and add a new marker.
         Marker newMark = mMap.addMarker(makeExistingMarker(newLoc));
-        Circle newCircle = mMap.addCircle(newLoc.makeCircle(this));
+        List<Circle> circles = makeCircleList(newLoc);
         mMarkerMap.forcePut(newMark, newLoc);
-        mCircleMap.forcePut(newCircle, newLoc);
+        mCircleMap.forcePut(circles, newLoc);
         KnownLocation.storeKnownLocations(this, mLocations);
 
         // And remove the marker from the map.  The visual one this time.
@@ -911,9 +967,11 @@ public class KnownLocationsPicker
         marker.remove();
         mMarkerMap.remove(marker);
 
-        Circle circle = mCircleMap.inverse().remove(existing);
-        assert circle != null;
-        circle.remove();
+        List<Circle> circles = mCircleMap.inverse().remove(existing);
+        assert circles != null;
+        for(Circle c : circles) {
+            c.remove();
+        }
 
         // Then, remove it from the location list and push that back to the
         // preferences.
