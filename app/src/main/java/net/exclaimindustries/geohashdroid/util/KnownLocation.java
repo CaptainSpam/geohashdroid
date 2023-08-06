@@ -326,11 +326,9 @@ public class KnownLocation implements Parcelable {
     }
 
     /**
-     * <p>
      * Returns whether or not this KnownLocation is graticule-restricted.  That
      * is, if it should ONLY compare the location's native Graticule when
      * looking for the closest Info.
-     * </p>
      *
      * @return true if this is graticule-restricted, false if not
      */
@@ -384,9 +382,9 @@ public class KnownLocation implements Parcelable {
     /**
      * Determines if this KnownLocation is close enough to the given globalhash
      * coordinates to trigger a notification.  This will be the same result as
-     * isCloseEnough if this KnownLocation doesn't differentiate between normal
-     * hashes and globalhashes.  Note that if the range was specified as zero or
-     * less, this will always return false.
+     * {@link #isCloseEnough(LatLng)} if this KnownLocation doesn't
+     * differentiate between normal hashes and globalhashes.  Note that if the
+     * range was specified as zero or less, this will always return false.
      *
      * @param to the LatLng to which this is being compared
      * @return true if close enough, false if not
