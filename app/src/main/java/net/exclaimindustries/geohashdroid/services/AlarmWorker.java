@@ -745,7 +745,7 @@ public class AlarmWorker
 
             // The Globalhash will be handled as a separate notification,
             // because frankly, that's sort of special.
-            if(global != null && kl.isCloseEnough(global.getFinalDestinationLatLng())) {
+            if(global != null && kl.isCloseEnoughForGlobalhash(global.getFinalDestinationLatLng())) {
                 KnownLocationMatchData data = new KnownLocationMatchData(kl, global, kl.getDistanceFrom(global));
                 matchedGlobal.add(data);
             }
