@@ -894,7 +894,7 @@ public class AlarmWorker
                                            @IdRes int notificationId,
                                            @StringRes int titleId,
                                            int requestCode) {
-        if(ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        if(ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
             // First one's the winner!  We know this because this is a private
             // method so we all know matched WAS sorted ahead of time, right?
             // RIGHT?  Seriously, do so.
