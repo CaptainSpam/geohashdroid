@@ -73,25 +73,6 @@ import cz.msebera.android.httpclient.impl.client.HttpClients;
 public class WikiService
         extends PlainSQLiteQueueService {
     /**
-     * This is only here because {@link NotificationCompat.Action} doesn't exist
-     * in API 16, which is what I'm targeting.  Darn!  It works astonishingly
-     * similar to it, if by that you accept simply calling the API 16 version of
-     * {@link NotificationCompat.Builder#addAction(int, CharSequence, PendingIntent)}
-     * with the appropriate data to be "astonishingly similar", which I do.
-     */
-    private static class NotificationAction {
-        public int icon;
-        public PendingIntent actionIntent;
-        public CharSequence title;
-
-        public NotificationAction(int icon, PendingIntent actionIntent, CharSequence title) {
-            this.icon = icon;
-            this.actionIntent = actionIntent;
-            this.title = title;
-        }
-    }
-
-    /**
      * This Worker does little more than try to fire off a RESUME command once
      * the network returns.
      */
@@ -766,7 +747,7 @@ public class WikiService
         }
     }
 
-    private void showPausingErrorNotification(String reason, NotificationAction[] actions) {
+    private void showPausingErrorNotification(String reason, NotificationCompat.Action[] actions) {
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
             // This one (hopefully) gets its own PendingIntent (preferably
             // something that'll help solve the problem, like a username
@@ -778,13 +759,13 @@ public class WikiService
 
             if(actions.length >= 1 && actions[0] != null) {
                 builder.setContentIntent(actions[0].actionIntent);
-                builder.addAction(actions[0].icon, actions[0].title, actions[0].actionIntent);
+                builder.addAction(actions[0]);
             }
 
             if(actions.length >= 2 && actions[1] != null)
-                builder.addAction(actions[1].icon, actions[1].title, actions[1].actionIntent);
+                builder.addAction(actions[1]);
             if(actions.length >= 3 && actions[2] != null)
-                builder.addAction(actions[2].icon, actions[2].title, actions[2].actionIntent);
+                builder.addAction(actions[2]);
 
             mNotificationManager.notify(R.id.wiki_error_notification, builder.build());
         }
@@ -858,29 +839,29 @@ public class WikiService
         return before + galleryEntry + after;
     }
 
-    private NotificationAction[] resolveWikiExceptionActions(WikiException we) {
-        // This'll get the (up to) three NotificationActions associated with a
+    private NotificationCompat.Action[] resolveWikiExceptionActions(WikiException we) {
+        // This'll get the (up to) three notification actions associated with a
         // given WikiException (identified by string ID).
         int id = -1;
 
         if(we != null)
             id = we.getErrorTextId();
 
-        NotificationAction[] toReturn = new NotificationAction[]{null,null,null};
+        NotificationCompat.Action[] toReturn = new NotificationCompat.Action[]{null,null,null};
         if(id == R.string.wiki_conn_anon_pic_error
                 || id == R.string.wiki_error_bad_password
                 || id == R.string.wiki_error_bad_username
                 || id == R.string.wiki_error_username_nonexistant
                 || id == R.string.wiki_error_bad_login) {
-            toReturn[0] = new NotificationAction(
+            toReturn[0] = new NotificationCompat.Action.Builder(
                     0,
+                    getString(R.string.wiki_notification_action_update_login),
                     PendingIntent.getActivity(this,
                             0,
                             new Intent(this, LoginPromptDialog.class),
                             PendingIntent.FLAG_UPDATE_CURRENT
-                                    | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)),
-                    getString(R.string.wiki_notification_action_update_login)
-            );
+                                    | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0))
+            ).build();
 
             toReturn[1] = getBasicNotificationAction(COMMAND_ABORT);
         } else {
@@ -904,26 +885,26 @@ public class WikiService
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
     }
 
-    private NotificationAction getBasicNotificationAction(int command) {
+    private NotificationCompat.Action getBasicNotificationAction(int command) {
         switch(command) {
             case COMMAND_RESUME:
-                return new NotificationAction(
+                return new NotificationCompat.Action.Builder(
                         0,
-                        getBasicCommandIntent(QueueService.COMMAND_RESUME),
-                        getString(R.string.wiki_notification_action_retry)
-                );
+                        getString(R.string.wiki_notification_action_retry),
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME)
+                ).build();
             case COMMAND_RESUME_SKIP_FIRST:
-                return new NotificationAction(
+                return new NotificationCompat.Action.Builder(
                         0,
-                        getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST),
-                        getString(R.string.wiki_notification_action_skip)
-                );
+                        getString(R.string.wiki_notification_action_skip),
+                        getBasicCommandIntent(QueueService.COMMAND_RESUME_SKIP_FIRST)
+                ).build();
             case COMMAND_ABORT:
-                return new NotificationAction(
+                return new NotificationCompat.Action.Builder(
                         0,
-                        getBasicCommandIntent(QueueService.COMMAND_ABORT),
-                        getString(R.string.wiki_notification_action_abort)
-                );
+                        getString(R.string.wiki_notification_action_abort),
+                        getBasicCommandIntent(QueueService.COMMAND_ABORT)
+                ).build();
             default:
                 return null;
         }
