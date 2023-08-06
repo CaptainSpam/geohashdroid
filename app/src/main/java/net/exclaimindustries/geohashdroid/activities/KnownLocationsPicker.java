@@ -25,7 +25,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -574,9 +573,8 @@ public class KnownLocationsPicker
                         dialog.dismiss();
 
                         Intent intent = new Intent(KnownLocationsPicker.this, PreferencesScreen.class)
-                                .putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT,
-                                        PreferencesScreen.OtherPreferenceFragment.class.getName())
-                                .putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                                .putExtra(PreferencesScreen.EXTRA_START_FRAGMENT,
+                                        PreferencesScreen.FRAGMENT_OTHER);
                         startActivity(intent);
                     })
                     .setPositiveButton(R.string.gotcha_label, (dialog, which) -> dialog.dismiss())

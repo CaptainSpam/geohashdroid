@@ -19,6 +19,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
@@ -60,22 +61,59 @@ import androidx.preference.PreferenceManager;
  */
 public class PreferencesScreen extends AppCompatActivity
         implements PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
+    private static final String DEBUG_TAG = "PreferencesScreen";
+
+    /**
+     * Intent extra for which fragment to start with, as one of the FRAGMENT_*
+     * values.
+     */
+    public static final String EXTRA_START_FRAGMENT = "startFragment";
+
+    /** Start with the map options fragment. */
+    public static final String FRAGMENT_MAP = "MapFragment";
+    /** Start with the wiki options fragment. */
+    public static final String FRAGMENT_WIKI = "WikiFragment";
+    /** Start with the other options fragment. */
+    public static final String FRAGMENT_OTHER = "OtherFragment";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.prefs);
 
+        // We might have a specific fragment we want to visit.
+        final Bundle extras = getIntent().getExtras();
+        final String startFragmentName = extras != null ? extras.getString(EXTRA_START_FRAGMENT, "") : "";
+
         if(getSupportFragmentManager().getBackStackEntryCount() == 0) {
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(android.R.id.content, new MainPreferenceFragment())
+                    .replace(android.R.id.content, getStartFragment(startFragmentName))
                     .commit();
         }
     }
 
+    private Fragment getStartFragment(@NonNull String name) {
+        switch(name) {
+            case FRAGMENT_MAP:
+                return new MapPreferenceFragment();
+            case FRAGMENT_WIKI:
+                return new WikiPreferenceFragment();
+            case FRAGMENT_OTHER:
+                return new OtherPreferenceFragment();
+            case "":
+                // An empty string is valid, so we don't report a warning.
+                return new MainPreferenceFragment();
+            default:
+                // A string we don't recognize, however, deserves a warning.
+                Log.w(DEBUG_TAG, name + " isn't a valid starting fragment, using MainPreferenceFragment instead...");
+                return new MainPreferenceFragment();
+        }
+    }
+
     @Override
-    public boolean onPreferenceStartFragment(PreferenceFragmentCompat caller, Preference pref) {
+    public boolean onPreferenceStartFragment(@NonNull PreferenceFragmentCompat caller, Preference pref) {
         // Instantiate the new Fragment
         final Bundle args = pref.getExtras();
         final Fragment fragment = getSupportFragmentManager()
