@@ -70,6 +70,9 @@
         <item>@string/known_locations_range_metric_2</item>
         <item>@string/known_locations_range_metric_3</item>
         <item>@string/known_locations_range_metric_4</item>
+        <item>@string/known_locations_range_metric_5</item>
+        <item>@string/known_locations_range_metric_6</item>
+        <item>@string/known_locations_range_metric_7</item>
     </string-array>
 
     <string-array name="known_locations_ranges_imperial">
@@ -77,6 +80,9 @@
         <item>@string/known_locations_range_imperial_2</item>
         <item>@string/known_locations_range_imperial_3</item>
         <item>@string/known_locations_range_imperial_4</item>
+        <item>@string/known_locations_range_imperial_5</item>
+        <item>@string/known_locations_range_imperial_6</item>
+        <item>@string/known_locations_range_imperial_7</item>
     </string-array>
 
     <string-array name="pref_daynight_entries">
@@ -90,12 +96,14 @@
         <item>System</item>
     </string-array>
 
-
     <!-- Remember, these are all in m. -->
     <integer-array name="known_locations_values">
         <item>2000</item>
         <item>5000</item>
         <item>10000</item>
         <item>20000</item>
+        <item>50000</item>
+        <item>100000</item>
+        <item>200000</item>
     </integer-array>
 </resources>

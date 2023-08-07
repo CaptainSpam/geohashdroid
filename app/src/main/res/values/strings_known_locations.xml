@@ -19,11 +19,17 @@
     <string name="known_locations_range_imperial_2">Pretty close (~3.1mi)</string>
     <string name="known_locations_range_imperial_3">Sort of close (~6.2mi)</string>
     <string name="known_locations_range_imperial_4">Not all that close (~12.4mi)</string>
+    <string name="known_locations_range_imperial_5">A little far away (~31.1mi)</string>
+    <string name="known_locations_range_imperial_6">A good distance away (~62.1mi)</string>
+    <string name="known_locations_range_imperial_7">Quite a bit away (~124.3mi)</string>
 
     <string name="known_locations_range_metric_1">Really close (~2km)</string>
     <string name="known_locations_range_metric_2">Pretty close (~5km)</string>
     <string name="known_locations_range_metric_3">Sort of close (~10km)</string>
     <string name="known_locations_range_metric_4">Not all that close (~20km)</string>
+    <string name="known_locations_range_metric_5">A little far away (~50km)</string>
+    <string name="known_locations_range_metric_6">A good distance away (~100km)</string>
+    <string name="known_locations_range_metric_7">Quite a bit away (~200km)</string>
 
     <string name="known_locations_alarm_title">The hashpoint for %1$s is nearby!</string>
     <string name="known_locations_alarm_title_global">The Globalhash for %1$s is nearby!</string>
