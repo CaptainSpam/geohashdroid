@@ -21,6 +21,10 @@
         android:title="@string/pref_stockwipe_title" />
 
     <Preference
+        android:key="_goToNotifications"
+        android:title="@string/pref_system_notification_settings_title" />
+
+    <Preference
         android:key="_resetBuggingMe"
         android:title="@string/pref_reset_bugging_me_title" />
 </PreferenceScreen>

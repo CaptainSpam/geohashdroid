@@ -73,6 +73,8 @@
     <string name="pref_reset_bugging_me_title">Reset \"Stop Reminding Me\" prompts</string>
     <string name="pref_reset_butting_me_dialog_text">Are you sure you want to be reminded of all the things you didn\'t want to be reminded of?</string>
 
+    <string name="pref_system_notification_settings_title">Review Geohash Droid\'s notification settings</string>
+
     <string name="dialog_reset_bugging_me_yes">Yes, start reminding me</string>
     <string name="dialog_reset_bugging_me_no">No, keep not reminding me</string>
     <string name="toast_reset_bugging_me_success">You will be reminded.</string>

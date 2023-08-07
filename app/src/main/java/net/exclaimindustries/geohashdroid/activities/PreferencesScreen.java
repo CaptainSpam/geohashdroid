@@ -17,7 +17,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -627,6 +629,39 @@ public class PreferencesScreen extends AppCompatActivity
                     frag.show(getParentFragmentManager(), RESET_BUGGING_ME_DIALOG);
                     return true;
                 });
+            }
+
+            // The notifications bit, on the other hand, needs some special
+            // casing.
+            pref = findPreference("_goToNotifications");
+            if(pref != null) {
+                Intent intent = new Intent();
+                Context context = requireContext();
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // Oreo and higher use the fancy new sort of notification
+                    // settings, and we can Intent our way into it directly.
+                    pref.setOnPreferenceClickListener(preference -> {
+                        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                        intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+                        context.startActivity(intent);
+                        return true;
+                    });
+                } else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    // Between Lollipop and Oreo, it kinda works.  In a way.
+                    pref.setOnPreferenceClickListener(preference -> {
+                        intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                        intent.putExtra("app_package", context.getPackageName());
+                        intent.putExtra("app_uid", context.getApplicationInfo().uid);
+                        context.startActivity(intent);
+                        return true;
+                    });
+                } else {
+                    // If we're pre-Lollipop (which, at time of writing, means
+                    // this has to be KitKat), remove the preference altogether.
+                    // I'm pretty sure KitKat had no real concept of
+                    // system-level control of an app's notifications.
+                    pref.setVisible(false);
+                }
             }
         }
 
