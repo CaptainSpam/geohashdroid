@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.2" version="939" date="2023-08-07">
+        <title>The World Is Bigger Than You&apos;d Think</title>
+        <header>Small update to the previous release:</header>
+        <bullets>
+            <bullet>The Known Location notification range dropdowns now also have entries for 50km, 100km, and 200km.</bullet>
+            <bullet>There&apos;s now an entry in the Other section of preferences that goes directly to the system-level notification settings for Geohash Droid.</bullet>
+        </bullets>
+        <footer>While the system-level notifications part applies to all Android versions on which GHD runs, I think it&apos;s only really relevant for Lollipop forward, as I&apos;m pretty sure Kitkat didn&apos;t have those settings (and maybe they were only really relevant starting with Oreo?).  Regardless, it&apos;s there for everyone.</footer>
+    </version>
     <version name="0.9.6.1" version="938" date="2023-08-06">
         <title>Think Globally, Measure Also Globally</title>
         <header>Surprise!  It&apos;s time for another update!</header>
