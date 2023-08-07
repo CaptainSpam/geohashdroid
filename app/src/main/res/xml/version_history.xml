@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.1" version="938" date="2023-08-06">
+        <title>Think Globally, Measure Also Globally</title>
+        <header>Surprise!  It&apos;s time for another update!</header>
+        <bullets>
+            <bullet>Known Locations can now have a separate notification range for globalhashes, in case, say, you&apos;re willing to go a bit more out of your way to get to a globalhash than you are a normal graticule hash.</bullet>
+            <bullet>That thing where you can jump directly to preferences from the Known Locations &quot;you really need prefetch turned on for this&quot; dialog actually works again, in that it now takes you directly to the &quot;Other&quot; section, not the main preferences entry point.</bullet>
+        </bullets>
+        <footer>Small note about those notifications, I&apos;ve noticed there&apos;s a possibility that in newer versions of Android, it may default all notifications to being turned off on a fresh install.  Y&apos;know, permission checks and all.  There&apos;s a lot of those.  Since Oreo, that&apos;s all handled in the main device settings; you might want to make sure that&apos;s set right.  I&apos;m trying to figure out the best place in the UI to link to the notification settings to help.  It&apos;ll probably be in the Other section of preferences.</footer>
+    </version>
     <version name="0.9.6" version="937" date="2022-10-24">
         <title>At Long Last, Night Falls</title>
         <header>Hoo boy, it&apos;s been quite a while.  There&apos;s been some changes!  Most of this will look familiar if you grabbed the pre-release versions.  In fact, I think all of it will.</header>
