@@ -438,7 +438,12 @@ public class KnownLocation implements Parcelable {
                 // Offset the base Graticule, if need be...
                 Graticule check = base;
                 if(i != 0 && j != 0) {
-                    check = Graticule.createOffsetFrom(base, i, j);
+                    try {
+                        check = base.createOffset(i, j);
+                    } catch (IllegalArgumentException iae) {
+                        // There's no graticule there; ignore and move on.
+                        continue;
+                    }
                 }
 
                 // Okay, now we can get an Info...

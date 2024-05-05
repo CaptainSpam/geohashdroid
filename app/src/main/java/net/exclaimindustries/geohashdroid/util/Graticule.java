@@ -33,7 +33,7 @@ import androidx.annotation.NonNull;
  * 
  * @author Nicholas Killewald
  */
-public class Graticule implements Parcelable {
+public class Graticule implements Somethingicule<Graticule> {
     private int mLatitude;
     private int mLongitude;
 
@@ -131,34 +131,11 @@ public class Graticule implements Parcelable {
         this.setLongitude(Math.abs(Integer.parseInt(longitude)));
     }
 
-    /**
-     * <p>
-     * Constructs a new Graticule offset from an existing one.  That is to say,
-     * copy an existing Graticule and move it by however many degrees as is
-     * specified.  Under the current implementation, if this gets offset past
-     * the edges of the earth, it will attempt to wrap around.  This allows
-     * people in the far eastern regions of Russia to see the nearby meetup
-     * points if they happen to live near the 180E/W longitude line.  It does
-     * not, however, allow for penguins and Santa Claus yet, so don't try to
-     * fling yourself over the poles.
-     * </p>
-     *
-     * <p>
-     * Note carefully that moving one degree west of zero longitude will go to
-     * "negative zero" longitude.  Same with latitude.  There is a distinction.
-     * Therefore, be very careful when crossing the Prime Meridian and/or the
-     * equator.
-     * </p>
-     *
-     * @param g Graticule to copy
-     * @param latOff number of degrees north to offset (negative is south)
-     * @param lonOff number of degrees east to offset (negative is west)
-     * @return a brand spankin' new Graticule, offset as per suggestion
-     */
     @NonNull
-    public static Graticule createOffsetFrom(@NonNull Graticule g, int latOff, int lonOff) {
+    @Override
+    public Graticule createOffset(int latOff, int lonOff) {
         // If we're just returning the same Graticule, seriously, come on now.
-        if(latOff == 0 && lonOff == 0) return g;
+        if(latOff == 0 && lonOff == 0) return this;
 
         // We already have all the data we need from the old Graticule.  But,
         // we need to account for passing through the Prime Meridian and/or
@@ -167,43 +144,48 @@ public class Graticule implements Parcelable {
         boolean goingSouth = (latOff < 0);
         latOff = Math.abs(latOff);
 
-        int finalLat = g.getLatitude();
-        int finalLon = g.getLongitude();
-        boolean finalSouth = g.isSouth();
-        boolean finalWest = g.isWest();
+        int finalLat = mLatitude;
+        int finalLon = mLongitude;
+        boolean finalSouth = isSouth();
+        boolean finalWest = isWest();
 
         // Skip the following if latitude is unaffected.
         if (latOff != 0) {
-            if (g.isSouth() == goingSouth) {
+            if (isSouth() == goingSouth) {
                 // Going the same direction, no equator-hacking needed.
-                finalLat = g.getLatitude() + latOff;
+                finalLat += latOff;
             } else {
                 // Going opposite directions, check for equator-hacking.
-                if (g.getLatitude() < latOff) {
+                if (getLatitude() < latOff) {
                     // We cross the equator!
                     latOff--;
                     finalSouth = !finalSouth;
                 }
-                finalLat = Math.abs(g.getLatitude() - latOff);
+                finalLat = Math.abs(getLatitude() - latOff);
             }
+        }
+
+        // We're not doing clamping this time.  We're throwing exceptions.
+        if(finalLat > 89) {
+            throw new IllegalArgumentException("That graticule does not exist, as it goes over the poles (" + finalLat + (finalSouth ? "S" : "N") + ")");
         }
 
         // Meridian hacking can be handled differently to also cover planet-
         // wrapping at the same time.  This entire stunt depends on treating
         // the longitude as a value between 0 and 359, inclusive.  In this,
         // 179W is 0, 0W is 179, 0E is 180, and 179E is 359.
-        
+
         // Adjust us properly.  Remember the negative zero graticules!
         if(finalWest)
             finalLon = -finalLon + 179;
         else
             finalLon += 180;
-        
+
         finalLon += lonOff;
         finalLon %= 360;
-        
+
         if(finalLon < 0) finalLon = 360 - Math.abs(finalLon);
-        
+
         if(finalLon >= 180) {
             finalWest = false;
             finalLon -= 180;
@@ -211,13 +193,13 @@ public class Graticule implements Parcelable {
             finalWest = true;
             finalLon -= 179;
         }
-        
+
         finalLon = Math.abs(finalLon);
-        
+
         // Now make the new Graticule object and return it.
         return new Graticule(finalLat, finalSouth, finalLon, finalWest);
     }
-    
+
     /**
      * Deparcelizinate a Graticule.
      * 

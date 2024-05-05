@@ -462,16 +462,19 @@ public class StockWorker extends Worker {
                 // we're at right now!
                 if(i == 0 && j == 0) continue;
 
-                // If the user's truly adventurous enough to go to the 90N/S
-                // graticules, there aren't any nearby points north/south of
-                // where they are.  Also, the nearby points aren't going to
-                // be drawn anyway due to the projection, but hey, that's
-                // nitpicking.
-                if(Math.abs((g.isSouth() ? -1 : 1) * g.getLatitude() + i) > 90)
-                    continue;
-
                 // Make a new Graticule, properly offset...
-                Graticule offset = Graticule.createOffsetFrom(g, i, j);
+                Graticule offset;
+
+                try {
+                    offset = g.createOffset(i, j);
+                } catch (IllegalArgumentException iae) {
+                    // If the user's truly adventurous enough to go to the 90N/S
+                    // graticules, there aren't any nearby points north/south of
+                    // where they are.  Also, the nearby points aren't going to
+                    // be drawn anyway due to the projection, but hey, that's
+                    // nitpicking.
+                    continue;
+                }
 
                 // ...then do the request.  Check the cache first!
                 Info info = HashBuilder.getStoredInfo(context, cal, offset);
