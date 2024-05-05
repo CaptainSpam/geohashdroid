@@ -27,7 +27,6 @@ import android.util.Log;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.activities.LoginPromptDialog;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
-import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.wiki.WikiException;
 import net.exclaimindustries.geohashdroid.wiki.WikiImageUtils;
@@ -496,24 +495,7 @@ public class WikiService
             // Info time!
             Info info = i.getParcelableExtra(EXTRA_INFO);
             if(info != null) {
-                JSONObject infoObj = new JSONObject();
-                infoObj.put("latitude", info.getLatitude());
-                infoObj.put("longitude", info.getLongitude());
-                infoObj.put("timestamp",
-                        Long.valueOf(info.getDate().getTime()).toString());
-
-                Graticule g = info.getGraticule();
-                if(g != null) {
-                    JSONObject graticule = new JSONObject();
-                    graticule.put("latitude", g.getLatitude());
-                    graticule.put("longitude", g.getLongitude());
-                    graticule.put("isSouth", g.isSouth());
-                    graticule.put("isWest", g.isWest());
-
-                    infoObj.put("graticule", graticule);
-                }
-
-                toReturn.put("info", infoObj);
+                toReturn.put("info", info.serializeToJSON());
             }
 
             // IMAGE info time!
@@ -604,24 +586,7 @@ public class WikiService
             JSONObject infoObj = incoming.optJSONObject("info");
             if(infoObj != null) {
                 try {
-                    double lat = infoObj.getDouble("latitude");
-                    double lon = infoObj.getDouble("longitude");
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTimeInMillis(
-                            Long.parseLong(infoObj.getString("timestamp")));
-
-                    Graticule grat = null;
-                    JSONObject gratObj = infoObj.optJSONObject("graticule");
-                    if(gratObj != null) {
-                        // Notably, this doesn't have to have a graticule.  It
-                        // could be a globalhash.
-                        grat = new Graticule(gratObj.getInt("latitude"),
-                                gratObj.getBoolean("isSouth"),
-                                gratObj.getInt("longitude"),
-                                gratObj.getBoolean("isWest"));
-                    }
-
-                    toReturn.putExtra(EXTRA_INFO, new Info(lat, lon, grat, cal));
+                    toReturn.putExtra(EXTRA_INFO, Info.deserializeFromJSON(infoObj));
                 } catch(JSONException je) {
                     Log.w(DEBUG_TAG, "Couldn't parse something from the Info object, giving up and ignoring...", je);
                 } catch(NumberFormatException nfe) {

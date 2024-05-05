@@ -13,6 +13,9 @@ import android.os.Parcelable;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -21,6 +24,44 @@ import androidx.annotation.NonNull;
  * Geohashing purposes (besides globalhashes).
  */
 public interface Somethingicule<T> extends Parcelable {
+    class Deserializer {
+        /**
+         * Deserializes a JSONObject into an appropriate Somethingicule.
+         *
+         * @param input the JSONObject to deserialize
+         * @return a deserialized Somethingicule
+         * @throws IllegalArgumentException the JSONObject doesn't appear to be a serialized Somethingicule
+         * @throws JSONException some part of the object couldn't be coerced into what it needs to be
+         */
+        @NonNull
+        public static Somethingicule deserialize(@NonNull JSONObject input) throws JSONException {
+            // All Somethingicules require these at a bare minimum.
+            if(!input.has("latitude") || !input.has("longitude")
+                || !input.has("isSouth") || !input.has("isWest")) {
+                throw new IllegalArgumentException("This doesn't look like a Somethingicule!");
+            }
+
+            // Furthermore, if either latitudeFraction or longitudeFraction
+            // exists (for a Centicule), the other MUST exist.
+            if((input.has("latitudeFraction") && !input.has("longitudeFraction"))
+                || (!input.has("latitudeFraction") && input.has("longitudeFraction"))) {
+                throw new IllegalArgumentException("This almost looks like a Centicule, but is missing exactly one of latitudeFraction or longitudeFraction!");
+            }
+
+            // Now we can determine what we've got and deserialize it.
+            if(input.has("latitudeFraction")) {
+                // If there's a latitude fraction, the previous exception check
+                // implies there's a longitude fraction at this point, so this
+                // must be a Centicule.
+                // TODO: Implement once Centicule is implemented.
+                throw new IllegalArgumentException("Centicule isn't implemented yet!");
+            } else {
+                // No latitude fraction means this must be a Graticule.
+                return Graticule.deserializeFromJSON(input);
+            }
+        }
+    }
+
     /**
      * <p>
      * Constructs a new Somethingicule offset from this one.  That is to say,
@@ -138,4 +179,13 @@ public interface Somethingicule<T> extends Parcelable {
      */
     @NonNull
     LatLng makePointFromHash(double latHash, double lonHash);
+
+    /**
+     * Serializes this Somethingicule into a JSONObject.
+     *
+     * @return a new JSONObject
+     * @throws JSONException if something truly wacky happens with JSON creation
+     */
+    @NonNull
+    JSONObject serializeToJSON() throws JSONException;
 }

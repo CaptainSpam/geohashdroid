@@ -21,6 +21,9 @@ import com.google.android.gms.maps.model.LatLng;
 
 import net.exclaimindustries.tools.DateTools;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * <p>
  * An <code>Info</code> object holds all the relevant info that involves the 
@@ -379,6 +382,57 @@ public class Info implements Parcelable {
         // be false.  The only way that can happen is if this is a weekend hash
         // and we're checking on Friday or something.
         mRetroHash = cal.before(today);
+    }
+
+    /**
+     * Serializes this Info (and whatever's inside it) to a JSONObject.
+     *
+     * @return a new JSONObject of this Info
+     * @throws JSONException if something goes weird with JSON creation
+     */
+    public JSONObject serializeToJSON() throws JSONException {
+        JSONObject output = new JSONObject();
+
+        output.put("latitude", getLatitude());
+        output.put("longitude", getLongitude());
+        output.put("timestamp",
+                Long.valueOf(getDate().getTime()).toString());
+
+        if(mGraticule != null) {
+            output.put("graticule", mGraticule.serializeToJSON());
+        }
+
+        return output;
+    }
+
+    /**
+     * Deserializes an Info from a JSONObject.
+     *
+     * @param input a JSONObject
+     * @return a brand new, deserialized Info
+     * @throws JSONException if something's amiss with JSON
+     */
+    public static Info deserializeFromJSON(JSONObject input) throws JSONException {
+        double lat = input.getDouble("latitude");
+        double lon = input.getDouble("longitude");
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(
+                Long.parseLong(input.getString("timestamp")));
+
+        Graticule grat = null;
+        JSONObject gratObj = input.optJSONObject("graticule");
+        if(gratObj != null) {
+            // Notably, this doesn't have to have a graticule.  It could be a
+            // globalhash.
+            // TODO: Update this, and all of Info, when Centicule exists.
+            Somethingicule thing = Somethingicule.Deserializer.deserialize(gratObj);
+
+            if(thing instanceof Graticule) {
+                grat = (Graticule)thing;
+            }
+        }
+
+        return new Info(lat, lon, grat, cal);
     }
 
     /**

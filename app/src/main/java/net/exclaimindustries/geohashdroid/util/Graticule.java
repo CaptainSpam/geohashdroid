@@ -13,6 +13,10 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -498,6 +502,33 @@ public class Graticule implements Somethingicule<Graticule> {
 
         // And out it goes!
         return new LatLng(latHash, lonHash);
+    }
+
+    @NonNull
+    @Override
+    public JSONObject serializeToJSON() throws JSONException {
+        JSONObject output = new JSONObject();
+
+        output.put("latitude", mLatitude);
+        output.put("longitude", mLongitude);
+        output.put("isSouth", isSouth());
+        output.put("isWest", isWest());
+
+        return output;
+    }
+
+    /**
+     * Deserializes a JSONObject into a brand new Graticule.
+     *
+     * @return a new Graticule
+     * @throws JSONException something went wrong, JSON style
+     */
+    @NonNull
+    public static Graticule deserializeFromJSON(JSONObject input) throws JSONException {
+        return new Graticule(input.getInt("latitude"),
+                input.getBoolean("isSouth"),
+                input.getInt("longitude"),
+                input.getBoolean("isWest"));
     }
 
     /*
