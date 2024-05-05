@@ -22,10 +22,15 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.Assert.*;
 
 /**
- * This tests the basic flow of {@link QueueService}.  That is, adding Intents, running
- * through the queue, pausing and stopping as need be, resuming as appropriate,
- * etc.  This does not do anything that involves serialization or storage; that
- * will be covered in their own tests with the specific implementations.
+ * <p>
+ * This tests the basic flow of {@link QueueService}.  That is, adding Intents,
+ * running through the queue, pausing and stopping as need be, resuming as
+ * appropriate, etc.  This does not do anything that involves serialization or
+ * storage; that will be covered in their own tests with the specific
+ * implementations.
+ * </p>
+ *
+ * TODO: This actually doesn't do anything yet.
  */
 public class QueueServiceTest {
     @Rule
