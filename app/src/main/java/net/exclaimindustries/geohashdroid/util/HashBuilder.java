@@ -551,6 +551,7 @@ public class HashBuilder {
     }
     
     /**
+     * <p>
      * Builds a new Info object by applying a new Graticule to an existing Info
      * object.  That is to say, change the destination of an Info object to
      * somewhere else, as if it were the same day and same stock value (and
@@ -558,9 +559,12 @@ public class HashBuilder {
      * existing Info's 30W-alignment isn't the same as the new Graticule's,
      * because that might require a trip back to the internet, and by this
      * point, we should know that we don't need to do so.
-     * 
+     * </p>
+     *
+     * <p>
      * Also note that you can't do any cloning actions on a globalhash, since
      * that doesn't make any sense.
+     * </p>
      * 
      * @param i old Info object to clone
      * @param g new Graticule to apply
@@ -680,12 +684,7 @@ public class HashBuilder {
         // If the Graticule's not null, this is a normal hash.  If it is, it's a
         // globalhash, and has to be treated differently.
         if(g != null) {
-            int lat = g.getLatitude();
-            if (g.isSouth()) {
-                return (lat + getLatitudeHash(hash)) * -1;
-            } else {
-                return lat + getLatitudeHash(hash);
-            }
+            return g.getLatitudeForHash(getLatitudeHash(hash));
         } else {
             return getLatitudeHash(hash);
         }
@@ -695,12 +694,7 @@ public class HashBuilder {
     private static double getLongitude(@Nullable Graticule g, @NonNull String hash) {
         // Same deal as with getLatitude.
         if(g != null) {
-            int lon = g.getLongitude();
-            if (g.isWest()) {
-                return (lon + getLongitudeHash(hash)) * -1;
-            } else {
-                return lon + getLongitudeHash(hash);
-            }
+            return g.getLongitudeForHash(getLongitudeHash(hash));
         } else {
             return getLongitudeHash(hash);
         }

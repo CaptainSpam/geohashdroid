@@ -377,6 +377,24 @@ public class Graticule implements Somethingicule<Graticule> {
         }
     }
 
+    @Override
+    public double getLatitudeForHash(double latHash) {
+        if(latHash < 0 || latHash > 0) {
+            throw new IllegalArgumentException("Invalid latHash value (less than 0 or greater than 1)");
+        }
+
+        // Remember, mLatitude (and mLongitude, below) are absolute values.
+        return (mLatitude + latHash) * (isSouth() ? -1 : 1);
+    }
+
+    @Override
+    public double getLongitudeForHash(double lonHash) {
+        if(lonHash < 0 || lonHash > 0) {
+            throw new IllegalArgumentException("Invalid lonHash value (less than 0 or greater than 1)");
+        }
+        return (mLongitude + lonHash) * (isWest() ? -1 : 1);
+    }
+
     /**
      * Returns the "title" of this Graticule.  In general, this will be in the
      * form of "LAT LON".
@@ -489,19 +507,7 @@ public class Graticule implements Somethingicule<Graticule> {
      */
     @NonNull
     public LatLng makePointFromHash(double latHash, double lonHash) {
-        if(latHash < 0 || latHash > 1 || lonHash < 0 || lonHash > 1)
-            throw new IllegalArgumentException("Those aren't valid hash values!");
-
-        // getLatitude and getLongitude are absolute values, so we can do this:
-        latHash += getLatitude();
-        lonHash += getLongitude();
-
-        // And then we adjust for south/west like so...
-        if(isSouth()) latHash *= -1;
-        if(isWest()) lonHash *= -1;
-
-        // And out it goes!
-        return new LatLng(latHash, lonHash);
+        return new LatLng(getLatitudeForHash(latHash), getLongitudeForHash(lonHash));
     }
 
     @NonNull

@@ -235,10 +235,11 @@ public class StockStoreDatabase {
                 
                 // Get the destination set...
                 if(g != null) {
-                    double lat = (g.getLatitude() + latHash) * (g.isSouth() ? -1 : 1);
-                    double lon = (g.getLongitude() + lonHash) * (g.isWest() ? -1 : 1);
-                    
-                    toReturn = new Info(lat, lon, g, c);
+                    toReturn = new Info(
+                            g.getLatitudeForHash(latHash),
+                            g.getLongitudeForHash(lonHash),
+                            g,
+                            c);
                 } else {
                     toReturn = new Info(latHash, lonHash, null, c);
                 }

@@ -121,6 +121,26 @@ public interface Somethingicule<T> extends Parcelable {
     String getLongitudeString(boolean useNegativeValues);
 
     /**
+     * Gets the full latitude for this Somethingicule for the given fractional
+     * hash value.
+     *
+     * @param latHash the fractional latitude hash value
+     * @return the full latitude for this Somethingicule
+     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
+     */
+    double getLatitudeForHash(double latHash);
+
+    /**
+     * Gets the full longitude for this Somethingicule for the given fractional
+     * hash value.
+     *
+     * @param lonHash the fractional latitude hash value
+     * @return the full longitude for this Somethingicule
+     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
+     */
+    double getLongitudeForHash(double lonHash);
+
+    /**
      * Returns the "title" of this Somethingicule.  In general, this will be in
      * the form of "LAT LON".
      *
