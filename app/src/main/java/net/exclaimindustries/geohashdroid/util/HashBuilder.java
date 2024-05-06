@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.security.InvalidParameterException;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Timer;
@@ -186,7 +185,7 @@ public class HashBuilder {
                         stock = fetchStock(sCal);
                         // If this didn't throw an exception AND it's not blank,
                         // stash it in the database.
-                        if(stock.trim().length() != 0)
+                        if(!stock.trim().isEmpty())
                             storeStock(mContext, sCal, stock);
                     } catch (FileNotFoundException fnfe) {
                         // If we got a 404, assume it's not posted yet.
@@ -433,7 +432,7 @@ public class HashBuilder {
         if(result != null) {
             Log.v(DEBUG_TAG, "Data found in quickcache!");
             if(result.isGlobalHash()) return result;
-            else return cloneInfo(result, g);
+            else return result.cloneWithNewGraticule(g);
         }
         
         // Otherwise, check the stock cache.
@@ -529,13 +528,9 @@ public class HashBuilder {
         
         // So to that end, we first build up the hash.
         String hash = makeHash(c, stockPrice);
-        
-        // Then, get the latitude and longitude from that.
-        double lat = getLatitude(g, hash);
-        double lon = getLongitude(g, hash);
-        
-        // And finally...
-        return new Info(lat, lon, g, c);
+
+        // And then we jam that into an Info.
+        return new Info(getLatitudeHash(hash), getLongitudeHash(hash), g, c);
     }
     
     /**
@@ -549,53 +544,7 @@ public class HashBuilder {
     private static Info createInvalidInfo(@NonNull Calendar c, @Nullable Graticule g) {
         return new Info(g, c);
     }
-    
-    /**
-     * <p>
-     * Builds a new Info object by applying a new Graticule to an existing Info
-     * object.  That is to say, change the destination of an Info object to
-     * somewhere else, as if it were the same day and same stock value (and
-     * thus the same hash).  Note that this will throw an exception if the 
-     * existing Info's 30W-alignment isn't the same as the new Graticule's,
-     * because that might require a trip back to the internet, and by this
-     * point, we should know that we don't need to do so.
-     * </p>
-     *
-     * <p>
-     * Also note that you can't do any cloning actions on a globalhash, since
-     * that doesn't make any sense.
-     * </p>
-     * 
-     * @param i old Info object to clone
-     * @param g new Graticule to apply
-     * @throws InvalidParameterException the Info and Graticule do not lie on
-     *                                   the same side of the 30W line, or one
-     *                                   of the Graticules in question
-     *                                   represents a globalhash.
-     * @return a new, improved Info object
-     */
-    @NonNull
-    private static Info cloneInfo(@NonNull Info i, @Nullable Graticule g) {
-        if(i.isGlobalHash() || g == null)
-            throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
 
-        Graticule source = i.getGraticule();
-
-        if(source == null)
-            throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
-        
-        // This sort of requires the 30W-itude of both to match.
-        if(source.uses30WRule() != g.uses30WRule())
-            throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line; this should not have happened.");
-        
-        // Get the destination set...
-        double lat = (g.getLatitude() + i.getLatitudeHash()) * (g.isSouth() ? -1 : 1);
-        double lon = (g.getLongitude() + i.getLongitudeHash()) * (g.isWest() ? -1 : 1);
-        
-        // Then...
-        return new Info(lat, lon, g, i.getCalendar());
-    }
-    
     /**
      * Generate the hash string from the date and stock price.  The REAL date,
      * that is.  Not a 30W Rule-adjusted date.
@@ -679,25 +628,4 @@ public class HashBuilder {
         String chunk = hash.substring(16, 32);
         return HexFraction.calculate(chunk);
     }
-
-    private static double getLatitude(@Nullable Graticule g, @NonNull String hash) {
-        // If the Graticule's not null, this is a normal hash.  If it is, it's a
-        // globalhash, and has to be treated differently.
-        if(g != null) {
-            return g.getLatitudeForHash(getLatitudeHash(hash));
-        } else {
-            return getLatitudeHash(hash);
-        }
-
-    }
-
-    private static double getLongitude(@Nullable Graticule g, @NonNull String hash) {
-        // Same deal as with getLatitude.
-        if(g != null) {
-            return g.getLongitudeForHash(getLongitudeHash(hash));
-        } else {
-            return getLongitudeHash(hash);
-        }
-    }
-
 }

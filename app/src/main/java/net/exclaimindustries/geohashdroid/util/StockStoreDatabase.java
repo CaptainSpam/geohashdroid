@@ -232,17 +232,8 @@ public class StockStoreDatabase {
                 double latHash = cursor.getDouble(0);
                 double lonHash = cursor.getDouble(1);
                 Log.v(DEBUG_TAG, "Info found -- Today's lucky numbers are " + latHash + "," + lonHash);
-                
-                // Get the destination set...
-                if(g != null) {
-                    toReturn = new Info(
-                            g.getLatitudeForHash(latHash),
-                            g.getLongitudeForHash(lonHash),
-                            g,
-                            c);
-                } else {
-                    toReturn = new Info(latHash, lonHash, null, c);
-                }
+
+                toReturn = new Info(latHash, lonHash, g, c);
             }
             
             cursor.close();

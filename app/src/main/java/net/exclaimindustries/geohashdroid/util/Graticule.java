@@ -381,7 +381,7 @@ public class Graticule implements Somethingicule<Graticule> {
 
     @Override
     public double getLatitudeForHash(double latHash) {
-        if(latHash < 0 || latHash > 0) {
+        if(latHash < 0 || latHash > 1) {
             throw new IllegalArgumentException("Invalid latHash value (less than 0 or greater than 1)");
         }
 
@@ -391,7 +391,7 @@ public class Graticule implements Somethingicule<Graticule> {
 
     @Override
     public double getLongitudeForHash(double lonHash) {
-        if(lonHash < 0 || lonHash > 0) {
+        if(lonHash < 0 || lonHash > 1) {
             throw new IllegalArgumentException("Invalid lonHash value (less than 0 or greater than 1)");
         }
         return (mLongitude + lonHash) * (isWest() ? -1 : 1);
