@@ -648,16 +648,6 @@ public class KnownLocation implements Parcelable {
 
     @Override
     public int hashCode() {
-        // Good thing there's only four fields to hash up...
-        int toReturn = 17;
-
-        long convert = Double.doubleToLongBits(mRange);
-        toReturn = 31 * toReturn + (int)(convert & (convert >>> 32));
-        convert = Double.doubleToLongBits(mGlobalhashRange);
-        toReturn = 31 * toReturn + (int)(convert & (convert >>> 32));
-        toReturn = 31 * toReturn + (mLocation == null ? 0 : mLocation.hashCode());
-        toReturn = 31 * toReturn + (mName == null ? 0 : mName.hashCode());
-
-        return toReturn;
+        return Objects.hash(mRange, mGlobalhashRange, mLocation, mName);
     }
 }

@@ -10,6 +10,7 @@ package net.exclaimindustries.geohashdroid.util;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Objects;
 
 import android.location.Location;
 import android.os.Parcel;
@@ -537,18 +538,11 @@ public class Info implements Parcelable {
 
     @Override
     public int hashCode() {
-        // Hash!
-        int toReturn = 13;
-
-        toReturn = 27 * toReturn + (mValid ? 1 : 0);
-        toReturn = 27 * toReturn + (mRetroHash ? 1 : 0);
-        long convert = Double.doubleToLongBits(mLatitude);
-        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
-        convert = Double.doubleToLongBits(mLongitude);
-        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
-        toReturn = 27 * toReturn + (mGraticule == null ? 0 : mGraticule.hashCode());
-        toReturn = 27 * toReturn + (mDate == null ? 0 : mDate.hashCode());
-
-        return toReturn;
+        return Objects.hash(mValid,
+                mRetroHash,
+                mLatitude,
+                mLongitude,
+                mGraticule,
+                mDate);
     }
 }

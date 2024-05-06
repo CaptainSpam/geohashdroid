@@ -17,6 +17,8 @@ import android.os.Parcelable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Objects;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -561,16 +563,7 @@ public class Graticule implements Somethingicule<Graticule> {
 
     @Override
     public int hashCode() {
-        // Um... 11!  That's a prime number, right?
-        int toReturn = 11;
-
-        // And so's 37!
-        toReturn = 37 * toReturn + mLatitude;
-        toReturn = 37 * toReturn + mLongitude;
-        toReturn = 37 * toReturn + (mSouth ? 0 : 1);
-        toReturn = 37 * toReturn + (mWest ? 0 : 1);
-
-        return toReturn;
+        return Objects.hash(mLatitude, mLongitude, mSouth, mWest);
     }
 
     @Override
