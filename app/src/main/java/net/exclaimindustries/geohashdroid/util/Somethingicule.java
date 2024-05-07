@@ -34,7 +34,7 @@ public interface Somethingicule<T> extends Parcelable {
          * @throws JSONException some part of the object couldn't be coerced into what it needs to be
          */
         @NonNull
-        public static Somethingicule deserialize(@NonNull JSONObject input) throws JSONException {
+        public static Somethingicule<?> deserialize(@NonNull JSONObject input) throws JSONException {
             // All Somethingicules require these at a bare minimum.
             if(!input.has("latitude") || !input.has("longitude")
                 || !input.has("isSouth") || !input.has("isWest")) {

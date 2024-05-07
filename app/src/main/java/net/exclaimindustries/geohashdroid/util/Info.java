@@ -446,7 +446,7 @@ public class Info implements Parcelable {
             if(gratObj != null) {
                 // Notably, this could be null, if it's a globalhash.
                 // TODO: Update this, and all of Info, when Centicule exists.
-                Somethingicule thing = Somethingicule.Deserializer.deserialize(gratObj);
+                Somethingicule<?> thing = Somethingicule.Deserializer.deserialize(gratObj);
 
                 if(thing instanceof Graticule) {
                     grat = (Graticule)thing;
