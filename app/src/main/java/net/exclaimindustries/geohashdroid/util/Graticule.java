@@ -39,7 +39,7 @@ import androidx.annotation.NonNull;
  * 
  * @author Nicholas Killewald
  */
-public class Graticule implements Somethingicule<Graticule> {
+public class Graticule implements Somethingicule {
     private int mLatitude;
     private int mLongitude;
 

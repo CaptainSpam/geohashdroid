@@ -23,7 +23,7 @@ import androidx.annotation.NonNull;
  * centicules, and whatever else might come up for subdividing the planet for
  * Geohashing purposes (besides globalhashes).
  */
-public interface Somethingicule<T> extends Parcelable {
+public interface Somethingicule extends Parcelable {
     class Deserializer {
         /**
          * Deserializes a JSONObject into an appropriate Somethingicule.
@@ -34,7 +34,7 @@ public interface Somethingicule<T> extends Parcelable {
          * @throws JSONException some part of the object couldn't be coerced into what it needs to be
          */
         @NonNull
-        public static Somethingicule<?> deserialize(@NonNull JSONObject input) throws JSONException {
+        public static Somethingicule deserialize(@NonNull JSONObject input) throws JSONException {
             // All Somethingicules require these at a bare minimum.
             if(!input.has("latitude") || !input.has("longitude")
                 || !input.has("isSouth") || !input.has("isWest")) {
@@ -87,7 +87,7 @@ public interface Somethingicule<T> extends Parcelable {
      * @throws IllegalArgumentException the resulting Somethingicule doesn't exist (i.e. trying to offset past the poles)
      */
     @NonNull
-    T createOffset(int latOff, int lonOff);
+    Somethingicule createOffset(int latOff, int lonOff);
 
     /**
      * Returns true if the 30W Rule is in effect. Which is to say, anything east
