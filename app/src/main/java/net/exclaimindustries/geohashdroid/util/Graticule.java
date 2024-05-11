@@ -28,11 +28,7 @@ import androidx.annotation.NonNull;
  * implementation of a Graticule is designed to be immutable owing to a few odd
  * things that happen around the equator and Prime Meridian.
  * </p>
- * 
- * <p>
- * Note that Graticules are immutable.
- * </p>
- * 
+ *
  * <p>
  * *: Well, maybe not the heart. At least the kidneys for sure.
  * </p>
@@ -266,7 +262,7 @@ public class Graticule implements Somethingicule {
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
         // Hey!  We've got a parcel to write out!  To compress this down a bit
         // further, we want to only store two ints (instead of two ints and two
         // booleans).  See the comments in readFromParcel for details.  To wit:
@@ -283,15 +279,7 @@ public class Graticule implements Somethingicule {
             dest.writeInt(mLongitude + 180);
     }
 
-    /**
-     * Returns true if the 30W Rule is in effect. Which is to say, anything east
-     * of -30 longitude uses yesterday's stock value, regardless of if the DJIA
-     * was updated to that point.  Note that this only determines if the
-     * graticule itself abides by the 30W Rule; if the date is May 26, 2008 or
-     * earlier, 30W is ignored.
-     * 
-     * @return true if the 30W Rule is in effect, false otherwise
-     */
+    @Override
     public boolean uses30WRule() {
         return (mLongitude < 30 || !isWest());
     }
@@ -314,13 +302,8 @@ public class Graticule implements Somethingicule {
         return mLatitude;
     }
 
-    /**
-     * Returns the current latitude as a String to account for negative zero
-     * graticule wackiness.
-     * @param useNegativeValues true to return values as negative for south and positive for north, false to return values with N and S indicators
-     * @return the current latitude as a String
-     */
     @NonNull
+    @Override
     public String getLatitudeString(boolean useNegativeValues) {
         if (mSouth) {
             if(useNegativeValues) {
@@ -355,14 +338,8 @@ public class Graticule implements Somethingicule {
         return mLongitude;
     }
 
-    /**
-     * Returns the current longitude as a String to account for negative zero
-     * graticule madness.
-     * 
-     * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
-     * @return the current longitude as a String
-     */
     @NonNull
+    @Override
     public String getLongitudeString(boolean useNegativeValues) {
         if (mWest) {
             if(useNegativeValues) {
@@ -397,44 +374,26 @@ public class Graticule implements Somethingicule {
         return (mLongitude + lonHash) * (isWest() ? -1 : 1);
     }
 
-    /**
-     * Returns the "title" of this Graticule.  In general, this will be in the
-     * form of "LAT LON".
-     *
-     * @param useNegativeValues true to return values as negative for west and positive for east, false to return values with E and W indicators
-     * @return a title string for this Graticule
-     */
     @NonNull
+    @Override
     public String getTitleString(boolean useNegativeValues) {
         return getLatitudeString(useNegativeValues)
                 + ' '
                 + getLongitudeString(useNegativeValues);
     }
 
-    /**
-     * Returns whether or not this is a southern latitude (negative).
-     * 
-     * @return true if south, false if north
-     */
+    @Override
     public boolean isSouth() {
         return mSouth;
     }
 
-    /**
-     * Returns whether or not this is an western longitude (negative).
-     * 
-     * @return true if west, false if east.
-     */
+    @Override
     public boolean isWest() {
         return mWest;
     }
 
-    /**
-     * Returns the center of this Graticule as a LatLng.
-     *
-     * @return a LatLng representing the center of this Graticule.
-     */
     @NonNull
+    @Override
     public LatLng getCenterLatLng() {
         double lat, lon;
 
@@ -453,13 +412,8 @@ public class Graticule implements Somethingicule {
         return new LatLng(lat, lon);
     }
 
-    /**
-     * Make a Maps v2 PolygonOptions out of this Graticule.  You can then style
-     * it yourself and toss it into a map as need be.
-     *
-     * @return a PolygonOptions set up as this Graticule sits.
-     */
     @NonNull
+    @Override
     public PolygonOptions getPolygon() {
         PolygonOptions toReturn = new PolygonOptions();
 
@@ -491,23 +445,8 @@ public class Graticule implements Somethingicule {
         return toReturn;
     }
 
-    /**
-     * <p>
-     * Makes a LatLng out of this Graticule and component fractional hash parts.
-     * In other words, this forces the fractional bits into a proper location
-     * based on this Graticule.
-     * </p>
-     *
-     * <p>
-     * TODO: HashBuilder could start calling this instead...
-     * </p>
-     *
-     * @param latHash the fractional latitude portion of the hash
-     * @param lonHash the fractional longitude portion of the hash
-     * @return a new LatLng
-     * @throws IllegalArgumentException if latHash or lonHash are less than 0 or greater than 1
-     */
     @NonNull
+    @Override
     public LatLng makePointFromHash(double latHash, double lonHash) {
         return new LatLng(getLatitudeForHash(latHash), getLongitudeForHash(lonHash));
     }
@@ -540,11 +479,6 @@ public class Graticule implements Somethingicule {
                 input.getBoolean("isWest"));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object o) {
         // First, this better be a Graticule.
