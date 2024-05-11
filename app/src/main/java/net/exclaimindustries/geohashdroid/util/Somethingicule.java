@@ -19,45 +19,58 @@ import org.json.JSONObject;
 import androidx.annotation.NonNull;
 
 /**
+ * <p>
  * <code>Somethingicule</code> is the common interface for graticules,
  * centicules, and whatever else might come up for subdividing the planet for
  * Geohashing purposes (besides globalhashes).
+ * </p>
+ *
+ * <p>
+ * Note that Somethingicules are immutable.
+ * </p>
+ *
+ * <p>
+ * Also, a lot of the code in Geohash Droid was written with graticules in mind,
+ * so if you come across comments that mention graticules without context (and
+ * you aren't in the literal Graticule class), assume it applies to
+ * Somethingicules.  I wasn't about to go change every single reference.
+ * </p>
  */
 public interface Somethingicule extends Parcelable {
+    /**
+     * The type of Somethingicule this is.  Used for deserialization.
+     */
+    enum Type {
+        /** A classic 1x1 degree graticule. */
+        GRATICULE,
+        /** A spicy 0.1x0.1 degree centicule. */
+        CENTICULE
+    }
+
     class Deserializer {
         /**
          * Deserializes a JSONObject into an appropriate Somethingicule.
          *
          * @param input the JSONObject to deserialize
          * @return a deserialized Somethingicule
-         * @throws IllegalArgumentException the JSONObject doesn't appear to be a serialized Somethingicule
          * @throws JSONException some part of the object couldn't be coerced into what it needs to be
+         * @throws IllegalArgumentException something is very very wrong and an illegal Somethingicule type somehow got involved
          */
         @NonNull
         public static Somethingicule deserialize(@NonNull JSONObject input) throws JSONException {
-            // All Somethingicules require these at a bare minimum.
-            if(!input.has("latitude") || !input.has("longitude")
-                || !input.has("isSouth") || !input.has("isWest")) {
-                throw new IllegalArgumentException("This doesn't look like a Somethingicule!");
+            // If the type field doesn't exist, assume this is a Graticule from
+            // before type fields existed.  If it isn't, I guess exceptions will
+            // be thrown.
+            Type type = Type.GRATICULE;
+            if(input.has("type")) {
+                type = Type.valueOf(input.getString("type"));
             }
 
-            // Furthermore, if either latitudeFraction or longitudeFraction
-            // exists (for a Centicule), the other MUST exist.
-            if((input.has("latitudeFraction") && !input.has("longitudeFraction"))
-                || (!input.has("latitudeFraction") && input.has("longitudeFraction"))) {
-                throw new IllegalArgumentException("This almost looks like a Centicule, but is missing exactly one of latitudeFraction or longitudeFraction!");
-            }
-
-            // Now we can determine what we've got and deserialize it.
-            if(input.has("latitudeFraction")) {
-                // If there's a latitude fraction, the previous exception check
-                // implies there's a longitude fraction at this point, so this
-                // must be a Centicule.
-                // TODO: Implement once Centicule is implemented.
-                throw new IllegalArgumentException("Centicule isn't implemented yet!");
-            } else {
-                // No latitude fraction means this must be a Graticule.
-                return Graticule.deserializeFromJSON(input);
+            switch(type) {
+                case GRATICULE:
+                    return Graticule.deserializeFromJSON(input);
+                default:
+                    throw new IllegalArgumentException("Couldn't determine type of Somethingicule from type: " + type);
             }
         }
     }

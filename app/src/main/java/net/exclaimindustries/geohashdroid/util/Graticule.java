@@ -517,6 +517,7 @@ public class Graticule implements Somethingicule {
     public JSONObject serializeToJSON() throws JSONException {
         JSONObject output = new JSONObject();
 
+        output.put("type", Type.GRATICULE.name());
         output.put("latitude", mLatitude);
         output.put("longitude", mLongitude);
         output.put("isSouth", isSouth());
@@ -563,7 +564,7 @@ public class Graticule implements Somethingicule {
 
     @Override
     public int hashCode() {
-        return Objects.hash(mLatitude, mLongitude, mSouth, mWest);
+        return Objects.hash(Type.GRATICULE, mLatitude, mLongitude, mSouth, mWest);
     }
 
     @Override
