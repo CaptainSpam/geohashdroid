@@ -8,6 +8,8 @@
 
 package net.exclaimindustries.util;
 
+import android.location.Location;
+
 import com.google.android.gms.maps.model.LatLng;
 
 import net.exclaimindustries.geohashdroid.util.Graticule;
@@ -26,6 +28,140 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(BlockJUnit4ClassRunner.class)
 public class GraticuleTest {
+    @Test
+    public void constructor_fromLocationInNorthEast() {
+        Location loc = new Location("");
+        loc.setLatitude(37.6732187);
+        loc.setLongitude(121.98432152);
+        Graticule g = new Graticule(loc);
+
+    assertEquals("37N", g.getLatitudeString(false));
+    assertEquals("121E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromLocationInSouthWest() {
+        Location loc = new Location("");
+        loc.setLatitude(-37.6732187);
+        loc.setLongitude(-121.98432152);
+        Graticule g = new Graticule(loc);
+
+        assertEquals("37S", g.getLatitudeString(false));
+        assertEquals("121W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromLocationNearZero() {
+        Location loc = new Location("");
+        loc.setLatitude(-0.332523);
+        loc.setLongitude(0.2378843);
+        Graticule g = new Graticule(loc);
+
+        assertEquals("0S", g.getLatitudeString(false));
+        assertEquals("0E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromLatLngInNorthEast() {
+        LatLng ll = new LatLng(37.6732187, 121.98432152);
+        Graticule g = new Graticule(ll);
+
+        assertEquals("37N", g.getLatitudeString(false));
+        assertEquals("121E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromLatLngInSouthWest() {
+        LatLng ll = new LatLng(-37.6732187, -121.98432152);
+        Graticule g = new Graticule(ll);
+
+        assertEquals("37S", g.getLatitudeString(false));
+        assertEquals("121W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromLatLngNearZero() {
+        LatLng ll = new LatLng(0.79876521, -0.1779846);
+        Graticule g = new Graticule(ll);
+
+        assertEquals("0N", g.getLatitudeString(false));
+        assertEquals("0W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromComponentPartsInNorthEast() {
+        Graticule g = new Graticule(37, false, 121, false);
+
+        assertEquals("37N", g.getLatitudeString(false));
+        assertEquals("121E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromComponentPartsInSouthWest() {
+        Graticule g = new Graticule(37, true, 121, true);
+
+        assertEquals("37S", g.getLatitudeString(false));
+        assertEquals("121W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromComponentPartsNearZero() {
+        Graticule g = new Graticule(0, true, 0, false);
+
+        assertEquals("0S", g.getLatitudeString(false));
+        assertEquals("0E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromDoublesInNorthEast() {
+        Graticule g = new Graticule(37.9879087, 121.093837);
+
+        assertEquals("37N", g.getLatitudeString(false));
+        assertEquals("121E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromDoublesInSouthWest() {
+        Graticule g = new Graticule(-37.9879087, -121.093837);
+
+        assertEquals("37S", g.getLatitudeString(false));
+        assertEquals("121W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromDoublesNearZero() {
+        // Remember, this one really needs to be NEAR zero; behavior is not
+        // defined for values that are EXACTLY zero.
+        Graticule g = new Graticule(0.1102487, -0.003247);
+
+        assertEquals("0N", g.getLatitudeString(false));
+        assertEquals("0W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromStringsInNorthEast() {
+        Graticule g = new Graticule("37", "121");
+
+        assertEquals("37N", g.getLatitudeString(false));
+        assertEquals("121E", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromStringsInSouthWest() {
+        Graticule g = new Graticule("-37", "-121");
+
+        assertEquals("37S", g.getLatitudeString(false));
+        assertEquals("121W", g.getLongitudeString(false));
+    }
+
+    @Test
+    public void constructor_fromStringsAtZero() {
+        Graticule g = new Graticule("-0", "0");
+
+        assertEquals("0S", g.getLatitudeString(false));
+        assertEquals("0E", g.getLongitudeString(false));
+    }
+
     @Test
     public void createOffset_ReturnsSameGraticuleForZeroes() {
         Graticule g = new Graticule(37, false, 121, true);

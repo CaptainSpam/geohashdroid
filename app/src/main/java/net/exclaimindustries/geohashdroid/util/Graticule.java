@@ -48,7 +48,7 @@ public class Graticule implements Somethingicule {
      * 
      * @param location Location to make a new Graticule out of
      */
-    public Graticule(Location location) {
+    public Graticule(@NonNull Location location) {
         this(location.getLatitude(), location.getLongitude());
     }
 
@@ -58,7 +58,7 @@ public class Graticule implements Somethingicule {
      *
      * @param latLng LatLng to make a new Graticule out of
      */
-    public Graticule(LatLng latLng) {
+    public Graticule(@NonNull LatLng latLng) {
         this(latLng.latitude, latLng.longitude);
     }
 
@@ -117,15 +117,23 @@ public class Graticule implements Somethingicule {
     }
 
     /**
+     * <p>
      * Constructs a new Graticule with the given String forms of the latitude
-     * and longitude.
+     * and longitude.  This means only integers, and using negative values for
+     * south and west.
+     * </p>
+     *
+     * <p>
+     * TODO: This should really be able to handle the string form of doubles,
+     * AND handle N/E/S/W suffixes.
+     * </p>
      * 
      * @param latitude latitude to set
      * @param longitude longitude to set
      * @throws NullPointerException either of the input strings were empty
      * @throws NumberFormatException either of the input strings weren't numbers
      */
-    public Graticule(String latitude, String longitude)
+    public Graticule(@NonNull String latitude, @NonNull String longitude)
             throws NullPointerException, NumberFormatException {
         mSouth = latitude.charAt(0) == '-';
         mWest = longitude.charAt(0) == '-';
