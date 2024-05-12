@@ -367,7 +367,7 @@ public class Centicule implements Somethingicule {
 
     @NonNull
     @Override
-    public LatLng getCenterLatLng() {
+    public LatLng getCenterLatLng() throws IllegalArgumentException {
         double lat = getLatitudeAsDouble() + (0.05 * (mSouth ? -1 : 1));
         double lon = getLongitudeAsDouble() + (0.05 * (mWest ? -1 : 1));
 
@@ -376,7 +376,7 @@ public class Centicule implements Somethingicule {
 
     @NonNull
     @Override
-    public PolygonOptions getPolygon() {
+    public PolygonOptions getPolygon() throws IllegalArgumentException {
         PolygonOptions toReturn = new PolygonOptions();
 
         double top, left, bottom, right;
@@ -421,8 +421,8 @@ public class Centicule implements Somethingicule {
         output.put("type", Type.CENTICULE.name());
         output.put("latitude", mLatitude);
         output.put("longitude", mLongitude);
-        output.put("isSouth", isSouth());
-        output.put("isWest", isWest());
+        output.put("isSouth", mSouth);
+        output.put("isWest", mWest);
 
         return output;
     }
@@ -517,7 +517,7 @@ public class Centicule implements Somethingicule {
         // right?
         return !(c.getLatitudeAsDouble() != getLatitudeAsDouble()
                 || c.getLongitudeAsDouble() != getLongitudeAsDouble()
-                || c.isSouth() != isSouth() || c.isWest() != isWest());
+                || c.mSouth != mSouth || c.mWest != mWest);
     }
 
     @Override

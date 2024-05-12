@@ -335,16 +335,22 @@ public class SelectAGraticuleMode
         // globalhash mode, so we just don't draw the outline at all.
         if(g == null) return;
 
-        // And with that Graticule, we can get a Polygon.
-        PolygonOptions opts = g.getPolygon()
-                .strokeColor(ContextCompat.getColor(mCentralMap, R.color.graticule_stroke))
-                .strokeWidth(2)
-                .fillColor(ContextCompat.getColor(mCentralMap, R.color.graticule_fill));
+        // And with that Graticule, maybe we can get a Polygon.
+        try {
+            PolygonOptions opts = g.getPolygon()
+                    .strokeColor(ContextCompat.getColor(mCentralMap, R.color.graticule_stroke))
+                    .strokeWidth(2)
+                    .fillColor(ContextCompat.getColor(mCentralMap, R.color.graticule_fill));
 
-        if(mMap != null) {
-            mPolygon = mMap.addPolygon(opts);
+            if(mMap != null) {
+                mPolygon = mMap.addPolygon(opts);
 
-            zoomToPoint(g.getCenterLatLng());
+                zoomToPoint(g.getCenterLatLng());
+            }
+        } catch(IllegalArgumentException iae) {
+            // An IllegalArgumentException means we can't draw this, likely due
+            // to it being a globalhash.  This really shouldn't happen, but just
+            // ignore it.
         }
     }
 

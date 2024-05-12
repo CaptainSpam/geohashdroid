@@ -392,7 +392,7 @@ public class Graticule implements Somethingicule {
 
     @NonNull
     @Override
-    public LatLng getCenterLatLng() {
+    public LatLng getCenterLatLng() throws IllegalArgumentException {
         double lat, lon;
 
         if(mSouth) {
@@ -412,7 +412,7 @@ public class Graticule implements Somethingicule {
 
     @NonNull
     @Override
-    public PolygonOptions getPolygon() {
+    public PolygonOptions getPolygon() throws IllegalArgumentException {
         PolygonOptions toReturn = new PolygonOptions();
 
         int top, left, bottom, right;

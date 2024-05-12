@@ -169,18 +169,20 @@ public interface Somethingicule extends Parcelable {
      * Returns the center of this Somethingicule as a LatLng.
      *
      * @return a LatLng representing the center of this Somethingicule.
+     * @throws IllegalArgumentException this Somethingicule has no "center" per se (likely because it's a Globalhashicule)
      */
     @NonNull
-    LatLng getCenterLatLng();
+    LatLng getCenterLatLng() throws IllegalArgumentException;
 
     /**
      * Make a Maps v2 PolygonOptions out of this Somethingicule.  You can then
      * style it yourself and toss it into a map as need be.
      *
      * @return a PolygonOptions set up as this Somethingicule sits.
+     * @throws IllegalArgumentException this Somethingicule doesn't support a polygon (likely because it's a Globalhashicule)
      */
     @NonNull
-    PolygonOptions getPolygon();
+    PolygonOptions getPolygon() throws IllegalArgumentException;
 
     /**
      * <p>
