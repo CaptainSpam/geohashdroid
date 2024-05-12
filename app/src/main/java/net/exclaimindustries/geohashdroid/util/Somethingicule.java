@@ -44,7 +44,9 @@ public interface Somethingicule extends Parcelable {
         /** A classic 1x1 degree graticule. */
         GRATICULE,
         /** A spicy 0.1x0.1 degree centicule. */
-        CENTICULE
+        CENTICULE,
+        /** A beefy worldwide globalhash. */
+        GLOBALHASHICULE,
     }
 
     class Deserializer {
@@ -71,6 +73,10 @@ public interface Somethingicule extends Parcelable {
                     return Graticule.deserializeFromJSON(input);
                 case CENTICULE:
                     return Centicule.deserializeFromJSON(input);
+                case GLOBALHASHICULE:
+                    // There's no data in a serialized Globalhashicule besides
+                    // the type.  Just return the instance.
+                    return Globalhashicule.getInstance();
                 default:
                     throw new IllegalArgumentException("Couldn't determine type of Somethingicule from type: " + type);
             }
