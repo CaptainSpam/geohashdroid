@@ -69,6 +69,8 @@ public interface Somethingicule extends Parcelable {
             switch(type) {
                 case GRATICULE:
                     return Graticule.deserializeFromJSON(input);
+                case CENTICULE:
+                    return Centicule.deserializeFromJSON(input);
                 default:
                     throw new IllegalArgumentException("Couldn't determine type of Somethingicule from type: " + type);
             }
