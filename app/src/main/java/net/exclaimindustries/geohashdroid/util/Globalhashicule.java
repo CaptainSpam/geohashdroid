@@ -17,6 +17,8 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Objects;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -139,5 +141,24 @@ public final class Globalhashicule implements Somethingicule {
     @Override
     public void writeToParcel(@NonNull Parcel parcel, int i) {
         // There's nothing to parcelize here.
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        // There should only ever be one Globalhashicule, it has no contents,
+        // and its identity is irrelevant, so an instanceof check is all we
+        // really need.
+        return o instanceof Globalhashicule;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Type.GLOBALHASHICULE, "I AM THE GLOBALHASHICULE, THERE'S ONLY ONE OF ME, SO YEAH");
+    }
+
+    @Override
+    @NonNull
+    public String toString() {
+        return "Globalhashicule";
     }
 }
