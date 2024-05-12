@@ -156,12 +156,12 @@ public class Graticule implements Somethingicule {
 
         int finalLat = mLatitude;
         int finalLon = mLongitude;
-        boolean finalSouth = isSouth();
-        boolean finalWest = isWest();
+        boolean finalSouth = mSouth;
+        boolean finalWest = mWest;
 
         // Skip the following if latitude is unaffected.
         if (latOff != 0) {
-            if (isSouth() == goingSouth) {
+            if (mSouth == goingSouth) {
                 // Going the same direction, no equator-hacking needed.
                 finalLat += latOff;
             } else {
@@ -289,7 +289,7 @@ public class Graticule implements Somethingicule {
 
     @Override
     public boolean uses30WRule() {
-        return (mLongitude < 30 || !isWest());
+        return mLongitude < 30 || (!mWest);
     }
 
     private void setLatitude(int latitude) {
@@ -371,7 +371,7 @@ public class Graticule implements Somethingicule {
         }
 
         // Remember, mLatitude (and mLongitude, below) are absolute values.
-        return (mLatitude + latHash) * (isSouth() ? -1 : 1);
+        return (mLatitude + latHash) * (mSouth ? -1 : 1);
     }
 
     @Override
@@ -379,7 +379,7 @@ public class Graticule implements Somethingicule {
         if(lonHash < 0 || lonHash > 1) {
             throw new IllegalArgumentException("Invalid lonHash value (less than 0 or greater than 1)");
         }
-        return (mLongitude + lonHash) * (isWest() ? -1 : 1);
+        return (mLongitude + lonHash) * (mWest ? -1 : 1);
     }
 
     @NonNull
@@ -390,28 +390,18 @@ public class Graticule implements Somethingicule {
                 + getLongitudeString(useNegativeValues);
     }
 
-    @Override
-    public boolean isSouth() {
-        return mSouth;
-    }
-
-    @Override
-    public boolean isWest() {
-        return mWest;
-    }
-
     @NonNull
     @Override
     public LatLng getCenterLatLng() {
         double lat, lon;
 
-        if(isSouth()) {
+        if(mSouth) {
             lat = -getLatitude() - 0.5;
         } else {
             lat = getLatitude() + 0.5;
         }
 
-        if(isWest()) {
+        if(mWest) {
             lon = -getLongitude() - 0.5;
         } else {
             lon = getLongitude() + 0.5;
@@ -427,7 +417,7 @@ public class Graticule implements Somethingicule {
 
         int top, left, bottom, right;
 
-        if(isSouth()) {
+        if(mSouth) {
             bottom = -getLatitude() - 1;
             top = -getLatitude();
         } else {
@@ -435,7 +425,7 @@ public class Graticule implements Somethingicule {
             top = getLatitude() + 1;
         }
 
-        if(isWest()) {
+        if(mWest) {
             right = -getLongitude() - 1;
             left = -getLongitude();
         } else {
@@ -467,8 +457,8 @@ public class Graticule implements Somethingicule {
         output.put("type", Type.GRATICULE.name());
         output.put("latitude", mLatitude);
         output.put("longitude", mLongitude);
-        output.put("isSouth", isSouth());
-        output.put("isWest", isWest());
+        output.put("isSouth", mSouth);
+        output.put("isWest", mWest);
 
         return output;
     }
@@ -501,7 +491,7 @@ public class Graticule implements Somethingicule {
         // right?
         return !(g.getLatitude() != getLatitude()
                 || g.getLongitude() != getLongitude()
-                || g.isSouth() != isSouth() || g.isWest() != isWest());
+                || g.mSouth != mSouth || g.mWest != mWest);
     }
 
     @Override

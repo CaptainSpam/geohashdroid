@@ -166,20 +166,6 @@ public interface Somethingicule extends Parcelable {
     String getTitleString(boolean useNegativeValues);
 
     /**
-     * Returns whether or not this is a southern latitude (negative).
-     *
-     * @return true if south, false if north
-     */
-    boolean isSouth();
-
-    /**
-     * Returns whether or not this is an western longitude (negative).
-     *
-     * @return true if west, false if east.
-     */
-    boolean isWest();
-
-    /**
      * Returns the center of this Somethingicule as a LatLng.
      *
      * @return a LatLng representing the center of this Somethingicule.

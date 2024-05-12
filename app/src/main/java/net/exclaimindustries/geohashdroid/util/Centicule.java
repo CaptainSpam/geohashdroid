@@ -195,12 +195,12 @@ public class Centicule implements Somethingicule {
 
         int finalLat = mLatitude;
         int finalLon = mLongitude;
-        boolean finalSouth = isSouth();
-        boolean finalWest = isWest();
+        boolean finalSouth = mSouth;
+        boolean finalWest = mWest;
 
         // Skip the following if latitude is unaffected.
         if (latOff != 0) {
-            if (isSouth() == goingSouth) {
+            if (mSouth == goingSouth) {
                 // Going the same direction, no equator-hacking needed.
                 finalLat += latOff;
             } else {
@@ -253,7 +253,7 @@ public class Centicule implements Somethingicule {
 
     @Override
     public boolean uses30WRule() {
-        return (mLongitude < 300 || !isWest());
+        return mLongitude < 300 || (!mWest);
     }
 
     private void setCompleteLatitude(int completeLatitude) {
@@ -333,7 +333,7 @@ public class Centicule implements Somethingicule {
             throw new IllegalArgumentException("Invalid latHash value (less than 0 or greater than 1)");
         }
 
-        return ((mLatitude * 0.1) + (latHash * 0.1)) * (isSouth() ? -1 : 1);
+        return ((mLatitude * 0.1) + (latHash * 0.1)) * (mSouth ? -1 : 1);
     }
 
     @Override
@@ -342,17 +342,17 @@ public class Centicule implements Somethingicule {
             throw new IllegalArgumentException("Invalid lonHash value (less than 0 or greater than 1)");
         }
 
-        return ((mLongitude * 0.1) + (lonHash * 0.1)) * (isWest() ? -1 : 1);
+        return ((mLongitude * 0.1) + (lonHash * 0.1)) * (mWest ? -1 : 1);
     }
 
     private double getLatitudeAsDouble() {
-        return isSouth()
+        return mSouth
                 ? -mLatitude * 0.1
                 : mLatitude * 0.1;
     }
 
     private double getLongitudeAsDouble() {
-        return isWest()
+        return mWest
                 ? -mLongitude * 0.1
                 : mLongitude * 0.1;
     }
@@ -365,21 +365,11 @@ public class Centicule implements Somethingicule {
                 + getLongitudeString(useNegativeValues);
     }
 
-    @Override
-    public boolean isSouth() {
-        return mSouth;
-    }
-
-    @Override
-    public boolean isWest() {
-        return mWest;
-    }
-
     @NonNull
     @Override
     public LatLng getCenterLatLng() {
-        double lat = getLatitudeAsDouble() + (0.05 * (isSouth() ? -1 : 1));
-        double lon = getLongitudeAsDouble() + (0.05 * (isWest() ? -1 : 1));
+        double lat = getLatitudeAsDouble() + (0.05 * (mSouth ? -1 : 1));
+        double lon = getLongitudeAsDouble() + (0.05 * (mWest ? -1 : 1));
 
         return new LatLng(lat, lon);
     }
@@ -391,7 +381,7 @@ public class Centicule implements Somethingicule {
 
         double top, left, bottom, right;
 
-        if(isSouth()) {
+        if(mSouth) {
             bottom = -getLatitudeAsDouble() - 0.1;
             top = -getLatitudeAsDouble();
         } else {
@@ -399,7 +389,7 @@ public class Centicule implements Somethingicule {
             top = getLatitudeAsDouble() + 0.1;
         }
 
-        if(isWest()) {
+        if(mWest) {
             right = -getLongitudeAsDouble() - 0.1;
             left = -getLongitudeAsDouble();
         } else {
