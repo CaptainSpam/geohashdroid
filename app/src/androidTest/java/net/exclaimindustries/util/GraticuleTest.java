@@ -397,4 +397,18 @@ public class GraticuleTest {
 
         assertFalse(g.uses30WRule());
     }
+
+    @Test
+    public void getLatitudeForHash_ReturnsCorrectLatitudeForHash() {
+        Graticule g = new Graticule(37, false, 121, true);
+
+        assertEquals(37.9842771, g.getLatitudeForHash(.9842771), .00001);
+    }
+
+    @Test
+    public void getLongitudeForHash_ReturnsCorrectLongitudeForHash() {
+        Graticule g = new Graticule(37, false, 121, true);
+
+        assertEquals(-121.0093833, g.getLongitudeForHash(.0093833), .00001);
+    }
 }

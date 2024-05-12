@@ -421,4 +421,18 @@ public class CenticuleTest {
 
         assertFalse(c.uses30WRule());
     }
+
+    @Test
+    public void getLatitudeForHash_ReturnsCorrectLatitudeForHash() {
+        Centicule c = new Centicule(374, false, 1217, true);
+
+        assertEquals(37.49842771, c.getLatitudeForHash(.9842771), .00001);
+    }
+
+    @Test
+    public void getLongitudeForHash_ReturnsCorrectLongitudeForHash() {
+        Centicule c = new Centicule(374, false, 1217, true);
+
+        assertEquals(-121.70093833, c.getLongitudeForHash(.0093833), .00001);
+    }
 }
