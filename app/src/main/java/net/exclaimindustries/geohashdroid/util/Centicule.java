@@ -415,6 +415,24 @@ public class Centicule implements Somethingicule {
 
     @NonNull
     @Override
+    public String getWikiPageSuffix() {
+        // After doing some moderate research on the wiki, it looks like there
+        // isn't a specific page name template for a centicule.  Any mention of
+        // centicules in expeditions seem to just point out when a hashpoint was
+        // in a given centicule, though it was still the same point for the
+        // parent graticule.  To that end, this will just use the graticule's
+        // wiki page until someone tells me different.
+        //
+        // Well, until someone with some authority or demonstrated precedent
+        // tells me different, I feel I should specify.
+        return "_"
+                + (mSouth ? "-" : "") + (mLatitude / 10)
+                + "_"
+                + (mWest ? "-" : "") + (mLongitude / 10);
+    }
+
+    @NonNull
+    @Override
     public JSONObject serializeToJSON() throws JSONException {
         JSONObject output = new JSONObject();
 

@@ -109,6 +109,12 @@ public final class Globalhashicule implements Somethingicule {
 
     @NonNull
     @Override
+    public String getWikiPageSuffix() {
+        return "_global";
+    }
+
+    @NonNull
+    @Override
     public JSONObject serializeToJSON() throws JSONException {
         // While there's nothing really to serialize here, we CAN at least
         // serialize the type so that the Somethingicule deserializer knows

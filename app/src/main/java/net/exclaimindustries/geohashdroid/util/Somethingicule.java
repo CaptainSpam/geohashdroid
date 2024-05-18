@@ -210,6 +210,17 @@ public interface Somethingicule extends Parcelable {
     LatLng makePointFromHash(double latHash, double lonHash);
 
     /**
+     * Makes the wiki page suffix for this Somethingicule.  You want to attach
+     * this to the end of the current hyphenated date string from the date of an
+     * Info object.  Remember, this is in the format of a wiki page name, so
+     * you want to use underscores for spaces.
+     *
+     * @return the page suffix for a wiki post
+     */
+    @NonNull
+    String getWikiPageSuffix();
+
+    /**
      * Serializes this Somethingicule into a JSONObject.
      *
      * @return a new JSONObject

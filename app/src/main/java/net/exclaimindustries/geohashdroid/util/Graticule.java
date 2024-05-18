@@ -451,6 +451,12 @@ public class Graticule implements Somethingicule {
 
     @NonNull
     @Override
+    public String getWikiPageSuffix() {
+        return "_" + getLatitudeString(true) + "_" + getLongitudeString(true);
+    }
+
+    @NonNull
+    @Override
     public JSONObject serializeToJSON() throws JSONException {
         JSONObject output = new JSONObject();
 
