@@ -9,25 +9,15 @@
 
 package net.exclaimindustries.geohashdroid.wiki;
 
-import android.content.Context;
 import android.location.Location;
-import android.text.format.DateFormat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.util.Graticule;
-import net.exclaimindustries.geohashdroid.util.Info;
-import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.DOMUtil;
-import net.exclaimindustries.tools.DateTools;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -784,109 +774,6 @@ public class WikiUtils {
     }
 
     /**
-     * Retrieves the wiki page name for the given data.  This accounts for
-     * globalhashes, too.
-     *
-     * @param info Info from which a page name will be derived
-     * @return said pagename
-     */
-    public static String getWikiPageName(@NonNull Info info) {
-        String date = DateTools.getHyphenatedDateString(info.getCalendar());
-
-        Graticule g = info.getGraticule();
-
-        if(g == null) {
-            return date + "_global";
-        } else {
-            String lat = g.getLatitudeString(true);
-            String lon = g.getLongitudeString(true);
-
-            return date + "_" + lat + "_" + lon;
-        }
-    }
-
-    /**
-     * <p>
-     * Retrieves the text for the Expedition template appropriate for the given
-     * Info.
-     * </p>
-     *
-     * <p>
-     * TODO: The wiki doesn't appear to have an Expedition template for
-     * globalhashing yet.
-     * </p>
-     *
-     * @param info Info from which an Expedition template will be generated
-     * @param c    Context so we can grab the globalhash template if we need it
-     * @return said template
-     */
-    public static String getWikiExpeditionTemplate(@NonNull Info info,
-                                                   @NonNull Context c) {
-        String date = DateTools.getHyphenatedDateString(info.getCalendar());
-
-        Graticule g = info.getGraticule();
-
-        if(g == null) {
-            // Until a proper template can be made in the wiki itself, we'll
-            // have to settle for this...
-            InputStream is = c.getResources().openRawResource(R.raw.globalhash_template);
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-
-            // Now, read in each line and do all substitutions on it.
-            String input;
-            StringBuilder toReturn = new StringBuilder();
-            try {
-                while((input = br.readLine()) != null) {
-                    input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));
-                    input = input.replaceAll("%%LONGITUDE%%", UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), true, UnitConverter.OUTPUT_DETAILED));
-                    input = input.replaceAll("%%LATITUDEURL%%", Double.valueOf(info.getLatitude()).toString());
-                    input = input.replaceAll("%%LONGITUDEURL%%", Double.valueOf(info.getLongitude()).toString());
-                    input = input.replaceAll("%%DATENUMERIC%%", date);
-                    input = input.replaceAll("%%DATESHORT%%", DateFormat.format("E MMM d yyyy", info.getCalendar()).toString());
-                    input = input.replaceAll("%%DATEGOOGLE%%", DateFormat.format("d+MMM+yyyy", info.getCalendar()).toString());
-                    toReturn.append(input).append("\n");
-                }
-            } catch(IOException e) {
-                // Don't do anything; just assume we're done.
-            }
-
-            return toReturn.toString() + getWikiCategories(info);
-
-        } else {
-            String lat = g.getLatitudeString(true);
-            String lon = g.getLongitudeString(true);
-
-            return "{{subst:Expedition|lat=" + lat + "|lon=" + lon + "|date=" + date + "}}";
-        }
-    }
-
-    /**
-     * Retrieves the text for the categories to put on the wiki for pictures.
-     *
-     * @param info Info from which categories will be generated
-     * @return said categories
-     */
-    public static String getWikiCategories(@NonNull Info info) {
-        String date = DateTools.getHyphenatedDateString(info.getCalendar());
-
-        String toReturn = "[[Category:Meetup on "
-                + date + "]]\n";
-
-        Graticule g = info.getGraticule();
-
-        if(g == null) {
-            return toReturn + "[[Category:Globalhash]]";
-        } else {
-            String lat = g.getLatitudeString(true);
-            String lon = g.getLongitudeString(true);
-
-            return toReturn + "[[Category:Meetup in " + lat + " "
-                    + lon + "]]";
-        }
-    }
-
-    /**
      * Makes a location tag for the wiki that links to OpenStreetMap.  Or just
      * returns an empty string if you gave it a null location.  That's entirely
      * valid; if the user's location isn't known, the tag should be empty.
@@ -894,6 +781,7 @@ public class WikiUtils {
      * @param loc the Location
      * @return an OpenStreetMap wiki tag
      */
+    @NonNull
     public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
             return " [https://openstreetmap.org/?mlat="

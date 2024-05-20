@@ -261,7 +261,7 @@ public class WikiService
 
             // Prep a page.  We want a populated formfields for later.
             HashMap<String, String> formfields = new HashMap<>();
-            String expedition = WikiUtils.getWikiPageName(info);
+            String expedition = info.getWikiPageName();
 
             // This will be null if the page didn't exist to begin with.
             String page = WikiUtils.getWikiPage(client, expedition, formfields);
@@ -270,7 +270,7 @@ public class WikiService
             if(page == null || page.trim().isEmpty()) {
                 // Aha!
                 WikiUtils.putWikiPage(client, expedition,
-                        WikiUtils.getWikiExpeditionTemplate(info, this),
+                        info.getWikiExpeditionTemplate(this),
                         formfields);
 
                 // And once it's there, we pull it back, as we'll be futzing
@@ -307,7 +307,7 @@ public class WikiService
                     }
 
                     // Upload now!  Do it!
-                    String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
+                    String description = message + "\n\n" + info.getWikiCategories();
                     WikiUtils.putWikiImage(client, wikiName, description, formfields, imageData);
                 } else {
                     Log.w(DEBUG_TAG, "Trying to upload an image, but it already exists on the wiki?");

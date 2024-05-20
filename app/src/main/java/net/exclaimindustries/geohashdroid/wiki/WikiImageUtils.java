@@ -171,7 +171,7 @@ public class WikiImageUtils {
                                           @NonNull String username) {
         // Just to be clear, this is the wiki page name (expedition and all),
         // the username, and the image's timestamp (as millis past the epoch).
-        return WikiUtils.getWikiPageName(info) + "_" + username + "_"
+        return info.getWikiPageName() + "_" + username + "_"
                 + imageInfo.timestamp + ".jpg";
     }
 
