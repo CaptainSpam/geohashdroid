@@ -17,7 +17,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 import net.exclaimindustries.geohashdroid.R;
-import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
 import net.exclaimindustries.tools.DateTools;
 
 import org.json.JSONException;
@@ -43,7 +42,7 @@ import androidx.annotation.NonNull;
  * @author Nicholas Killewald
  */
 public final class Globalhashicule implements Somethingicule {
-    private static final Globalhashicule mInstance = new Globalhashicule();
+    private static final Globalhashicule INSTANCE = new Globalhashicule();
 
     private Globalhashicule() {}
 
@@ -55,7 +54,7 @@ public final class Globalhashicule implements Somethingicule {
      * @return the Globalhashicule instance
      */
     public static Globalhashicule getInstance() {
-        return mInstance;
+        return INSTANCE;
     }
 
     @NonNull
@@ -184,7 +183,7 @@ public final class Globalhashicule implements Somethingicule {
         public Globalhashicule createFromParcel(Parcel in) {
             // There's nothing parcelized here, so there's nothing to
             // deparcelize.  Just return the instance.
-            return mInstance;
+            return INSTANCE;
         }
 
         public Globalhashicule[] newArray(int size) {
