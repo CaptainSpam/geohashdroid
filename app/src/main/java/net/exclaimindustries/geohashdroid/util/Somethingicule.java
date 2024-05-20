@@ -16,6 +16,9 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -37,6 +40,9 @@ import androidx.annotation.NonNull;
  * </p>
  */
 public interface Somethingicule extends Parcelable {
+    /** The earliest date at which the 30W Rule is used. */
+    Calendar LIMIT_30W = new GregorianCalendar(2008, Calendar.MAY, 26);
+
     /**
      * The type of Somethingicule this is.  Used for deserialization.
      */
@@ -120,6 +126,16 @@ public interface Somethingicule extends Parcelable {
      * @return true if the 30W Rule is in effect, false otherwise
      */
     boolean uses30WRule();
+
+    /**
+     * Returns true if the 30W Rule is in effect at the specified date.  In most
+     * cases, the 30W Rule is ignored if the date is before May 26, 2008, but
+     * globalhashes always use it.
+     *
+     * @param cal date against which to check
+     * @return true if the 30W Rule is in effect for the date, false otherwise
+     */
+    boolean uses30WRuleAtDate(Calendar cal);
 
     /**
      * Returns the latitude component as a String (i.e. 30N or -25). This will

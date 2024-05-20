@@ -19,6 +19,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.DecimalFormat;
+import java.util.Calendar;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
@@ -254,6 +255,11 @@ public class Centicule implements Somethingicule {
     @Override
     public boolean uses30WRule() {
         return mLongitude < 300 || (!mWest);
+    }
+
+    @Override
+    public boolean uses30WRuleAtDate(Calendar cal) {
+        return cal.after(LIMIT_30W) && uses30WRule();
     }
 
     private void setCompleteLatitude(int completeLatitude) {

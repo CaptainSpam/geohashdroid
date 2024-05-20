@@ -17,6 +17,7 @@ import android.os.Parcelable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Calendar;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
@@ -290,6 +291,11 @@ public class Graticule implements Somethingicule {
     @Override
     public boolean uses30WRule() {
         return mLongitude < 30 || (!mWest);
+    }
+
+    @Override
+    public boolean uses30WRuleAtDate(Calendar cal) {
+        return cal.after(LIMIT_30W) && uses30WRule();
     }
 
     private void setLatitude(int latitude) {

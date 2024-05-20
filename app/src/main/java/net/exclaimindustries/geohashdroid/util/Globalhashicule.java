@@ -60,6 +60,12 @@ public final class Globalhashicule implements Somethingicule {
         return true;
     }
 
+    @Override
+    public boolean uses30WRuleAtDate(Calendar cal) {
+        // Globalhashes ALWAYS use 30W, no matter what date it is.
+        return true;
+    }
+
     @NonNull
     @Override
     public String getLatitudeString(boolean useNegativeValues) {
