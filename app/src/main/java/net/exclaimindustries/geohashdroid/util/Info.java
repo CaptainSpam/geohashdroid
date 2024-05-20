@@ -10,9 +10,9 @@ package net.exclaimindustries.geohashdroid.util;
 import java.security.InvalidParameterException;
 import java.util.Date;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.Objects;
 
+import android.content.Context;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -45,12 +45,9 @@ import org.json.JSONObject;
  * 
  */
 public class Info implements Parcelable {
-    /** The earliest date at which the 30W Rule is used. */
-    private static final Calendar LIMIT_30W = new GregorianCalendar(2008, Calendar.MAY, 26);
-
     private double mLatHash;
     private double mLonHash;
-    private Graticule mGraticule;
+    private Somethingicule mSomethingicule;
     private Calendar mDate;
     private boolean mRetroHash;
     private boolean mValid;
@@ -63,33 +60,36 @@ public class Info implements Parcelable {
      *            the destination's latitude hash, as a double
      * @param lonHash
      *            the destination's longitude hash, as a double
-     * @param graticule
-     *            the graticule (or null for Globalhash)
+     * @param somethingicule
+     *            the Somethingicule
      * @param date
      *            the date
      */
-    public Info(double latHash, double lonHash, @Nullable Graticule graticule,
-            @NonNull Calendar date) {
+    public Info(double latHash,
+                double lonHash,
+                @NonNull Somethingicule somethingicule,
+                @NonNull Calendar date) {
         mLatHash = latHash;
         mLonHash = lonHash;
-        mGraticule = graticule;
+        mSomethingicule = somethingicule;
         setDate(date);
         mValid = true;
     }
     
     /**
-     * Creates an Info object with the given graticule and date, but which is
-     * invalid (i.e. has no valid latitude/longitude data).  This is used when
-     * StockRunner reports an error; this way, any Handler can at least figure
-     * out what was going on in the first place.
+     * Creates an Info object with the given somethingicule and date, but which
+     * is invalid (i.e. has no valid latitude/longitude data).  This is used
+     * when StockRunner reports an error; this way, any Handler can at least
+     * figure out what was going on in the first place.
      * 
-     * @param graticule the graticule
+     * @param somethingicule the Somethingicule
      * @param date the date
      */
-    public Info(@Nullable Graticule graticule, @NonNull Calendar date) {
+    public Info(@NonNull Somethingicule somethingicule,
+                @NonNull Calendar date) {
         mLatHash = 0;
         mLonHash = 0;
-        mGraticule = graticule;
+        mSomethingicule = somethingicule;
         setDate(date);
         mValid = false;
     }
@@ -111,10 +111,7 @@ public class Info implements Parcelable {
      * @return the latitude
      */
     public double getLatitude() {
-        if(mGraticule != null)
-            return mGraticule.getLatitudeForHash(mLatHash);
-        else
-            return mLatHash * 180 - 90;
+        return mSomethingicule.getLatitudeForHash(mLatHash);
     }
 
     /**
@@ -123,10 +120,7 @@ public class Info implements Parcelable {
      * @return the longitude
      */
     public double getLongitude() {
-        if(mGraticule != null)
-            return mGraticule.getLongitudeForHash(mLonHash);
-        else
-            return mLonHash * 360 - 180;
+        return mSomethingicule.getLongitudeForHash(mLonHash);
     }
 
     /**
@@ -157,12 +151,12 @@ public class Info implements Parcelable {
      */
     @NonNull
     public LatLng getFinalDestinationLatLng() {
-        return new LatLng(getLatitude(), getLongitude());
+        return mSomethingicule.makePointFromHash(mLatHash, mLonHash);
     }
 
     /**
-     * Returns the final destination as a Location object, which isn't quite as
-     * useful as a LatLng object, but you never know, it could come in handy.
+     * Returns the final destination as a Location object, convenient for
+     * general Android-y location-based stuff.
      * 
      * @return a providerless Location based on the data obtained from the
      *         connection
@@ -177,13 +171,13 @@ public class Info implements Parcelable {
     }
 
     /**
-     * Gets the graticule.  This will be null if this is a globalhash.
+     * Gets the Somethingicule held by this Info.
      * 
-     * @return the graticule
+     * @return the Somethingicule
      */
-    @Nullable
-    public Graticule getGraticule() {
-        return mGraticule;
+    @NonNull
+    public Somethingicule getSomethingicule() {
+        return mSomethingicule;
     }
 
     /**
@@ -225,12 +219,13 @@ public class Info implements Parcelable {
      * Rule or globalhashes and rewinding to Friday if it falls on a weekend.
      * 
      * @param c date to adjust
-     * @param g Graticule to use to determine if the 30W Rule is in effect (if
-     *          null, assumes this is a globalhash which is always back a day)
+     * @param g Somethingicule to use to determine if the 30W Rule is in effect
+     *          (if null, assumes this is a globalhash which always uses 30W)
      * @return a new adjusted Calendar
      */
     @NonNull
-    public static Calendar makeAdjustedCalendar(@NonNull Calendar c, @Nullable Graticule g) {
+    public static Calendar makeAdjustedCalendar(@NonNull Calendar c,
+                                                @NonNull Somethingicule g) {
         // This adjusts the calendar for both the 30W Rule and to clamp all
         // weekend stocks to the preceding Friday.  This saves a few database
         // entries, as the weekend will always be Friday's value.  Note that
@@ -244,7 +239,7 @@ public class Info implements Parcelable {
         // (that is, adjustment is needed).  If the date is May 26, 2008 or
         // earlier (and this isn't a globalhash), ignore it anyway (the 30W Rule
         // only applies to non-globalhashes AFTER it was created).
-        if(g == null || (cal.after(LIMIT_30W) && g.uses30WRule()))
+        if(g.uses30WRuleAtDate(cal))
             cal.add(Calendar.DAY_OF_MONTH, -1);
         
         // Third, if this new date is a weekend, clamp it back to Friday.
@@ -266,11 +261,8 @@ public class Info implements Parcelable {
      * @return true if 30W or global, false if not
      */
     public boolean uses30WRule() {
-        // If mGraticule is null, this is always 30W.
-        if(mGraticule == null) return true;
-        
-        // Otherwise, just forward it to the graticule itself.
-        return mDate.after(LIMIT_30W) && mGraticule.uses30WRule();
+        // TODO: THIS CHANGED!  Make sure all uses are still valid!
+        return mSomethingicule.uses30WRuleAtDate(mDate);
     }
     
     /**
@@ -281,9 +273,13 @@ public class Info implements Parcelable {
      * called.
      * 
      * @return true if global, false if not
+     * @deprecated Anything that uses this should be changed to use the Somethingicule data directly
      */
     public boolean isGlobalHash() {
-        return mGraticule == null;
+        // TODO: isGlobalHash should be invalid; change all calls to either use
+        // base Somethingicule calls or instanceof checks if it's really
+        // necessary.
+        return mSomethingicule instanceof Globalhashicule;
     }
     
     /**
@@ -332,7 +328,7 @@ public class Info implements Parcelable {
         // Let's make us a parcel.  Order is important, remember!
         dest.writeDouble(mLatHash);
         dest.writeDouble(mLonHash);
-        dest.writeParcelable(mGraticule, 0);
+        dest.writeParcelable(mSomethingicule, flags);
         dest.writeInt(mDate.get(Calendar.YEAR));
         dest.writeInt(mDate.get(Calendar.MONTH));
         dest.writeInt(mDate.get(Calendar.DAY_OF_MONTH));
@@ -349,7 +345,9 @@ public class Info implements Parcelable {
         // Same order!  Go!
         mLatHash = in.readDouble();
         mLonHash = in.readDouble();
-        mGraticule = in.readParcelable(Graticule.class.getClassLoader());
+        // The parcel, when written, has class data written with it, so this
+        // should inflate the correct class.  I think.
+        mSomethingicule = in.readParcelable(Somethingicule.class.getClassLoader());
 
         mDate = Calendar.getInstance();
 
@@ -383,6 +381,7 @@ public class Info implements Parcelable {
      * @return a new JSONObject of this Info
      * @throws JSONException if something goes weird with JSON creation
      */
+    @NonNull
     public JSONObject serializeToJSON() throws JSONException {
         JSONObject output = new JSONObject();
 
@@ -391,9 +390,7 @@ public class Info implements Parcelable {
         output.put("timestamp",
                 Long.valueOf(getDate().getTime()).toString());
 
-        if(mGraticule != null) {
-            output.put("graticule", mGraticule.serializeToJSON());
-        }
+        output.put("graticule", mSomethingicule.serializeToJSON());
 
         return output;
     }
@@ -405,35 +402,42 @@ public class Info implements Parcelable {
      * @return a brand new, deserialized Info
      * @throws JSONException if something's amiss with JSON
      */
-    public static Info deserializeFromJSON(JSONObject input) throws JSONException {
+    @NonNull
+    public static Info deserializeFromJSON(@NonNull JSONObject input) throws JSONException {
         // We at least know the calendar didn't change between versions.
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(
                 Long.parseLong(input.getString("timestamp")));
 
         double lat, lon;
-        Graticule grat;
+        Somethingicule grat;
         // The JSON format and internal assumptions about Info changed at some
         // point.  Fortunately, reconstructing that from old versions is
         // relatively easy, given only graticules and globalhashes existed back
         // then.
         if(input.has("latitude") && input.has("longitude")) {
+            // The latitude and longitude keys are the giveaway (newer versions
+            // would have latHash and lonHash).
             lat = input.getDouble("latitude");
             lon = input.getDouble("longitude");
 
-            // The latitude and longitude keys are the giveaway (newer versions
-            // would have latHash and lonHash).
             JSONObject gratObj = input.optJSONObject("graticule");
             if(gratObj != null) {
                 // There was a graticule here.  We can math out what the hash
-                // components were.
-                grat = (Graticule)Somethingicule.Deserializer.deserialize(gratObj);
-                lat = Math.abs(lat - grat.getLatitude());
-                lon = Math.abs(lon - grat.getLongitude());
+                // components were.  The JSON format of an earlier Graticule
+                // didn't change, so we can just use the general deserializer.
+                // We may want to remember to change this if the format ever
+                // changes.
+                grat = Somethingicule.Deserializer.deserialize(gratObj);
+
+                Graticule actuallyGraticule = (Graticule)grat;
+
+                lat = Math.abs(lat) - actuallyGraticule.getLatitude();
+                lon = Math.abs(lon) - actuallyGraticule.getLongitude();
             } else {
                 // This was a globalhash.  We already had the hash components,
                 // so they remain the same.
-                grat = null;
+                grat = Globalhashicule.getInstance();
             }
         } else {
             // If there's no latitude/longitude in the object, assume this is a
@@ -444,17 +448,13 @@ public class Info implements Parcelable {
 
             JSONObject gratObj = input.optJSONObject("graticule");
             if(gratObj != null) {
-                // Notably, this could be null, if it's a globalhash.
-                // TODO: Update this, and all of Info, when Centicule exists.
-                Somethingicule thing = Somethingicule.Deserializer.deserialize(gratObj);
-
-                if(thing instanceof Graticule) {
-                    grat = (Graticule)thing;
-                } else {
-                    throw new RuntimeException("The Somethingicule in this Info didn't deserialize into a known class!");
-                }
+                // This really shouldn't be null if it's the new version.
+                grat = Somethingicule.Deserializer.deserialize(gratObj);
             } else {
-                grat = null;
+                // This shouldn't happen, given there was never a released
+                // version of Info that used latHash/lonHash and still used null
+                // for globalhash, but we can assume it's a globalhash anyway.
+                grat = Globalhashicule.getInstance();
             }
         }
 
@@ -471,24 +471,14 @@ public class Info implements Parcelable {
      * might require a trip back to the internet.
      * </p>
      *
-     * <p>
-     * Also note that you can't do any cloning actions on a globalhash, since
-     * that doesn't make any sense.
-     * </p>
-     *
      * @param g new Graticule to apply
      * @throws InvalidParameterException this Info and Graticule do not lie on
-     *                                   the same side of the 30W line, or one
-     *                                   of the Graticules in question
-     *                                   represents a globalhash.
+     *                                   the same side of the 30W line
      * @return a new, improved Info object
      */
-    public Info cloneWithNewGraticule(@Nullable Graticule g) {
-        if(isGlobalHash() || g == null) {
-            throw new InvalidParameterException("You can't clone a globalhash point, since that doesn't make any sense.");
-        }
-
-        if(uses30WRule() != g.uses30WRule()) {
+    @NonNull
+    public Info cloneWithNewSomethingicule(@NonNull Somethingicule g) {
+        if(uses30WRule() != g.uses30WRuleAtDate(mDate)) {
             throw new InvalidParameterException("The given Info and Graticule do not lie on the same side of the 30W line; this should not have happened.");
         }
 
@@ -509,7 +499,9 @@ public class Info implements Parcelable {
      * @throws IllegalArgumentException info was null and nearby was either null or empty
      */
     @NonNull
-    public static Info measureClosest(@NonNull Location loc, @Nullable Info info, @Nullable Info[] nearby)
+    public static Info measureClosest(@NonNull Location loc,
+                                      @Nullable Info info,
+                                      @Nullable Info[] nearby)
         throws IllegalArgumentException {
         if(nearby == null || nearby.length == 0) {
             // If we were only given the single Info, return it.  Unless it's
@@ -555,13 +547,62 @@ public class Info implements Parcelable {
         return nearest;
     }
 
+    /**
+     * Gets the wiki page name for this expedition.
+     *
+     * @return a page name suitable for the wiki API
+     * @throws IllegalStateException this Info is invalid
+     */
+    @NonNull
+    public String getWikiPageName() {
+        if(!mValid) {
+            throw new IllegalStateException("This Info is invalid, and thus cannot have a wiki post");
+        }
+
+        return DateTools.getHyphenatedDateString(getCalendar())
+                + mSomethingicule.getWikiPageSuffix();
+    }
+
+    /**
+     * <p>
+     * Gets the wiki expedition template from the Somethingicule.
+     * </p>
+     *
+     * <p>
+     * TODO: The wiki doesn't appear to have an Expedition template for
+     * globalhashing yet.
+     * </p>
+     *
+     * @param c a Context, just in case this is a globalhash
+     * @return the template, as a string
+     */
+    @NonNull
+    public String getWikiExpeditionTemplate(@NonNull Context c) {
+        return mSomethingicule.makeWikiTemplate(this, c);
+    }
+
+    /**
+     * Gets the text for the categories to put on the wiki for pictures.
+     *
+     * @return said categories
+     */
+    @NonNull
+    public String getWikiCategories() {
+        String date = DateTools.getHyphenatedDateString(getCalendar());
+
+        String toReturn = "[[Category:Meetup on "
+                + date + "]]\n";
+
+        return toReturn + mSomethingicule.makeWikiCategories();
+    }
+
     @Override
     @NonNull
     public String toString() {
         // This is mostly used for debugging purposes, so we may as well make it
         // useful.
-        return "Info for "
-                + (mGraticule == null ? "Globalhash" : "Graticule")
+        return "Info for Somethingicule "
+                + mSomethingicule.toString()
                 + " on " + DateTools.getDateString(mDate)
                 + "; point is at "
                 + getLatitude() + "," + getLongitude();
@@ -574,15 +615,8 @@ public class Info implements Parcelable {
 
         final Info other = (Info)o;
 
-        // I'm really sure I could make this clearer and/or more efficient if I
-        // really thought more about it, and was not in a room full of other
-        // reveling nerds as I tried writing it, but to compare the graticules
-        // while making sure it doesn't NPE if either Info is a Globalhash...
-        if(isGlobalHash() != other.isGlobalHash()) return false;
-
-        // ...then, we see if the graticules match (if neither is a
-        // Globalhash)...
-        if(!isGlobalHash() && !(mGraticule.equals(other.mGraticule))) return false;
+        // See if the Somethingicules match...
+        if(!(mSomethingicule.equals(other.mSomethingicule))) return false;
 
         // ...and also check the date, latitude, and longitude.
         //noinspection RedundantIfStatement
@@ -601,7 +635,7 @@ public class Info implements Parcelable {
                 mRetroHash,
                 mLatHash,
                 mLonHash,
-                mGraticule,
+                mSomethingicule,
                 mDate);
     }
 }
