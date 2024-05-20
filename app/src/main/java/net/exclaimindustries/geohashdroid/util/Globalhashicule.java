@@ -8,15 +8,26 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.format.DateFormat;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
 
+import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.wiki.WikiUtils;
+import net.exclaimindustries.tools.DateTools;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Calendar;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
@@ -117,6 +128,42 @@ public final class Globalhashicule implements Somethingicule {
     @Override
     public String getWikiPageSuffix() {
         return "_global";
+    }
+
+    @NonNull
+    @Override
+    public String makeWikiTemplate(@NonNull Info info, @NonNull Context c) {
+        // Until a proper template can be made in the wiki itself, we'll have to
+        // settle for this...
+        InputStream is = c.getResources().openRawResource(R.raw.globalhash_template);
+        InputStreamReader isr = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(isr);
+
+        // Now, read in each line and do all substitutions on it.
+        String input;
+        StringBuilder toReturn = new StringBuilder();
+        try {
+            while((input = br.readLine()) != null) {
+                input = input.replaceAll("%%LATITUDE%%", UnitConverter.makeLatitudeCoordinateString(c, info.getLatitude(), true, UnitConverter.OUTPUT_DETAILED));
+                input = input.replaceAll("%%LONGITUDE%%", UnitConverter.makeLongitudeCoordinateString(c, info.getLongitude(), true, UnitConverter.OUTPUT_DETAILED));
+                input = input.replaceAll("%%LATITUDEURL%%", Double.valueOf(info.getLatitude()).toString());
+                input = input.replaceAll("%%LONGITUDEURL%%", Double.valueOf(info.getLongitude()).toString());
+                input = input.replaceAll("%%DATENUMERIC%%", DateTools.getHyphenatedDateString(info.getCalendar()));
+                input = input.replaceAll("%%DATESHORT%%", DateFormat.format("E MMM d yyyy", info.getCalendar()).toString());
+                input = input.replaceAll("%%DATEGOOGLE%%", DateFormat.format("d+MMM+yyyy", info.getCalendar()).toString());
+                toReturn.append(input).append("\n");
+            }
+        } catch(IOException e) {
+            // Don't do anything; just assume we're done.
+        }
+
+        return toReturn + info.getWikiCategories();
+    }
+
+    @NonNull
+    @Override
+    public String makeWikiCategories() {
+        return "[[Category:Globalhash]]";
     }
 
     @NonNull

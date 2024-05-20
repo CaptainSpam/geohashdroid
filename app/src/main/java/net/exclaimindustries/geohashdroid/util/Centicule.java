@@ -8,12 +8,15 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Context;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
+
+import net.exclaimindustries.tools.DateTools;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -314,6 +317,23 @@ public class Centicule implements Somethingicule {
         }
     }
 
+    private String getIntPartLatitudeString(boolean useNegativeValues) {
+        int formattedLat = mLatitude / 10;
+        if (mSouth) {
+            if(useNegativeValues) {
+                return "-" + formattedLat;
+            } else {
+                return formattedLat + "S";
+            }
+        } else {
+            if(useNegativeValues) {
+                return Integer.toString(formattedLat);
+            } else {
+                return formattedLat + "N";
+            }
+        }
+    }
+
     @NonNull
     @Override
     public String getLongitudeString(boolean useNegativeValues) {
@@ -327,6 +347,23 @@ public class Centicule implements Somethingicule {
         } else {
             if(useNegativeValues) {
                 return formattedLon;
+            } else {
+                return formattedLon + "E";
+            }
+        }
+    }
+
+    private String getIntPartLongitudeString(boolean useNegativeValues) {
+        int formattedLon = mLongitude / 10;
+        if (mWest) {
+            if(useNegativeValues) {
+                return "-" + formattedLon;
+            } else {
+                return formattedLon + "W";
+            }
+        } else {
+            if(useNegativeValues) {
+                return Integer.toString(formattedLon);
             } else {
                 return formattedLon + "E";
             }
@@ -432,9 +469,30 @@ public class Centicule implements Somethingicule {
         // Well, until someone with some authority or demonstrated precedent
         // tells me different, I feel I should specify.
         return "_"
-                + (mSouth ? "-" : "") + (mLatitude / 10)
+                + getIntPartLatitudeString(true)
                 + "_"
-                + (mWest ? "-" : "") + (mLongitude / 10);
+                + getIntPartLongitudeString(true);
+    }
+
+    @NonNull
+    @Override
+    public String makeWikiTemplate(@NonNull Info info, @NonNull Context c) {
+        return "{{subst:Expedition|lat="
+                + getIntPartLatitudeString(true)
+                + "|lon="
+                + getIntPartLongitudeString(true)
+                + "|date="
+                + DateTools.getHyphenatedDateString(info.getCalendar())
+                + "}}";
+    }
+
+    @NonNull
+    @Override
+    public String makeWikiCategories() {
+        String lat = getIntPartLatitudeString(true);
+        String lon = getIntPartLongitudeString(true);
+
+        return "[[Category:Meetup in " + lat + " " + lon + "]]";
     }
 
     @NonNull

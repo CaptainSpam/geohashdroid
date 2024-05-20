@@ -10,9 +10,12 @@ package net.exclaimindustries.geohashdroid.util;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolygonOptions;
 
+import android.content.Context;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
+
+import net.exclaimindustries.tools.DateTools;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -459,6 +462,27 @@ public class Graticule implements Somethingicule {
     @Override
     public String getWikiPageSuffix() {
         return "_" + getLatitudeString(true) + "_" + getLongitudeString(true);
+    }
+
+    @NonNull
+    @Override
+    public String makeWikiTemplate(@NonNull Info info, @NonNull Context c) {
+        return "{{subst:Expedition|lat="
+                + getLatitudeString(true)
+                + "|lon="
+                + getLongitudeString(true)
+                + "|date="
+                + DateTools.getHyphenatedDateString(info.getCalendar())
+                + "}}";
+    }
+
+    @NonNull
+    @Override
+    public String makeWikiCategories() {
+        String lat = getLatitudeString(true);
+        String lon = getLongitudeString(true);
+
+        return "[[Category:Meetup in " + lat + " " + lon + "]]";
     }
 
     @NonNull

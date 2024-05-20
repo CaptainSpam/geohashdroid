@@ -8,6 +8,7 @@
 
 package net.exclaimindustries.geohashdroid.util;
 
+import android.content.Context;
 import android.os.Parcelable;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -235,6 +236,25 @@ public interface Somethingicule extends Parcelable {
      */
     @NonNull
     String getWikiPageSuffix();
+
+    /**
+     * Makes the initial wiki template for this Somethingicule, as a string.
+     *
+     * @param info Info object for this expedition
+     * @param c a Context, just in case it needs to fetch the globalhash template
+     * @return the wiki template
+     */
+    @NonNull
+    String makeWikiTemplate(@NonNull Info info, @NonNull Context c);
+
+    /**
+     * Gets the text for the categories to put on the wiki for pictures for this
+     * Somethingicule.  This is mostly just called from Info.
+     *
+     * @return the wiki categories
+     */
+    @NonNull
+    String makeWikiCategories();
 
     /**
      * Serializes this Somethingicule into a JSONObject.
