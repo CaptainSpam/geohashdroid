@@ -476,7 +476,7 @@ public class PreferencesScreen extends AppCompatActivity
             IntentFilter filt = new IntentFilter();
             filt.addAction(QueueService.ACTION_QUEUE_COUNT);
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requireActivity().registerReceiver(mReceiver, filt, Context.RECEIVER_NOT_EXPORTED);
+                requireActivity().registerReceiver(mReceiver, filt, Context.RECEIVER_EXPORTED);
             } else {
                 requireActivity().registerReceiver(mReceiver, filt);
             }

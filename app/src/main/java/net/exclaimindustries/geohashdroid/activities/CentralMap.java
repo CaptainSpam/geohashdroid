@@ -840,7 +840,7 @@ public class CentralMap
         IntentFilter filt = new IntentFilter();
         filt.addAction(StockWorker.ACTION_STOCK_RESULT);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(mStockReceiver, filt, Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(mStockReceiver, filt, Context.RECEIVER_EXPORTED);
         } else {
             registerReceiver(mStockReceiver, filt);
         }
