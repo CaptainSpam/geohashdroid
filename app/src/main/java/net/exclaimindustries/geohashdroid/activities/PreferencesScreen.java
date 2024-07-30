@@ -475,7 +475,11 @@ public class PreferencesScreen extends AppCompatActivity
             // Get ready to receive updates for the wiki queue release!
             IntentFilter filt = new IntentFilter();
             filt.addAction(QueueService.ACTION_QUEUE_COUNT);
-            requireActivity().registerReceiver(mReceiver, filt);
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requireActivity().registerReceiver(mReceiver, filt, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                requireActivity().registerReceiver(mReceiver, filt);
+            }
 
             // And, fire off the first count request to initialize.
             Intent i = new Intent(getActivity(), WikiService.class)

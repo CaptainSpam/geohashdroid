@@ -839,7 +839,11 @@ public class CentralMap
         // obsolete with the change away from GoogleApiClient.
         IntentFilter filt = new IntentFilter();
         filt.addAction(StockWorker.ACTION_STOCK_RESULT);
-        registerReceiver(mStockReceiver, filt);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mStockReceiver, filt, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(mStockReceiver, filt);
+        }
     }
 
 
