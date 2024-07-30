@@ -6,7 +6,7 @@ android {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         minSdkVersion 19
-        targetSdkVersion 33
+        targetSdk 35
         multiDexEnabled true
     }
     compileOptions {
