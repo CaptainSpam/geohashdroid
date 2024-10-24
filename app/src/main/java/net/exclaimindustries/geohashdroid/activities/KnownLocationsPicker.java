@@ -22,6 +22,7 @@ import android.graphics.Paint;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -56,6 +57,7 @@ import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.KnownLocation;
 import net.exclaimindustries.geohashdroid.util.KnownLocationPinData;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
+import net.exclaimindustries.tools.ActivityTools;
 import net.exclaimindustries.tools.BitmapTools;
 
 import org.opensextant.geodesy.Angle;
@@ -72,6 +74,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.DialogFragment;
 import androidx.preference.PreferenceManager;
 
@@ -462,6 +465,7 @@ public class KnownLocationsPicker
 
         // We've got a layout, so let's use the layout.
         setContentView(R.layout.known_locations);
+        ActivityTools.dealWithInsets(this, R.id.top_level);
 
         // Now, we'll need to get the list of KnownLocations right away so we
         // can put them on the map.  Well, I guess not RIGHT away.  We still

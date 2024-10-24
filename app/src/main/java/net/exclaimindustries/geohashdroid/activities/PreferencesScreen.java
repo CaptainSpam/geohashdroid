@@ -33,6 +33,7 @@ import net.exclaimindustries.geohashdroid.services.AlarmWorker;
 import net.exclaimindustries.geohashdroid.services.WikiService;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.HashBuilder;
+import net.exclaimindustries.tools.ActivityTools;
 import net.exclaimindustries.tools.QueueService;
 
 import java.util.Objects;
@@ -84,6 +85,7 @@ public class PreferencesScreen extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.prefs);
+        ActivityTools.dealWithInsets(this, R.id.top_level);
 
         // We might have a specific fragment we want to visit.
         final Bundle extras = getIntent().getExtras();
@@ -92,7 +94,7 @@ public class PreferencesScreen extends AppCompatActivity
         if(getSupportFragmentManager().getBackStackEntryCount() == 0) {
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(android.R.id.content, getStartFragment(startFragmentName))
+                    .replace(R.id.prefs, getStartFragment(startFragmentName))
                     .commit();
         }
     }
@@ -128,7 +130,7 @@ public class PreferencesScreen extends AppCompatActivity
         fragment.setTargetFragment(caller, 0);
         // Replace the existing Fragment with the new Fragment
         getSupportFragmentManager().beginTransaction()
-                .replace(android.R.id.content, fragment)
+                .replace(R.id.prefs, fragment)
                 .addToBackStack(null)
                 .commit();
         return true;

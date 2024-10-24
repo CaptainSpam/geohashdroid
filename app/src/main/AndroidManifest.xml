@@ -57,7 +57,8 @@
             android:name=".activities.KnownLocationsPicker"
             android:label="@string/title_known_locations"
             android:uiOptions="splitActionBarWhenNarrow"
-            android:windowSoftInputMode="stateHidden">
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@style/Theme.GeohashDroid.NoActionBar">
         </activity>
         <activity
             android:name=".activities.LoginPromptDialog"
@@ -67,17 +68,20 @@
         </activity>
         <activity
             android:name=".activities.PreferencesScreen"
-            android:label="@string/title_preferences">
+            android:label="@string/title_preferences"
+            android:theme="@style/Theme.GeohashDroid.NoActionBar">
         </activity>
 
         <activity
             android:name=".activities.DetailedInfoActivity"
-            android:label="@string/detail_activity_title">
+            android:label="@string/detail_activity_title"
+            android:theme="@style/Theme.GeohashDroid.NoActionBar">
         </activity>
 
         <activity
             android:name=".activities.WikiActivity"
-            android:label="@string/wiki_activity_title">
+            android:label="@string/wiki_activity_title"
+            android:theme="@style/Theme.GeohashDroid.NoActionBar">
         </activity>
 
         <meta-data
