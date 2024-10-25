@@ -58,6 +58,7 @@ import net.exclaimindustries.geohashdroid.util.SelectAGraticuleMode;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.geohashdroid.util.VersionHistoryParser;
 import net.exclaimindustries.geohashdroid.widgets.ErrorBanner;
+import net.exclaimindustries.tools.ActivityTools;
 import net.exclaimindustries.tools.BitmapTools;
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.LocationUtil;
@@ -697,6 +698,7 @@ public class CentralMap
         }
 
         setContentView(R.layout.centralmap);
+        ActivityTools.dealWithInsets(this, R.id.top_level);
 
         // Who wants a FusedLocationProviderClient?  We do!  Because we very
         // specifically want location updates, and this is better than dealing

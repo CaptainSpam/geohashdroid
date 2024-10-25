@@ -9,6 +9,10 @@
 package net.exclaimindustries.geohashdroid.activities;
 
 import android.Manifest;
+
+import androidx.annotation.IdRes;
+import androidx.annotation.LayoutRes;
+import androidx.annotation.MenuRes;
 import androidx.fragment.app.FragmentManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -29,6 +33,7 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.CentralMapExtraFragment;
 import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Info;
+import net.exclaimindustries.tools.ActivityTools;
 import net.exclaimindustries.tools.AndroidUtil;
 
 import java.text.DateFormat;
@@ -66,6 +71,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
         super.onCreate(savedInstanceState);
 
         setContentView(getLayoutResource());
+        ActivityTools.dealWithInsets(this, getTopLevelViewResource());
 
         // Grab the fragment.  We know it's there, it's right there in the
         // layout.
@@ -104,6 +110,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
      *
      * @return a menu's resource ID
      */
+    @MenuRes
     protected abstract int getMenuResource();
 
     /**
@@ -111,6 +118,7 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
      *
      * @return a Fragment's resource ID
      */
+    @IdRes
     protected abstract int getFragmentResource();
 
     /**
@@ -118,7 +126,16 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
      *
      * @return a layout's resource ID
      */
+    @LayoutRes
     protected abstract int getLayoutResource();
+
+    /**
+     * Returns the resource of the top-level view used in this Activity.
+     *
+     * @return a view's resource ID
+     */
+    @IdRes
+    protected abstract int getTopLevelViewResource();
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

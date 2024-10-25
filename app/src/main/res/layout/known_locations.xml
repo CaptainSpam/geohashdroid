@@ -1,49 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/top_level"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <fragment
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:name="com.google.android.gms.maps.MapFragment"
-        android:id="@+id/map"
-        android:layout_gravity="center"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        tools:ignore="RtlHardcoded" />
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <LinearLayout
-        android:id="@+id/search_box"
-        android:orientation="horizontal"
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_top"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_margin="@dimen/double_padding"
-        android:background="?android:attr/colorBackground"
-        android:elevation="@dimen/elevation_error_banner"
-        android:padding="@dimen/standard_padding">
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme"
+        app:title="@string/title_known_locations" />
 
-        <EditText
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:id="@+id/search"
-            android:hint="@string/known_locations_search"
-            android:layout_weight="1"
-            android:layout_gravity="center_vertical"
-            android:maxLines="1"
-            android:inputType="text"
-            android:imeOptions="actionGo"
-            android:importantForAutofill="no" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        <ImageButton
-            android:layout_width="wrap_content"
+        <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.MapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_gravity="center"
+            tools:ignore="RtlHardcoded" />
+
+        <LinearLayout
+            android:id="@+id/search_box"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/search_go"
-            android:src="@drawable/search"
-            android:layout_gravity="center_vertical"
-            android:background="@null"
-            android:contentDescription="@string/known_locations_search_description"/>
-    </LinearLayout>
-</RelativeLayout>
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="@dimen/double_padding"
+            android:background="?android:attr/colorBackground"
+            android:elevation="@dimen/elevation_error_banner"
+            android:orientation="horizontal"
+            android:padding="@dimen/standard_padding">
+
+            <EditText
+                android:id="@+id/search"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1"
+                android:hint="@string/known_locations_search"
+                android:imeOptions="actionGo"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLines="1" />
+
+            <ImageButton
+                android:id="@+id/search_go"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:background="@null"
+                android:contentDescription="@string/known_locations_search_description"
+                android:src="@drawable/search" />
+        </LinearLayout>
+
+    </RelativeLayout>
+</LinearLayout>
