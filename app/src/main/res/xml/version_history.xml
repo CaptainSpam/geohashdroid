@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.4" version="941" date="2024-10-24">
+        <title>Wall-To-Wall, Edge-To-Edge Android Excitement</title>
+        <header>Well, something went all weird:</header>
+        <bullets>
+            <bullet>Fixed UI elements being rendered underneath the top toolbars and, in fact, straight into the status bar on Android SDK 35 devices.</bullet>
+        </bullets>
+        <footer>Given what caused this one (and that this is sort of a quick fix to force it to work right with older apps), I might need to overhaul the UI at some point.</footer>
+    </version>
     <version name="0.9.6.3" version="940" date="2024-08-24">
         <title>You Did Know They Went Back To Using Dessert Names, Right?</title>
         <header>Just a quick release:</header>
