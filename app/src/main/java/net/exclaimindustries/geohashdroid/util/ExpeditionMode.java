@@ -338,7 +338,7 @@ public class ExpeditionMode
             menu.removeItem(R.id.action_send_to_radar);
 
         // If we don't have any Info yet, we can't have things that depend on
-        // it, such as wiki, details, Send To Maps, or Send To Radar.
+        // it, such as wiki, details, Share Location, or Send To Radar.
         if(mCurrentInfo == null) {
             menu.removeItem(R.id.action_send_to_maps);
             menu.removeItem(R.id.action_send_to_radar);

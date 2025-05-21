@@ -142,8 +142,8 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
         getMenuInflater().inflate(getMenuResource(), menu);
 
         // Now, some menu items may not be available if we can't get to them.
-        // Like, for instance, Send To Maps.  If Google Maps (or anything that
-        // can receive the Intent) isn't there, we can't do that.
+        // Like, for instance, Share Location.  If there's nothing that can
+        // receive the intent (i.e. Google Maps), we can't do that.
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setData(Uri.parse("geo:0,0?q=loc:0,0"));
         if(!AndroidUtil.isIntentAvailable(this, i))
