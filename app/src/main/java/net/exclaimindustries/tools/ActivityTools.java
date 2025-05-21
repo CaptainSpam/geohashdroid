@@ -9,6 +9,7 @@
 package net.exclaimindustries.tools;
 
 import android.content.res.Configuration;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.IdRes;
@@ -31,16 +32,19 @@ public final class ActivityTools {
      * TODO: I guess I gotta migrate to Compose at some point...
      */
     public static void dealWithInsets(@NonNull AppCompatActivity activity, @IdRes int id) {
+        View view = activity.findViewById(id);
+        ViewGroup.MarginLayoutParams originalLayoutParams = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+
         // I guess we've got insets to deal with now?  Fine, let's deal with
         // them here.
         ViewCompat.setOnApplyWindowInsetsListener(activity.findViewById(id), (v, windowInsets) ->
         {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
             ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            mlp.topMargin = insets.top;
-            mlp.leftMargin = insets.left;
-            mlp.bottomMargin = insets.bottom;
-            mlp.rightMargin = insets.right;
+            mlp.topMargin = originalLayoutParams.topMargin + insets.top;
+            mlp.leftMargin = originalLayoutParams.leftMargin + insets.left;
+            mlp.bottomMargin = originalLayoutParams.bottomMargin + insets.bottom;
+            mlp.rightMargin = originalLayoutParams.rightMargin + insets.right;
             v.setLayoutParams(mlp);
 
             return WindowInsetsCompat.CONSUMED;
