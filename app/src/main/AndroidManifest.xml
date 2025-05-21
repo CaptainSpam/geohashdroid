@@ -120,4 +120,13 @@
         </receiver>
     </application>
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+        <intent>
+            <action android:name="com.google.android.radar.SHOW_RADAR" />
+        </intent>
+    </queries>
 </manifest>
