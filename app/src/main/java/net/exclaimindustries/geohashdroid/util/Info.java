@@ -18,6 +18,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
 
@@ -464,13 +465,15 @@ public class Info implements Parcelable {
 
         // Then, toss the location out the door and hope whatever map
         // we're using is paying attention.
-        i.setData(Uri.parse("geo:0,0?q=loc:"
+        i.setData(Uri.parse("geo:0,0?q="
                 + location
-                + "("
+                + "&z=15"
+                + "&("
                 + c.getString(
                 R.string.send_to_maps_point_name,
                 DateFormat.getDateInstance(DateFormat.LONG).format(
-                        getCalendar().getTime())) + ")&z=15"));
+                        getCalendar().getTime()))
+                + ")"));
 
         return i;
     }
