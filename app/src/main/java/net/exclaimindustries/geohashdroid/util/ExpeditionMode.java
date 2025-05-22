@@ -369,20 +369,8 @@ public class ExpeditionMode
         } else if(itemId == R.id.action_send_to_maps) {
             // Juuuuuuust like in DetailedInfoActivity...
             if(mCurrentInfo != null) {
-                // To the map!
-                Intent i = new Intent();
-                i.setAction(Intent.ACTION_VIEW);
-
-                String location = mCurrentInfo.getLatitude() + "," + mCurrentInfo.getLongitude();
-
-                i.setData(Uri.parse("geo:0,0?q=loc:"
-                        + location
-                        + "("
-                        + mCentralMap.getString(
-                        R.string.send_to_maps_point_name,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(
-                                mCurrentInfo.getCalendar().getTime())) + ")&z=15"));
-                mCentralMap.startActivity(i);
+                // To a map!
+                mCentralMap.startActivity(mCurrentInfo.getShareIntent(mCentralMap));
             } else {
                 Toast.makeText(mCentralMap, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
             }

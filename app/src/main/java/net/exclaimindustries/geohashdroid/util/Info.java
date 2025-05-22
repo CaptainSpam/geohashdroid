@@ -7,11 +7,15 @@
  */
 package net.exclaimindustries.geohashdroid.util;
 
+import java.text.DateFormat;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.annotation.Nullable;
@@ -19,6 +23,7 @@ import androidx.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.tools.DateTools;
 
 /**
@@ -439,6 +444,35 @@ public class Info implements Parcelable {
 
         // And hey presto, we've got us a winner!
         return nearest;
+    }
+
+    /**
+     * Creates an Intent for the "Share Hashpoint" function.  This will be a
+     * <code>VIEW</code> action with a <code>geo:</code> URI.
+     *
+     * @param c a Context, for contextual stuff
+     * @return a new Intent
+     */
+    @NonNull
+    public Intent getShareIntent(@NonNull Context c) {
+        Intent i = new Intent();
+        i.setAction(Intent.ACTION_VIEW);
+
+        // Assemble the location.  This is a simple latitude,longitude
+        // setup.
+        String location = getLatitude() + "," + getLongitude();
+
+        // Then, toss the location out the door and hope whatever map
+        // we're using is paying attention.
+        i.setData(Uri.parse("geo:0,0?q=loc:"
+                + location
+                + "("
+                + c.getString(
+                R.string.send_to_maps_point_name,
+                DateFormat.getDateInstance(DateFormat.LONG).format(
+                        getCalendar().getTime())) + ")&z=15"));
+
+        return i;
     }
 
     @Override

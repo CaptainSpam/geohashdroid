@@ -36,8 +36,6 @@ import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.tools.ActivityTools;
 import net.exclaimindustries.tools.AndroidUtil;
 
-import java.text.DateFormat;
-
 /**
  * Similar to <code>CentralMapExtraFragment</code>, <code>CentralMapExtraActivity</code>
  * encompasses the common methods to all Activities that hold those Fragments on
@@ -179,24 +177,8 @@ public abstract class CentralMapExtraActivity extends BaseGHDThemeActivity
             return true;
         } else if(itemId == R.id.action_send_to_maps) {
             if(mInfo != null) {
-                // To the map!
-                Intent i = new Intent();
-                i.setAction(Intent.ACTION_VIEW);
-
-                // Assemble the location.  This is a simple latitude,longitude
-                // setup.
-                String location = mInfo.getLatitude() + "," + mInfo.getLongitude();
-
-                // Then, toss the location out the door and hope whatever map
-                // we're using is paying attention.
-                i.setData(Uri.parse("geo:0,0?q=loc:"
-                        + location
-                        + "("
-                        + this.getString(
-                        R.string.send_to_maps_point_name,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(
-                                mInfo.getCalendar().getTime())) + ")&z=15"));
-                startActivity(i);
+                // To a map!
+                startActivity(mInfo.getShareIntent(this));
             } else {
                 Toast.makeText(this, R.string.error_no_data_to_maps, Toast.LENGTH_LONG).show();
             }
