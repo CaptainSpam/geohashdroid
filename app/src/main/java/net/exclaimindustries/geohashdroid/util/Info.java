@@ -60,7 +60,6 @@ public class Info implements Parcelable {
      * Creates an Info object with the given data. That's it.  If making a
      * globalhash, give the latitude and longitude as the hash, not the full
      * coordinates (and make sure the graticule is null).
-     * 
      * TODO: I've really got to find a better way to do globalhashes...
      * 
      * @param latitude
@@ -525,10 +524,8 @@ public class Info implements Parcelable {
 
         toReturn = 27 * toReturn + (mValid ? 1 : 0);
         toReturn = 27 * toReturn + (mRetroHash ? 1 : 0);
-        long convert = Double.doubleToLongBits(mLatitude);
-        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
-        convert = Double.doubleToLongBits(mLongitude);
-        toReturn = 27 * toReturn + (int)(convert ^ (convert >>> 32));
+        toReturn = 27 * toReturn + Double.hashCode(mLatitude);
+        toReturn = 27 * toReturn + Double.hashCode(mLongitude);
         toReturn = 27 * toReturn + (mGraticule == null ? 0 : mGraticule.hashCode());
         toReturn = 27 * toReturn + (mDate == null ? 0 : mDate.hashCode());
 
