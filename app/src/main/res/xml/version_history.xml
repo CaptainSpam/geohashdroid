@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.5" version="942" date="2025-05-23">
+        <title>Sharing Means Caring</title>
+        <header>This one&apos;s apparently been sitting around for a while:</header>
+        <bullets>
+            <bullet>Renamed &quot;Share to Maps&quot; to &quot;Share Hashpoint&quot;.  Originally, the main app that could receive the geo: Intent was just Google Maps, but nowadays, there&apos;s more that can work, so the button&apos;s being renamed accordingly.</bullet>
+            <bullet>But wait, you say!  &quot;Share to Maps&quot;?  You&apos;ve never seen this in the first place?  Well, that&apos;s because sometime around Android 11 something changed, requiring Intents expecting external apps to receive them to be registered in the manifest, which I have not been doing and apparently did not notice (Geohash Droid started a LONG time ago in Android terms).  Oops.  The code originally just hid the button if it didn&apos;t think there was anything that could receive a geo: Intent, and if the manifest wasn&apos;t set up right, well... at any rate, with that registered, you should now actually see the button.</bullet>
+            <bullet>This also applies to the radar Intent, if anyone even noticed that was missing.  Or existed in the first place.</bullet>
+            <bullet>And furthermore, the format for shared geo: Intents has been updated so that it&apos;s more compatible with other apps.  Slight side effect: The label saying the point is a hashpoint might not show up.</bullet>
+        </bullets>
+        <footer>Thanks to flyingOwl for pointing this one out!</footer>
+    </version>
     <version name="0.9.6.4" version="941" date="2024-10-24">
         <title>Wall-To-Wall, Edge-To-Edge Android Excitement</title>
         <header>Well, something went all weird:</header>
