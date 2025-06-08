@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.6" version="943" date="2025-06-07">
+        <title>CHANGE PLACES!</title>
+        <header>Not really a new feature per se, more an administrative bit:</header>
+        <bullets>
+            <bullet>Updated and rotated the signing key for Geohash Droid.</bullet>
+        </bullets>
+        <footer>I was going to put this off until I had a new feature to update, but I couldn&apos;t think of anything coming up immediately.  This is the first time I&apos;ve rotated a signing key on Android, so I hope it works right.  Of course, if it doesn&apos;t, you won&apos;t see this, which is part of the problem...</footer>
+    </version>
     <version name="0.9.6.5" version="942" date="2025-05-23">
         <title>Sharing Means Caring</title>
         <header>This one&apos;s apparently been sitting around for a while:</header>
