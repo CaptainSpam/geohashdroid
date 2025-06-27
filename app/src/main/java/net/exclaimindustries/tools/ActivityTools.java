@@ -33,7 +33,8 @@ public final class ActivityTools {
      */
     public static void dealWithInsets(@NonNull AppCompatActivity activity, @IdRes int id) {
         View view = activity.findViewById(id);
-        ViewGroup.MarginLayoutParams originalLayoutParams = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+        ViewGroup.MarginLayoutParams originalLayoutParams =
+                new ViewGroup.MarginLayoutParams(view.getLayoutParams());
 
         // I guess we've got insets to deal with now?  Fine, let's deal with
         // them here.
