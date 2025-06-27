@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.7" version="944" date="2025-06-26">
+        <title>The Amazing Descending Preferences</title>
+        <header>Here&apos;s one I didn't notice until just now:</header>
+        <bullets>
+            <bullet>Fixed the preferences view creeping down the screen every time you navigate it.</bullet>
+        </bullets>
+        <footer>By the by, at this point, the key rotation should now be finalized.</footer>
+    </version>
     <version name="0.9.6.6" version="943" date="2025-06-07">
         <title>CHANGE PLACES!</title>
         <header>Not really a new feature per se, more an administrative bit:</header>
