@@ -1,0 +1,1 @@
+this version uses a new signing key. If you had the previous version installed, key rotation should take care for this. Should it not work on your device, you will have to uninstall and reinstall the app.

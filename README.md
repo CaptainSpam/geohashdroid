@@ -1,9 +1,13 @@
+[<img src="https://shields.rbtlog.dev/simple/net.exclaimindustries.geohashdroid" alt="RB shield">](https://shields.rbtlog.dev/net.exclaimindustries.geohashdroid)
+
 # Geohash Droid
 A Geohashing app for Android devices.
 
 (*not* Geocaching)
 
 This is an Android app for Randall Munroe's Geohashing activity (see [its wiki](https://geohashing.site/)).  It downloads stock values for the current day's hash points, puts them on a map for you to visit, and uploads pictures and live comments to the aforementioned wiki.
+
+[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png" height="80" alt="Get it at IzzyOnDroid">](https://apt.izzysoft.de/packages/net.exclaimindustries.geohashdroid)
 
 If you want to check out the code behind the really old, pre-tablet version that existed before 0.9.0 was released, look at the legacy branch.
 
