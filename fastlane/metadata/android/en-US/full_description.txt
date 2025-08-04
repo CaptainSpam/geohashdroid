@@ -1,0 +1,1 @@
+<p><i>Geohash Droid</i>: Android app for Randall Munroe’s Geohashing activity (see <a href='https://wiki.xkcd.com/geohashing/' target='_blank' rel='nofollow noopener'>its wiki</a>). It downloads stock values for the current day’s hash points, puts them on a map for you to visit, and uploads pictures and live comments to the aforementioned wiki.</p>
