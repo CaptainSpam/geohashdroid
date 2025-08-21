@@ -61,7 +61,10 @@ public class WikiFragment extends CentralMapExtraFragment {
     private static final int GET_PICTURE = 1;
 
     private View mAnonWarning;
+    private View mThumbnailContainer;
     private ImageButton mGalleryButton;
+    private ImageButton mRotateCcwButton;
+    private ImageButton mRotateCwButton;
     private TextView mPictureLocationLabel;
     private TextView mPictureLocationText;
     private CheckBox mPictureCheckbox;
@@ -84,7 +87,9 @@ public class WikiFragment extends CentralMapExtraFragment {
     private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
         // Huh, we register for ALL changes, not just for a few prefs.  May
         // as well narrow it down...
-        if(key.equals(GHDConstants.PREF_WIKI_USER) || key.equals(GHDConstants.PREF_WIKI_PASS)) {
+        if(key != null
+                && (key.equals(GHDConstants.PREF_WIKI_USER)
+                    || key.equals(GHDConstants.PREF_WIKI_PASS))) {
             checkAnonStatus();
         }
     };
@@ -100,7 +105,10 @@ public class WikiFragment extends CentralMapExtraFragment {
         mPictureLocationLabel = layout.findViewById(R.id.wiki_picture_location_label);
         mPictureLocationText = layout.findViewById(R.id.wiki_picture_location);
         mIncludeLocationCheckbox = layout.findViewById(R.id.wiki_check_include_location);
+        mThumbnailContainer = layout.findViewById(R.id.wiki_thumbnail_container);
         mGalleryButton = layout.findViewById(R.id.wiki_thumbnail);
+        mRotateCcwButton = layout.findViewById(R.id.rotate_ccw);
+        mRotateCwButton = layout.findViewById(R.id.rotate_cw);
         mPostButton = layout.findViewById(R.id.wiki_post_button);
         mMessage = layout.findViewById(R.id.wiki_message);
         mLocationView = layout.findViewById(R.id.wiki_current_location);
@@ -254,6 +262,11 @@ public class WikiFragment extends CentralMapExtraFragment {
         // With bitmap in hand...
         act.runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
 
+        // ...and, since we have an image (and there's no way to unset the
+        // image without unchecking picture posting entirely in this UI)...
+        mRotateCcwButton.setVisibility(View.VISIBLE);
+        mRotateCwButton.setVisibility(View.VISIBLE);
+
         // Plus, we want vital info for later.  If there's no location, just
         // give back an ImageInfo with a null in it.  We'll know what to do with
         // it when the time comes.
@@ -294,15 +307,12 @@ public class WikiFragment extends CentralMapExtraFragment {
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
             String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 
-            if(username == null
-                    || username.isEmpty()
-                    || password == null
-                    || password.isEmpty()) {
+            if(username.isEmpty() || password.isEmpty()) {
                 // If anything isn't defined, we can't set a picture.  Also,
                 // uncheck the picture checkbox just to make sure.
                 mPictureCheckbox.setChecked(false);
                 mPictureCheckbox.setVisibility(View.GONE);
-                mGalleryButton.setVisibility(View.GONE);
+                mThumbnailContainer.setVisibility(View.GONE);
                 mAnonWarning.setVisibility(View.VISIBLE);
             } else {
                 // Now, we can't just turn everything back on without
@@ -326,7 +336,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         // One checkbox to rule them all!
         act.runOnUiThread(() -> {
             if(mPictureCheckbox.isChecked()) {
-                mGalleryButton.setVisibility(View.VISIBLE);
+                mThumbnailContainer.setVisibility(View.VISIBLE);
                 mLocationTypeGroup.setVisibility(View.VISIBLE);
 
                 // Oh, and update a few strings, too.
@@ -334,7 +344,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mIncludeLocationCheckbox.setText(R.string.wiki_dialog_stamp_image);
                 mMessage.setHint(R.string.hint_caption);
             } else {
-                mGalleryButton.setVisibility(View.GONE);
+                mThumbnailContainer.setVisibility(View.GONE);
                 mLocationTypeGroup.setVisibility(View.GONE);
                 mPostButton.setText(R.string.wiki_dialog_submit_message);
                 mIncludeLocationCheckbox.setText(R.string.wiki_dialog_append_coordinates);

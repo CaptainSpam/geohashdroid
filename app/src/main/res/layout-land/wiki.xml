@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <LinearLayout android:orientation="horizontal"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
@@ -56,15 +57,47 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
-                <ImageButton
-                    android:id="@+id/wiki_thumbnail"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:id="@+id/wiki_thumbnail_container"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_margin="@dimen/gallery_button_padding"
-                    android:scaleType="centerInside"
-                    android:src="@drawable/gallery"
-                    android:contentDescription="@string/accessibility_wiki_thumbnail"/>
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/wiki_thumbnail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_margin="@dimen/gallery_button_padding"
+                        android:contentDescription="@string/accessibility_wiki_thumbnail"
+                        android:scaleType="centerInside"
+                        app:srcCompat="@drawable/gallery" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_gravity="center_horizontal">
+
+                        <ImageButton
+                            android:id="@+id/rotate_ccw"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/accessibility_rotate_ccw"
+                            android:padding="@dimen/double_padding"
+                            android:visibility="gone"
+                            app:srcCompat="@drawable/rotate_90_degrees_ccw" />
+
+                        <ImageButton
+                            android:id="@+id/rotate_cw"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/accessibility_rotate_cw"
+                            android:padding="@dimen/double_padding"
+                            android:visibility="gone"
+                            app:srcCompat="@drawable/rotate_90_degrees_cw" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
