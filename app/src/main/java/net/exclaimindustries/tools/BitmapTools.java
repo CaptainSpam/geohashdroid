@@ -11,6 +11,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.util.Log;
@@ -287,5 +288,30 @@ public class BitmapTools {
         Canvas canvas = new Canvas(bitmap);
         vectorDrawable.draw(canvas);
         return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
+    /**
+     * Returns a copy of the supplied Bitmap, rotated by the specified amount.
+     * Note that due to how Bitmap copying/creation works, this may in some
+     * cases just return the original Bitmap reference (i.e. if rotating by zero
+     * degrees).  It's the caller's responsibility to check this and recycle the
+     * original if needed.
+     *
+     * @param original the Bitmap to rotate
+     * @param degrees how much to rotate it, in degrees
+     * @return a rotated copy of the original Bitmap, which may be new
+     */
+    @NonNull
+    public static Bitmap rotateBitmap(@NonNull Bitmap original, float degrees) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+        return Bitmap.createBitmap(
+                original,
+                0,
+                0,
+                original.getWidth(),
+                original.getHeight(),
+                matrix,
+                true);
     }
 }
