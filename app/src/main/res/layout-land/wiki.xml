@@ -57,24 +57,50 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
+                 <ImageButton
+                    android:id="@+id/wiki_thumbnail"
+                    android:layout_width="@dimen/wiki_gallery_button_size"
+                    android:layout_height="@dimen/wiki_gallery_button_size"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_margin="@dimen/gallery_button_padding"
+                    android:contentDescription="@string/accessibility_wiki_thumbnail"
+                    android:scaleType="centerInside"
+                    app:srcCompat="@drawable/gallery" />
+
                 <LinearLayout
-                    android:id="@+id/wiki_thumbnail_container"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-
-                    <ImageButton
-                        android:id="@+id/wiki_thumbnail"
-                        android:layout_width="@dimen/wiki_gallery_button_size"
-                        android:layout_height="@dimen/wiki_gallery_button_size"
+                    <TextView
+                        android:id="@+id/wiki_anon_warning"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/wiki_editor_not_logged_in"
+                        android:textSize="@dimen/wikipost_tiny_fontsize"
                         android:layout_gravity="center_horizontal"
-                        android:layout_margin="@dimen/gallery_button_padding"
-                        android:contentDescription="@string/accessibility_wiki_thumbnail"
-                        android:scaleType="centerInside"
-                        app:srcCompat="@drawable/gallery" />
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wiki_picture_location_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:gravity="center_horizontal"
+                        android:text="@string/wiki_dialog_location_picture"
+                        android:textSize="@dimen/wikipost_tiny_fontsize"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wiki_picture_location"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:gravity="center_horizontal"
+                        android:textSize="@dimen/wikipost_tiny_fontsize"
+                        android:visibility="gone" />
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:layout_gravity="center_horizontal">
@@ -97,37 +123,6 @@
                             android:visibility="gone"
                             app:srcCompat="@drawable/rotate_90_degrees_cw" />
                     </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <TextView
-                        android:id="@+id/wiki_anon_warning"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/wiki_editor_not_logged_in"
-                        android:textSize="@dimen/wikipost_tiny_fontsize"
-                        android:layout_gravity="center_horizontal"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/wiki_picture_location_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/wiki_dialog_location_picture"
-                        android:textSize="@dimen/wikipost_tiny_fontsize"
-                        android:layout_gravity="center_horizontal"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/wiki_picture_location"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="@dimen/wikipost_tiny_fontsize"
-                        android:layout_gravity="center_horizontal"
-                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

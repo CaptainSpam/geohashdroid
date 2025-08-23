@@ -67,7 +67,6 @@ public class WikiFragment extends CentralMapExtraFragment {
     private static final int GET_PICTURE = 1;
 
     private View mAnonWarning;
-    private View mThumbnailContainer;
     private ImageButton mGalleryButton;
     private ImageButton mRotateCcwButton;
     private ImageButton mRotateCwButton;
@@ -113,7 +112,6 @@ public class WikiFragment extends CentralMapExtraFragment {
         mPictureLocationLabel = layout.findViewById(R.id.wiki_picture_location_label);
         mPictureLocationText = layout.findViewById(R.id.wiki_picture_location);
         mIncludeLocationCheckbox = layout.findViewById(R.id.wiki_check_include_location);
-        mThumbnailContainer = layout.findViewById(R.id.wiki_thumbnail_container);
         mGalleryButton = layout.findViewById(R.id.wiki_thumbnail);
         mRotateCcwButton = layout.findViewById(R.id.rotate_ccw);
         mRotateCwButton = layout.findViewById(R.id.rotate_cw);
@@ -356,7 +354,9 @@ public class WikiFragment extends CentralMapExtraFragment {
                 // uncheck the picture checkbox just to make sure.
                 mPictureCheckbox.setChecked(false);
                 mPictureCheckbox.setVisibility(View.GONE);
-                mThumbnailContainer.setVisibility(View.GONE);
+                mRotateCwButton.setVisibility(View.GONE);
+                mRotateCcwButton.setVisibility(View.GONE);
+                mGalleryButton.setVisibility(View.GONE);
                 mAnonWarning.setVisibility(View.VISIBLE);
             } else {
                 // Now, we can't just turn everything back on without
@@ -380,7 +380,11 @@ public class WikiFragment extends CentralMapExtraFragment {
         // One checkbox to rule them all!
         act.runOnUiThread(() -> {
             if(mPictureCheckbox.isChecked()) {
-                mThumbnailContainer.setVisibility(View.VISIBLE);
+                mGalleryButton.setVisibility(View.VISIBLE);
+                if(mPictureUri != null) {
+                    mRotateCwButton.setVisibility(View.VISIBLE);
+                    mRotateCcwButton.setVisibility(View.VISIBLE);
+                }
                 mLocationTypeGroup.setVisibility(View.VISIBLE);
 
                 // Oh, and update a few strings, too.
@@ -388,7 +392,9 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mIncludeLocationCheckbox.setText(R.string.wiki_dialog_stamp_image);
                 mMessage.setHint(R.string.hint_caption);
             } else {
-                mThumbnailContainer.setVisibility(View.GONE);
+                mRotateCwButton.setVisibility(View.GONE);
+                mRotateCcwButton.setVisibility(View.GONE);
+                mGalleryButton.setVisibility(View.GONE);
                 mLocationTypeGroup.setVisibility(View.GONE);
                 mPostButton.setText(R.string.wiki_dialog_submit_message);
                 mIncludeLocationCheckbox.setText(R.string.wiki_dialog_append_coordinates);
