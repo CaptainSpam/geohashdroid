@@ -56,7 +56,13 @@ import androidx.preference.PreferenceManager;
  * data off to {@link WikiService} when it's ready to go.
  */
 public class WikiFragment extends CentralMapExtraFragment {
+    private final static float ROTATE_NORMAL = 0;
+    private final static float ROTATE_90_DEGREES_CW = 90;
+    private final static float ROTATE_180_DEGREES = 180;
+    private final static float ROTATE_90_DEGREES_CCW = 270;
+
     private static final String PICTURE_URI = "pictureUri";
+    private static final String PICTURE_ROTATION = "pictureRotation";
 
     private static final int GET_PICTURE = 1;
 
@@ -83,6 +89,8 @@ public class WikiFragment extends CentralMapExtraFragment {
     private WikiImageUtils.ImageInfo mLastImageInfo = null;
 
     private Uri mPictureUri;
+    private float mPictureRotation = ROTATE_NORMAL;
+    private Bitmap mPictureThumbnail = null;
 
     private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
         // Huh, we register for ALL changes, not just for a few prefs.  May
@@ -163,6 +171,32 @@ public class WikiFragment extends CentralMapExtraFragment {
             }
         });
 
+        mRotateCcwButton.setOnClickListener(v -> {
+            if(mPictureRotation == ROTATE_NORMAL)
+                mPictureRotation = ROTATE_90_DEGREES_CCW;
+            else if(mPictureRotation == ROTATE_90_DEGREES_CCW)
+                mPictureRotation = ROTATE_180_DEGREES;
+            else if(mPictureRotation == ROTATE_180_DEGREES)
+                mPictureRotation = ROTATE_90_DEGREES_CW;
+            else
+                mPictureRotation = ROTATE_NORMAL;
+
+            resolveThumbnailRotation();
+        });
+
+        mRotateCwButton.setOnClickListener(v -> {
+            if(mPictureRotation == ROTATE_NORMAL)
+                mPictureRotation = ROTATE_90_DEGREES_CW;
+            else if(mPictureRotation == ROTATE_90_DEGREES_CW)
+                mPictureRotation = ROTATE_180_DEGREES;
+            else if(mPictureRotation == ROTATE_180_DEGREES)
+                mPictureRotation = ROTATE_90_DEGREES_CCW;
+            else
+                mPictureRotation = ROTATE_NORMAL;
+
+            resolveThumbnailRotation();
+        });
+
         // Here's the main event.
         mPostButton.setOnClickListener(v -> dispatchPost());
 
@@ -172,7 +206,11 @@ public class WikiFragment extends CentralMapExtraFragment {
         // If we had a leftover Uri, apply that as well.
         if(savedInstanceState != null) {
             Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
-            if(pic != null) setImageUri(pic);
+            if(pic != null) {
+                setImageUri(pic);
+                mPictureRotation = savedInstanceState.getFloat(PICTURE_ROTATION, ROTATE_NORMAL);
+                resolveThumbnailRotation();
+            }
         } else {
             // setImageUri will call resolvePostButtonEnabledness, but since we
             // don't want to pass a null to the former, we'll call the latter if
@@ -217,6 +255,7 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // We've also got a picture URI to deal with.
         outState.putParcelable(PICTURE_URI, mPictureUri);
+        outState.putFloat(PICTURE_ROTATION, mPictureRotation);
     }
 
     @Override
@@ -259,11 +298,15 @@ public class WikiFragment extends CentralMapExtraFragment {
             return;
         }
 
-        // With bitmap in hand...
-        act.runOnUiThread(() -> mGalleryButton.setImageBitmap(thumbnail));
+        // Stash the image.  We'll be rotating it later.
+        mPictureThumbnail = thumbnail;
 
-        // ...and, since we have an image (and there's no way to unset the
-        // image without unchecking picture posting entirely in this UI)...
+        // This is a new image, so reset the rotation.
+        mPictureRotation = ROTATE_NORMAL;
+
+        // We'll apply the image later, in resolveThumbnailRotation.  But, since
+        // we have an image (and there's no way to unset the image without
+        // unchecking picture posting entirely in this UI)...
         mRotateCcwButton.setVisibility(View.VISIBLE);
         mRotateCwButton.setVisibility(View.VISIBLE);
 
@@ -279,6 +322,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         // And remember it for posting later.  Done!
         mPictureUri = uri;
 
+        resolveThumbnailRotation();
         resolvePostButtonEnabledness();
 
         // It's a new image, so reset the location selection.
@@ -461,6 +505,25 @@ public class WikiFragment extends CentralMapExtraFragment {
                 }
             }
         });
+    }
+
+    private void resolveThumbnailRotation() {
+        // We need a picture defined by this point.  If we don't, well...
+        if(mPictureThumbnail == null) {
+            return;
+        }
+
+        FragmentActivity act = getActivity();
+        assert act != null;
+
+        // Now let's rotate the bitmap!
+        Bitmap rotatedThumbnail = BitmapTools.rotateBitmap(
+                mPictureThumbnail,
+                mPictureRotation);
+
+        act.runOnUiThread(() -> mGalleryButton.setImageBitmap(
+                rotatedThumbnail
+        ));
     }
 
     private void applyHeader() {

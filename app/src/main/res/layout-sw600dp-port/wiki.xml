@@ -58,8 +58,8 @@
 
             <ImageButton
                 android:id="@+id/wiki_thumbnail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="@dimen/wiki_gallery_button_size"
+                android:layout_height="@dimen/wiki_gallery_button_size"
                 android:layout_gravity="center_horizontal"
                 android:layout_margin="@dimen/gallery_button_padding"
                 android:contentDescription="@string/accessibility_wiki_thumbnail"

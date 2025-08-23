@@ -48,6 +48,7 @@
     <dimen name="about_urls">18sp</dimen>
 
     <dimen name="wiki_nominal_icon_size">100dp</dimen>
+    <dimen name="wiki_gallery_button_size">120dp</dimen>
     <!-- This one really really doesn't depend on dpi or whatnot, as this is
          directly going into an image that'll always be a fairly similar size
          no matter what happens. -->
