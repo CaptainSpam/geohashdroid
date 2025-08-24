@@ -25,6 +25,7 @@ import java.io.InputStream;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.exifinterface.media.ExifInterface;
 
 /**
  * BitmapTools are, as you probably guessed, tools for Bitmap manipulation.
@@ -265,6 +266,7 @@ public class BitmapTools {
      * @return a BitmapDescriptor
      * @throws IllegalArgumentException the vector resource couldn't be resolved
      */
+    @NonNull
     public static BitmapDescriptor bitmapDescriptorFromVector(
             @NonNull Context context,
             @DrawableRes int vectorDrawableResourceId) {
@@ -290,28 +292,74 @@ public class BitmapTools {
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
-    /**
-     * Returns a copy of the supplied Bitmap, rotated by the specified amount.
-     * Note that due to how Bitmap copying/creation works, this may in some
-     * cases just return the original Bitmap reference (i.e. if rotating by zero
-     * degrees).  It's the caller's responsibility to check this and recycle the
-     * original if needed.
-     *
-     * @param original the Bitmap to rotate
-     * @param degrees how much to rotate it, in degrees
-     * @return a rotated copy of the original Bitmap, which may be new
-     */
     @NonNull
-    public static Bitmap rotateBitmap(@NonNull Bitmap original, float degrees) {
+    public static Matrix getTransformMatrixForExifOrientation(int orientation) {
         Matrix matrix = new Matrix();
-        matrix.postRotate(degrees);
-        return Bitmap.createBitmap(
-                original,
-                0,
-                0,
-                original.getWidth(),
-                original.getHeight(),
-                matrix,
-                true);
+
+        switch(orientation) {
+            case ExifInterface.ORIENTATION_NORMAL:
+                // This is the identity matrix; no transform needed.
+                break;
+            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                matrix.postScale(-1, 1);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.postRotate(180);
+                break;
+            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                matrix.postScale(1, -1);
+                break;
+            case ExifInterface.ORIENTATION_TRANSPOSE:
+                matrix.postScale(-1, 1);
+                matrix.postRotate(270);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.postRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_TRANSVERSE:
+                matrix.postScale(-1, 1);
+                matrix.postRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                matrix.postRotate(270);
+                break;
+            default:
+                // Now, technically the output from ExifInterface isn't an enum,
+                // so we KINDA have to deal with an error.  Just leave it as the
+                // identity matrix.
+                break;
+        }
+
+        return matrix;
+    }
+
+    /**
+     * Gets the EXIF orientation tag from whatever's pointed to at the given
+     * URI.  It better be pointing to an image.  A <i><b>LOCAL</b></i> image.
+     *
+     * @param context a Context
+     * @param uri the Uri of the image
+     * @return one of the ExifInterface.ORIENTATION_* constants, or -1 in case
+     *         of error (which in this case just means it couldn't open the
+     *         InputStream); defaults to 1 (ORIENTATION_NORMAL) if the image
+     *         lacks an orientation EXIF tag
+     */
+    public static int getExifOrientationFromUri(
+            @NonNull Context context,
+            @NonNull Uri uri) {
+        try {
+            InputStream input = context
+                    .getContentResolver()
+                    .openInputStream(uri);
+
+            if(input == null) return -1;
+
+            ExifInterface exif = new ExifInterface(input);
+            return exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL);
+        } catch(IOException e) {
+            return -1;
+        }
     }
 }

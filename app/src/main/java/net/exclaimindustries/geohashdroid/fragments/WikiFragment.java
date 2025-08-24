@@ -11,6 +11,7 @@ package net.exclaimindustries.geohashdroid.fragments;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -57,13 +58,8 @@ import androidx.preference.PreferenceManager;
  * data off to {@link WikiService} when it's ready to go.
  */
 public class WikiFragment extends CentralMapExtraFragment {
-    private final static float ROTATE_NORMAL = 0;
-    private final static float ROTATE_90_DEGREES_CW = 90;
-    private final static float ROTATE_180_DEGREES = 180;
-    private final static float ROTATE_90_DEGREES_CCW = 270;
-
     private static final String PICTURE_URI = "pictureUri";
-    private static final String PICTURE_ROTATION = "pictureRotation";
+    private static final String PICTURE_ORIENTATION = "pictureOrientation";
 
     private static final int GET_PICTURE = 1;
 
@@ -88,7 +84,7 @@ public class WikiFragment extends CentralMapExtraFragment {
     private WikiImageUtils.ImageInfo mLastImageInfo = null;
 
     private Uri mPictureUri;
-    private float mPictureRotation = ROTATE_NORMAL;
+    private Matrix mPictureOrientation = new Matrix();
     private Bitmap mPictureThumbnail = null;
 
     private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (sharedPreferences, key) -> {
@@ -168,32 +164,6 @@ public class WikiFragment extends CentralMapExtraFragment {
             }
         });
 
-//        mRotateCcwButton.setOnClickListener(v -> {
-//            if(mPictureRotation == ROTATE_NORMAL)
-//                mPictureRotation = ROTATE_90_DEGREES_CCW;
-//            else if(mPictureRotation == ROTATE_90_DEGREES_CCW)
-//                mPictureRotation = ROTATE_180_DEGREES;
-//            else if(mPictureRotation == ROTATE_180_DEGREES)
-//                mPictureRotation = ROTATE_90_DEGREES_CW;
-//            else
-//                mPictureRotation = ROTATE_NORMAL;
-//
-//            resolveThumbnailRotation();
-//        });
-//
-//        mRotateCwButton.setOnClickListener(v -> {
-//            if(mPictureRotation == ROTATE_NORMAL)
-//                mPictureRotation = ROTATE_90_DEGREES_CW;
-//            else if(mPictureRotation == ROTATE_90_DEGREES_CW)
-//                mPictureRotation = ROTATE_180_DEGREES;
-//            else if(mPictureRotation == ROTATE_180_DEGREES)
-//                mPictureRotation = ROTATE_90_DEGREES_CCW;
-//            else
-//                mPictureRotation = ROTATE_NORMAL;
-//
-//            resolveThumbnailRotation();
-//        });
-
         mEditButton.setOnClickListener(v -> {
             FragmentActivity act = getActivity();
             assert(act != null);
@@ -202,6 +172,31 @@ public class WikiFragment extends CentralMapExtraFragment {
             menu.getMenuInflater().inflate(
                     R.menu.wiki_edit_picture,
                     menu.getMenu());
+            menu.setOnMenuItemClickListener(item -> {
+                int itemId = item.getItemId();
+
+                // For all options, add it to the current transform matrix.
+                // It's math!
+                if(itemId == R.id.rotate_cw) {
+                    mPictureOrientation.postRotate(90);
+                    resolveThumbnailRotation();
+                    return true;
+                } else if(itemId == R.id.rotate_ccw) {
+                    mPictureOrientation.postRotate(-90);
+                    resolveThumbnailRotation();
+                    return true;
+                } else if(itemId == R.id.flip_horizontal) {
+                    mPictureOrientation.postScale(-1, 1);
+                    resolveThumbnailRotation();
+                    return true;
+                } else if(itemId == R.id.flip_vertical) {
+                    mPictureOrientation.postScale(1, -1);
+                    resolveThumbnailRotation();
+                    return true;
+                } else {
+                    return false;
+                }
+            });
             menu.show();
         });
 
@@ -216,7 +211,10 @@ public class WikiFragment extends CentralMapExtraFragment {
             Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
             if(pic != null) {
                 setImageUri(pic);
-                mPictureRotation = savedInstanceState.getFloat(PICTURE_ROTATION, ROTATE_NORMAL);
+                float[] matrixValues = savedInstanceState.getFloatArray(PICTURE_ORIENTATION);
+                if(matrixValues != null && matrixValues.length == 9) {
+                    mPictureOrientation.setValues(matrixValues);
+                }
                 resolveThumbnailRotation();
             }
         } else {
@@ -263,7 +261,9 @@ public class WikiFragment extends CentralMapExtraFragment {
 
         // We've also got a picture URI to deal with.
         outState.putParcelable(PICTURE_URI, mPictureUri);
-        outState.putFloat(PICTURE_ROTATION, mPictureRotation);
+        float[] matrixValues = new float[9];
+        mPictureOrientation.getValues(matrixValues);
+        outState.putFloatArray(PICTURE_ORIENTATION, matrixValues);
     }
 
     @Override
@@ -306,11 +306,13 @@ public class WikiFragment extends CentralMapExtraFragment {
             return;
         }
 
-        // Stash the image.  We'll be rotating it later.
+        // Stash the image.  We might be transforming it later.
         mPictureThumbnail = thumbnail;
 
-        // This is a new image, so reset the rotation.
-        mPictureRotation = ROTATE_NORMAL;
+        // Next, get the initial orientation matrix.  We'll modify this as we go
+        // along.
+        mPictureOrientation = BitmapTools.getTransformMatrixForExifOrientation(
+                BitmapTools.getExifOrientationFromUri(act, uri));
 
         // We'll apply the image later, in resolveThumbnailRotation.  But, since
         // we have an image (and there's no way to unset the image without
@@ -529,9 +531,14 @@ public class WikiFragment extends CentralMapExtraFragment {
         assert act != null;
 
         // Now let's rotate the bitmap!
-        Bitmap rotatedThumbnail = BitmapTools.rotateBitmap(
+        Bitmap rotatedThumbnail = Bitmap.createBitmap(
                 mPictureThumbnail,
-                mPictureRotation);
+                0,
+                0,
+                mPictureThumbnail.getWidth(),
+                mPictureThumbnail.getHeight(),
+                mPictureOrientation,
+                true);
 
         act.runOnUiThread(() -> mGalleryButton.setImageBitmap(
                 rotatedThumbnail
