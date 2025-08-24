@@ -93,30 +93,15 @@
                 android:scaleType="centerInside"
                 app:srcCompat="@drawable/gallery" />
 
-            <LinearLayout
+            <ImageButton
+                android:id="@+id/edit_picture"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_gravity="center_horizontal">
-
-                <ImageButton
-                    android:id="@+id/rotate_ccw"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/accessibility_rotate_ccw"
-                    android:padding="@dimen/double_padding"
-                    android:visibility="gone"
-                    app:srcCompat="@drawable/rotate_90_degrees_ccw" />
-
-                <ImageButton
-                    android:id="@+id/rotate_cw"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/accessibility_rotate_cw"
-                    android:padding="@dimen/double_padding"
-                    android:visibility="gone"
-                    app:srcCompat="@drawable/rotate_90_degrees_cw" />
-            </LinearLayout>
+                android:layout_gravity="center_horizontal"
+                android:contentDescription="@string/accessibility_edit_picture"
+                android:padding="@dimen/double_padding"
+                android:visibility="gone"
+                app:srcCompat="@drawable/edit" />
 
             <TextView
                 android:id="@+id/wiki_anon_warning"

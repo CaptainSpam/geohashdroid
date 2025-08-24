@@ -69,4 +69,9 @@
     <string name="wiki_notification_action_skip">Skip</string>
     <string name="wiki_notification_action_abort">Abort</string>
     <string name="wiki_notification_action_update_login">Update</string>
+
+	<string name="wiki_quick_edit_rotate_cw">Rotate 90&#176; clockwise</string>
+	<string name="wiki_quick_edit_rotate_ccw">Rotate 90&#176; counter-clockwise</string>
+	<string name="wiki_quick_edit_flip_horizontal">Flip horizontally</string>
+	<string name="wiki_quick_edit_flip_vertical">Flip vertically</string>
 </resources>

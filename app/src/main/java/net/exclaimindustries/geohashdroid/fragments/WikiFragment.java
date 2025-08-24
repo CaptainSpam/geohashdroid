@@ -47,6 +47,7 @@ import java.util.Calendar;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
@@ -68,8 +69,7 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private View mAnonWarning;
     private ImageButton mGalleryButton;
-    private ImageButton mRotateCcwButton;
-    private ImageButton mRotateCwButton;
+    private ImageButton mEditButton;
     private TextView mPictureLocationLabel;
     private TextView mPictureLocationText;
     private CheckBox mPictureCheckbox;
@@ -113,8 +113,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         mPictureLocationText = layout.findViewById(R.id.wiki_picture_location);
         mIncludeLocationCheckbox = layout.findViewById(R.id.wiki_check_include_location);
         mGalleryButton = layout.findViewById(R.id.wiki_thumbnail);
-        mRotateCcwButton = layout.findViewById(R.id.rotate_ccw);
-        mRotateCwButton = layout.findViewById(R.id.rotate_cw);
+        mEditButton = layout.findViewById(R.id.edit_picture);
         mPostButton = layout.findViewById(R.id.wiki_post_button);
         mMessage = layout.findViewById(R.id.wiki_message);
         mLocationView = layout.findViewById(R.id.wiki_current_location);
@@ -169,30 +168,41 @@ public class WikiFragment extends CentralMapExtraFragment {
             }
         });
 
-        mRotateCcwButton.setOnClickListener(v -> {
-            if(mPictureRotation == ROTATE_NORMAL)
-                mPictureRotation = ROTATE_90_DEGREES_CCW;
-            else if(mPictureRotation == ROTATE_90_DEGREES_CCW)
-                mPictureRotation = ROTATE_180_DEGREES;
-            else if(mPictureRotation == ROTATE_180_DEGREES)
-                mPictureRotation = ROTATE_90_DEGREES_CW;
-            else
-                mPictureRotation = ROTATE_NORMAL;
+//        mRotateCcwButton.setOnClickListener(v -> {
+//            if(mPictureRotation == ROTATE_NORMAL)
+//                mPictureRotation = ROTATE_90_DEGREES_CCW;
+//            else if(mPictureRotation == ROTATE_90_DEGREES_CCW)
+//                mPictureRotation = ROTATE_180_DEGREES;
+//            else if(mPictureRotation == ROTATE_180_DEGREES)
+//                mPictureRotation = ROTATE_90_DEGREES_CW;
+//            else
+//                mPictureRotation = ROTATE_NORMAL;
+//
+//            resolveThumbnailRotation();
+//        });
+//
+//        mRotateCwButton.setOnClickListener(v -> {
+//            if(mPictureRotation == ROTATE_NORMAL)
+//                mPictureRotation = ROTATE_90_DEGREES_CW;
+//            else if(mPictureRotation == ROTATE_90_DEGREES_CW)
+//                mPictureRotation = ROTATE_180_DEGREES;
+//            else if(mPictureRotation == ROTATE_180_DEGREES)
+//                mPictureRotation = ROTATE_90_DEGREES_CCW;
+//            else
+//                mPictureRotation = ROTATE_NORMAL;
+//
+//            resolveThumbnailRotation();
+//        });
 
-            resolveThumbnailRotation();
-        });
+        mEditButton.setOnClickListener(v -> {
+            FragmentActivity act = getActivity();
+            assert(act != null);
 
-        mRotateCwButton.setOnClickListener(v -> {
-            if(mPictureRotation == ROTATE_NORMAL)
-                mPictureRotation = ROTATE_90_DEGREES_CW;
-            else if(mPictureRotation == ROTATE_90_DEGREES_CW)
-                mPictureRotation = ROTATE_180_DEGREES;
-            else if(mPictureRotation == ROTATE_180_DEGREES)
-                mPictureRotation = ROTATE_90_DEGREES_CCW;
-            else
-                mPictureRotation = ROTATE_NORMAL;
-
-            resolveThumbnailRotation();
+            PopupMenu menu = new PopupMenu(getActivity(), v);
+            menu.getMenuInflater().inflate(
+                    R.menu.wiki_edit_picture,
+                    menu.getMenu());
+            menu.show();
         });
 
         // Here's the main event.
@@ -305,8 +315,7 @@ public class WikiFragment extends CentralMapExtraFragment {
         // We'll apply the image later, in resolveThumbnailRotation.  But, since
         // we have an image (and there's no way to unset the image without
         // unchecking picture posting entirely in this UI)...
-        mRotateCcwButton.setVisibility(View.VISIBLE);
-        mRotateCwButton.setVisibility(View.VISIBLE);
+        mEditButton.setVisibility(View.VISIBLE);
 
         // Plus, we want vital info for later.  If there's no location, just
         // give back an ImageInfo with a null in it.  We'll know what to do with
@@ -354,8 +363,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                 // uncheck the picture checkbox just to make sure.
                 mPictureCheckbox.setChecked(false);
                 mPictureCheckbox.setVisibility(View.GONE);
-                mRotateCwButton.setVisibility(View.GONE);
-                mRotateCcwButton.setVisibility(View.GONE);
+                mEditButton.setVisibility(View.GONE);
                 mGalleryButton.setVisibility(View.GONE);
                 mAnonWarning.setVisibility(View.VISIBLE);
             } else {
@@ -382,8 +390,7 @@ public class WikiFragment extends CentralMapExtraFragment {
             if(mPictureCheckbox.isChecked()) {
                 mGalleryButton.setVisibility(View.VISIBLE);
                 if(mPictureUri != null) {
-                    mRotateCwButton.setVisibility(View.VISIBLE);
-                    mRotateCcwButton.setVisibility(View.VISIBLE);
+                    mEditButton.setVisibility(View.VISIBLE);
                 }
                 mLocationTypeGroup.setVisibility(View.VISIBLE);
 
@@ -392,8 +399,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mIncludeLocationCheckbox.setText(R.string.wiki_dialog_stamp_image);
                 mMessage.setHint(R.string.hint_caption);
             } else {
-                mRotateCwButton.setVisibility(View.GONE);
-                mRotateCcwButton.setVisibility(View.GONE);
+                mEditButton.setVisibility(View.GONE);
                 mGalleryButton.setVisibility(View.GONE);
                 mLocationTypeGroup.setVisibility(View.GONE);
                 mPostButton.setText(R.string.wiki_dialog_submit_message);

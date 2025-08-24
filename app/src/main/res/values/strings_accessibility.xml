@@ -2,6 +2,5 @@
 <resources>
     <string name="accessibility_version_bullet">Bulletpoint</string>
     <string name="accessibility_wiki_thumbnail">Wiki picture thumbnail</string>
-    <string name="accessibility_rotate_ccw">Rotate image 90 degrees counter-clockwise</string>
-    <string name="accessibility_rotate_cw">Rotate image 90 degrees clockwise</string>
+    <string name="accessibility_edit_picture">Edit wiki picture</string>
 </resources>

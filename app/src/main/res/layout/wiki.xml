@@ -66,62 +66,67 @@
         </LinearLayout>
 
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/wikipost_options_size"
-            android:baselineAligned="false">
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
 
             <LinearLayout
-                android:orientation="vertical"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <CheckBox
                     android:id="@+id/wiki_check_include_picture"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/wiki_dialog_add_picture"
-                    android:textSize="@dimen/wikipost_tiny_fontsize"/>
+                    android:textSize="@dimen/wikipost_tiny_fontsize" />
+
                 <CheckBox
                     android:id="@+id/wiki_check_include_location"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:checked="true"
                     android:text="@string/wiki_dialog_append_coordinates"
-                    android:textSize="@dimen/wikipost_tiny_fontsize"
-                    android:checked="true"/>
+                    android:textSize="@dimen/wikipost_tiny_fontsize" />
+
                 <RadioGroup
                     android:id="@+id/wiki_location_type_group"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/standard_padding">
+
                     <RadioButton
                         android:id="@+id/wiki_use_picture_location"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/wiki_dialog_location_from_picture"
-                        android:textSize="@dimen/wikipost_tiny_fontsize"/>
+                        android:textSize="@dimen/wikipost_tiny_fontsize" />
+
                     <RadioButton
                         android:id="@+id/wiki_use_device_location"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/wiki_dialog_location_from_device"
-                        android:textSize="@dimen/wikipost_tiny_fontsize"/>
+                        android:textSize="@dimen/wikipost_tiny_fontsize" />
+
                     <RadioButton
                         android:id="@+id/wiki_use_no_location"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/wiki_dialog_location_none"
-                        android:textSize="@dimen/wikipost_tiny_fontsize"/>
+                        android:textSize="@dimen/wikipost_tiny_fontsize" />
                 </RadioGroup>
 
             </LinearLayout>
 
             <LinearLayout
-                android:orientation="vertical"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <ImageButton
                     android:id="@+id/wiki_thumbnail"
@@ -133,55 +138,40 @@
                     android:scaleType="centerInside"
                     app:srcCompat="@drawable/gallery" />
 
-                <LinearLayout
+                <ImageButton
+                    android:id="@+id/edit_picture"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_gravity="center_horizontal">
-
-                    <ImageButton
-                        android:id="@+id/rotate_ccw"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/accessibility_rotate_ccw"
-                        android:padding="@dimen/double_padding"
-                        android:visibility="gone"
-                        app:srcCompat="@drawable/rotate_90_degrees_ccw" />
-
-                    <ImageButton
-                        android:id="@+id/rotate_cw"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/accessibility_rotate_cw"
-                        android:padding="@dimen/double_padding"
-                        android:visibility="gone"
-                        app:srcCompat="@drawable/rotate_90_degrees_cw" />
-                </LinearLayout>
+                    android:layout_gravity="center_horizontal"
+                    android:contentDescription="@string/accessibility_edit_picture"
+                    android:padding="@dimen/double_padding"
+                    android:visibility="gone"
+                    app:srcCompat="@drawable/edit" />
 
                 <TextView
                     android:id="@+id/wiki_anon_warning"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:text="@string/wiki_editor_not_logged_in"
                     android:textSize="@dimen/wikipost_really_tiny_fontsize"
-                    android:layout_gravity="center_horizontal"
                     android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/wiki_picture_location_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:text="@string/wiki_dialog_location_picture"
                     android:textSize="@dimen/wikipost_tiny_fontsize"
-                    android:layout_gravity="center_horizontal"
                     android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/wiki_picture_location"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="@dimen/wikipost_tiny_fontsize"
                     android:layout_gravity="center_horizontal"
+                    android:textSize="@dimen/wikipost_tiny_fontsize"
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>

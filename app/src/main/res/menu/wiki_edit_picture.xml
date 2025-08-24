@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/rotate_cw"
+        android:icon="@drawable/rotate_90_degrees_cw"
+        android:title="@string/wiki_quick_edit_rotate_cw" />
+    <item
+        android:id="@+id/rotate_ccw"
+        android:icon="@drawable/rotate_90_degrees_ccw"
+        android:title="@string/wiki_quick_edit_rotate_ccw" />
+    <item
+        android:id="@+id/flip_horizontal"
+        android:icon="@drawable/flip_horizontal"
+        android:title="@string/wiki_quick_edit_flip_horizontal" />
+    <item
+        android:id="@+id/flip_vertical"
+        android:icon="@drawable/flip_vertical"
+        android:title="@string/wiki_quick_edit_flip_vertical" />
+</menu>
