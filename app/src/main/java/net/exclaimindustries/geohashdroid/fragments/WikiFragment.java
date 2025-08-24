@@ -666,6 +666,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                     mInfo,
                     mLastImageInfo.uri,
                     loc,
+                    mPictureOrientation,
                     includeLocation);
 
             i.putExtra(WikiService.EXTRA_IMAGE, mPictureUri)

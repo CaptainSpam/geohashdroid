@@ -13,6 +13,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.location.Location;
@@ -248,6 +249,7 @@ public class WikiImageUtils {
                                          @NonNull Info info,
                                          @NonNull Uri uri,
                                          @Nullable Location location,
+                                         @Nullable Matrix transform,
                                          boolean drawInfobox) {
         // First, we want to scale the image to cut down on memory use and
         // upload time. The Geohashing wiki tends to frown upon images over
@@ -259,6 +261,18 @@ public class WikiImageUtils {
 
         // If the Bitmap wound up null, we're in trouble.
         if(bitmap == null) return null;
+
+        // If it's good, however, transform it.
+        if(transform != null) {
+            bitmap = Bitmap.createBitmap(
+                    bitmap,
+                    0,
+                    0,
+                    bitmap.getWidth(),
+                    bitmap.getHeight(),
+                    transform,
+                    true);
+        }
 
         // Then, put the infobox up if that's what we're into.
         if(drawInfobox)
