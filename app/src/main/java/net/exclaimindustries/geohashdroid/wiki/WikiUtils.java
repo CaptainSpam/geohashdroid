@@ -11,6 +11,7 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
+import android.net.Uri;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -21,6 +22,9 @@ import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.DOMUtil;
 import net.exclaimindustries.tools.DateTools;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -28,7 +32,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URLEncoder;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -186,6 +191,12 @@ public class WikiUtils {
             additional = localAdditional;
             valid = localValid;
         }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return valid ? rawResult : "Invalid version data";
+        }
     }
 
     /**
@@ -239,6 +250,59 @@ public class WikiUtils {
     }
 
     /**
+     * Opens the given connection and parses its resulting JSON.  Also throws
+     * WikiExceptions if something goes wrong.  Note that JSON parsing failures
+     * are covered by a WikiException.
+     *
+     * @param connection the already-prepared HttpURLConnection to connect
+     * @return the resulting JSON
+     * @throws IOException the connection failed somehow
+     * @throws WikiException the connection succeeded, but the wiki threw an error
+     */
+    @NonNull
+    private static JSONObject getJsonFromConnection(@NonNull HttpURLConnection connection) throws IOException, WikiException {
+        try {
+            connection.connect();
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != 200) {
+                Log.e(DEBUG_TAG, "Error response from server: " + responseCode);
+                // Something else will get whatever happened here.
+                throw new IOException("Error response from server: " + responseCode);
+            }
+
+            // Hoover up that data!
+            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder buffer = new StringBuilder();
+            String line = br.readLine();
+            while(line != null) {
+                buffer.append(line);
+                line = br.readLine();
+            }
+
+            // What we should have is a chunky blob of JSON.
+            JSONObject json = new JSONObject(buffer.toString());
+
+            // Check it for an error first!
+            if(json.has("error")) {
+                throw new WikiException(
+                        getErrorTextId(
+                                json
+                                        .getJSONObject("error")
+                                        .getString("code")));
+            }
+
+            return json;
+        } catch (JSONException jse) {
+            // If anything JSON-wise threw an exception here, assume the wiki is
+            // returning bad JSON.  We have an exception code for that.
+            throw new WikiException(R.string.wiki_error_json);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    /**
      * Gets a standard {@link WikiResponse} object for a wiki request.  Because
      * I was getting sick of all that boilerplate.
      *
@@ -264,32 +328,40 @@ public class WikiUtils {
     /**
      * Returns whether or not a given wiki page or file exists.
      *
-     * @param httpclient an active HTTP session
      * @param pagename   the name of the wiki page
      * @return true if the page exists, false if not
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static boolean doesWikiPageExist(@NonNull CloseableHttpClient httpclient,
-                                            @NonNull String pagename) throws Exception {
-        // It's GET time!  This is basically the same as the content request, but
-        // we really don't need ANY data other than whether or not the page
-        // exists, so we won't call for anything.
-        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&titles="
-                + URLEncoder.encode(pagename, "UTF-8"));
+    public static boolean doesWikiPageExist(@NonNull String pagename) throws Exception {
+        Uri.Builder builder = Uri.parse(WIKI_API_URL).buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("titles", pagename);
 
-        WikiResponse response = getWikiResponse(httpclient, httpget);
+        HttpURLConnection connection = (HttpURLConnection) (new URL(builder.build().toString()).openConnection());
+        JSONObject json = getJsonFromConnection(connection);
 
-        Element pageElem;
         try {
-            pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
+            JSONObject pages = json
+                    .getJSONObject("query")
+                    .getJSONObject("pages");
 
-        // "invalid" or "missing" both resolve to the same answer: No.  Anything
-        // else means yes.
-        return !(pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing"));
+            // This query CAN take multiple pages, hence why it returns an
+            // object capable of holding equally multiple pages.  We just want
+            // the one.
+            JSONArray ids = pages.names();
+            if(ids == null || ids.length() != 1) {
+                throw new WikiException(R.string.wiki_error_json);
+            }
+            JSONObject pageInfo = ids.getJSONObject(0);
+
+            // "invalid" or "missing" both resolve to the same answer: No.
+            // Anything else means yes.
+            return !(pageInfo.has("missing") || pageInfo.has("invalid"));
+        } catch(JSONException e) {
+            throw new WikiException(R.string.wiki_error_json);
+        }
     }
 
     /**
@@ -298,32 +370,32 @@ public class WikiUtils {
      * we're calling the right one depending on if the Geohashing wiki has
      * upgraded yet.  In times of stable APIs, this probably won't be used.
      *
-     * @param httpclient an active HTTP session
      * @return a {@link WikiVersionData} containing all the version data you'll need
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    @NonNull
-    public static WikiVersionData getWikiVersion(@NonNull CloseableHttpClient httpclient) throws Exception {
-        // SiteInfo call!
-        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=siteinfo&siprop=general");
+    public static WikiVersionData getWikiVersion() throws Exception {
+        // This shouldn't require any special login data or params.
+        Uri.Builder builder = Uri.parse(WIKI_API_URL).buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("meta", "siteinfo")
+                .appendQueryParameter("siprop", "general");
 
-        WikiResponse response = getWikiResponse(httpclient, httpget);
+        HttpURLConnection connection = (HttpURLConnection) (new URL(builder.build().toString()).openConnection());
+        JSONObject json = getJsonFromConnection(connection);
 
-        Element generalElem;
         try {
-            generalElem = DOMUtil.getFirstElement(response.rootElem, "general");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
+            String version = json
+                    .getJSONObject("query")
+                    .getJSONObject("general")
+                    .getString("generator");
 
-        // If the generator attribute isn't there, there's a problem.
-        if(!generalElem.hasAttribute("generator")) {
-            throw new WikiException(R.string.wiki_error_xml);
+            Log.d(DEBUG_TAG, "The wiki says its version is: " + version);
+            return new WikiVersionData(version);
+        } catch(JSONException e) {
+            throw new WikiException(R.string.wiki_error_json);
         }
-
-        // Finally, we've got us a WikiVersionData!
-        return new WikiVersionData(generalElem.getAttribute("generator"));
     }
 
     /**

@@ -13,6 +13,7 @@
 	<string name="wiki_conn_anon_pic_error">You can\'t upload pictures anonymously.  You must specify a username and password in Preferences first.</string>
 
 	<string name="wiki_error_xml">Invalid XML sent from wiki.</string>
+	<string name="wiki_error_json">Invalid JSON sent from wiki.</string>
 	<string name="wiki_error_unknown">An unknown error happened with the wiki.  Please try again.</string>
 	<string name="wiki_error_illegal_namespace">Pages in that namespace can\'t be edited.</string>
 	<string name="wiki_error_protected">You\'re not allowed to edit that page.</string>

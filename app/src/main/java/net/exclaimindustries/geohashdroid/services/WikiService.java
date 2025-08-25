@@ -299,7 +299,7 @@ public class WikiService
 
                 // Make sure the image doesn't already exist.  If it does, we
                 // can skip the upload.
-                if(!WikiUtils.doesWikiPageExist(client, wikiName)) {
+                if(!WikiUtils.doesWikiPageExist(wikiName)) {
                     if(imageData == null) {
                         // No image is a problem at this point...
                         Log.w(DEBUG_TAG, "Trying to upload an image, but imageData was null at upload time?");
