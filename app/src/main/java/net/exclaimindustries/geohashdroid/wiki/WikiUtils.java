@@ -12,6 +12,7 @@ package net.exclaimindustries.geohashdroid.wiki;
 import android.content.Context;
 import android.location.Location;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -32,13 +33,21 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,6 +92,8 @@ public class WikiUtils {
     private static final String WIKI_BASE_VIEW_URL = WIKI_BASE_URL + "geohashing/";
 
     private static final String DEBUG_TAG = "WikiUtils";
+
+    private static final String COOKIES_HEADER = "Set-Cookie";
 
     /**
      * This is a bundle of version data, neatly pre-parsed for easy analysis.
@@ -296,6 +307,7 @@ public class WikiUtils {
         } catch (JSONException jse) {
             // If anything JSON-wise threw an exception here, assume the wiki is
             // returning bad JSON.  We have an exception code for that.
+            Log.e(DEBUG_TAG, "JSONException in getJsonFromConnection!", jse);
             throw new WikiException(R.string.wiki_error_json);
         } finally {
             connection.disconnect();
@@ -360,6 +372,7 @@ public class WikiUtils {
             // Anything else means yes.
             return !(pageInfo.has("missing") || pageInfo.has("invalid"));
         } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in doesWikiPageExist!", e);
             throw new WikiException(R.string.wiki_error_json);
         }
     }
@@ -394,6 +407,7 @@ public class WikiUtils {
             Log.d(DEBUG_TAG, "The wiki says its version is: " + version);
             return new WikiVersionData(version);
         } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in getWikiVersion!", e);
             throw new WikiException(R.string.wiki_error_json);
         }
     }
@@ -562,174 +576,108 @@ public class WikiUtils {
     }
 
     /**
-     * Retrieves valid login cookies for an HTTP session.  These will be added
-     * to the CloseableHttpClient value passed in, so re-use it for future wiki
-     * transactions.
+     * Logs into the server and retrieves valid login cookies for the session.
+     * You'll need to pass the cookie list from this call to other methods that
+     * need an authenticated session.
      *
-     * @param httpclient an active HTTP session.
-     * @param wpName     a wiki user name.
-     * @param wpPassword the matching password to this user name.
-     * @throws WikiException problem with the wiki, translate the ID
-     * @throws Exception     anything else happened, use getMessage
+     * @param wpName a wiki user name
+     * @param wpPassword the matching password to this user name
+     * @return a list of HttpCookies that represent an authenticated session
+     * @throws WikiException the wiki threw an error, which may include authentication issues
+     * @throws Exception anything else went wrong
      */
-    public static void login(@NonNull CloseableHttpClient httpclient,
-                             @NonNull String wpName,
-                             @NonNull String wpPassword) throws Exception {
-        HttpPost httppost = new HttpPost(WIKI_API_URL);
+    public static List<HttpCookie> login(@NonNull String wpName,
+                                         @NonNull String wpPassword) throws Exception {
+        Uri apiUri = Uri.parse(WIKI_API_URL);
+        // Step one: The login token itself.
+        Uri.Builder builder = apiUri.buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "login");
 
-        // Login changes depending on version.  Once we know that the GHD wiki
-        // has upgraded, this will probably go away.
-        WikiVersionData version = getWikiVersion(httpclient);
+        Log.d(DEBUG_TAG, "Requesting login token...");
+        HttpURLConnection connection = (HttpURLConnection) (new URL(builder.build().toString()).openConnection());
+        JSONObject json = getJsonFromConnection(connection);
+        String token;
+        try {
+            token = json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("logintoken");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in login!", e);
+            throw new WikiException(R.string.wiki_error_json);
+        }
 
-        if(!version.valid) {
+        // With the login token received, we should also have at least one
+        // cookie from the server with the session.  Grab anything it's got.
+        List<String> cookieHeaders = connection.getHeaderFields().get(COOKIES_HEADER);
+
+        if(cookieHeaders == null || cookieHeaders.isEmpty()) {
+            Log.e(DEBUG_TAG, "There weren't any session cookies in the headers?");
             throw new WikiException(R.string.wiki_error_unknown);
         }
 
-        if(version.minorVersion >= 27) {
-            // The new style.  This one requires the clientLogin action.  I'm
-            // really hoping I won't have to implement a CAPTCHA or 2FA
-            // interface for this, else we're going to have some serious issues.
-            // For now, though, grab a token.
-            Log.d(DEBUG_TAG, "The wiki is running 1.27 or higher, going with the new login method...");
-            HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=tokens&type=login");
-
-            WikiResponse response = getWikiResponse(httpclient, httpget);
-
-            Element tokenElem;
-            String token;
-            try {
-                tokenElem = DOMUtil.getFirstElement(response.rootElem, "tokens");
-                token = DOMUtil.getSimpleAttributeText(tokenElem, "logintoken");
-            } catch(Exception e) {
-                Log.d(DEBUG_TAG, "Couldn't get a token!");
-                throw new WikiException(R.string.wiki_error_xml);
-            }
-
-            // Okay, now let's try a login.  I hope this works.
-            ArrayList<NameValuePair> nvps = new ArrayList<>();
-            nvps.add(new BasicNameValuePair("action", "clientlogin"));
-            nvps.add(new BasicNameValuePair("username", wpName));
-            nvps.add(new BasicNameValuePair("password", wpPassword));
-            nvps.add(new BasicNameValuePair("loginreturnurl", WIKI_API_URL));
-            nvps.add(new BasicNameValuePair("logintoken", token));
-            nvps.add(new BasicNameValuePair("format", "xml"));
-
-            httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-            Log.d(DEBUG_TAG, "Token obtained, trying login...");
-            response = getWikiResponse(httpclient, httppost);
-
-            Element login;
-            String status;
-            try {
-                login = DOMUtil.getFirstElement(response.rootElem, "clientlogin");
-                status = DOMUtil.getSimpleAttributeText(login, "status");
-
-                // If we got a clientlogin response but no status in it, I
-                // just... what?
-                if(status == null) throw new WikiException(R.string.wiki_error_unknown);
-            } catch(WikiException we) {
-                throw we;
-            } catch (Exception e) {
-                throw new WikiException(R.string.wiki_error_xml);
-            }
-
-            // Our result will hopefully either be PASS or FAIL.  If it's UI or
-            // REDIRECT, we don't cover those cases just yet.  I really hope we
-            // don't have to cover those on the Geohashing wiki.
-            if(status.equals("UI") || status.equals("REDIRECT")) {
-                Log.w(DEBUG_TAG, "The wiki gave us a " + status + " result on login!  The bug reports will be rolling in soon...");
-                throw new WikiException(R.string.wiki_error_fancy_schmansy_login);
-            }
-
-            // Fail means, well, failure.
-            if(status.equals("FAIL")) {
-                Log.d(DEBUG_TAG, "Login failure, telling the user this...");
-                throw new WikiException(R.string.wiki_error_bad_login);
-            }
-
-            // If this ISN'T just PASS at this point, that's very very bad.
-            if(!status.equals("PASS")) {
-                Log.e(DEBUG_TAG, "The wiki gave us a " + status + " result on login, and I have no clue what that means.");
-                throw new WikiException(R.string.wiki_error_unknown);
-            }
-
-            // Otherwise, we're good!
-            Log.d(DEBUG_TAG, "Success!");
-
-        } else {
-            Log.d(DEBUG_TAG, "The wiki is still on 1.26 or lower, using the old login method...");
-
-            // The old style.  Login is all we need.
-            ArrayList<NameValuePair> nvps = new ArrayList<>();
-            nvps.add(new BasicNameValuePair("action", "login"));
-            nvps.add(new BasicNameValuePair("lgname", wpName));
-            nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
-            nvps.add(new BasicNameValuePair("format", "xml"));
-
-            httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-            Log.d(DEBUG_TAG, "Trying login...");
-            WikiResponse response = getWikiResponse(httpclient, httppost);
-
-            // The result comes in as an XML chunk.  Since we're expecting the
-            // cookies to be set properly, all we care about is the "result"
-            // attribute of the "login" element.
-            Element login;
-            String result;
-            try {
-                login = DOMUtil.getFirstElement(response.rootElem, "login");
-                result = DOMUtil.getSimpleAttributeText(login, "result");
-            } catch(Exception e) {
-                throw new WikiException(R.string.wiki_error_xml);
-            }
-
-            Log.d(DEBUG_TAG, "After login, result is " + result);
-
-            // Now, get the result.  If it was a success, cookies got added.  If it
-            // was NeedToken, this is a 1.16 wiki (as it should be now) and we need
-            // another request to get the final token.
-            if(result != null && result.equals("NeedToken")) {
-                Log.d(DEBUG_TAG, "Token needed, trying again...");
-                // Okay, do the same thing again, this time with the token we got
-                // the first time around.  Cookies will be set this time around, I
-                // think.
-                String token = DOMUtil.getSimpleAttributeText(login, "token");
-
-                httppost = new HttpPost(WIKI_API_URL);
-
-                nvps = new ArrayList<>();
-                nvps.add(new BasicNameValuePair("action", "login"));
-                nvps.add(new BasicNameValuePair("lgname", wpName));
-                nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
-                nvps.add(new BasicNameValuePair("lgtoken", token));
-                nvps.add(new BasicNameValuePair("format", "xml"));
-
-                httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-                Log.d(DEBUG_TAG, "Sending it out...");
-                response = getWikiResponse(httpclient, httppost);
-
-                Log.d(DEBUG_TAG, "Response has returned!");
-
-                // Again!
-                try {
-                    login = DOMUtil.getFirstElement(response.rootElem, "login");
-                    result = DOMUtil.getSimpleAttributeText(login, "result");
-                } catch(Exception e) {
-                    throw new WikiException(R.string.wiki_error_xml);
-                }
-            }
-
-            // Check it.  If NeedToken was returned again, then the wiki is just
-            // telling us nonsense and we've got a right to throw an exception.
-            if(result != null && result.equals("Success")) {
-                Log.d(DEBUG_TAG, "Success!");
-            } else {
-                Log.d(DEBUG_TAG, "FAILURE!  Result was " + result);
-                throw new WikiException(getErrorTextId(result));
-            }
+        List<HttpCookie> cookies = new ArrayList<>();
+        for(String cookie : cookieHeaders) {
+            cookies.addAll(HttpCookie.parse(cookie));
         }
+
+        // Right!  With cookies and a token in hand, we want to perform an
+        // actual login.
+        connection = (HttpURLConnection) (new URL(apiUri.toString()).openConnection());
+        addCookiesToConnection(connection, cookies);
+
+        // As this is a POST request, we'll be using form fields.
+        Map<String, String> formFields = new LinkedHashMap<>();
+        formFields.put("action", "clientlogin");
+        formFields.put("username", wpName);
+        formFields.put("password", wpPassword);
+        formFields.put("loginreturnurl", WIKI_API_URL);
+        formFields.put("logintoken", token);
+        formFields.put("format", "json");
+
+        addFormFieldsToConnection(connection, formFields);
+
+        Log.d(DEBUG_TAG, "Login token obtained, authenticating...");
+        json = getJsonFromConnection(connection);
+        String status;
+        try {
+            status = json
+                    .getJSONObject("clientlogin")
+                    .getString("status");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in login!", e);
+            throw new WikiException(R.string.wiki_error_json);
+        }
+
+        // Our result will hopefully either be PASS or FAIL.  If it's UI or
+        // REDIRECT, we don't cover those cases just yet.  I really hope we
+        // don't have to cover those on the Geohashing wiki.
+        if(status.equals("UI") || status.equals("REDIRECT")) {
+            Log.w(DEBUG_TAG, "The wiki gave us a " + status + " result on login!  The bug reports will be rolling in soon...");
+            throw new WikiException(R.string.wiki_error_fancy_schmansy_login);
+        }
+
+        // Fail means, well, failure.
+        if(status.equals("FAIL")) {
+            Log.d(DEBUG_TAG, "Login failure, telling the user this...");
+            throw new WikiException(R.string.wiki_error_bad_login);
+        }
+
+        // If this ISN'T just PASS at this point, that's very very bad.
+        if(!status.equals("PASS")) {
+            Log.e(DEBUG_TAG, "The wiki gave us a " + status + " result on login, and I have no clue what that means.");
+            throw new WikiException(R.string.wiki_error_unknown);
+        }
+
+        // Otherwise, we're good!
+        Log.d(DEBUG_TAG, "Success!");
+
+        // At this point, the session indicated by the session cookies is now
+        // authenticated.  Return said cookies for future use.
+        return cookies;
     }
 
     /**
@@ -979,6 +927,59 @@ public class WikiUtils {
                     + "]";
         } else {
             return "";
+        }
+    }
+
+    /**
+     * Convenience method to add a list of cookies to an existing connection.
+     *
+     * @param connection HttpURLConnection to which HttpCookies are to be added
+     * @param cookies the aforementioned HttpCookies
+     */
+    private static void addCookiesToConnection(
+            @NonNull HttpURLConnection connection,
+            @NonNull List<HttpCookie> cookies) {
+        connection.setRequestProperty("Cookie", TextUtils.join(";", cookies));
+    }
+
+    /**
+     * Convenience method for adding a bunch of form fields to an existing
+     * connection.  This WILL have the side effect of setting the Content-type
+     * to application/x-www-form-urlencoded, the request method to POST, and
+     * other things necessary for form posting.  That's also why this is a
+     * private method.
+     *
+     * @param connection HttpURLConnection to which form fields are to be added
+     * @param formFields the aforementioned form fields
+     * @throws IOException any of a wide variety of things that shouldn't have happened happened
+     */
+    private static void addFormFieldsToConnection(
+            @NonNull HttpURLConnection connection,
+            @NonNull Map<String, String> formFields) throws IOException {
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-type", "application/x-www-form-urlencoded;charset=" + StandardCharsets.UTF_8.name());
+        connection.setDoInput(true);
+        connection.setDoOutput(true);
+        connection.setChunkedStreamingMode(0);
+
+        StringBuilder sb = new StringBuilder();
+        for(Map.Entry<String, String> entry : formFields.entrySet()) {
+            if(sb.length() != 0)
+                sb.append("&");
+
+            sb.append(URLEncoder.encode(
+                    entry.getKey(),
+                    StandardCharsets.UTF_8.name()));
+            sb.append("=");
+            sb.append(URLEncoder.encode(
+                    entry.getValue(),
+                    StandardCharsets.UTF_8.name()));
+        }
+
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+        } catch(Exception e) {
+            Log.e(DEBUG_TAG, "Exception during form field writing?  What?", e);
         }
     }
 }

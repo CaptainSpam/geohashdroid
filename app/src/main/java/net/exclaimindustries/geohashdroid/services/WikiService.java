@@ -40,8 +40,11 @@ import net.exclaimindustries.tools.QueueService;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.HttpCookie;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -256,8 +259,9 @@ public class WikiService
             if(!includeLocation) loc = null;
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
+            List<HttpCookie> cookies = new ArrayList<>();
             if(!username.isEmpty() && !password.isEmpty()) {
-                WikiUtils.login(client, username, password);
+                cookies = WikiUtils.login(username, password);
             }
 
             // Prep a page.  We want a populated formfields for later.
