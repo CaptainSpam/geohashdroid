@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringWriter;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -60,7 +59,6 @@ import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
-import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
 import cz.msebera.android.httpclient.entity.ContentType;
@@ -353,28 +351,9 @@ public class WikiUtils {
 
         HttpURLConnection connection = (HttpURLConnection) (new URL(builder.build().toString()).openConnection());
         JSONObject json = getJsonFromConnection(connection);
+        JSONObject pageInfo = getFirstPageFrom(json);
 
-        try {
-            JSONObject pages = json
-                    .getJSONObject("query")
-                    .getJSONObject("pages");
-
-            // This query CAN take multiple pages, hence why it returns an
-            // object capable of holding equally multiple pages.  We just want
-            // the one.
-            JSONArray ids = pages.names();
-            if(ids == null || ids.length() != 1) {
-                throw new WikiException(R.string.wiki_error_json);
-            }
-            JSONObject pageInfo = ids.getJSONObject(0);
-
-            // "invalid" or "missing" both resolve to the same answer: No.
-            // Anything else means yes.
-            return !(pageInfo.has("missing") || pageInfo.has("invalid"));
-        } catch(JSONException e) {
-            Log.e(DEBUG_TAG, "JSONException in doesWikiPageExist!", e);
-            throw new WikiException(R.string.wiki_error_json);
-        }
+        return !(pageInfo.has("missing") || pageInfo.has("invalid"));
     }
 
     /**
@@ -387,6 +366,7 @@ public class WikiUtils {
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
+    @NonNull
     public static WikiVersionData getWikiVersion() throws Exception {
         // This shouldn't require any special login data or params.
         Uri.Builder builder = Uri.parse(WIKI_API_URL).buildUpon();
@@ -417,99 +397,126 @@ public class WikiUtils {
      * also attaches the fields for future resubmission to a HashMap (namely, an
      * edittoken and a timestamp).
      *
-     * @param httpclient an active HTTP session
-     * @param pagename   the name of the wiki page
-     * @param formfields if not null, this hashmap will be filled with the correct HTML form fields to resubmit the page.
+     * @param pagename the name of the wiki page
+     * @param cookies cookies fetched from a previous login call
+     * @param formfields if not null, this hashmap will be emptied and filled with the correct HTML form fields to resubmit the page
      * @return the raw code of the wiki page, or null if the page doesn't exist
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static String getWikiPage(@NonNull CloseableHttpClient httpclient,
-                                     @NonNull String pagename,
+    @Nullable
+    public static String getWikiPage(@NonNull String pagename,
+                                     @NonNull List<HttpCookie> cookies,
                                      @Nullable HashMap<String, String> formfields) throws Exception {
-        // We can use a GET statement here.
-        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&prop="
-                + URLEncoder.encode("info|revisions", "UTF-8")
-                + "&rvprop=content&format=xml&intoken=edit&titles="
-                + URLEncoder.encode(pagename, "UTF-8"));
+        // Build up a new-style csrf request.
+        Uri.Builder uriBuilder = Uri.parse(WIKI_API_URL).buildUpon();
+        uriBuilder
+                .appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("prop", "info|revisions")
+                .appendQueryParameter("rvprop", "content")
+                .appendQueryParameter("rvslots", "*")
+                .appendQueryParameter("rvlimit", "1")
+                .appendQueryParameter("titles", pagename)
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "csrf");
 
-        String page;
-        WikiResponse response = getWikiResponse(httpclient, httpget);
+        HttpURLConnection connection = (HttpURLConnection) new URL(uriBuilder.toString()).openConnection();
+        addCookiesToConnection(connection, cookies);
 
-        Element pageElem;
-        Element text;
+        JSONObject json = getJsonFromConnection(connection);
+
+        // We hopefully have a page and some tokens.
+        JSONObject page = getFirstPageFrom(json);
+        String token;
         try {
-            pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
+            token = json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("csrftoken");
+        } catch (JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in getWikiPage!", e);
+            throw new WikiException(R.string.wiki_error_json);
         }
 
         // If we got an "invalid" attribute, the page not only doesn't exist,
         // but it CAN'T exist, and is therefore an error.
-        if(pageElem.hasAttribute("invalid"))
+        if(page.has("invalid"))
             throw new WikiException(R.string.wiki_error_invalid_page);
 
         if(formfields != null) {
-            // If we have a formfields hash ready, populate it with a couple
-            // values.
+            // If we have a formfields hash ready, populate it with some values.
+            formfields.clear();
             formfields.put("summary", "An expedition message sent via Geohash Droid for Android.");
-            if(pageElem.hasAttribute("edittoken"))
-                formfields.put("token", DOMUtil.getSimpleAttributeText(pageElem, "edittoken"));
-            if(pageElem.hasAttribute("touched"))
-                formfields.put("basetimestamp", DOMUtil.getSimpleAttributeText(pageElem, "touched"));
+            formfields.put("token", token);
+
+            if(page.has("touched"))
+                formfields.put("basetimestamp", page.getString("touched"));
         }
 
         // If we got a "missing" attribute, the page hasn't been made yet, so we
         // return null.
-        if(pageElem.hasAttribute("missing"))
+        if(page.has("missing"))
             return null;
 
-        // Otherwise, get the text and fill out the form fields.
+        // Otherwise, grab the text from the revision data and return it.
         try {
-            text = DOMUtil.getFirstElement(pageElem, "rev");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
+            return page
+                    .getJSONArray("revisions")
+                    .getJSONObject(0)
+                    .getJSONObject("slots")
+                    .getJSONObject("main")
+                    .getString("*");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in getWikiPage!", e);
+            throw new WikiException(R.string.wiki_error_json);
         }
-
-        page = DOMUtil.getSimpleElementText(text);
-
-        return page;
     }
 
     /**
-     * Replaces an entire wiki page
+     * Replaces an entire wiki page.
      *
-     * @param httpclient an active HTTP session
-     * @param pagename   the name of the wiki page
-     * @param content    the new content of the wiki page to be submitted
+     * @param pagename the name of the wiki page
+     * @param content the new content of the wiki page to be submitted
+     * @param cookies cookies fetched from a previous login call; will be repopulated with new cookies from this call
      * @param formfields a hashmap with the fields needed (besides pagename and content; those will be filled in this method)
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void putWikiPage(@NonNull CloseableHttpClient httpclient,
-                                   @NonNull String pagename, String content,
+    public static void putWikiPage(@NonNull String pagename,
+                                   @NonNull String content,
+                                   @NonNull List<HttpCookie> cookies,
                                    @NonNull HashMap<String, String> formfields) throws Exception {
         // If there's no edit token in the hash map, we can't do anything.
         if(!formfields.containsKey("token")) {
             throw new WikiException(R.string.wiki_error_protected);
         }
 
-        HttpPost httppost = new HttpPost(WIKI_API_URL);
+        HttpURLConnection connection = (HttpURLConnection) (new URL(WIKI_API_URL).openConnection());
+        addCookiesToConnection(connection, cookies);
 
-        ArrayList<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("action", "edit"));
-        nvps.add(new BasicNameValuePair("title", pagename));
-        nvps.add(new BasicNameValuePair("text", content));
-        nvps.add(new BasicNameValuePair("format", "xml"));
-        for(String s : formfields.keySet()) {
-            nvps.add(new BasicNameValuePair(s, formfields.get(s)));
+        // As this is a POST request, we'll be using form fields.
+        Map<String, String> newFormFields = new LinkedHashMap<>();
+        newFormFields.put("action", "edit");
+        newFormFields.put("title", pagename);
+        newFormFields.put("text", content);
+        newFormFields.put("format", "json");
+        newFormFields.putAll(formfields);
+
+        addFormFieldsToConnection(connection, newFormFields);
+
+        JSONObject json = getJsonFromConnection(connection);
+
+        // Get the result code.  Hopefully it worked.
+        String result = json
+                .getJSONObject("edit")
+                .getString("result");
+
+        if(!result.equals("Success")) {
+            // Uh oh.
+            Log.e(DEBUG_TAG, "Invalid response from putWikiPage: " + result);
+            throw new WikiException(R.string.wiki_error_unknown);
         }
-
-        httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-        getWikiResponse(httpclient, httppost);
-
-        // And really, that's it.  We're done!
     }
 
     /**
@@ -577,15 +584,15 @@ public class WikiUtils {
 
     /**
      * Logs into the server and retrieves valid login cookies for the session.
-     * You'll need to pass the cookie list from this call to other methods that
-     * need an authenticated session.
+     * You'll need to pass the cookie list from this call to the next method.
      *
      * @param wpName a wiki user name
      * @param wpPassword the matching password to this user name
-     * @return a list of HttpCookies that represent an authenticated session
+     * @return a List of HttpCookies populated with fresh login cookies
      * @throws WikiException the wiki threw an error, which may include authentication issues
      * @throws Exception anything else went wrong
      */
+    @NonNull
     public static List<HttpCookie> login(@NonNull String wpName,
                                          @NonNull String wpPassword) throws Exception {
         Uri apiUri = Uri.parse(WIKI_API_URL);
@@ -611,23 +618,17 @@ public class WikiUtils {
         }
 
         // With the login token received, we should also have at least one
-        // cookie from the server with the session.  Grab anything it's got.
-        List<String> cookieHeaders = connection.getHeaderFields().get(COOKIES_HEADER);
-
-        if(cookieHeaders == null || cookieHeaders.isEmpty()) {
+        // cookie from the server with the session.
+        List<HttpCookie> loginCookies = getCookiesFromConnection(connection);
+        if(loginCookies.isEmpty()) {
             Log.e(DEBUG_TAG, "There weren't any session cookies in the headers?");
             throw new WikiException(R.string.wiki_error_unknown);
-        }
-
-        List<HttpCookie> cookies = new ArrayList<>();
-        for(String cookie : cookieHeaders) {
-            cookies.addAll(HttpCookie.parse(cookie));
         }
 
         // Right!  With cookies and a token in hand, we want to perform an
         // actual login.
         connection = (HttpURLConnection) (new URL(apiUri.toString()).openConnection());
-        addCookiesToConnection(connection, cookies);
+        addCookiesToConnection(connection, loginCookies);
 
         // As this is a POST request, we'll be using form fields.
         Map<String, String> formFields = new LinkedHashMap<>();
@@ -651,6 +652,10 @@ public class WikiUtils {
             Log.e(DEBUG_TAG, "JSONException in login!", e);
             throw new WikiException(R.string.wiki_error_json);
         }
+
+        // Once the login is successful, the cookies suddenly change out from
+        // under us.  Update as need be.
+        loginCookies = getCookiesFromConnection(connection);
 
         // Our result will hopefully either be PASS or FAIL.  If it's UI or
         // REDIRECT, we don't cover those cases just yet.  I really hope we
@@ -676,8 +681,8 @@ public class WikiUtils {
         Log.d(DEBUG_TAG, "Success!");
 
         // At this point, the session indicated by the session cookies is now
-        // authenticated.  Return said cookies for future use.
-        return cookies;
+        // authenticated.
+        return loginCookies;
     }
 
     /**
@@ -931,6 +936,27 @@ public class WikiUtils {
     }
 
     /**
+     * Convenience method for extracting a list of cookies from a connection.
+     *
+     * @param connection HttpURLConnection from which to extract HttpCookies
+     * @return a list of HttpCookies (may be empty)
+     */
+    @NonNull
+    private static List<HttpCookie> getCookiesFromConnection(@NonNull HttpURLConnection connection) {
+        List<String> cookieHeaders = connection.getHeaderFields().get(COOKIES_HEADER);
+
+        List<HttpCookie> cookies = new ArrayList<>();
+
+        if(cookieHeaders != null) {
+            for(String cookie : cookieHeaders) {
+                cookies.addAll(HttpCookie.parse(cookie));
+            }
+        }
+
+        return cookies;
+    }
+
+    /**
      * Convenience method to add a list of cookies to an existing connection.
      *
      * @param connection HttpURLConnection to which HttpCookies are to be added
@@ -981,5 +1007,36 @@ public class WikiUtils {
         } catch(Exception e) {
             Log.e(DEBUG_TAG, "Exception during form field writing?  What?", e);
         }
+    }
+
+    /**
+     * Convenience method for returning the first page element from a query for
+     * page data.
+     *
+     * @param response the JSON response from the query
+     * @return a JSONObject corresponding to the first page in that query
+     * @throws JSONException this wasn't a page query response, no pages were
+     *                       returned (not even the negative-id placeholder
+     *                       pages used if the page is invalid or missing), or
+     *                       the JSON was otherwise malformed
+     */
+    @NonNull
+    private static JSONObject getFirstPageFrom(@NonNull JSONObject response) throws JSONException {
+        Log.d(DEBUG_TAG, "Getting first page from: " + response.toString());
+
+        JSONObject pages = response
+                .getJSONObject("query")
+                .getJSONObject("pages");
+
+        // This query CAN take multiple pages, hence why it returns an object
+        // capable of holding equally multiple pages (which, annoyingly, isn't
+        // an array).  We just want the one.
+        JSONArray ids = pages.names();
+        if(ids == null) {
+            // This shouldn't happen, but if it does, force it to throw a
+            // JSONException next.
+            ids = new JSONArray();
+        }
+        return pages.getJSONObject(ids.getString(0));
     }
 }

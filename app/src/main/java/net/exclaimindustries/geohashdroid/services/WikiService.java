@@ -257,9 +257,13 @@ public class WikiService
             // Location becomes null if we're not including it.  Nothing should
             // need to care.
             if(!includeLocation) loc = null;
+
+            // Here's our cookie jar.  It'll be populated by the login call and
+            // passed off to everything else in turn.
+            List<HttpCookie> cookies = new ArrayList<>();
+
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
-            List<HttpCookie> cookies = new ArrayList<>();
             if(!username.isEmpty() && !password.isEmpty()) {
                 cookies = WikiUtils.login(username, password);
             }
@@ -269,18 +273,19 @@ public class WikiService
             String expedition = WikiUtils.getWikiPageName(info);
 
             // This will be null if the page didn't exist to begin with.
-            String page = WikiUtils.getWikiPage(client, expedition, formfields);
+            String page = WikiUtils.getWikiPage(expedition, cookies, formfields);
 
             // And if it IS null (or empty), then we ought to make said page.
             if(page == null || page.trim().isEmpty()) {
                 // Aha!
-                WikiUtils.putWikiPage(client, expedition,
+                WikiUtils.putWikiPage(expedition,
                         WikiUtils.getWikiExpeditionTemplate(info, this),
+                        cookies,
                         formfields);
 
                 // And once it's there, we pull it back, as we'll be futzing
                 // about with it some more.
-                page = WikiUtils.getWikiPage(client, expedition, formfields);
+                page = WikiUtils.getWikiPage(expedition, cookies, formfields);
             }
 
             // I know this is making a monstrous, ugly method that's just a big
@@ -336,7 +341,7 @@ public class WikiService
                 formfields.put("summary", prefixTag + message);
 
                 // ...and out it goes!
-                WikiUtils.putWikiPage(client, expedition, page, formfields);
+                WikiUtils.putWikiPage(expedition, page, cookies, formfields);
 
             } else {
                 // If we DON'T have an image, it's just a plain message.  That's
@@ -384,8 +389,8 @@ public class WikiService
                         + localtime + "\n";
 
                 // And go!
-                WikiUtils.putWikiPage(client, expedition, before + message
-                        + after, formfields);
+                WikiUtils.putWikiPage(expedition, before + message
+                        + after, cookies, formfields);
             }
 
             return ReturnCode.CONTINUE;
