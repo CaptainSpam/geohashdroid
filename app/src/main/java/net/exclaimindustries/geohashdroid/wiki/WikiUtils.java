@@ -30,6 +30,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -227,6 +228,9 @@ public class WikiUtils {
      * decimal points.
      */
     private static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
+
+    private static final String TWO_HYPHENS = "--";
+    private static final String LINE_END = "\r\n";
 
     /**
      * Returns the wiki view URL.  Attach a wiki page name to this to send it to
@@ -517,6 +521,85 @@ public class WikiUtils {
             Log.e(DEBUG_TAG, "Invalid response from putWikiPage: " + result);
             throw new WikiException(R.string.wiki_error_unknown);
         }
+    }
+
+    /**
+     * Uploads an image to the wiki.
+     *
+     * @param filename the name of the new image file
+     * @param description the description of the image. An initial description will be used as page content for the image's wiki page
+     * @param data a ByteArray containing the raw JPEG-encoded image data
+     * @param cookies cookies fetched from a previous login call; will be repopulated with new cookies from this call
+     */
+    public static void putWikiImage(@NonNull String filename,
+                                    @NonNull String description,
+                                    @NonNull byte[] data,
+                                    @NonNull List<HttpCookie> cookies) throws Exception {
+        // At this point, WikiService still has an edit token for the page
+        // itself, but that token isn't valid for uploading this image.  That's
+        // why we didn't pass formfields into this.  So, we need to fetch that.
+        Uri apiUri = Uri.parse(WIKI_API_URL);
+
+        Uri.Builder builder = apiUri.buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "csrf");
+        HttpURLConnection connection = (HttpURLConnection) new URL(builder.toString()).openConnection();
+        addCookiesToConnection(connection, cookies);
+
+        JSONObject json = getJsonFromConnection(connection);
+        String token;
+        try {
+            token = json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("csrftoken");
+        } catch (JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in putWikiImage!", e);
+            throw new WikiException(R.string.wiki_error_json);
+        }
+
+        // Token!  Now, let's prepare a multipart POST!  Which is going to be
+        // rather painful, but bear with me here.  Build up a boundary that'll
+        // be different enough between invocations that we're probably not
+        // repeating ourselves.
+        String boundary = "***BOUNDARY"
+                + System.currentTimeMillis()
+                + "***";
+
+        connection = (HttpURLConnection) new URL(apiUri.toString()).openConnection();
+        addCookiesToConnection(connection, cookies);
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        connection.setRequestProperty("Connection", "Keep-Alive");
+        connection.setDoInput(true);
+        connection.setDoOutput(true);
+        connection.setChunkedStreamingMode(0);
+        connection.setUseCaches(false);
+
+        DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
+
+        // Then, string fields.
+        writeMultiPartFormString(outputStream, boundary, "action", "upload");
+        writeMultiPartFormString(outputStream, boundary, "format", "json");
+        writeMultiPartFormString(outputStream, boundary, "token", token);
+        writeMultiPartFormString(outputStream, boundary, "filename", filename);
+        writeMultiPartFormString(outputStream, boundary, "comment", description);
+        writeMultiPartFormString(outputStream, boundary, "ignorewarnings", "1");
+        writeMultiPartFormString(outputStream, boundary, "filesize", Integer.toString(data.length));
+
+        // Now, the big stuff.
+        writeMultiPartFormJpeg(outputStream, boundary, "file", filename, data);
+
+        // Cap it off.
+        outputStream.writeBytes(TWO_HYPHENS + boundary + TWO_HYPHENS + LINE_END);
+
+        outputStream.flush();
+
+        // Hopefully, now the output stream is set and ready to go.  Godspeed,
+        // mighty multipart form data!
+        getJsonFromConnection(connection);
     }
 
     /**
@@ -983,7 +1066,7 @@ public class WikiUtils {
             @NonNull HttpURLConnection connection,
             @NonNull Map<String, String> formFields) throws IOException {
         connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-type", "application/x-www-form-urlencoded;charset=" + StandardCharsets.UTF_8.name());
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + StandardCharsets.UTF_8.name());
         connection.setDoInput(true);
         connection.setDoOutput(true);
         connection.setChunkedStreamingMode(0);
@@ -1038,5 +1121,66 @@ public class WikiUtils {
             ids = new JSONArray();
         }
         return pages.getJSONObject(ids.getString(0));
+    }
+
+    /**
+     * <p>
+     * Writes a single multipart form string to the given DataOutputStream.
+     * This will wind up in the form of:
+     * </p>
+     *
+     * <code>
+     * Content-Disposition: form-data; name="$fieldName"<br/>
+     * </br/>
+     * $fieldValue<br/>
+     * --$boundary<br/>
+     * </code>
+     *
+     * <p>
+     * Where each line break is \r\n.
+     * </p>
+     *
+     * @param stream DataOutputStream to write to
+     * @param boundary boundary being used for this connection
+     * @param fieldName field name to use
+     * @param fieldValue value to use
+     * @throws IOException something went very wrong
+     */
+    private static void writeMultiPartFormString(@NonNull DataOutputStream stream,
+                                                 @NonNull String boundary,
+                                                 @NonNull String fieldName,
+                                                 @NonNull String fieldValue) throws IOException
+    {
+        stream.writeBytes(TWO_HYPHENS + boundary + LINE_END);
+        stream.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"" + LINE_END);
+        stream.writeBytes("Content-Type: text/plain" + LINE_END);
+        stream.writeBytes(LINE_END);
+        stream.writeBytes(fieldValue + LINE_END);
+    }
+
+    /**
+     * Writes a single JPEG as a multipart form data field to the given
+     * DataOutputStream.
+     *
+     * @param stream DataOutputStream to write to.
+     * @param boundary boundary being used for this connection
+     * @param fieldName field name to use
+     * @param filename name of the file, for form-data purposes
+     * @param data big ol' array of bytes containing the entire JPEG
+     * @throws IOException something went very wrong
+     */
+    private static void writeMultiPartFormJpeg(@NonNull DataOutputStream stream,
+                                                    @NonNull String boundary,
+                                                    @NonNull String fieldName,
+                                                    @NonNull String filename,
+                                                    @NonNull byte[] data) throws IOException
+    {
+        stream.writeBytes(TWO_HYPHENS + boundary + LINE_END);
+        stream.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + filename + "\"" + LINE_END);
+        stream.writeBytes("Content-Type: image/jpeg" + LINE_END);
+        stream.writeBytes("Content-Transfer-Encoding: binary" + LINE_END);
+        stream.writeBytes(LINE_END);
+        stream.write(data);
+        stream.writeBytes(LINE_END);
     }
 }

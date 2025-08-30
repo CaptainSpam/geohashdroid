@@ -318,7 +318,7 @@ public class WikiService
 
                     // Upload now!  Do it!
                     String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
-                    WikiUtils.putWikiImage(client, wikiName, description, formfields, imageData);
+                    WikiUtils.putWikiImage(wikiName, description, imageData, cookies);
                 } else {
                     Log.w(DEBUG_TAG, "Trying to upload an image, but it already exists on the wiki?");
                 }
@@ -367,6 +367,7 @@ public class WikiService
                 if(page == null) {
                     // This shouldn't happen.  If it did, there's something very
                     // wrong with the wiki.
+                    Log.e(DEBUG_TAG, "The page was null when trying to add a plain message?");
                     throw new WikiException(R.string.wiki_error_unknown);
                 }
 
