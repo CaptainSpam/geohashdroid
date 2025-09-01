@@ -11,7 +11,7 @@ import androidx.annotation.StringRes;
 
 /**
  * A <code>WikiException</code> is thrown when some problem happens with the
- * wiki.  This can be anything from bad XML to an error in logging in to
+ * wiki.  This can be anything from bad XML/JSON to an error in logging in to
  * whatever.  This stores a text ID to be translated by the Activity that needs
  * to display it.
  * 
@@ -29,7 +29,7 @@ public class WikiException extends Exception {
     
     @Override
     public String getMessage() {
-        return "Wiki exception, text ID " + mTextId + " (you shouldn't see this)";
+        return "Wiki exception, text ID " + mTextId;
     }
 
     /**

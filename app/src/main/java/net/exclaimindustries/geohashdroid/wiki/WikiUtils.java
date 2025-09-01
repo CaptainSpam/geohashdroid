@@ -11,6 +11,7 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
+import android.net.Uri;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -18,11 +19,11 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
-import net.exclaimindustries.tools.DOMUtil;
 import net.exclaimindustries.tools.DateTools;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -38,11 +39,8 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
@@ -189,14 +187,6 @@ public class WikiUtils {
     }
 
     /**
-     * A bucketload of the usual stuff we grab from a wiki request.
-     */
-    private static class WikiResponse {
-        Document document;
-        Element rootElem;
-    }
-
-    /**
      * This format is used for all latitude/longitude texts in the wiki.
      */
     private static final DecimalFormat mLatLonFormat = new DecimalFormat("###.0000", new DecimalFormatSymbols(Locale.US));
@@ -221,75 +211,102 @@ public class WikiUtils {
     }
 
     /**
-     * Returns the content of a http request as an XML Document.  This is to be
-     * used only when we know the response to a request will be XML.  Otherwise,
-     * this will probably throw an exception.
+     * Gets the JSON from the wiki request.  Also throws WikiExceptions if
+     * something goes wrong.  Note that JSON parsing failures are covered by a
+     * WikiException.
      *
-     * @param httpclient an active HTTP session
-     * @param httpreq    an HTTP request (GET or POST)
-     * @return a Document containing the contents of the response
-     */
-    private static Document getHttpDocument(@NonNull CloseableHttpClient httpclient,
-                                            @NonNull HttpUriRequest httpreq) throws Exception {
-        HttpResponse response = httpclient.execute(httpreq);
-
-        HttpEntity entity = response.getEntity();
-
-        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(entity.getContent());
-    }
-
-    /**
-     * Gets a standard {@link WikiResponse} object for a wiki request.  Because
-     * I was getting sick of all that boilerplate.
-     *
-     * @param httpclient an active HTTP session
-     * @param httpreq    an HTTP request (GET or POST)
-     * @return a WikiResponse containing WikiResponsey stuff
+     * @param httpClient an active HTTP session
+     * @param httpReq    an HTTP request (GET or POST)
+     * @return the resulting JSONObject
+     * @throws IOException   the connection failed somehow
+     * @throws WikiException the connection succeeded, but the wiki threw an error
      */
     @NonNull
-    private static WikiResponse getWikiResponse(@NonNull CloseableHttpClient httpclient,
-                                                @NonNull HttpUriRequest httpreq) throws Exception {
-        WikiResponse toReturn = new WikiResponse();
+    private static JSONObject getJsonFromClient(@NonNull CloseableHttpClient httpClient,
+                                                @NonNull HttpUriRequest httpReq) throws Exception {
+        try {
+            HttpResponse response = httpClient.execute(httpReq);
 
-        toReturn.document = getHttpDocument(httpclient, httpreq);
+            int responseCode = response.getStatusLine().getStatusCode();
+            if(responseCode != 200) {
+                Log.e(DEBUG_TAG, "Error response from server: " + responseCode);
+                // Something else will get whatever happened here.
+                throw new IOException("Error response from server: " + responseCode);
+            }
 
-        toReturn.rootElem = toReturn.document.getDocumentElement();
-        if(doesResponseHaveError(toReturn.rootElem)) {
-            throw new WikiException(getErrorTextId(findErrorCode(toReturn.rootElem)));
+            // Hoover up that data!
+            BufferedReader br = new BufferedReader(
+                    new InputStreamReader(
+                            response.getEntity().getContent()));
+            StringBuilder buffer = new StringBuilder();
+            String line = br.readLine();
+            while(line != null) {
+                buffer.append(line);
+                line = br.readLine();
+            }
+
+            // What we should have is a chunky blob of JSON.
+            JSONObject json = new JSONObject(buffer.toString());
+
+            // Check it for an error first!
+            if(json.has("error")) {
+                throw new WikiException(
+                        getErrorTextId(
+                                json
+                                        .getJSONObject("error")
+                                        .getString("code")));
+            }
+
+            return json;
+        } catch(JSONException jse) {
+            // If anything JSON-wise threw an exception here, assume the wiki is
+            // returning bad JSON.  We have an exception code for that.
+            Log.e(DEBUG_TAG, "JSONException in getJsonFromClient!", jse);
+            throw new WikiException(R.string.wiki_error_json);
         }
-
-        return toReturn;
     }
 
     /**
      * Returns whether or not a given wiki page or file exists.
      *
-     * @param httpclient an active HTTP session
-     * @param pagename   the name of the wiki page
+     * @param client an active HTTP session
+     * @param pageName   the name of the wiki page
      * @return true if the page exists, false if not
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static boolean doesWikiPageExist(@NonNull CloseableHttpClient httpclient,
-                                            @NonNull String pagename) throws Exception {
+    public static boolean doesWikiPageExist(@NonNull CloseableHttpClient client,
+                                            @NonNull String pageName) throws Exception {
         // It's GET time!  This is basically the same as the content request, but
         // we really don't need ANY data other than whether or not the page
         // exists, so we won't call for anything.
-        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&titles="
-                + URLEncoder.encode(pagename, "UTF-8"));
+        Uri.Builder builder = Uri.parse(WIKI_API_URL).buildUpon();
+        builder.appendQueryParameter("action", "query")
+                        .appendQueryParameter("format", "json")
+                        .appendQueryParameter("titles", pageName);
 
-        WikiResponse response = getWikiResponse(httpclient, httpget);
+        HttpGet httpGet = new HttpGet(builder.build().toString());
+        JSONObject json = getJsonFromClient(client, httpGet);
 
-        Element pageElem;
         try {
-            pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
+            JSONObject pages = json
+                    .getJSONObject("query")
+                    .getJSONObject("pages");
 
-        // "invalid" or "missing" both resolve to the same answer: No.  Anything
-        // else means yes.
-        return !(pageElem.hasAttribute("invalid") || pageElem.hasAttribute("missing"));
+            // This query CAN take multiple pages, hence why it returns an
+            // object capable of holding equally multiple pages.  We just want
+            // the one.
+            JSONArray ids = pages.names();
+            if(ids == null || ids.length() != 1) {
+                throw new WikiException(R.string.wiki_error_json);
+            }
+            JSONObject pageInfo = ids.getJSONObject(0);
+            // "invalid" or "missing" both resolve to the same answer: No.
+            // Anything else means yes.
+            return !(pageInfo.has("missing") || pageInfo.has("invalid"));
+        } catch(JSONException e) {
+            throw new WikiException(R.string.wiki_error_json);
+        }
     }
 
     /**
@@ -298,32 +315,35 @@ public class WikiUtils {
      * we're calling the right one depending on if the Geohashing wiki has
      * upgraded yet.  In times of stable APIs, this probably won't be used.
      *
-     * @param httpclient an active HTTP session
+     * @param client an active HTTP session
      * @return a {@link WikiVersionData} containing all the version data you'll need
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
     @NonNull
-    public static WikiVersionData getWikiVersion(@NonNull CloseableHttpClient httpclient) throws Exception {
+    public static WikiVersionData getWikiVersion(@NonNull CloseableHttpClient client) throws Exception {
+                // This shouldn't require any special login data or params.
+                        Uri.Builder builder = Uri.parse(WIKI_API_URL).buildUpon();
+                builder.appendQueryParameter("action", "query")
+                                .appendQueryParameter("format", "json")
+                                .appendQueryParameter("meta", "siteinfo")
+                                .appendQueryParameter("siprop", "general");
+
         // SiteInfo call!
-        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=siteinfo&siprop=general");
+        HttpGet httpGet = new HttpGet(builder.build().toString());
+        JSONObject json = getJsonFromClient(client, httpGet);
 
-        WikiResponse response = getWikiResponse(httpclient, httpget);
-
-        Element generalElem;
         try {
-            generalElem = DOMUtil.getFirstElement(response.rootElem, "general");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
+            String version = json
+                    .getJSONObject("query")
+                    .getJSONObject("general")
+                    .getString("generator");
 
-        // If the generator attribute isn't there, there's a problem.
-        if(!generalElem.hasAttribute("generator")) {
-            throw new WikiException(R.string.wiki_error_xml);
+            Log.d(DEBUG_TAG, "The wiki says its version is: " + version);
+            return new WikiVersionData(version);
+        } catch(JSONException e) {
+            throw new WikiException(R.string.wiki_error_json);
         }
-
-        // Finally, we've got us a WikiVersionData!
-        return new WikiVersionData(generalElem.getAttribute("generator"));
     }
 
     /**
@@ -331,97 +351,112 @@ public class WikiUtils {
      * also attaches the fields for future resubmission to a HashMap (namely, an
      * edittoken and a timestamp).
      *
-     * @param httpclient an active HTTP session
-     * @param pagename   the name of the wiki page
-     * @param formfields if not null, this hashmap will be filled with the correct HTML form fields to resubmit the page.
+     * @param client an active HTTP session
+     * @param pageName   the name of the wiki page
+     * @param formFields if not null, this hashmap will be filled with the correct HTML form fields to resubmit the page.
      * @return the raw code of the wiki page, or null if the page doesn't exist
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static String getWikiPage(@NonNull CloseableHttpClient httpclient,
-                                     @NonNull String pagename,
-                                     @Nullable HashMap<String, String> formfields) throws Exception {
-        // We can use a GET statement here.
-        HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&prop="
-                + URLEncoder.encode("info|revisions", "UTF-8")
-                + "&rvprop=content&format=xml&intoken=edit&titles="
-                + URLEncoder.encode(pagename, "UTF-8"));
+    @Nullable
+    public static String getWikiPage(@NonNull CloseableHttpClient client,
+                                     @NonNull String pageName,
+                                     @Nullable HashMap<String, String> formFields) throws Exception {
+        // Build up a new-style csrf request.
+        Uri.Builder uriBuilder = Uri.parse(WIKI_API_URL).buildUpon();
+        uriBuilder
+                .appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("prop", "info|revisions")
+                .appendQueryParameter("rvprop", "content")
+                .appendQueryParameter("rvslots", "*")
+                .appendQueryParameter("rvlimit", "1")
+                .appendQueryParameter("titles", pageName)
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "csrf");
 
-        String page;
-        WikiResponse response = getWikiResponse(httpclient, httpget);
+        HttpGet httpGet = new HttpGet(uriBuilder.build().toString());
+        JSONObject json = getJsonFromClient(client, httpGet);
 
-        Element pageElem;
-        Element text;
+        // We hopefully have a page and some tokens.
+        JSONObject page = getFirstPageFrom(json);
+        String token;
         try {
-            pageElem = DOMUtil.getFirstElement(response.rootElem, "page");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
+            token = json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("csrftoken");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in getWikiPage!", e);
+            throw new WikiException(R.string.wiki_error_json);
         }
 
         // If we got an "invalid" attribute, the page not only doesn't exist,
         // but it CAN'T exist, and is therefore an error.
-        if(pageElem.hasAttribute("invalid"))
+        if(page.has("invalid"))
             throw new WikiException(R.string.wiki_error_invalid_page);
 
-        if(formfields != null) {
+        if(formFields != null) {
             // If we have a formfields hash ready, populate it with a couple
             // values.
-            formfields.put("summary", "An expedition message sent via Geohash Droid for Android.");
-            if(pageElem.hasAttribute("edittoken"))
-                formfields.put("token", DOMUtil.getSimpleAttributeText(pageElem, "edittoken"));
-            if(pageElem.hasAttribute("touched"))
-                formfields.put("basetimestamp", DOMUtil.getSimpleAttributeText(pageElem, "touched"));
+            formFields.clear();
+            formFields.put("summary", "An expedition message sent via Geohash Droid for Android.");
+            formFields.put("token", token);
+            if(page.has("touched"))
+                formFields.put("basetimestamp", page.getString("touched"));
         }
 
         // If we got a "missing" attribute, the page hasn't been made yet, so we
         // return null.
-        if(pageElem.hasAttribute("missing"))
+        if(page.has("missing"))
             return null;
 
-        // Otherwise, get the text and fill out the form fields.
+        // Otherwise, grab the text from the revision data and return it.
         try {
-            text = DOMUtil.getFirstElement(pageElem, "rev");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
+            return page
+                    .getJSONArray("revisions")
+                    .getJSONObject(0)
+                    .getJSONObject("slots")
+                    .getJSONObject("main")
+                    .getString("*");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in getWikiPage!", e);
+            throw new WikiException(R.string.wiki_error_json);
         }
-
-        page = DOMUtil.getSimpleElementText(text);
-
-        return page;
     }
 
     /**
      * Replaces an entire wiki page
      *
-     * @param httpclient an active HTTP session
-     * @param pagename   the name of the wiki page
+     * @param client an active HTTP session
+     * @param pageName   the name of the wiki page
      * @param content    the new content of the wiki page to be submitted
-     * @param formfields a hashmap with the fields needed (besides pagename and content; those will be filled in this method)
+     * @param formFields a hashmap with the fields needed (besides pagename and content; those will be filled in this method)
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void putWikiPage(@NonNull CloseableHttpClient httpclient,
-                                   @NonNull String pagename, String content,
-                                   @NonNull HashMap<String, String> formfields) throws Exception {
+    public static void putWikiPage(@NonNull CloseableHttpClient client,
+                                   @NonNull String pageName, String content,
+                                   @NonNull HashMap<String, String> formFields) throws Exception {
         // If there's no edit token in the hash map, we can't do anything.
-        if(!formfields.containsKey("token")) {
+        if(!formFields.containsKey("token")) {
             throw new WikiException(R.string.wiki_error_protected);
         }
 
-        HttpPost httppost = new HttpPost(WIKI_API_URL);
+        HttpPost httpPost = new HttpPost(WIKI_API_URL);
 
         ArrayList<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("action", "edit"));
-        nvps.add(new BasicNameValuePair("title", pagename));
+        nvps.add(new BasicNameValuePair("title", pageName));
         nvps.add(new BasicNameValuePair("text", content));
-        nvps.add(new BasicNameValuePair("format", "xml"));
-        for(String s : formfields.keySet()) {
-            nvps.add(new BasicNameValuePair(s, formfields.get(s)));
+        nvps.add(new BasicNameValuePair("format", "json"));
+        for(String s : formFields.keySet()) {
+            nvps.add(new BasicNameValuePair(s, formFields.get(s)));
         }
 
-        httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+        httpPost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
 
-        getWikiResponse(httpclient, httppost);
+        getJsonFromClient(client, httpPost);
 
         // And really, that's it.  We're done!
     }
@@ -429,64 +464,56 @@ public class WikiUtils {
     /**
      * Uploads an image to the wiki
      *
-     * @param httpclient  an active HTTP session, wiki login has to have happened before.
+     * @param client  an active HTTP session, wiki login has to have happened before.
      * @param filename    the name of the new image file
      * @param description the description of the image. An initial description will be used as page content for the image's wiki page
-     * @param formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
      * @param data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
      */
-    public static void putWikiImage(@NonNull CloseableHttpClient httpclient,
+    public static void putWikiImage(@NonNull CloseableHttpClient client,
                                     @NonNull String filename,
                                     @NonNull String description,
-                                    @NonNull HashMap<String, String> formfields,
                                     @NonNull byte[] data) throws Exception {
-        if(!formfields.containsKey("token")) {
-            throw new WikiException(R.string.wiki_error_unknown);
-        }
+        // At this point, WikiService still has an edit token for the page
+        // itself, but that token isn't valid for uploading this image.  That's
+        // why we didn't pass formfields into this.  So, we need to fetch that.
+        Uri apiUri = Uri.parse(WIKI_API_URL);
 
-        HttpPost httppost = new HttpPost(WIKI_API_URL);
+        Uri.Builder builder = apiUri.buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "csrf");
 
-        // First, we need an edit token.  Let's get one.
-        ArrayList<NameValuePair> tnvps = new ArrayList<>();
-        tnvps.add(new BasicNameValuePair("action", "query"));
-        tnvps.add(new BasicNameValuePair("prop", "info"));
-        tnvps.add(new BasicNameValuePair("intoken", "edit"));
-        tnvps.add(new BasicNameValuePair("titles", "UPLOAD_AN_IMAGE"));
-        tnvps.add(new BasicNameValuePair("format", "xml"));
+        HttpGet httpGet = new HttpGet(builder.build().toString());
+        JSONObject json = getJsonFromClient(client, httpGet);
 
-        httppost.setEntity(new UrlEncodedFormEntity(tnvps, "utf-8"));
-
-        WikiResponse response = getWikiResponse(httpclient, httppost);
-
-        // Hopefully, a token exists.  If not, a problem exists.
         String token;
-        Element page;
         try {
-            page = DOMUtil.getFirstElement(response.rootElem, "page");
-            token = DOMUtil.getSimpleAttributeText(page, "edittoken");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
+            token = json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("csrftoken");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in putWikiImage!", e);
+            throw new WikiException(R.string.wiki_error_json);
         }
 
-        // We very much need an edit token here.
-        if(token == null) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
+        HttpPost httpPost = new HttpPost(WIKI_API_URL);
 
         // TOKEN GET!  Now we've got us enough to get our upload on!
-        MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+        MultipartEntityBuilder mpBuilder = MultipartEntityBuilder.create()
                 .addPart("action", new StringBody("upload", ContentType.TEXT_PLAIN))
                 .addPart("filename", new StringBody(filename, ContentType.create("text/plain", "utf-8")))
                 .addPart("comment", new StringBody(description, ContentType.create("text/plain", "utf-8")))
                 .addPart("watch", new StringBody("true", ContentType.TEXT_PLAIN))
                 .addPart("ignorewarnings", new StringBody("true", ContentType.TEXT_PLAIN))
                 .addPart("token", new StringBody(token, ContentType.TEXT_PLAIN))
-                .addPart("format", new StringBody("xml", ContentType.TEXT_PLAIN))
+                .addPart("format", new StringBody("json", ContentType.TEXT_PLAIN))
                 .addPart("file", new ByteArrayBody(data, ContentType.create("image/jpeg", "utf-8"), filename));
 
-        httppost.setEntity(builder.build());
+        httpPost.setEntity(mpBuilder.build());
 
-        getWikiResponse(httpclient, httppost);
+        getJsonFromClient(client, httpPost);
     }
 
     /**
@@ -494,170 +521,86 @@ public class WikiUtils {
      * to the CloseableHttpClient value passed in, so re-use it for future wiki
      * transactions.
      *
-     * @param httpclient an active HTTP session.
+     * @param client an active HTTP session.
      * @param wpName     a wiki user name.
      * @param wpPassword the matching password to this user name.
      * @throws WikiException problem with the wiki, translate the ID
      * @throws Exception     anything else happened, use getMessage
      */
-    public static void login(@NonNull CloseableHttpClient httpclient,
+    public static void login(@NonNull CloseableHttpClient client,
                              @NonNull String wpName,
                              @NonNull String wpPassword) throws Exception {
-        HttpPost httppost = new HttpPost(WIKI_API_URL);
+        Uri apiUri = Uri.parse(WIKI_API_URL);
+        // Step one: The login token itself.
+        Uri.Builder builder = apiUri.buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "login");
 
-        // Login changes depending on version.  Once we know that the GHD wiki
-        // has upgraded, this will probably go away.
-        WikiVersionData version = getWikiVersion(httpclient);
+        Log.d(DEBUG_TAG, "Requesting login token...");
+        HttpGet httpGet = new HttpGet(builder.build().toString());
+        JSONObject json = getJsonFromClient(client, httpGet);
 
-        if(!version.valid) {
+        String token;
+        try {
+            token = json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("logintoken");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in login!", e);
+            throw new WikiException(R.string.wiki_error_json);
+        }
+
+        // Okay, now let's try a login.  I hope this works.
+        ArrayList<NameValuePair> nvps = new ArrayList<>();
+        nvps.add(new BasicNameValuePair("action", "clientlogin"));
+        nvps.add(new BasicNameValuePair("username", wpName));
+        nvps.add(new BasicNameValuePair("password", wpPassword));
+        nvps.add(new BasicNameValuePair("loginreturnurl", WIKI_API_URL));
+        nvps.add(new BasicNameValuePair("logintoken", token));
+        nvps.add(new BasicNameValuePair("format", "json"));
+
+        HttpPost httpPost = new HttpPost(WIKI_API_URL);
+        httpPost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
+
+        Log.d(DEBUG_TAG, "Token obtained, trying login...");
+        json = getJsonFromClient(client, httpPost);
+
+        String status;
+        try {
+            status = json
+                    .getJSONObject("clientlogin")
+                    .getString("status");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in login!", e);
+            throw new WikiException(R.string.wiki_error_json);
+        }
+
+
+        // Our result will hopefully either be PASS or FAIL.  If it's UI or
+        // REDIRECT, we don't cover those cases just yet.  I really hope we
+        // don't have to cover those on the Geohashing wiki.
+        if(status.equals("UI") || status.equals("REDIRECT")) {
+            Log.w(DEBUG_TAG, "The wiki gave us a " + status + " result on login!  The bug reports will be rolling in soon...");
+            throw new WikiException(R.string.wiki_error_fancy_schmansy_login);
+        }
+
+        // Fail means, well, failure.
+        if(status.equals("FAIL")) {
+            Log.d(DEBUG_TAG, "Login failure, telling the user this...");
+            throw new WikiException(R.string.wiki_error_bad_login);
+        }
+
+        // If this ISN'T just PASS at this point, that's very very bad.
+        if(!status.equals("PASS")) {
+            Log.e(DEBUG_TAG, "The wiki gave us a " + status + " result on login, and I have no clue what that means.");
             throw new WikiException(R.string.wiki_error_unknown);
         }
 
-        if(version.minorVersion >= 27) {
-            // The new style.  This one requires the clientLogin action.  I'm
-            // really hoping I won't have to implement a CAPTCHA or 2FA
-            // interface for this, else we're going to have some serious issues.
-            // For now, though, grab a token.
-            Log.d(DEBUG_TAG, "The wiki is running 1.27 or higher, going with the new login method...");
-            HttpGet httpget = new HttpGet(WIKI_API_URL + "?action=query&format=xml&meta=tokens&type=login");
-
-            WikiResponse response = getWikiResponse(httpclient, httpget);
-
-            Element tokenElem;
-            String token;
-            try {
-                tokenElem = DOMUtil.getFirstElement(response.rootElem, "tokens");
-                token = DOMUtil.getSimpleAttributeText(tokenElem, "logintoken");
-            } catch(Exception e) {
-                Log.d(DEBUG_TAG, "Couldn't get a token!");
-                throw new WikiException(R.string.wiki_error_xml);
-            }
-
-            // Okay, now let's try a login.  I hope this works.
-            ArrayList<NameValuePair> nvps = new ArrayList<>();
-            nvps.add(new BasicNameValuePair("action", "clientlogin"));
-            nvps.add(new BasicNameValuePair("username", wpName));
-            nvps.add(new BasicNameValuePair("password", wpPassword));
-            nvps.add(new BasicNameValuePair("loginreturnurl", WIKI_API_URL));
-            nvps.add(new BasicNameValuePair("logintoken", token));
-            nvps.add(new BasicNameValuePair("format", "xml"));
-
-            httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-            Log.d(DEBUG_TAG, "Token obtained, trying login...");
-            response = getWikiResponse(httpclient, httppost);
-
-            Element login;
-            String status;
-            try {
-                login = DOMUtil.getFirstElement(response.rootElem, "clientlogin");
-                status = DOMUtil.getSimpleAttributeText(login, "status");
-
-                // If we got a clientlogin response but no status in it, I
-                // just... what?
-                if(status == null) throw new WikiException(R.string.wiki_error_unknown);
-            } catch(WikiException we) {
-                throw we;
-            } catch (Exception e) {
-                throw new WikiException(R.string.wiki_error_xml);
-            }
-
-            // Our result will hopefully either be PASS or FAIL.  If it's UI or
-            // REDIRECT, we don't cover those cases just yet.  I really hope we
-            // don't have to cover those on the Geohashing wiki.
-            if(status.equals("UI") || status.equals("REDIRECT")) {
-                Log.w(DEBUG_TAG, "The wiki gave us a " + status + " result on login!  The bug reports will be rolling in soon...");
-                throw new WikiException(R.string.wiki_error_fancy_schmansy_login);
-            }
-
-            // Fail means, well, failure.
-            if(status.equals("FAIL")) {
-                Log.d(DEBUG_TAG, "Login failure, telling the user this...");
-                throw new WikiException(R.string.wiki_error_bad_login);
-            }
-
-            // If this ISN'T just PASS at this point, that's very very bad.
-            if(!status.equals("PASS")) {
-                Log.e(DEBUG_TAG, "The wiki gave us a " + status + " result on login, and I have no clue what that means.");
-                throw new WikiException(R.string.wiki_error_unknown);
-            }
-
-            // Otherwise, we're good!
-            Log.d(DEBUG_TAG, "Success!");
-
-        } else {
-            Log.d(DEBUG_TAG, "The wiki is still on 1.26 or lower, using the old login method...");
-
-            // The old style.  Login is all we need.
-            ArrayList<NameValuePair> nvps = new ArrayList<>();
-            nvps.add(new BasicNameValuePair("action", "login"));
-            nvps.add(new BasicNameValuePair("lgname", wpName));
-            nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
-            nvps.add(new BasicNameValuePair("format", "xml"));
-
-            httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-            Log.d(DEBUG_TAG, "Trying login...");
-            WikiResponse response = getWikiResponse(httpclient, httppost);
-
-            // The result comes in as an XML chunk.  Since we're expecting the
-            // cookies to be set properly, all we care about is the "result"
-            // attribute of the "login" element.
-            Element login;
-            String result;
-            try {
-                login = DOMUtil.getFirstElement(response.rootElem, "login");
-                result = DOMUtil.getSimpleAttributeText(login, "result");
-            } catch(Exception e) {
-                throw new WikiException(R.string.wiki_error_xml);
-            }
-
-            Log.d(DEBUG_TAG, "After login, result is " + result);
-
-            // Now, get the result.  If it was a success, cookies got added.  If it
-            // was NeedToken, this is a 1.16 wiki (as it should be now) and we need
-            // another request to get the final token.
-            if(result != null && result.equals("NeedToken")) {
-                Log.d(DEBUG_TAG, "Token needed, trying again...");
-                // Okay, do the same thing again, this time with the token we got
-                // the first time around.  Cookies will be set this time around, I
-                // think.
-                String token = DOMUtil.getSimpleAttributeText(login, "token");
-
-                httppost = new HttpPost(WIKI_API_URL);
-
-                nvps = new ArrayList<>();
-                nvps.add(new BasicNameValuePair("action", "login"));
-                nvps.add(new BasicNameValuePair("lgname", wpName));
-                nvps.add(new BasicNameValuePair("lgpassword", wpPassword));
-                nvps.add(new BasicNameValuePair("lgtoken", token));
-                nvps.add(new BasicNameValuePair("format", "xml"));
-
-                httppost.setEntity(new UrlEncodedFormEntity(nvps, "utf-8"));
-
-                Log.d(DEBUG_TAG, "Sending it out...");
-                response = getWikiResponse(httpclient, httppost);
-
-                Log.d(DEBUG_TAG, "Response has returned!");
-
-                // Again!
-                try {
-                    login = DOMUtil.getFirstElement(response.rootElem, "login");
-                    result = DOMUtil.getSimpleAttributeText(login, "result");
-                } catch(Exception e) {
-                    throw new WikiException(R.string.wiki_error_xml);
-                }
-            }
-
-            // Check it.  If NeedToken was returned again, then the wiki is just
-            // telling us nonsense and we've got a right to throw an exception.
-            if(result != null && result.equals("Success")) {
-                Log.d(DEBUG_TAG, "Success!");
-            } else {
-                Log.d(DEBUG_TAG, "FAILURE!  Result was " + result);
-                throw new WikiException(getErrorTextId(result));
-            }
-        }
+        // Otherwise, we're good!
+        Log.d(DEBUG_TAG, "Success!");
     }
 
     /**
@@ -760,29 +703,6 @@ public class WikiUtils {
         return error;
     }
 
-    private static boolean doesResponseHaveError(@Nullable Element elem) {
-        if(elem == null) return false;
-
-        try {
-            DOMUtil.getFirstElement(elem, "error");
-        } catch(Exception ex) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static String findErrorCode(@Nullable Element elem) {
-        if(elem == null) return "UnknownError";
-
-        try {
-            Element error = DOMUtil.getFirstElement(elem, "error");
-            return DOMUtil.getSimpleAttributeText(error, "code");
-        } catch(Exception ex) {
-            return "UnknownError";
-        }
-    }
-
     /**
      * Retrieves the wiki page name for the given data.  This accounts for
      * globalhashes, too.
@@ -790,6 +710,7 @@ public class WikiUtils {
      * @param info Info from which a page name will be derived
      * @return said pagename
      */
+    @NonNull
     public static String getWikiPageName(@NonNull Info info) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
@@ -820,6 +741,7 @@ public class WikiUtils {
      * @param c    Context so we can grab the globalhash template if we need it
      * @return said template
      */
+    @NonNull
     public static String getWikiExpeditionTemplate(@NonNull Info info,
                                                    @NonNull Context c) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
@@ -851,7 +773,7 @@ public class WikiUtils {
                 // Don't do anything; just assume we're done.
             }
 
-            return toReturn.toString() + getWikiCategories(info);
+            return toReturn + getWikiCategories(info);
 
         } else {
             String lat = g.getLatitudeString(true);
@@ -867,6 +789,7 @@ public class WikiUtils {
      * @param info Info from which categories will be generated
      * @return said categories
      */
+    @NonNull
     public static String getWikiCategories(@NonNull Info info) {
         String date = DateTools.getHyphenatedDateString(info.getCalendar());
 
@@ -894,6 +817,7 @@ public class WikiUtils {
      * @param loc the Location
      * @return an OpenStreetMap wiki tag
      */
+    @NonNull
     public static String makeLocationTag(@Nullable Location loc) {
         if(loc != null) {
             return " [https://openstreetmap.org/?mlat="
@@ -908,5 +832,36 @@ public class WikiUtils {
         } else {
             return "";
         }
+    }
+
+    /**
+     * Convenience method for returning the first page element from a query for
+     * page data.
+     *
+     * @param response the JSON response from the query
+     * @return a JSONObject corresponding to the first page in that query
+     * @throws JSONException this wasn't a page query response, no pages were
+     *                       returned (not even the negative-id placeholder
+     *                       pages used if the page is invalid or missing), or
+     *                       the JSON was otherwise malformed
+     */
+    @NonNull
+    private static JSONObject getFirstPageFrom(@NonNull JSONObject response) throws JSONException {
+        Log.d(DEBUG_TAG, "Getting first page from: " + response);
+
+        JSONObject pages = response
+                .getJSONObject("query")
+                .getJSONObject("pages");
+
+        // This query CAN take multiple pages, hence why it returns an object
+        // capable of holding equally multiple pages (which, annoyingly, isn't
+        // an array).  We just want the one.
+        JSONArray ids = pages.names();
+        if(ids == null) {
+            // This shouldn't happen, but if it does, force it to throw a
+            // JSONException next.
+            ids = new JSONArray();
+        }
+        return pages.getJSONObject(ids.getString(0));
     }
 }

@@ -309,7 +309,7 @@ public class WikiService
 
                     // Upload now!  Do it!
                     String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
-                    WikiUtils.putWikiImage(client, wikiName, description, formfields, imageData);
+                    WikiUtils.putWikiImage(client, wikiName, description, imageData);
                 } else {
                     Log.w(DEBUG_TAG, "Trying to upload an image, but it already exists on the wiki?");
                 }
@@ -386,6 +386,7 @@ public class WikiService
 
             return ReturnCode.CONTINUE;
         } catch(WikiException we) {
+            Log.e(DEBUG_TAG, "WikiException thrown!", we);
             // There's two possible exceptions we want to keep an eye on, both
             // of them related to throttling.  Since we're potentially posting
             // numerous edits one right after another (i.e. if the user's been
@@ -401,6 +402,7 @@ public class WikiService
 
             return ReturnCode.PAUSE;
         } catch(Exception e) {
+            Log.e(DEBUG_TAG, "General exception thrown!", e);
             // Okay, first off, are we still connected?  An Exception will get
             // thrown if the connection just goes poof while we're trying to do
             // something.
