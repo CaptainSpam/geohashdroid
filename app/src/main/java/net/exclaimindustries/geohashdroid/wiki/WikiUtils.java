@@ -29,7 +29,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -41,9 +40,9 @@ import java.util.regex.Pattern;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
+import cz.msebera.android.httpclient.client.methods.CloseableHttpResponse;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
@@ -224,9 +223,7 @@ public class WikiUtils {
     @NonNull
     private static JSONObject getJsonFromClient(@NonNull CloseableHttpClient httpClient,
                                                 @NonNull HttpUriRequest httpReq) throws Exception {
-        try {
-            HttpResponse response = httpClient.execute(httpReq);
-
+        try(CloseableHttpResponse response = httpClient.execute(httpReq)) {
             int responseCode = response.getStatusLine().getStatusCode();
             if(responseCode != 200) {
                 Log.e(DEBUG_TAG, "Error response from server: " + responseCode);
