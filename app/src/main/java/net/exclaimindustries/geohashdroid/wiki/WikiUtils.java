@@ -368,25 +368,12 @@ public class WikiUtils {
                 .appendQueryParameter("rvprop", "content")
                 .appendQueryParameter("rvslots", "*")
                 .appendQueryParameter("rvlimit", "1")
-                .appendQueryParameter("titles", pageName)
-                .appendQueryParameter("meta", "tokens")
-                .appendQueryParameter("type", "csrf");
+                .appendQueryParameter("titles", pageName);
 
+        Log.d(DEBUG_TAG, "Getting wiki page for " + pageName);
         HttpGet httpGet = new HttpGet(uriBuilder.build().toString());
         JSONObject json = getJsonFromClient(client, httpGet);
-
-        // We hopefully have a page and some tokens.
         JSONObject page = getFirstPageFrom(json);
-        String token;
-        try {
-            token = json
-                    .getJSONObject("query")
-                    .getJSONObject("tokens")
-                    .getString("csrftoken");
-        } catch(JSONException e) {
-            Log.e(DEBUG_TAG, "JSONException in getWikiPage!", e);
-            throw new WikiException(R.string.wiki_error_json);
-        }
 
         // If we got an "invalid" attribute, the page not only doesn't exist,
         // but it CAN'T exist, and is therefore an error.
@@ -398,7 +385,6 @@ public class WikiUtils {
             // values.
             formFields.clear();
             formFields.put("summary", "An expedition message sent via Geohash Droid for Android.");
-            formFields.put("token", token);
             if(page.has("touched"))
                 formFields.put("basetimestamp", page.getString("touched"));
         }
@@ -435,10 +421,10 @@ public class WikiUtils {
     public static void putWikiPage(@NonNull CloseableHttpClient client,
                                    @NonNull String pageName, String content,
                                    @NonNull HashMap<String, String> formFields) throws Exception {
-        // If there's no edit token in the hash map, we can't do anything.
-        if(!formFields.containsKey("token")) {
-            throw new WikiException(R.string.wiki_error_protected);
-        }
+        Log.d(DEBUG_TAG, "It's putWikiPage time!");
+
+        // Token?
+        String token = getEditToken(client);
 
         HttpPost httpPost = new HttpPost(WIKI_API_URL);
 
@@ -447,6 +433,7 @@ public class WikiUtils {
         nvps.add(new BasicNameValuePair("title", pageName));
         nvps.add(new BasicNameValuePair("text", content));
         nvps.add(new BasicNameValuePair("format", "json"));
+        nvps.add(new BasicNameValuePair("token", token));
         for(String s : formFields.keySet()) {
             nvps.add(new BasicNameValuePair(s, formFields.get(s)));
         }
@@ -470,30 +457,9 @@ public class WikiUtils {
                                     @NonNull String filename,
                                     @NonNull String description,
                                     @NonNull byte[] data) throws Exception {
-        // At this point, WikiService still has an edit token for the page
-        // itself, but that token isn't valid for uploading this image.  That's
-        // why we didn't pass formfields into this.  So, we need to fetch that.
-        Uri apiUri = Uri.parse(WIKI_API_URL);
-
-        Uri.Builder builder = apiUri.buildUpon();
-        builder.appendQueryParameter("action", "query")
-                .appendQueryParameter("format", "json")
-                .appendQueryParameter("meta", "tokens")
-                .appendQueryParameter("type", "csrf");
-
-        HttpGet httpGet = new HttpGet(builder.build().toString());
-        JSONObject json = getJsonFromClient(client, httpGet);
-
-        String token;
-        try {
-            token = json
-                    .getJSONObject("query")
-                    .getJSONObject("tokens")
-                    .getString("csrftoken");
-        } catch(JSONException e) {
-            Log.e(DEBUG_TAG, "JSONException in putWikiImage!", e);
-            throw new WikiException(R.string.wiki_error_json);
-        }
+        Log.d(DEBUG_TAG, "It's putWikiImage time!");
+        // First, a token!
+        String token = getEditToken(client);
 
         HttpPost httpPost = new HttpPost(WIKI_API_URL);
 
@@ -860,5 +826,44 @@ public class WikiUtils {
             ids = new JSONArray();
         }
         return pages.getJSONObject(ids.getString(0));
+    }
+
+    /**
+     * Fetches an edit token.  Use this in putWikiPage and putWikiImage.
+     *
+     * @param client a CloseableHttpClient to use, preferably with login cookies
+     * @return a fresh new token
+     * @throws Exception something went wrong
+     */
+    @NonNull
+    private static String getEditToken(@NonNull CloseableHttpClient client) throws Exception {
+        // At this point, WikiService still has an edit token for the page
+        // itself, but that token isn't valid for uploading this image.  That's
+        // why we didn't pass formfields into this.  So, we need to fetch that.
+        Uri apiUri = Uri.parse(WIKI_API_URL);
+
+        Uri.Builder builder = apiUri.buildUpon();
+        builder.appendQueryParameter("action", "query")
+                .appendQueryParameter("format", "json")
+                .appendQueryParameter("meta", "tokens")
+                .appendQueryParameter("type", "csrf");
+
+        HttpGet httpGet = new HttpGet(builder.build().toString());
+        JSONObject json = getJsonFromClient(client, httpGet);
+
+        try {
+            Log.d(DEBUG_TAG, "Token is: " + json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("csrftoken"));
+
+            return json
+                    .getJSONObject("query")
+                    .getJSONObject("tokens")
+                    .getString("csrftoken");
+        } catch(JSONException e) {
+            Log.e(DEBUG_TAG, "JSONException in putWikiImage!", e);
+            throw new WikiException(R.string.wiki_error_json);
+        }
     }
 }
