@@ -25,6 +25,8 @@ import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
 import net.exclaimindustries.tools.BitmapTools;
 
+import org.jetbrains.annotations.Contract;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -229,6 +231,25 @@ public class WikiImageUtils {
                 timestamp != null
                         ? timestamp
                         : timeIfNoneSet.getTimeInMillis());
+    }
+
+    /**
+     * Re-reads data from an already-existing ImageInfo.  This is useful if an
+     * ImageInfo needs to be refreshed due to permissions having been granted.
+     * This will return a new ImageInfo object.
+     *
+     * @param context a Context
+     * @param original the original ImageInfo
+     * @return a new ImageInfo with potentially updated data
+     */
+    @NonNull
+    @Contract("_, _ -> new")
+    public static ImageInfo reReadImageInfo(@NonNull Context context,
+                                            @NonNull ImageInfo original) {
+        // TODO: Update the fourth param if I ever figure out why it wasn't
+        // working in the first place (see the constructor for ImageInfo for
+        // further details).
+        return readImageInfo(context, original.uri, original.location, Calendar.getInstance());
     }
 
     /**
