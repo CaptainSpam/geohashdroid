@@ -8,11 +8,14 @@
 
 package net.exclaimindustries.geohashdroid.fragments;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.SpannableString;
@@ -44,9 +47,12 @@ import net.exclaimindustries.tools.LocationUtil;
 import java.text.DateFormat;
 import java.util.Calendar;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
@@ -75,6 +81,8 @@ public class WikiFragment extends CentralMapExtraFragment {
     private RadioButton mUsePictureLocationButton;
     private RadioButton mUseDeviceLocationButton;
     private RadioButton mUseNoLocationButton;
+
+    private ActivityResultLauncher<String> mPermissionsLauncher;
 
     private Location mLastLocation = null;
     private WikiImageUtils.ImageInfo mLastImageInfo = null;
@@ -161,6 +169,49 @@ public class WikiFragment extends CentralMapExtraFragment {
         // Make sure the header gets set here, too.
         applyHeader();
 
+        // Set up the permissions listener.
+        mPermissionsLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                result -> {
+                    if(!result && mLocationTypeGroup.getCheckedRadioButtonId() == R.id.wiki_use_picture_location) {
+                        // DENIED!  Reset the radio button back to device
+                        // location.
+                        mLocationTypeGroup.check(R.id.wiki_use_device_location);
+
+                        // And, toast.  We have no way of knowing if permission
+                        // was denied by the user saying no just now, or if the
+                        // user said no in an earlier session (or in app
+                        // settings on a device level) and wasn't actually
+                        // prompted.
+                        Toast.makeText(requireContext(),
+                                R.string.wiki_dialog_permission_still_denied_toast,
+                                Toast.LENGTH_LONG)
+                            .show();
+                    }
+
+                    // Otherwise, just stick with whatever the user's got.
+                    // Regardless, resolve and re-read things.
+                    mLastImageInfo = WikiImageUtils.reReadImageInfo(requireContext(), mLastImageInfo);
+                    resolveLocationTypeSelection();
+                    resolvePictureLocationText();
+                });
+
+        // Listen for changes to the location radio group; we'll need that to
+        // know if we need to poke the user for permissions to access location
+        // data from photos.
+        mLocationTypeGroup.setOnCheckedChangeListener((radioGroup, i) -> {
+            // The only option that concerns us is the location-from-picture
+            // one.
+            if(i == R.id.wiki_use_picture_location) {
+                // Do we have permission to just snoop through the user's EXIF
+                // like this?
+                if(!hasMediaLocationPermission()) {
+                    // No?  Well, ask then!
+                    mPermissionsLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION);
+                }
+            }
+        });
+
         // If we had a leftover Uri, apply that as well.
         if(savedInstanceState != null) {
             Uri pic = savedInstanceState.getParcelable(PICTURE_URI);
@@ -187,18 +238,27 @@ public class WikiFragment extends CentralMapExtraFragment {
         checkAnonStatus();
 
         // Plus, resubscribe for those changes.
-        PreferenceManager.getDefaultSharedPreferences(getActivity()).registerOnSharedPreferenceChangeListener(mPrefListener);
+        PreferenceManager.getDefaultSharedPreferences(requireContext()).registerOnSharedPreferenceChangeListener(mPrefListener);
 
         // Update the location, too.  This also makes the location fields
         // invisible if permissions aren't granted yet.  permissionsDenied()
         // will cover if they suddenly became available.
         updateLocation();
+
+        // If the radio button's on picture location at this point but shouldn't
+        // be (probably because the user picked it, granted permissions, then
+        // revoked permissions, which in turn kills the app but saves that
+        // selection in the instance state, meaning it gets restored that way
+        // upon potential restart), reset it to device location.
+        if(!hasMediaLocationPermission() && mLocationTypeGroup.getCheckedRadioButtonId() == R.id.wiki_use_picture_location) {
+            mLocationTypeGroup.check(R.id.wiki_use_device_location);
+        }
     }
 
     @Override
     public void onPause() {
         // Stop listening for changes.  We'll redo anon checks on resume anyway.
-        PreferenceManager.getDefaultSharedPreferences(getActivity()).unregisterOnSharedPreferenceChangeListener(mPrefListener);
+        PreferenceManager.getDefaultSharedPreferences(requireContext()).unregisterOnSharedPreferenceChangeListener(mPrefListener);
 
         super.onPause();
     }
@@ -294,10 +354,7 @@ public class WikiFragment extends CentralMapExtraFragment {
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
             String password = prefs.getString(GHDConstants.PREF_WIKI_PASS, "");
 
-            if(username == null
-                    || username.isEmpty()
-                    || password == null
-                    || password.isEmpty()) {
+            if(username.isEmpty() || password.isEmpty()) {
                 // If anything isn't defined, we can't set a picture.  Also,
                 // uncheck the picture checkbox just to make sure.
                 mPictureCheckbox.setChecked(false);
@@ -373,6 +430,20 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mUseNoLocationButton.setEnabled(false);
                 mUsePictureLocationButton.setText(R.string.wiki_dialog_location_from_picture);
                 mLocationTypeGroup.clearCheck();
+            } else if(!hasMediaLocationPermission()) {
+                // If the user hasn't granted permission to view location data
+                // from pictures, tell the user this via changing the text on
+                // the option.  The option has to be enabled, though, as that's
+                // how the user gets to the permissions check.
+                mUsePictureLocationButton.setEnabled(true);
+                mUseDeviceLocationButton.setEnabled(true);
+                mUseNoLocationButton.setEnabled(true);
+                mUsePictureLocationButton.setText(R.string.wiki_dialog_location_no_media_permission);
+
+                // Default to device location.
+                if(selection == -1) {
+                    mLocationTypeGroup.check(R.id.wiki_use_device_location);
+                }
             } else if(mLastImageInfo.location != null) {
                 // If there's an image with a valid location, the from-picture
                 // button gets enabled.
@@ -435,7 +506,13 @@ public class WikiFragment extends CentralMapExtraFragment {
                 mPictureLocationText.setVisibility(View.VISIBLE);
 
                 // But, what text goes on the texty bit?  Well...
-                if(mLastImageInfo != null && mLastImageInfo.location != null) {
+                if(!hasMediaLocationPermission()) {
+                    // If we don't even have permission to check, all checks
+                    // will just return null.  We should tell the user it's
+                    // specifically unknown, not that there isn't any.
+                    mPictureLocationText.setText(
+                            R.string.wiki_dialog_location_picture_unknown);
+                } else if(mLastImageInfo != null && mLastImageInfo.location != null) {
                     // There's a location, so apply that.  Converted, of course.
                     mPictureLocationText.setText(
                             UnitConverter.makeFullCoordinateString(
@@ -446,8 +523,7 @@ public class WikiFragment extends CentralMapExtraFragment {
                 } else {
                     // Otherwise, put the placeholder in place.
                     mPictureLocationText.setText(
-                            getString(
-                                    R.string.wiki_dialog_location_picture_none));
+                            R.string.wiki_dialog_location_picture_none);
                 }
             }
         });
@@ -513,6 +589,15 @@ public class WikiFragment extends CentralMapExtraFragment {
         boolean includeLocation = !mPermissionsDenied && mIncludeLocationCheckbox.isChecked();
         boolean includePicture = mPictureCheckbox.isChecked();
         @IdRes int locationSelection = mLocationTypeGroup.getCheckedRadioButtonId();
+
+        if(!hasMediaLocationPermission() && locationSelection == R.id.wiki_use_picture_location) {
+            // If we've somehow got here with bad permissions, the default
+            // behavior I use elsewhere (auto-select location-from-device) isn't
+            // quite right, as that could potentially be a completely wrong
+            // location, but the user wouldn't realize this right away. So,
+            // default it to no location.
+            locationSelection = R.id.wiki_use_no_location;
+        }
 
         // So.  If we didn't have an Info yet, we're hosed.
         if(mInfo == null) {
@@ -618,5 +703,14 @@ public class WikiFragment extends CentralMapExtraFragment {
 
     private void updateCheckbox() {
         mIncludeLocationCheckbox.setVisibility(mPermissionsDenied ? View.GONE : View.VISIBLE);
+    }
+
+    private boolean hasMediaLocationPermission() {
+        // Remember, this permission didn't exist before Q, so if that's what
+        // the user's using, it can be regarded as granted.
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                || ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     }
 }
