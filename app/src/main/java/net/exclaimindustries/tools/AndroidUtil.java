@@ -9,6 +9,8 @@ import android.content.pm.ResolveInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import androidx.annotation.NonNull;
+
 /**
  * AndroidUtil features some helpful convenience methods for Android.
  * 
@@ -28,7 +30,8 @@ public class AndroidUtil {
      * @return True if an Intent with the specified action can be sent and
      *         responded to, false otherwise.
      */
-    public static boolean isIntentAvailable(Context context, String action) {
+    public static boolean isIntentAvailable(@NonNull Context context,
+                                            @NonNull String action) {
         final Intent intent = new Intent(action);
         return isIntentAvailable(context, intent);
     }
@@ -43,11 +46,12 @@ public class AndroidUtil {
      * @param intent the Intent to check against
      * @return true if an Activity would respond to that Intent, false otherwise
      */
-    public static boolean isIntentAvailable(Context context, Intent intent) {
+    public static boolean isIntentAvailable(@NonNull Context context,
+                                            @NonNull Intent intent) {
         final PackageManager packageManager = context.getPackageManager();
         List<ResolveInfo> list = packageManager.queryIntentActivities(intent,
                 PackageManager.MATCH_DEFAULT_ONLY);
-        return list.size() > 0;
+        return !list.isEmpty();
     }
 
     /**
@@ -65,7 +69,7 @@ public class AndroidUtil {
      * @param context a Context, needed to get the ConnectivityManager
      * @return true if an internet connection exists, false otherwise
      */
-    public static boolean isConnected(Context context) {
+    public static boolean isConnected(@NonNull Context context) {
         ConnectivityManager connMan = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE));
         assert connMan != null;
         NetworkInfo networkInfo = connMan.getActiveNetworkInfo();
