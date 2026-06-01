@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.6.8" version="945" date="2026-05-31">
+        <title>EXIF: The Silent Menace</title>
+        <header>There&apos;s a new permission coming up:</header>
+        <bullets>
+            <bullet>On Android versions that need it, permission is now required before the wiki upload screen can read location data from pictures.</bullet>
+        </bullets>
+        <footer>This is honestly a very good change.  Surprised it wasn&apos;t a thing before.</footer>
+    </version>
     <version name="0.9.6.7" version="944" date="2025-06-26">
         <title>The Amazing Descending Preferences</title>
         <header>Here&apos;s one I didn't notice until just now:</header>
