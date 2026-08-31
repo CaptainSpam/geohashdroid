@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         minSdkVersion 19
-        targetSdk 35
+        targetSdk 36
         multiDexEnabled true
     }
     compileOptions {
