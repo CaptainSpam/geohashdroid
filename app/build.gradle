@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
+    compileSdkVersion 37
     defaultConfig {
         applicationId "net.exclaimindustries.geohashdroid"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         minSdkVersion 21
-        targetSdk 37
+        targetSdkVersion 37
         multiDexEnabled true
     }
     compileOptions {
@@ -42,7 +43,8 @@ dependencies {
     implementation "androidx.exifinterface:exifinterface:1.3.4"
     implementation "androidx.activity:activity:1.2.0"
     implementation "androidx.fragment:fragment:1.3.0"
-    implementation("com.squareup.retrofit2:retrofit:3.1.0-SNAPSHOT")
+    implementation "com.squareup.retrofit2:retrofit:3.0.0"
+    implementation "com.squareup.retrofit2:converter-gson:3.0.0"
 
     // Required for local unit tests (JUnit 4 framework)
     testImplementation 'junit:junit:4.13.2'
