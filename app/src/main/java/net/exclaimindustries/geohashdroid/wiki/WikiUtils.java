@@ -81,7 +81,7 @@ public class WikiUtils {
     /**
      * The URL for the MediaWiki API.  There's no trailing slash here.
      */
-    private static final String WIKI_API_URL = WIKI_BASE_URL + "/api.php";
+    static final String WIKI_API_URL = WIKI_BASE_URL + "api.php";
 
     /**
      * The base URL for viewing pages on the wiki.  On the Geohashing wiki, the
