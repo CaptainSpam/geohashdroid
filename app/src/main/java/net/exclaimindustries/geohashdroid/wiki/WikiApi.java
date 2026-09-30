@@ -8,12 +8,20 @@
 
 package net.exclaimindustries.geohashdroid.wiki;
 
+import com.google.gson.annotations.SerializedName;
+
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.Query;
 
 /**
  * The Retrofit API interface for the wiki.  I mean, it's not a full MediaWiki
@@ -21,7 +29,7 @@ import retrofit2.http.POST;
  */
 public class WikiApi {
     /** The various queries used in Geohash Droid. */
-    public interface Query {
+    public interface WikiQuery {
         /** Queries the wiki version. */
         @GET("api.php?action=query&format=json&meta=siteinfo&siprop=general")
         Call<WikiVersionResponse> getWikiVersion();
@@ -33,6 +41,17 @@ public class WikiApi {
          */
         @GET("api.php?action=query&format=json&meta=tokens&type=login")
         Call<LoginTokenResponse> getLoginToken();
+
+        /**
+         * Fetches the contents of a single wiki page, as well as a CSRF token
+         * for editing it right afterward.  This is one of those "this is made
+         * specifically for Geohash Droid" sort of things, what with always
+         * fetching a token to edit it.
+         *
+         * @param pagename the name of the wiki page to fetch
+         */
+        @GET("api.php?action=query&format=json&prop=info|revisions&rvprop=content&rvslots=*&rvlimit=1&meta=tokens&type=csrf")
+        Call<WikiPageResponse> getWikiPage(@Query("titles") String pagename);
 
         /**
          * Carries through with a login, which will return a pass/fail and
@@ -60,11 +79,11 @@ public class WikiApi {
      * constants pre-defined.
      */
     public static Call<ClientLoginResponse> makePostClientLogin(
-            @NonNull WikiApi.Query query,
+            @NonNull WikiQuery wikiQuery,
             String username,
             String password,
             String logintoken) {
-        return query.postClientLogin(
+        return wikiQuery.postClientLogin(
                 "clientlogin",
                 WikiUtils.WIKI_API_URL,
                 "json",
@@ -156,6 +175,94 @@ public class WikiApi {
          */
         public String getStatus() {
             return clientlogin.status;
+        }
+    }
+
+    /**
+     * GSON representation of the response from getWikiPage().  This not only
+     * includes the page content (if possible), but also flags for the page
+     * existing and/or being valid.
+     */
+    public static class WikiPageResponse {
+        private QueryObj query;
+
+        public static class QueryObj {
+            private TokensObj tokens;
+            private Map<String, PageObj> pages;
+
+            public static class TokensObj {
+                private String csrftoken;
+            }
+
+            public static class PageObj {
+                private String missing;
+                private String invalid;
+                private String touched;
+                private RevisionObj[] revisions;
+
+                public static class RevisionObj {
+                    private SlotsObj slots;
+
+                    public static class SlotsObj {
+                        private MainObj main;
+
+                        public static class MainObj {
+                            @SerializedName("*")
+                            private String contents;
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Gets the associated CSRF token.  If there's valid login cookies, this
+         * should be something that isn't just "+\".
+         */
+        public String getCsrfToken() {
+            return this.query.tokens.csrftoken;
+        }
+
+        @NonNull
+        private QueryObj.PageObj getFirstPageObj() {
+            // We've got a map, and we know how to use it.  Specifically, we
+            // have a map that should have exactly one item in it, as per the
+            // query we made to get here.  If it has more, well, that's a
+            // problem.
+            ArrayList<String> ids = new ArrayList<>(query.pages.keySet());
+            return Objects.requireNonNull(query.pages.get(ids.get(0)));
+        }
+
+        /**
+         * Gets the content from the requested page, if it exists (check
+         * isMissing() and isInvalid() first).
+         */
+        public String getPageContent() {
+            return getFirstPageObj().revisions[0].slots.main.contents;
+        }
+
+        /**
+         * Gets the flag that indicates whether or not this page exists on the
+         * wiki.  If this is false, the page needs to be created anew.
+         */
+        public boolean isMissing() {
+            return getFirstPageObj().missing != null;
+        }
+
+        /**
+         * Gets the flag that indicates whether or not this page is valid.  If
+         * this is false, a page with this name either can't exist, isn't
+         * accessible by the given user, or something else is wrong that simply
+         * trying to create the page won't fix.
+         */
+        public boolean isInvalid() {
+            return getFirstPageObj().invalid != null;
+        }
+
+        /** Gets the touched value, which is mostly for timestamping. */
+        @Nullable
+        public String getTouched() {
+            return getFirstPageObj().touched;
         }
     }
 }
