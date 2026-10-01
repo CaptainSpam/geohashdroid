@@ -51,7 +51,7 @@ public class WikiApi {
          * @param pagename the name of the wiki page to fetch
          */
         @GET("api.php?action=query&format=json&prop=info|revisions&rvprop=content&rvslots=*&rvlimit=1&meta=tokens&type=csrf")
-        Call<WikiPageResponse> getWikiPage(@Query("titles") String pagename);
+        Call<GetWikiPageResponse> getWikiPage(@Query("titles") String pagename);
 
         /**
          * Carries through with a login, which will return a pass/fail and
@@ -205,7 +205,7 @@ public class WikiApi {
      * includes the page content (if possible), but also flags for the page
      * existing and/or being valid.
      */
-    public static class WikiPageResponse extends BaseWikiResponse {
+    public static class GetWikiPageResponse extends BaseWikiResponse {
         private QueryObj query;
 
         public static class QueryObj {
@@ -234,6 +234,14 @@ public class WikiApi {
                         }
                     }
                 }
+
+                public boolean isMissing() {
+                    return missing != null;
+                }
+
+                public boolean isInvalid() {
+                    return invalid != null;
+                }
             }
         }
 
@@ -256,11 +264,31 @@ public class WikiApi {
         }
 
         /**
-         * Gets the content from the requested page, if it exists (check
-         * isMissing() and isInvalid() first).
+         * Gets the content from the requested page, if it exists.  If the page
+         * is missing or invalid, this will return an empty string, which is
+         * likely what you want for a missing page (so it can be made anew) and
+         * likely the most graceful way to make the app not crash if you didn't
+         * check isInvalid first.  You should've checked it first.
          */
+        @NonNull
         public String getPageContent() {
-            return getFirstPageObj().revisions[0].slots.main.contents;
+            QueryObj.PageObj page = getFirstPageObj();
+
+            if(page.isMissing() || page.isInvalid()) {
+                return "";
+            }
+
+            // I miss the nullish coalescer.
+            if(page.revisions == null || page.revisions.length == 0) {
+                return "";
+            }
+
+            QueryObj.PageObj.RevisionObj rev = page.revisions[0];
+            if(rev.slots == null || rev.slots.main == null || rev.slots.main.contents == null) {
+                return "";
+            }
+
+            return rev.slots.main.contents;
         }
 
         /**
