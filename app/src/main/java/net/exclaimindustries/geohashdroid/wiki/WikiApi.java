@@ -93,10 +93,32 @@ public class WikiApi {
     }
 
     /**
+     * Base class of all GSON wiki responses.  This adds in the potential for an
+     * error field.
+     */
+    public static class BaseWikiResponse {
+        private ErrorObj error;
+
+        public static class ErrorObj {
+            private String code;
+        }
+
+        /** Returns true if there's an error, false otherwise. */
+        public boolean hasError() {
+            return error != null;
+        }
+
+        /** Assuming there's an error, return it. */
+        public String getErrorCode() {
+            return error != null ? error.code : null;
+        }
+    }
+
+    /**
      * GSON representation of the response from getWikiVersion().  Use
      * getVersionData() to get a WikiVersionData object from it.
      */
-    public static class WikiVersionResponse {
+    public static class WikiVersionResponse extends BaseWikiResponse {
         private QueryObj query;
 
         public static class QueryObj {
@@ -130,7 +152,7 @@ public class WikiApi {
     }
 
     /** GSON representation of the response from getLoginToken(). */
-    public static class LoginTokenResponse {
+    public static class LoginTokenResponse extends BaseWikiResponse {
         private QueryObj query;
 
         public static class QueryObj {
@@ -159,7 +181,7 @@ public class WikiApi {
      * in the cookies.  Still, we need to check the response to make sure the
      * login succeeded.
      */
-    public static class ClientLoginResponse {
+    public static class ClientLoginResponse extends BaseWikiResponse {
         private ClientLoginObj clientlogin;
 
         public static class ClientLoginObj {
@@ -183,7 +205,7 @@ public class WikiApi {
      * includes the page content (if possible), but also flags for the page
      * existing and/or being valid.
      */
-    public static class WikiPageResponse {
+    public static class WikiPageResponse extends BaseWikiResponse {
         private QueryObj query;
 
         public static class QueryObj {
