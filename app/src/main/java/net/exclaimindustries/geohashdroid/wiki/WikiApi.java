@@ -72,6 +72,27 @@ public class WikiApi {
                                                   @Field("username") String username,
                                                   @Field("password") String password,
                                                   @Field("logintoken") String logintoken);
+
+        /**
+         * Posts a wiki page.
+         *
+         * @param action the API action (always "edit")
+         * @param pagename the name of the wiki page
+         * @param content the entire contents of the page
+         * @param format the format (always "json")
+         * @param csrfToken the CSRF token
+         * @param summary the summary (always a note about GHD)
+         * @param touched the last time the page was touched
+         */
+        @FormUrlEncoded
+        @POST("api.php")
+        Call<PostWikiPageResponse> postWikiPage(@Field("action") String action,
+                                                @Field("title") String pagename,
+                                                @Field("text") String content,
+                                                @Field("format") String format,
+                                                @Field("token") String csrfToken,
+                                                @Field("summary") String summary,
+                                                @Field("basetimestamp") String touched);
     }
 
     /**
@@ -80,9 +101,9 @@ public class WikiApi {
      */
     public static Call<ClientLoginResponse> makePostClientLogin(
             @NonNull WikiQuery wikiQuery,
-            String username,
-            String password,
-            String logintoken) {
+            @NonNull String username,
+            @NonNull String password,
+            @NonNull String logintoken) {
         return wikiQuery.postClientLogin(
                 "clientlogin",
                 WikiUtils.WIKI_API_URL,
@@ -90,6 +111,27 @@ public class WikiApi {
                 username,
                 password,
                 logintoken);
+    }
+
+    /**
+     * Convenience method to make a postWikiPage object with the static
+     * constants pre-defined.
+     */
+    public static Call<PostWikiPageResponse> makePostWikiPage(
+            @NonNull WikiQuery wikiQuery,
+            @NonNull String pagename,
+            @NonNull String content,
+            @NonNull String csrfToken,
+            @NonNull String touched) {
+        return wikiQuery.postWikiPage(
+                "edit",
+                pagename,
+                content,
+                "json",
+                csrfToken,
+                "An expedition message sent via Geohash Droid for Android",
+                touched
+        );
     }
 
     /**
@@ -313,6 +355,23 @@ public class WikiApi {
         @Nullable
         public String getTouched() {
             return getFirstPageObj().touched;
+        }
+    }
+
+    /**
+     * GSON representation of the response from putWikiPage().  This really just
+     * has a result string, as we don't care past that.
+     */
+    public static class PostWikiPageResponse extends BaseWikiResponse {
+        private EditObj edit;
+
+        public static class EditObj {
+            private String result;
+        }
+
+        /** Gets the result.  Hopefully it's "Success". */
+        public String getResult() {
+            return edit.result;
         }
     }
 }
