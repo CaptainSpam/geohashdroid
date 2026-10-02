@@ -132,14 +132,15 @@ public class WikiApi {
             @NonNull String pagename,
             @NonNull String content,
             @NonNull String csrfToken,
-            @NonNull String touched) {
+            @NonNull String summary,
+            @Nullable String touched) {
         return wikiQuery.postWikiPage(
                 "edit",
                 pagename,
                 content,
                 "json",
                 csrfToken,
-                "An expedition message sent via Geohash Droid for Android",
+                summary,
                 touched
         );
     }

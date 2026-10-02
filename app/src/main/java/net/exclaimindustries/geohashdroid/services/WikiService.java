@@ -43,13 +43,13 @@ import org.json.JSONObject;
 import java.net.HttpCookie;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -265,27 +265,24 @@ public class WikiService
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
             if(!username.isEmpty() && !password.isEmpty()) {
-                cookies = WikiUtils.login(username, password);
+                WikiUtils.login(username, password);
             }
 
-            // Prep a page.  We want a populated formfields for later.
-            HashMap<String, String> formfields = new HashMap<>();
+            // Prep a page.
             String expedition = WikiUtils.getWikiPageName(info);
 
-            // This will be null if the page didn't exist to begin with.
-            String page = WikiUtils.getWikiPage(expedition, cookies, formfields);
+            // This will have empty data if the page didn't exist to begin with.
+            WikiUtils.WikiPageData pageData = WikiUtils.getWikiPage(expedition);
 
-            // And if it IS null (or empty), then we ought to make said page.
-            if(page == null || page.trim().isEmpty()) {
+            // And if so, make a new page.
+            if(pageData.content.trim().isEmpty()) {
                 // Aha!
-                WikiUtils.putWikiPage(expedition,
-                        WikiUtils.getWikiExpeditionTemplate(info, this),
-                        cookies,
-                        formfields);
+                pageData.content = WikiUtils.getWikiExpeditionTemplate(info, this);
+                WikiUtils.putWikiPage(pageData);
 
                 // And once it's there, we pull it back, as we'll be futzing
                 // about with it some more.
-                page = WikiUtils.getWikiPage(expedition, cookies, formfields);
+                pageData = WikiUtils.getWikiPage(expedition);
             }
 
             // I know this is making a monstrous, ugly method that's just a big
@@ -335,13 +332,13 @@ public class WikiService
                 String galleryEntry = "\nImage:" + wikiName + "|" + message + "\n";
 
                 // Then, add the gallery entry into the page...
-                page = addGalleryEntryToPage(page, galleryEntry);
+                pageData.content = addGalleryEntryToPage(pageData.content, galleryEntry);
 
                 // ...make a summary...
-                formfields.put("summary", prefixTag + message);
+                pageData.summary =  prefixTag + message;
 
                 // ...and out it goes!
-                WikiUtils.putWikiPage(expedition, page, cookies, formfields);
+                WikiUtils.putWikiPage(pageData);
 
             } else {
                 // If we DON'T have an image, it's just a plain message.  That's
@@ -358,20 +355,20 @@ public class WikiService
                 else
                     summaryPrefix = getString(R.string.wiki_post_message_summary);
 
-                formfields.put("summary", summaryPrefix + " " + message);
+                pageData.summary = summaryPrefix + " " + message;
 
                 // And now, insert text where need be on the page.
                 String before;
                 String after;
 
-                if(page == null) {
+                if(pageData.content.trim().isEmpty()) {
                     // This shouldn't happen.  If it did, there's something very
                     // wrong with the wiki.
-                    Log.e(DEBUG_TAG, "The page was null when trying to add a plain message?");
+                    Log.e(DEBUG_TAG, "The page was empty when trying to add a plain message?");
                     throw new WikiException(R.string.wiki_error_unknown);
                 }
 
-                Matcher expeditionq = RE_EXPEDITION.matcher(page);
+                Matcher expeditionq = RE_EXPEDITION.matcher(pageData.content);
                 if(expeditionq.matches()) {
                     before = expeditionq.group(1) + expeditionq.group(2);
                     after = expeditionq.group(3);
@@ -379,7 +376,7 @@ public class WikiService
                     // If the expedition section doesn't exist, well, just slap
                     // it onto the end of the page.  This shouldn't happen
                     // unless someone's mucking about with the page on the web.
-                    before = page;
+                    before = pageData.content;
                     after = "";
                 }
 
@@ -390,8 +387,8 @@ public class WikiService
                         + localtime + "\n";
 
                 // And go!
-                WikiUtils.putWikiPage(expedition, before + message
-                        + after, cookies, formfields);
+                pageData.content = before + message + after;
+                WikiUtils.putWikiPage(pageData);
             }
 
             return ReturnCode.CONTINUE;
@@ -813,6 +810,7 @@ public class WikiService
         mAlarmManager.cancel(getBasicCommandIntent(QueueService.COMMAND_RESUME));
     }
 
+    @NonNull
     @SuppressLint("NewApi")
     private NotificationCompat.Builder getFreshNotificationBuilder() {
         // This just returns a fresh new NotificationCompat.Builder with the
@@ -822,6 +820,7 @@ public class WikiService
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
     }
 
+    @NonNull
     private String addGalleryEntryToPage(String page, String galleryEntry) {
         String before;
         String after;
@@ -849,6 +848,7 @@ public class WikiService
         return before + galleryEntry + after;
     }
 
+    @NonNull
     private NotificationCompat.Action[] resolveWikiExceptionActions(WikiException we) {
         // This'll get the (up to) three notification actions associated with a
         // given WikiException (identified by string ID).
@@ -895,6 +895,7 @@ public class WikiService
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
     }
 
+    @Nullable
     private NotificationCompat.Action getBasicNotificationAction(int command) {
         switch(command) {
             case COMMAND_RESUME:
