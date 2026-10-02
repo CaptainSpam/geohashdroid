@@ -54,6 +54,16 @@ public class WikiApi {
         Call<GetWikiPageResponse> getWikiPage(@Query("titles") String pagename);
 
         /**
+         * Fetches very basic info about a single wiki page, enough to tell if
+         * the page exists or not.  Useful if you don't want to fetch the entire
+         * page (or image).
+         *
+         * @param pagename the name of the wiki page to fetch
+         */
+        @GET("api.php?action=query&format=json")
+        Call<GetWikiPageExistenceResponse> getWikiPageExistence(@Query("title") String pagename);
+
+        /**
          * Carries through with a login, which will return a pass/fail and
          * update all requisite cookies.
          *
@@ -355,6 +365,51 @@ public class WikiApi {
         @Nullable
         public String getTouched() {
             return getFirstPageObj().touched;
+        }
+    }
+
+    /**
+     * GSON representation of the response from getWikiPageExistence().
+     * This is a lot like GetWikiPageResponse, just with a lot less data.
+     */
+    public static class GetWikiPageExistenceResponse extends BaseWikiResponse {
+        private QueryObj query;
+
+        public static class QueryObj {
+            private Map<String, PageObj> pages;
+
+            public static class PageObj {
+                private String missing;
+                private String invalid;
+            }
+        }
+
+        @NonNull
+        private QueryObj.PageObj getFirstPageObj() {
+            // We've got a map, and we know how to use it.  Specifically, we
+            // have a map that should have exactly one item in it, as per the
+            // query we made to get here.  If it has more, well, that's a
+            // problem.
+            ArrayList<String> ids = new ArrayList<>(query.pages.keySet());
+            return Objects.requireNonNull(query.pages.get(ids.get(0)));
+        }
+
+        /**
+         * Gets the flag that indicates whether or not this page exists on the
+         * wiki.  If this is false, the page needs to be created anew.
+         */
+        public boolean isMissing() {
+            return getFirstPageObj().missing != null;
+        }
+
+        /**
+         * Gets the flag that indicates whether or not this page is valid.  If
+         * this is false, a page with this name either can't exist, isn't
+         * accessible by the given user, or something else is wrong that simply
+         * trying to create the page won't fix.
+         */
+        public boolean isInvalid() {
+            return getFirstPageObj().invalid != null;
         }
     }
 
