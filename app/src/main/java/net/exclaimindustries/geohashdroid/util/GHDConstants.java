@@ -7,6 +7,8 @@
  */
 package net.exclaimindustries.geohashdroid.util;
 
+import net.exclaimindustries.geohashdroid.BuildConfig;
+
 import java.text.DecimalFormat;
 
 /**
@@ -16,6 +18,9 @@ import java.text.DecimalFormat;
  * @author Nicholas Killewald
  */
 public final class GHDConstants {
+    /** The user agent for HTTP connections. */
+    public static final String USER_AGENT = "GeohashDroid/" + BuildConfig.VERSION_NAME;
+
     /**
      * The Intent action used to start the radar.  That's... a thing people
      * still use, right?

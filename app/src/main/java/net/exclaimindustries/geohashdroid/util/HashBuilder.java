@@ -11,6 +11,7 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import okhttp3.Call;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -109,7 +110,19 @@ public class HashBuilder {
          */
         private static final int MAX_FETCH_BYTES = 1024;
 
-        private final OkHttpClient mClient = new OkHttpClient();
+        private final OkHttpClient mClient = new OkHttpClient.Builder()
+                .addNetworkInterceptor(new Interceptor() {
+                    @NonNull
+                    @Override
+                    public Response intercept(@NonNull Chain chain) throws IOException {
+                        return chain
+                                .proceed(chain
+                                        .request()
+                                        .newBuilder()
+                                        .addHeader("User-Agent", GHDConstants.USER_AGENT)
+                                        .build());
+                    }
+                }).build();
 
         private final Context mContext;
         private final Calendar mCal;

@@ -15,6 +15,7 @@ import android.text.format.DateFormat;
 import android.util.Log;
 
 import net.exclaimindustries.geohashdroid.R;
+import net.exclaimindustries.geohashdroid.util.GHDConstants;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
@@ -40,6 +41,7 @@ import androidx.annotation.Nullable;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -305,6 +307,19 @@ public class WikiUtils {
                 .client(new OkHttpClient()
                         .newBuilder()
                         .cookieJar(new SessionCookieJar())
+                        .addNetworkInterceptor(new Interceptor() {
+                            @NonNull
+                            @Override
+                            public okhttp3.Response intercept(@NonNull Chain chain) throws IOException {
+                                return chain
+                                        .proceed(chain
+                                                .request()
+                                                .newBuilder()
+                                                .addHeader("User-Agent",
+                                                        GHDConstants.USER_AGENT)
+                                                .build());
+                            }
+                        })
                         .build())
                 .build();
 
