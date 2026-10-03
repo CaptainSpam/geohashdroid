@@ -74,6 +74,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -781,6 +782,26 @@ public class CentralMap
             mCurrentMode = new SelectAGraticuleMode();
         else
             mCurrentMode = new ExpeditionMode();
+
+        // Register for back button-y things, as we do something weird.
+        OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // If we're in Select-A-Graticule, pressing back will send us
+                // back to expedition mode.  This seems obvious, especially when
+                // the default implementation will close the graticule fragment
+                // anyway when the back stack is popped, but we also need to do
+                // the other stuff like change the menu back, stop the
+                // tap-the-map selections, etc.  Also, I really wish there were
+                // a better way to do this that didn't require this Activity
+                // keeping track of things.
+                if(mCurrentMode instanceof SelectAGraticuleMode)
+                    exitSelectAGraticuleMode();
+                else
+                    finish();
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, backCallback);
     }
 
     @Override
@@ -1181,21 +1202,6 @@ public class CentralMap
         mStockReceiver.clearWaitingList();
         mCurrentMode = new ExpeditionMode();
         doReadyChecks();
-    }
-
-    @Override
-    public void onBackPressed() {
-        // If we're in Select-A-Graticule, pressing back will send us back to
-        // expedition mode.  This seems obvious, especially when the default
-        // implementation will close the graticule fragment anyway when the back
-        // stack is popped, but we also need to do the other stuff like change
-        // the menu back, stop the tap-the-map selections, etc.  Also, I really
-        // wish there were a better way to do this that didn't require this
-        // Activity keeping track of things.
-        if(mCurrentMode instanceof SelectAGraticuleMode)
-            exitSelectAGraticuleMode();
-        else
-            super.onBackPressed();
     }
 
     private boolean isReadyToGo()
