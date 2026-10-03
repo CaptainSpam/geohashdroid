@@ -3,7 +3,7 @@
     <base-config cleartextTrafficPermitted="false" />
 
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">irc.peeron.com</domain>
+        <domain includeSubdomains="true">carabiner.peeron.com</domain>
         <domain includeSubdomains="true">geo.crox.net</domain>
     </domain-config>
 </network-security-config>

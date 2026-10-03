@@ -135,8 +135,10 @@ public class HashBuilder {
         // THAT case, we'd need to make it not be a raw array.  The general form
         // is that %Y is the four-digit year, %m is the zero-padded month, and
         // %d is the zero-padded date.
-        private final static String[] mServers = { "http://irc.peeron.com/xkcd/map/data/%Y/%m/%d",
-                "http://geo.crox.net/djia/%Y/%m/%d" };
+        private final static String[] mServers = {
+                "http://carabiner.peeron.com/xkcd/map/data/%Y/%m/%d",
+                "http://geo.crox.net/djia/%Y/%m/%d",
+                "https://data.geohashing.info/dow/%Y/%m/%d"};
 
         private StockRunner(@NonNull Context con, @NonNull Calendar c, @Nullable Graticule g) {
             mContext = con;
