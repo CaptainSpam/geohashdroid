@@ -40,6 +40,7 @@ import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import net.exclaimindustries.geohashdroid.BuildConfig;
 import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.fragments.AboutDialogFragment;
 import net.exclaimindustries.geohashdroid.fragments.GHDDatePickerDialogFragment;
@@ -1061,12 +1062,7 @@ public class CentralMap
         // We still have that prefs object.  Let's see if we've got a newer
         // version than what we last saw.
         int lastVersion = prefs.getInt(GHDConstants.PREF_LAST_SEEN_VERSION, 0);
-        int curVersion = -1;
-        try {
-            curVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
-        } catch (PackageManager.NameNotFoundException nnfe) {
-            // Since this is OUR OWN PACKAGE NAME, this better work.
-        }
+        int curVersion = BuildConfig.VERSION_CODE;
 
         Log.d(DEBUG_TAG, "We are version " + curVersion + ", we last reported version history on version " + lastVersion);
 
