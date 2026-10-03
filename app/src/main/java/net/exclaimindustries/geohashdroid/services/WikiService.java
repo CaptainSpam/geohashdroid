@@ -321,10 +321,7 @@ public class WikiService
                 // message.
                 String galleryEntry = "\nImage:" + wikiName + "|" + message + "\n";
 
-                // Now, we'll need a fresh new CSRF token.  But, in local
-                // testing, the login cookies kept getting wiped at this point,
-                // so we'll also need a fresh login.
-                WikiUtils.login(username, password);
+                // Now, we'll need a fresh new CSRF token.
                 pageData = WikiUtils.getWikiPage(expedition);
 
                 // The page CAN be empty at this point, as we're about to

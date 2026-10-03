@@ -26,10 +26,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -241,18 +242,34 @@ public class WikiUtils {
      * all we really need.
      */
     private static class SessionCookieJar implements CookieJar {
-
-        private List<Cookie> cookies = Collections.emptyList();
+        private final Map<String, Cookie> cookieMap = new HashMap<>();
 
         @Override
-        public void saveFromResponse(@NonNull HttpUrl url, @NonNull List<Cookie> cookies) {
-            this.cookies = new ArrayList<>(cookies);
+        public void saveFromResponse(@NonNull HttpUrl url,
+                                     @NonNull List<Cookie> cookies) {
+            // New cookies!  Keep track and replace any that have changed.
+            for(Cookie c : cookies) {
+                cookieMap.put(c.name(), c);
+            }
         }
 
         @NonNull
         @Override
         public List<Cookie> loadForRequest(@NonNull HttpUrl url) {
-            return this.cookies;
+            // At load time, resolve expirations.  This class is meant to be
+            // pretty ephemeral, but you never know, right?
+            long nowMillis = System.currentTimeMillis();
+
+            Iterator<Map.Entry<String, Cookie>> iter = cookieMap.entrySet().iterator();
+
+            while(iter.hasNext()) {
+                Map.Entry<String, Cookie> cur = iter.next();
+                if(cur.getValue().expiresAt() <= nowMillis) {
+                    iter.remove();
+                }
+            }
+
+            return List.copyOf(cookieMap.values());
         }
     }
 
