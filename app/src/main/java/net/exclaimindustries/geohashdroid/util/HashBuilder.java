@@ -28,7 +28,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -138,7 +141,8 @@ public class HashBuilder {
         private final static String[] mServers = {
                 "http://carabiner.peeron.com/xkcd/map/data/%Y/%m/%d",
                 "http://geo.crox.net/djia/%Y/%m/%d",
-                "https://data.geohashing.info/dow/%Y/%m/%d"};
+                "https://data.geohashing.info/dow/%Y/%m/%d",
+                "https://map.geohashing.site/data/%Y/%m/%d"};
 
         private StockRunner(@NonNull Context con, @NonNull Calendar c, @Nullable Graticule g) {
             mContext = con;
@@ -255,9 +259,9 @@ public class HashBuilder {
             String sMonthStr = String.format(Locale.US, "%02d", sCal.get(Calendar.MONTH) + 1);
             String sDayStr = String.format(Locale.US, "%02d", sCal.get(Calendar.DAY_OF_MONTH));
 
-            // Good, good! Now, to the web!  Go through our list of sites in
-            // order until we find an answer, we bottom out, or we abort.  In
-            // terms of what we report to the user, "Server error" is lowest-
+            // Good, good! Now, to the web!  Go through our list of sites in a
+            // random order until we find an answer, we bottom out, or we abort.
+            // In terms of what we report to the user, "Server error" is lowest-
             // priority, with "Stock not posted" rating above it.  That is to
             // say, if one server reports and error but another one explicitly
             // tells us the stock wasn't found, the latter is what we use.  Of
@@ -266,7 +270,11 @@ public class HashBuilder {
             int curStatus = ERROR_SERVER;
             String result = "";
 
-            for(String s : mServers) {
+            // SHUFFLE!
+            List<String> serverList = Arrays.asList(mServers);
+            Collections.shuffle(serverList);
+
+            for(String s : serverList) {
                 // Do all our substitutions...
                 String location = s.replaceAll("%Y", Integer.toString(sCal.get(Calendar.YEAR)));
                 location = location.replaceAll("%m", sMonthStr);
