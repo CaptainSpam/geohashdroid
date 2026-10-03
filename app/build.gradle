@@ -8,8 +8,8 @@ android {
         minSdkVersion 21
         targetSdkVersion 37
         multiDexEnabled true
-        versionCode 945
-        versionName '0.9.6.8'
+        versionCode 946
+        versionName '0.9.7.0'
     }
     buildFeatures {
         buildConfig = true

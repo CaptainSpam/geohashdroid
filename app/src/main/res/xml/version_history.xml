@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <versionHistory>
+    <version name="0.9.7.0" version="946" date="2026-10-03">
+        <title>Flipping It, Turning It, And Reversing It</title>
+        <header>There&apos;s been some things long coming in this one:</header>
+        <bullets>
+            <bullet>Most importantly, the entire wiki posting backend has been revamped to use more modern libraries and be quite a bit less XML-centric.  Easier to develop, easier to debug, and hopefully smoother all around.  As a note, though, this DOES bump up the minimum Android SDK version for Geohash Droid to 21 (Lollipop, 2014).</bullet>
+            <bullet>Also, that revamp should fix the recent wiki authentication issues.  Sorry about that.</bullet>
+            <bullet>There&apos;s a new feature!  When uploading an image to the wiki, there&apos;s now a button that allows you to rotate and/or mirror the image before uploading!  This will hopefully take the guesswork out of wondering whether EXIF rotation data will cause weirdness with the upload.</bullet>
+            <bullet>Fixed the URL to the Peeron DJIA server, and added data.geohashing.info into the mix of potential servers.  More redundancy!</bullet>
+            <bullet>Plus, a variety of code cleanup in general, most of which I&apos;m pretty sure doesn&apos;t even make it to bytecode in the end.</bullet>
+        </bullets>
+        <footer>Enjoy!</footer>
+    </version>
     <version name="0.9.6.8" version="945" date="2026-05-31">
         <title>EXIF: The Silent Menace</title>
         <header>There&apos;s a new permission coming up:</header>
