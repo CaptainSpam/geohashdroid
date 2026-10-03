@@ -62,8 +62,6 @@ import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
-import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
-import cz.msebera.android.httpclient.impl.client.HttpClients;
 
 /**
  * <code>WikiService</code> is a background service that handles all wiki
@@ -234,8 +232,7 @@ public class WikiService
             return ReturnCode.CONTINUE;
         }
 
-        // Prep an HttpClient for later...
-        try(CloseableHttpClient client = HttpClients.createDefault()) {
+        try {
             // To Preferences!
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             String username = prefs.getString(GHDConstants.PREF_WIKI_USER, "");
@@ -257,10 +254,6 @@ public class WikiService
             // Location becomes null if we're not including it.  Nothing should
             // need to care.
             if(!includeLocation) loc = null;
-
-            // Here's our cookie jar.  It'll be populated by the login call and
-            // passed off to everything else in turn.
-            List<HttpCookie> cookies = new ArrayList<>();
 
             // If we got a username/password combo, try to log in.  This throws
             // a WikiException if the login fails.
@@ -315,7 +308,7 @@ public class WikiService
 
                     // Upload now!  Do it!
                     String description = message + "\n\n" + WikiUtils.getWikiCategories(info);
-                    WikiUtils.putWikiImage(wikiName, description, imageData, cookies);
+                    WikiUtils.putWikiImage(wikiName, description, imageData);
                 } else {
                     Log.w(DEBUG_TAG, "Trying to upload an image, but it already exists on the wiki?");
                 }
@@ -331,7 +324,16 @@ public class WikiService
                 // message.
                 String galleryEntry = "\nImage:" + wikiName + "|" + message + "\n";
 
-                // Then, add the gallery entry into the page...
+                // Now, we'll need a fresh new CSRF token.  But, in local
+                // testing, the login cookies kept getting wiped at this point,
+                // so we'll also need a fresh login.
+                WikiUtils.login(username, password);
+                pageData = WikiUtils.getWikiPage(expedition);
+
+                // The page CAN be empty at this point, as we're about to
+                // overwrite it anyway (though it being empty would be very odd,
+                // as we just made sure it existed earlier).  So, with the new
+                // pageData in hand, update it with the gallery entry...
                 pageData.content = addGalleryEntryToPage(pageData.content, galleryEntry);
 
                 // ...make a summary...
@@ -339,7 +341,6 @@ public class WikiService
 
                 // ...and out it goes!
                 WikiUtils.putWikiPage(pageData);
-
             } else {
                 // If we DON'T have an image, it's just a plain message.  That's
                 // a lot easier than an image, but the posting's different,

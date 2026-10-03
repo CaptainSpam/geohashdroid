@@ -11,7 +11,6 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
@@ -37,14 +36,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,16 +55,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.HttpResponse;
-import cz.msebera.android.httpclient.NameValuePair;
-import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
-import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
-import cz.msebera.android.httpclient.entity.ContentType;
-import cz.msebera.android.httpclient.entity.mime.MultipartEntityBuilder;
-import cz.msebera.android.httpclient.entity.mime.content.ByteArrayBody;
-import cz.msebera.android.httpclient.entity.mime.content.StringBody;
 import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
-import cz.msebera.android.httpclient.message.BasicNameValuePair;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
@@ -608,11 +597,11 @@ public class WikiUtils {
                 pageData.summary,
                 pageData.touched);
         Response<WikiApi.PostWikiPageResponse> pageResponse = pageCall.execute();
-        WikiApi.PostWikiPageResponse resultData = processAndUnwrapResponse(pageResponse);
+        String result = processAndUnwrapResponse(pageResponse).getResult();
 
-        if(!resultData.getResult().equals("Success")) {
+        if(!result.equals("Success")) {
             // Well, crap, something's wrong.
-            Log.e(DEBUG_TAG, "Invalid response from putWikiPage: " + resultData.getResult());
+            Log.e(DEBUG_TAG, "Invalid response from putWikiPage: " + result);
             throw new WikiException(R.string.wiki_error_unknown);
         }
     }
@@ -623,140 +612,39 @@ public class WikiUtils {
      * @param filename the name of the new image file
      * @param description the description of the image. An initial description will be used as page content for the image's wiki page
      * @param data a ByteArray containing the raw JPEG-encoded image data
-     * @param cookies cookies fetched from a previous login call; will be repopulated with new cookies from this call
      */
     public static void putWikiImage(@NonNull String filename,
                                     @NonNull String description,
-                                    @NonNull byte[] data,
-                                    @NonNull List<HttpCookie> cookies) throws Exception {
-        // At this point, WikiService still has an edit token for the page
-        // itself, but that token isn't valid for uploading this image.  That's
-        // why we didn't pass formfields into this.  So, we need to fetch that.
-        Uri apiUri = Uri.parse(WIKI_API_URL);
-
-        Uri.Builder builder = apiUri.buildUpon();
-        builder.appendQueryParameter("action", "query")
-                .appendQueryParameter("format", "json")
-                .appendQueryParameter("meta", "tokens")
-                .appendQueryParameter("type", "csrf");
-        HttpURLConnection connection = (HttpURLConnection) new URL(builder.toString()).openConnection();
-        addCookiesToConnection(connection, cookies);
-
-        JSONObject json = getJsonFromConnection(connection);
-        String token;
-        try {
-            token = json
-                    .getJSONObject("query")
-                    .getJSONObject("tokens")
-                    .getString("csrftoken");
-        } catch (JSONException e) {
-            Log.e(DEBUG_TAG, "JSONException in putWikiImage!", e);
-            throw new WikiException(R.string.wiki_error_json);
-        }
-
-        // Token!  Now, let's prepare a multipart POST!  Which is going to be
-        // rather painful, but bear with me here.  Build up a boundary that'll
-        // be different enough between invocations that we're probably not
-        // repeating ourselves.
-        String boundary = "***BOUNDARY"
-                + System.currentTimeMillis()
-                + "***";
-
-        connection = (HttpURLConnection) new URL(apiUri.toString()).openConnection();
-        addCookiesToConnection(connection, cookies);
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        connection.setRequestProperty("Connection", "Keep-Alive");
-        connection.setDoInput(true);
-        connection.setDoOutput(true);
-        connection.setChunkedStreamingMode(0);
-        connection.setUseCaches(false);
-
-        DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
-
-        // Then, string fields.
-        writeMultiPartFormString(outputStream, boundary, "action", "upload");
-        writeMultiPartFormString(outputStream, boundary, "format", "json");
-        writeMultiPartFormString(outputStream, boundary, "token", token);
-        writeMultiPartFormString(outputStream, boundary, "filename", filename);
-        writeMultiPartFormString(outputStream, boundary, "comment", description);
-        writeMultiPartFormString(outputStream, boundary, "ignorewarnings", "1");
-        writeMultiPartFormString(outputStream, boundary, "filesize", Integer.toString(data.length));
-
-        // Now, the big stuff.
-        writeMultiPartFormJpeg(outputStream, boundary, "file", filename, data);
-
-        // Cap it off.
-        outputStream.writeBytes(TWO_HYPHENS + boundary + TWO_HYPHENS + LINE_END);
-
-        outputStream.flush();
-
-        // Hopefully, now the output stream is set and ready to go.  Godspeed,
-        // mighty multipart form data!
-        getJsonFromConnection(connection);
-    }
-
-    /**
-     * Uploads an image to the wiki
-     *
-     * @param httpclient  an active HTTP session, wiki login has to have happened before.
-     * @param filename    the name of the new image file
-     * @param description the description of the image. An initial description will be used as page content for the image's wiki page
-     * @param formfields  a formfields hash as modified by getWikiPage containing an edittoken we can use (see the MediaWiki API for reasons why)
-     * @param data        a ByteArray containing the raw image data (assuming jpeg encoding, currently).
-     */
-    public static void putWikiImage(@NonNull CloseableHttpClient httpclient,
-                                    @NonNull String filename,
-                                    @NonNull String description,
-                                    @NonNull HashMap<String, String> formfields,
                                     @NonNull byte[] data) throws Exception {
-        if(!formfields.containsKey("token")) {
+        // At this point, WikiService still has an edit token for the page
+        // itself, but that token isn't valid for uploading this image.  So, we
+        // need to fetch that.
+        WikiApi.WikiQuery wikiQuery = getWikiQuery();
+
+        Log.d(DEBUG_TAG, "Fetching a fresh CSRF token for an image upload...");
+
+        Call<WikiApi.GetImageUploadTokenResponse> tokenCall = wikiQuery.getImageUploadToken();
+        Response<WikiApi.GetImageUploadTokenResponse> tokenResponse = tokenCall.execute();
+        String token = processAndUnwrapResponse(tokenResponse).getCsrfToken();
+
+        // Token!  Now, hopefully Retrofit makes multipart POST uploads
+        // simpler than the last time I wrote this...
+        Log.d(DEBUG_TAG, "Token retrieved!  Attempting an upload...");
+        Call <WikiApi.PostWikiImageResponse> uploadCall = WikiApi.makePostWikiImage(
+                wikiQuery,
+                filename,
+                description,
+                token,
+                data);
+        Response<WikiApi.PostWikiImageResponse> uploadResponse = uploadCall.execute();
+        String result = processAndUnwrapResponse(uploadResponse).getResult();
+
+        if(!result.equals("Success")) {
+            Log.e(DEBUG_TAG, "Invalid response from putWikiPage: " + result);
             throw new WikiException(R.string.wiki_error_unknown);
         }
 
-        HttpPost httppost = new HttpPost(WIKI_API_URL);
-
-        // First, we need an edit token.  Let's get one.
-        ArrayList<NameValuePair> tnvps = new ArrayList<>();
-        tnvps.add(new BasicNameValuePair("action", "query"));
-        tnvps.add(new BasicNameValuePair("prop", "info"));
-        tnvps.add(new BasicNameValuePair("intoken", "edit"));
-        tnvps.add(new BasicNameValuePair("titles", "UPLOAD_AN_IMAGE"));
-        tnvps.add(new BasicNameValuePair("format", "xml"));
-
-        httppost.setEntity(new UrlEncodedFormEntity(tnvps, "utf-8"));
-
-        WikiResponse response = getWikiResponse(httpclient, httppost);
-
-        // Hopefully, a token exists.  If not, a problem exists.
-        String token;
-        Element page;
-        try {
-            page = DOMUtil.getFirstElement(response.rootElem, "page");
-            token = DOMUtil.getSimpleAttributeText(page, "edittoken");
-        } catch(Exception e) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
-
-        // We very much need an edit token here.
-        if(token == null) {
-            throw new WikiException(R.string.wiki_error_xml);
-        }
-
-        // TOKEN GET!  Now we've got us enough to get our upload on!
-        MultipartEntityBuilder builder = MultipartEntityBuilder.create()
-                .addPart("action", new StringBody("upload", ContentType.TEXT_PLAIN))
-                .addPart("filename", new StringBody(filename, ContentType.create("text/plain", "utf-8")))
-                .addPart("comment", new StringBody(description, ContentType.create("text/plain", "utf-8")))
-                .addPart("watch", new StringBody("true", ContentType.TEXT_PLAIN))
-                .addPart("ignorewarnings", new StringBody("true", ContentType.TEXT_PLAIN))
-                .addPart("token", new StringBody(token, ContentType.TEXT_PLAIN))
-                .addPart("format", new StringBody("xml", ContentType.TEXT_PLAIN))
-                .addPart("file", new ByteArrayBody(data, ContentType.create("image/jpeg", "utf-8"), filename));
-
-        httppost.setEntity(builder.build());
-
-        getWikiResponse(httpclient, httppost);
+        Log.d(DEBUG_TAG, "Success!");
     }
 
     /**
