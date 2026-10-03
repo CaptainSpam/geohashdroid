@@ -16,11 +16,16 @@ import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.Part;
 import retrofit2.http.Query;
 
 /**
@@ -61,7 +66,13 @@ public class WikiApi {
          * @param pagename the name of the wiki page to fetch
          */
         @GET("api.php?action=query&format=json")
-        Call<GetWikiPageExistenceResponse> getWikiPageExistence(@Query("title") String pagename);
+        Call<GetWikiPageExistenceResponse> getWikiPageExistence(@Query("titles") String pagename);
+
+        /**
+         * Fetches a CSRF token for uploading an image.
+         */
+        @GET("api.php?action=query&format=json&meta=tokens&type=csrf")
+        Call<GetImageUploadTokenResponse> getImageUploadToken();
 
         /**
          * Carries through with a login, which will return a pass/fail and
@@ -103,6 +114,28 @@ public class WikiApi {
                                                 @Field("token") String csrfToken,
                                                 @Field("summary") String summary,
                                                 @Field("basetimestamp") String touched);
+
+        /**
+         * Posts an image.  It's multipart, so get ready to do some multipart
+         * shenanigans.  All parts are plain strings, except fileData.
+         *
+         * @param action the API action (always "upload")
+         * @param filename the filename as it'll appear in the wiki
+         * @param comment a comment for the file
+         * @param ignorewarnings whether warnings are ignored (always "true")
+         * @param token the edit token
+         * @param format the format (always "json")
+         * @param file the actual file data
+         */
+        @Multipart
+        @POST("api.php")
+        Call<PostWikiImageResponse> postWikiImage(@Part("action") RequestBody action,
+                                                  @Part("filename") RequestBody filename,
+                                                  @Part("comment") RequestBody comment,
+                                                  @Part("ignorewarnings") RequestBody ignorewarnings,
+                                                  @Part("token") RequestBody token,
+                                                  @Part("format") RequestBody format,
+                                                  @Part() MultipartBody.Part file);
     }
 
     /**
@@ -142,6 +175,43 @@ public class WikiApi {
                 csrfToken,
                 summary,
                 touched
+        );
+    }
+
+    @NonNull
+    private static RequestBody makeStringPart(@NonNull String value) {
+        return RequestBody.create(value, MediaType.get("text/plain"));
+    }
+
+    /**
+     * Convenience method to perform the aforementioned multipart shenanigans
+     * for postWikiImage with the static constants pre-defined.
+     */
+    public static Call<PostWikiImageResponse> makePostWikiImage(
+            @NonNull WikiQuery wikiQuery,
+            @NonNull String filename,
+            @NonNull String comment,
+            @NonNull String token,
+            @NonNull byte[] fileData) {
+        RequestBody actionPart = makeStringPart("upload");
+        RequestBody filenamePart = makeStringPart(filename);
+        RequestBody commentPart = makeStringPart(comment);
+        RequestBody ignorewarningsPart = makeStringPart("true");
+        RequestBody tokenPart = makeStringPart(token);
+        RequestBody formatPart = makeStringPart("json");
+        RequestBody fileDataBody = MultipartBody.create(
+                fileData,
+                MediaType.get("image/jpeg"));
+        MultipartBody.Part fileDataPart = MultipartBody.Part.createFormData("file", filename, fileDataBody);
+
+        return wikiQuery.postWikiImage(
+                actionPart,
+                filenamePart,
+                commentPart,
+                ignorewarningsPart,
+                tokenPart,
+                formatPart,
+                fileDataPart
         );
     }
 
@@ -429,5 +499,38 @@ public class WikiApi {
         public String getResult() {
             return edit.result;
         }
+    }
+
+    /** GSON representation of an image upload CSRF token. */
+    public static class GetImageUploadTokenResponse extends BaseWikiResponse {
+        private QueryObj query;
+
+        public static class QueryObj {
+            private TokensObj tokens;
+
+            public static class TokensObj {
+                private String csrftoken;
+            }
+        }
+
+        /** Gets the CSRF token.  Feed this to putWikiImage. */
+        public String getCsrfToken() { return query.tokens.csrftoken; }
+    }
+
+    /**
+     * GSON representation of the response from putWikiImage().
+     */
+    public static class PostWikiImageResponse extends BaseWikiResponse {
+        private UploadObj upload;
+
+        public static class UploadObj {
+            private String result;
+        }
+
+        /**
+         * Gets the result, which is hopefully "Success".  If not, then... um...
+         * it's not a success.
+         */
+        public String getResult() { return upload.result; }
     }
 }
