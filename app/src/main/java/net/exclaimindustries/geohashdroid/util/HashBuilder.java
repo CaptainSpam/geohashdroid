@@ -10,28 +10,25 @@ package net.exclaimindustries.geohashdroid.util;
 import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 import android.util.Log;
 
 import net.exclaimindustries.tools.DateTools;
 import net.exclaimindustries.tools.HexFraction;
 import net.exclaimindustries.tools.MD5Tools;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import cz.msebera.android.httpclient.HttpResponse;
-import cz.msebera.android.httpclient.client.methods.HttpGet;
-import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
-import cz.msebera.android.httpclient.impl.client.HttpClients;
 
 /**
  * <p>
@@ -80,10 +77,6 @@ public class HashBuilder {
     public static class StockRunner {
         private static final String DEBUG_TAG = "StockRunner";
 
-        // In milliseconds, remember.
-        private static final int CONNECTION_TIMEOUT_SEC = 10;
-        private static final int CONNECTION_TIMEOUT_MS = CONNECTION_TIMEOUT_SEC * 1000;
-
         /**
          * This is busy, either with getting the stock price or working out
          * the hash.
@@ -109,10 +102,18 @@ public class HashBuilder {
          */
         public static final int ERROR_SERVER = 4;
 
+        /**
+         * The max amount of bytes we'll fetch from the stock runner before
+         * closing the connection.  This is to stop it from potentially
+         * downloading way too much if something goes very wrong.
+         */
+        private static final int MAX_FETCH_BYTES = 1024;
+
+        private final OkHttpClient mClient = new OkHttpClient();
+
         private final Context mContext;
         private final Calendar mCal;
         private final Graticule mGrat;
-        private HttpGet mRequest;
         private int mStatus;
         private Info mLastObject;
 
@@ -186,7 +187,7 @@ public class HashBuilder {
                         stock = fetchStock(sCal);
                         // If this didn't throw an exception AND it's not blank,
                         // stash it in the database.
-                        if(stock.trim().length() != 0)
+                        if(stock.trim().isEmpty())
                             storeStock(mContext, sCal, stock);
                     } catch (FileNotFoundException fnfe) {
                         // If we got a 404, assume it's not posted yet.
@@ -256,75 +257,49 @@ public class HashBuilder {
                 location = location.replaceAll("%m", sMonthStr);
                 location = location.replaceAll("%d", sDayStr);
                 Log.v(DEBUG_TAG, "Trying " + location + "...");
-                
-                // And go fetch!
-                CloseableHttpClient client = HttpClients.createDefault();
-                mRequest = new HttpGet(location);
 
-                HttpResponse response;
+                // And let's grab something!
+                Request request = new Request.Builder().url(location).build();
+                Call call = mClient.newCall(request);
 
-                // Get ready to time out if need be.  You never know.
-                TimerTask task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        Log.i(DEBUG_TAG, "Stock fetch connection timed out, aborting now.");
-                        try {
-                            mRequest.abort();
-                        } catch (NullPointerException npe) {
-                            // It COULD be null at that point.  If it is, we can
-                            // just safely ignore it.
-                        }
+                try (Response response = call.execute()) {
+                    int responseCode = response.code();
+                    ResponseBody body = response.body();
+
+                    if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                        // If the server gives us a 404, that's saying it can't
+                        // find the stock for the day, which in turn implies it
+                        // hasn't been posted yet.  Log as such and try the next
+                        // server. Maybe they're just not in sync.
+                        Log.d(DEBUG_TAG, "Server said there was no stock for " + DateTools.getHyphenatedDateString(sCal));
+                        curStatus = ERROR_NOT_POSTED;
+                        continue;
+                    } else if (responseCode != HttpURLConnection.HTTP_OK || body == null) {
+                        // A non-okay response that isn't a 404 is bad.  Count
+                        // this one as ERROR_SERVER and just continue.
+                        continue;
                     }
-                };
 
-                // Timer goes now!  We'll start the client immediately in the
-                // upcoming try block.
-                new Timer(true).schedule(task, CONNECTION_TIMEOUT_MS);
+                    result = getStringFromReader(body.charStream());
 
-                try {
-                    response = client.execute(mRequest);
-                    task.cancel();
-
-                    // If that came out aborted, it was a timeout, so move on.
-                    if(mRequest.isAborted()) continue;
+                    // With that done, we try to convert the output to the
+                    // float.  If this fails, we got bogus data and should roll
+                    // on.
+                    Float.parseFloat(result);
                 } catch (IOException e) {
                     // If there was an exception, there was some issue with the
                     // server.  It might've been aborted by timeout, but still,
                     // move on to the next server.
                     Log.d(DEBUG_TAG, "IOException!", e);
                     continue;
-                }
-
-                if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
-                    // If the server gives us a 404, that's saying it can't find
-                    // the stock for the day, which in turn implies it hasn't
-                    // been posted yet.  Log as such and try the next server.
-                    // Maybe they're just not in sync.
-                    Log.d(DEBUG_TAG, "Server said there was no stock for " + DateTools.getHyphenatedDateString(sCal));
-                    curStatus = ERROR_NOT_POSTED;
-                    continue;
-                } else if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
-                    // A non-okay response that isn't a 404 is bad.  Count this
-                    // one as ERROR_SERVER and just continue.
-                    continue;
-                }
-                
-                // Well, we got this far!  Let's read!
-                result = getStringFromStream(response.getEntity().getContent());
-                
-                // With that done, we try to convert the output to the float.
-                // If this fails, we got bogus data and should roll on.
-                try {
-                    Float.parseFloat(result);
                 } catch (NumberFormatException nfe) {
                     result = "";
                     continue;
                 }
-                
+
                 // We survived!  Set the status flag and keep going!
                 Log.d(DEBUG_TAG, "Success!  Stock found!  It's " + result + "!");
                 curStatus = ALL_OKAY;
-                client.close();
                 break;
             }
             
@@ -340,26 +315,24 @@ public class HashBuilder {
         }
         
         /**
-         * Takes the given stream and makes a String out of whatever data it has. Be
-         * really careful with this, as it will just attempt to read whatever's in
-         * the stream until it stops, meaning it'll spin endlessly if this isn't the
-         * sort of stream that ends.
-         * 
-         * @param stream
-         *            InputStream to read from
-         * @return a String consisting of the data from the stream
+         * Takes the given Reader and makes a String out of whatever data it
+         * has. It'll fetch at most {@link #MAX_FETCH_BYTES} bytes before
+         * bailing out.
+         *
+         * @param reader Reader to read from
+         * @return a String consisting of the data from the reader
          */
         @NonNull
-        private static String getStringFromStream(@NonNull InputStream stream)
+        private static String getStringFromReader(@NonNull Reader reader)
                 throws IOException {
-            BufferedReader buff = new BufferedReader(new InputStreamReader(stream));
-
-            // Load it up...
+            // Load it up!
             StringBuilder tempstring = new StringBuilder();
-            char[] bean = new char[1024];
+            char[] bean = new char[MAX_FETCH_BYTES];
             int read;
-            while ((read = buff.read(bean)) != -1) {
+            int totalRead = 0;
+            while ((read = reader.read(bean)) != -1 && totalRead < MAX_FETCH_BYTES) {
                 tempstring.append(bean, 0, read);
+                totalRead += read;
             }
 
             return tempstring.toString();
@@ -551,6 +524,7 @@ public class HashBuilder {
     }
     
     /**
+     * <p>
      * Builds a new Info object by applying a new Graticule to an existing Info
      * object.  That is to say, change the destination of an Info object to
      * somewhere else, as if it were the same day and same stock value (and
@@ -558,9 +532,12 @@ public class HashBuilder {
      * existing Info's 30W-alignment isn't the same as the new Graticule's,
      * because that might require a trip back to the internet, and by this
      * point, we should know that we don't need to do so.
-     * 
+     * </p>
+     *
+     * <p>
      * Also note that you can't do any cloning actions on a globalhash, since
      * that doesn't make any sense.
+     * </p>
      * 
      * @param i old Info object to clone
      * @param g new Graticule to apply
