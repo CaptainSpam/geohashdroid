@@ -11,7 +11,6 @@ package net.exclaimindustries.geohashdroid.wiki;
 
 import android.content.Context;
 import android.location.Location;
-import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
 
@@ -19,44 +18,24 @@ import net.exclaimindustries.geohashdroid.R;
 import net.exclaimindustries.geohashdroid.util.Graticule;
 import net.exclaimindustries.geohashdroid.util.Info;
 import net.exclaimindustries.geohashdroid.util.UnitConverter;
-import net.exclaimindustries.tools.DOMUtil;
 import net.exclaimindustries.tools.DateTools;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpCookie;
-import java.net.HttpURLConnection;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import cz.msebera.android.httpclient.HttpEntity;
-import cz.msebera.android.httpclient.HttpResponse;
-import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
-import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
@@ -95,8 +74,6 @@ public class WikiUtils {
     private static final String WIKI_BASE_VIEW_URL = WIKI_BASE_URL + "geohashing/";
 
     private static final String DEBUG_TAG = "WikiUtils";
-
-    private static final String COOKIES_HEADER = "Set-Cookie";
 
     /**
      * This is a bundle of version data, neatly pre-parsed for easy analysis.
@@ -259,14 +236,6 @@ public class WikiUtils {
     }
 
     /**
-     * A bucketload of the usual stuff we grab from a wiki request.
-     */
-    private static class WikiResponse {
-        Document document;
-        Element rootElem;
-    }
-
-    /**
      * A simple CookieJar implementation that only stores cookies for a single
      * session.  Since we invoke login on just about every action anyway, that's
      * all we really need.
@@ -298,9 +267,6 @@ public class WikiUtils {
      * decimal points.
      */
     private static final DecimalFormat mLatLonLinkFormat = new DecimalFormat("###.00000000", new DecimalFormatSymbols(Locale.US));
-
-    private static final String TWO_HYPHENS = "--";
-    private static final String LINE_END = "\r\n";
 
     /** A Retrofit object singleton. */
     private static Retrofit mRetrofit = null;
@@ -350,24 +316,6 @@ public class WikiUtils {
     }
 
     /**
-     * Returns the content of a http request as an XML Document.  This is to be
-     * used only when we know the response to a request will be XML.  Otherwise,
-     * this will probably throw an exception.
-     *
-     * @param httpclient an active HTTP session
-     * @param httpreq    an HTTP request (GET or POST)
-     * @return a Document containing the contents of the response
-     */
-    private static Document getHttpDocument(@NonNull CloseableHttpClient httpclient,
-                                            @NonNull HttpUriRequest httpreq) throws Exception {
-        HttpResponse response = httpclient.execute(httpreq);
-
-        HttpEntity entity = response.getEntity();
-
-        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(entity.getContent());
-    }
-
-    /**
      * <p>
      * Processes a wiki response object (wrapped in a Response).  That is, first
      * it checks for these errors:
@@ -410,83 +358,6 @@ public class WikiUtils {
         }
 
         return responseObj;
-    }
-
-    /**
-     * Opens the given connection and parses its resulting JSON.  Also throws
-     * WikiExceptions if something goes wrong.  Note that JSON parsing failures
-     * are covered by a WikiException.
-     *
-     * @param connection the already-prepared HttpURLConnection to connect
-     * @return the resulting JSON
-     * @throws IOException the connection failed somehow
-     * @throws WikiException the connection succeeded, but the wiki threw an error
-     */
-    @NonNull
-    private static JSONObject getJsonFromConnection(@NonNull HttpURLConnection connection) throws IOException, WikiException {
-        try {
-            connection.connect();
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode != 200) {
-                Log.e(DEBUG_TAG, "Error response from server: " + responseCode);
-                // Something else will get whatever happened here.
-                throw new IOException("Error response from server: " + responseCode);
-            }
-
-            // Hoover up that data!
-            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            StringBuilder buffer = new StringBuilder();
-            String line = br.readLine();
-            while(line != null) {
-                buffer.append(line);
-                line = br.readLine();
-            }
-
-            // What we should have is a chunky blob of JSON.
-            JSONObject json = new JSONObject(buffer.toString());
-
-            // Check it for an error first!
-            if(json.has("error")) {
-                throw new WikiException(
-                        getErrorTextId(
-                                json
-                                        .getJSONObject("error")
-                                        .getString("code")));
-            }
-
-            return json;
-        } catch (JSONException jse) {
-            // If anything JSON-wise threw an exception here, assume the wiki is
-            // returning bad JSON.  We have an exception code for that.
-            Log.e(DEBUG_TAG, "JSONException in getJsonFromConnection!", jse);
-            throw new WikiException(R.string.wiki_error_json);
-        } finally {
-            connection.disconnect();
-        }
-    }
-
-    /**
-     * Gets a standard {@link WikiResponse} object for a wiki request.  Because
-     * I was getting sick of all that boilerplate.
-     *
-     * @param httpclient an active HTTP session
-     * @param httpreq    an HTTP request (GET or POST)
-     * @return a WikiResponse containing WikiResponsey stuff
-     */
-    @NonNull
-    private static WikiResponse getWikiResponse(@NonNull CloseableHttpClient httpclient,
-                                                @NonNull HttpUriRequest httpreq) throws Exception {
-        WikiResponse toReturn = new WikiResponse();
-
-        toReturn.document = getHttpDocument(httpclient, httpreq);
-
-        toReturn.rootElem = toReturn.document.getDocumentElement();
-        if(doesResponseHaveError(toReturn.rootElem)) {
-            throw new WikiException(getErrorTextId(findErrorCode(toReturn.rootElem)));
-        }
-
-        return toReturn;
     }
 
     /**
@@ -809,29 +680,6 @@ public class WikiUtils {
         return error;
     }
 
-    private static boolean doesResponseHaveError(@Nullable Element elem) {
-        if(elem == null) return false;
-
-        try {
-            DOMUtil.getFirstElement(elem, "error");
-        } catch(Exception ex) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static String findErrorCode(@Nullable Element elem) {
-        if(elem == null) return "UnknownError";
-
-        try {
-            Element error = DOMUtil.getFirstElement(elem, "error");
-            return DOMUtil.getSimpleAttributeText(error, "code");
-        } catch(Exception ex) {
-            return "UnknownError";
-        }
-    }
-
     /**
      * Retrieves the wiki page name for the given data.  This accounts for
      * globalhashes, too.
@@ -961,171 +809,5 @@ public class WikiUtils {
         } else {
             return "";
         }
-    }
-
-    /**
-     * Convenience method for extracting a list of cookies from a connection.
-     *
-     * @param connection HttpURLConnection from which to extract HttpCookies
-     * @return a list of HttpCookies (may be empty)
-     */
-    @NonNull
-    private static List<HttpCookie> getCookiesFromConnection(@NonNull HttpURLConnection connection) {
-        List<String> cookieHeaders = connection.getHeaderFields().get(COOKIES_HEADER);
-
-        List<HttpCookie> cookies = new ArrayList<>();
-
-        if(cookieHeaders != null) {
-            for(String cookie : cookieHeaders) {
-                cookies.addAll(HttpCookie.parse(cookie));
-            }
-        }
-
-        return cookies;
-    }
-
-    /**
-     * Convenience method to add a list of cookies to an existing connection.
-     *
-     * @param connection HttpURLConnection to which HttpCookies are to be added
-     * @param cookies the aforementioned HttpCookies
-     */
-    private static void addCookiesToConnection(
-            @NonNull HttpURLConnection connection,
-            @NonNull List<HttpCookie> cookies) {
-        connection.setRequestProperty("Cookie", TextUtils.join(";", cookies));
-    }
-
-    /**
-     * Convenience method for adding a bunch of form fields to an existing
-     * connection.  This WILL have the side effect of setting the Content-type
-     * to application/x-www-form-urlencoded, the request method to POST, and
-     * other things necessary for form posting.  That's also why this is a
-     * private method.
-     *
-     * @param connection HttpURLConnection to which form fields are to be added
-     * @param formFields the aforementioned form fields
-     * @throws IOException any of a wide variety of things that shouldn't have happened happened
-     */
-    private static void addFormFieldsToConnection(
-            @NonNull HttpURLConnection connection,
-            @NonNull Map<String, String> formFields) throws IOException {
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + StandardCharsets.UTF_8.name());
-        connection.setDoInput(true);
-        connection.setDoOutput(true);
-        connection.setChunkedStreamingMode(0);
-
-        StringBuilder sb = new StringBuilder();
-        for(Map.Entry<String, String> entry : formFields.entrySet()) {
-            if(sb.length() != 0)
-                sb.append("&");
-
-            sb.append(URLEncoder.encode(
-                    entry.getKey(),
-                    StandardCharsets.UTF_8.name()));
-            sb.append("=");
-            sb.append(URLEncoder.encode(
-                    entry.getValue(),
-                    StandardCharsets.UTF_8.name()));
-        }
-
-        try (OutputStream os = connection.getOutputStream()) {
-            os.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-        } catch(Exception e) {
-            Log.e(DEBUG_TAG, "Exception during form field writing?  What?", e);
-        }
-    }
-
-    /**
-     * Convenience method for returning the first page element from a query for
-     * page data.
-     *
-     * @param response the JSON response from the query
-     * @return a JSONObject corresponding to the first page in that query
-     * @throws JSONException this wasn't a page query response, no pages were
-     *                       returned (not even the negative-id placeholder
-     *                       pages used if the page is invalid or missing), or
-     *                       the JSON was otherwise malformed
-     */
-    @NonNull
-    private static JSONObject getFirstPageFrom(@NonNull JSONObject response) throws JSONException {
-        Log.d(DEBUG_TAG, "Getting first page from: " + response.toString());
-
-        JSONObject pages = response
-                .getJSONObject("query")
-                .getJSONObject("pages");
-
-        // This query CAN take multiple pages, hence why it returns an object
-        // capable of holding equally multiple pages (which, annoyingly, isn't
-        // an array).  We just want the one.
-        JSONArray ids = pages.names();
-        if(ids == null) {
-            // This shouldn't happen, but if it does, force it to throw a
-            // JSONException next.
-            ids = new JSONArray();
-        }
-        return pages.getJSONObject(ids.getString(0));
-    }
-
-    /**
-     * <p>
-     * Writes a single multipart form string to the given DataOutputStream.
-     * This will wind up in the form of:
-     * </p>
-     *
-     * <code>
-     * Content-Disposition: form-data; name="$fieldName"<br/>
-     * </br/>
-     * $fieldValue<br/>
-     * --$boundary<br/>
-     * </code>
-     *
-     * <p>
-     * Where each line break is \r\n.
-     * </p>
-     *
-     * @param stream DataOutputStream to write to
-     * @param boundary boundary being used for this connection
-     * @param fieldName field name to use
-     * @param fieldValue value to use
-     * @throws IOException something went very wrong
-     */
-    private static void writeMultiPartFormString(@NonNull DataOutputStream stream,
-                                                 @NonNull String boundary,
-                                                 @NonNull String fieldName,
-                                                 @NonNull String fieldValue) throws IOException
-    {
-        stream.writeBytes(TWO_HYPHENS + boundary + LINE_END);
-        stream.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"" + LINE_END);
-        stream.writeBytes("Content-Type: text/plain" + LINE_END);
-        stream.writeBytes(LINE_END);
-        stream.writeBytes(fieldValue + LINE_END);
-    }
-
-    /**
-     * Writes a single JPEG as a multipart form data field to the given
-     * DataOutputStream.
-     *
-     * @param stream DataOutputStream to write to.
-     * @param boundary boundary being used for this connection
-     * @param fieldName field name to use
-     * @param filename name of the file, for form-data purposes
-     * @param data big ol' array of bytes containing the entire JPEG
-     * @throws IOException something went very wrong
-     */
-    private static void writeMultiPartFormJpeg(@NonNull DataOutputStream stream,
-                                                    @NonNull String boundary,
-                                                    @NonNull String fieldName,
-                                                    @NonNull String filename,
-                                                    @NonNull byte[] data) throws IOException
-    {
-        stream.writeBytes(TWO_HYPHENS + boundary + LINE_END);
-        stream.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + filename + "\"" + LINE_END);
-        stream.writeBytes("Content-Type: image/jpeg" + LINE_END);
-        stream.writeBytes("Content-Transfer-Encoding: binary" + LINE_END);
-        stream.writeBytes(LINE_END);
-        stream.write(data);
-        stream.writeBytes(LINE_END);
     }
 }
