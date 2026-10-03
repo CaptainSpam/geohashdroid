@@ -26,7 +26,6 @@
         android:xlargeScreens="true"/>
 
     <application
-        android:name="androidx.multidex.MultiDexApplication"
         android:allowBackup="true"
         android:allowClearUserData="true"
         android:description="@string/app_description"
